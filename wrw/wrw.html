@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<style>
+		body {color:white;background-color:black;font-family:Trebuchet MS}
+		#all {width:800px;margin:auto;margin-top:50px;height:auto;border:1px solid white;padding:10px;text-align:center}
+		#canv {border:1px solid white;position:absolute}
+		#canv2 {border:1px solid white;position:absolute}
+		#mapeczki {vertical-align:middle}
+		#mapeczki > img {width:150px;height:100px}
+		#hidden {margin:auto}
+		</style>
+		<script>
+		loso = ["0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"];
+		function piksel(x,y,value,kolor){
+			this.x = x;
+			this.y = y;
+			this.value = value;
+			if(kolor!=undefined)
+                            this.kolor = kolor
+                        else
+                            this.kolor = null
+			this.nalez = -1;
+			this.miasto = null;
+			this.port = null;
+			this.odl = cwidth*cheight;
+		}
+		function losowykolor(){
+			var ret = "#"+[1,1,1].map(x=>loso[Math.floor(Math.random()*16)]).map(x=>x+''+x).reduce((x,y)=>(x+y)) //loso[Math.floor(Math.random()*16)]+loso[Math.floor(Math.random()*16)]+loso[Math.floor(Math.random()*16)];
+			while(ret=="#000000" || ret=="#ffffff" || ret=="#dddddd"){
+                            ret = "#"+[1,1,1].map(x=>loso[Math.floor(Math.random()*16)]).map(x=>x+''+x).reduce((x,y)=>(x+y))
+			}
+			return ret;
+		}
+		function miasto(x,y,size,kolor){
+			this.x = x;
+			this.y = y;
+			this.rodz = 0;
+			tabela[x][y].miasto = this;
+			this.size = size;
+			this.kolor = /*"#ddd"*/(kolor==null || kolor==undefined || kolor=="#000000")?losowykolor():kolor;
+			this.akolor = /*"#ddd"*/hexToRgb(this.kolor);
+			this.hhkolor = this.kolor
+			this.hkolor = this.akolor
+			kolory[kolory.length] = this.kolor;
+			ailevel[this.kolor] = 1+Math.floor(Math.random()*4);
+			this.port = null;
+			this.rosn = 0;
+			this.wyprod = 0;
+			this.znajd = [];
+			this.pkolor = ()=>historia?this.hhkolor:this.kolor
+			var szer = Math.floor(Math.sqrt(this.size))+5;
+			for(var i=0;i<30;i++){
+				var los = Math.random()*Math.PI*2;
+				var xax = this.x+Math.floor(szer*Math.sin(los));
+				var xay = this.y+Math.floor(szer*Math.cos(los));
+				if(tabela[xax][xay].value==0){
+					i = 30;
+					this.port = {x:xax,y:xay};
+			tabela[xax][xay].port = this;
+				}
+			}
+			this.najedz = function(x,y){
+				var cyfr = Math.floor(Math.sqrt(this.size))+5;
+				if(x>=this.x-cyfr && x<=this.x+cyfr && y>=this.y-cyfr && y<=this.y+cyfr){
+					return true;
+				} else {
+					return false;
+				}
+			}
+			this.rysuj = miastorysuj
+		}
+		function oddzial(x,y,kolor,licz,typ){
+			this.x = x;
+			this.y = y;
+			this.rodz = 1;
+			this.path = [];
+			this.fromMove = 0;
+			this.useless = false
+			this.kolor = kolor;
+			this.akolor = /*"#ddd"*/hexToRgb(this.kolor);
+            maxlicz = 200
+			this.licz = Math.min(licz,maxlicz);
+			this.typ = typ;
+			this.averageenemy = 0;
+			this.averageenemyodl = Infinity
+			this.najedz = function(x,y){
+				var cyfr = Math.floor(Math.log10(this.licz))+1;
+				if(this.typ==0){
+				if(x>=this.x-cyfr*4 && x<=this.x+cyfr*4 && y>=this.y-18 && y<=this.y-3){
+					return true;
+				} else {
+					return false;
+				}
+				} else {
+					if(x>=this.x-cyfr*4 && x<=this.x+cyfr*4 && y>=this.y+3-10 && y<=this.y+18-10){
+						return true;
+					} else {
+						return false;
+					}
+				}
+			}
+			this.domiasta = function(){
+				if(tabela[this.x][this.y].miasto!=null){
+					var prz = 20;
+					var wart = Math.floor(Math.ceil(this.licz/2)/prz)*prz;
+					tabela[this.x][this.y].miasto.size+=wart/prz;
+					this.licz-=wart;
+				} else {
+					alert("TODO");
+				}
+			}
+			this.rysuj = oddzialrysuj
+			
+		}
+		function oddzialrysuj(){
+				var cyfr = Math.floor(Math.log10(this.licz))+1;
+				ctx2.fillStyle=this.kolor;
+				if(this.typ!=1){
+                                    if(podsw==this || zazn.indexOf(this)>-1)
+                                            ctx2.strokeStyle="#fff";
+                                    else
+                                            ctx2.strokeStyle="#000";
+                                    ctx2.globalAlpha = 1;
+                                    ctx2.fillRect(this.x-cyfr*4,this.y-18,cyfr*8,15);
+                                    ctx2.globalAlpha = 1;
+                                    ctx2.strokeRect(this.x-cyfr*4,this.y-18,cyfr*8,15);
+                                    if(podsw==this || zazn.indexOf(this)>-1)
+                                            ctx2.fillStyle="#fff";
+                                    else
+                                            ctx2.fillStyle="#000";
+                                    ctx2.fillText(this.licz,this.x,this.y-6);
+				} else {
+					if(podsw==this || zazn.indexOf(this)>-1)
+					ctx2.strokeStyle="#fff";
+					else
+					ctx2.strokeStyle="#000";
+					ctx2.globalAlpha = 1;
+					ctx2.beginPath();
+					ctx2.moveTo(this.x-cyfr*4-2,this.y+3-10);
+					ctx2.lineTo(this.x+cyfr*4+2,this.y+3-10);
+					ctx2.lineTo(this.x+cyfr*4-2,this.y+18-10);
+					ctx2.lineTo(this.x-cyfr*4+2,this.y+18-10);
+					ctx2.closePath();
+					ctx2.fill();
+					ctx2.globalAlpha = 1;
+					ctx2.stroke();
+					if(podsw==this || zazn.indexOf(this)>-1)
+						ctx2.fillStyle="#fff";
+					else
+						ctx2.fillStyle="#000";
+					ctx2.fillText(this.licz,this.x,this.y+12-10);
+				}
+				if(this.path)
+                                    for(var i = 0;i<this.path.length-1;i++){
+                                            ctx2.strokeStyle="#f00";
+
+                                            ctx2.beginPath();
+                                            ctx2.moveTo(this.path[i].x,this.path[i].y);
+                                            ctx2.lineTo(this.path[i+1].x,this.path[i+1].y);
+                                            ctx2.stroke();
+
+                                    }
+			}
+		function init(){
+                    document.getElementById("ukryj").checked = false
+                    document.getElementById("hidden").style.display = "none"
+			document.getElementById("files").onchange = function (evt) {
+			var tgt = evt.target || window.event.srcElement,
+				files = tgt.files;
+    // FileReader support
+			if (FileReader && files && files.length) {
+				var fr = new FileReader();
+				fr.onload = function(){readFromImage(fr.result)};
+				fr.readAsDataURL(files[0]);
+			} else {
+			}
+		}
+		}
+		function readFromImage(imgot) {
+			tabela = [];
+			atabela = [];
+			miasta = [];
+			oddzialy = [];
+
+			granic = [];
+			zmien = [];
+
+			kolory = [];
+			ailevel = {};
+
+			cwidth = 0;
+			cheight = 0;
+			maxodl = 100;
+			
+			podsw = null;
+			zazn = [];
+
+			wybranykolor = -1;
+			
+			resetas = 5
+
+			stan = -1; //-1 wybór miasta, 0+ gra
+
+			zazt = 1;
+					wx = -1;
+					wy = -1;
+
+					przerw = false;
+                        document.getElementById("hidden").style.display = "block"
+                        document.getElementById("mapeczki").style.display = "none"
+					var myimg = new Image();
+					myimg.onload = function(){
+						c = document.getElementById('canv');
+						c2 = document.getElementById('canv2');
+						c.width = myimg.width+80;
+						c.height = myimg.height+40;
+						c2.width = myimg.width+80;
+						c2.height = myimg.height+40;
+						cwidth = myimg.width;
+						cheight = myimg.height;
+						ctx = c.getContext('2d');
+						ctx2 = c2.getContext('2d');
+					ctx2.textAlign="center";
+					ctx2.font="8pt Courier New";
+
+					i1 = new Image(40, 40);   // using optional size for image
+						i1.src = "100r.png";
+					i2 = new Image(40, 40);   // using optional size for image
+						i2.src = "75r.png";
+					i3 = new Image(40, 40);   // using optional size for image
+						i3.src = "50r.png";
+					i4 = new Image(40, 40);   // using optional size for image
+						i4.src = "25r.png";
+					i5 = new Image(40, 40);   // using optional size for image
+						i5.src = "wmiasto.png";
+
+					i6 = new Image(40, 40);   // using optional size for image
+						i6.src = "woj.png";
+					i7 = new Image(40, 40);   // using optional size for image
+						i7.src = "okret.png";
+					i8 = new Image(80, 20);   // using optional size for image
+						i8.src = "prawypanel.png";
+
+
+						ctx.drawImage(myimg, 0, 0);
+						var imd = ctx.getImageData(0,0,myimg.width,myimg.height);
+						
+						var coltabl = {}
+						for(var i=0;i<myimg.width;i++){
+							for(var j=0;j<myimg.height;j++){
+                                                                var col_r = imd.data[(j*myimg.width+i)*4]
+                                                                var col_g = imd.data[(j*myimg.width+i)*4+1]
+                                                                var col_b = imd.data[(j*myimg.width+i)*4+2]
+                                                                if(col_r>16 || col_g>16 || col_b>16){
+                                                                    var kod = "#"+(Math.floor(col_r/16)).toString(16).repeat(2)+(Math.floor(col_g/16)).toString(16).repeat(2)+(Math.floor(col_b/16)).toString(16).repeat(2)
+                                                                    if(kod!="#ffffff")
+                                                                        if(coltabl[kod]==undefined){
+                                                                            coltabl[kod] = 1
+                                                                        } else {
+                                                                            coltabl[kod]++
+                                                                        }
+                                                                }
+							}
+                                                }
+                                                bestkol = Object.keys(coltabl).sort((x,y)=>coltabl[y]-coltabl[x])[0]
+						for(var i=0;i<myimg.width;i++){
+							tabela[i] = [];
+							atabela[i] = [];
+							for(var j=0;j<myimg.height;j++){
+                                                                /*
+								if(imd.data[(j*myimg.width+i)*4+1]<255/3-imd.data[(j*myimg.width+i)*4]-imd.data[(j*myimg.width+i)*4+2]){
+									tabela[i][j] = new piksel(i,j,2);
+								} else if(imd.data[(j*myimg.width+i)*4+1]>255/3+imd.data[(j*myimg.width+i)*4]/3+imd.data[(j*myimg.width+i)*4+2]/3){
+									tabela[i][j] = new piksel(i,j,1);
+								} else {
+									tabela[i][j] = new piksel(i,j,0);
+								}
+								*/
+								
+                                                                var col_r = imd.data[(j*myimg.width+i)*4]
+                                                                var col_g = imd.data[(j*myimg.width+i)*4+1]
+                                                                var col_b = imd.data[(j*myimg.width+i)*4+2]
+                                                                var kod = "#"+(Math.floor(col_r/16)).toString(16).repeat(2)+(Math.floor(col_g/16)).toString(16).repeat(2)+(Math.floor(col_b/16)).toString(16).repeat(2)
+								if(kod=="#ffffff"){
+									tabela[i][j] = new piksel(i,j,0);
+								} else if(kod==bestkol){
+									tabela[i][j] = new piksel(i,j,1);
+								} else {/*
+                                                                    var col_r = imd.data[(j*myimg.width+i)*4]
+                                                                    var col_g = imd.data[(j*myimg.width+i)*4+1]
+                                                                    var col_b = imd.data[(j*myimg.width+i)*4+2]
+                                                                    var kod = "#"+(Math.floor(col_r/16)).toString(16).repeat(2)+(Math.floor(col_g/16)).toString(16).repeat(2)+(Math.floor(col_b/16)).toString(16).repeat(2)*/
+                                                                    if(kod!="#000000")
+									tabela[i][j] = new piksel(i,j,2,kod);
+                                                                    else
+                                                                        tabela[i][j] = new piksel(i,j,2)
+								}
+								atabela[i][j] = tabela[i][j].nalez
+							}
+						}
+
+						for(var i=0;i<myimg.width;i++){
+							for(var j=0;j<myimg.height;j++){
+								if(tabela[i][j].value==2){
+                                                                    //console.log(tabela[i][j].kolor+' '+bestkol)
+									var sumx = 0,sumy = 0,il = 0;
+									var kolejk = [tabela[i][j]];
+									while(kolejk.length>0){
+										var koko = [];
+										for(var k = 0;k<kolejk.length;k++){
+											il++;
+											sumx+=kolejk[k].x;
+											sumy+=kolejk[k].y;
+											var gry = bord(kolejk[k]);
+											for(var l = 0;l<gry.length;l++){
+												if(gry[l].value==2 && (gry[l].kolor == tabela[i][j].kolor) && !koko.includes(gry[l])){
+                                                                                                        koko[koko.length] = gry[l];
+												}
+											}
+											kolejk[k].value = 1;
+										}
+										kolejk = koko;
+									}
+									sumx = Math.floor(sumx/il);
+									sumy = Math.floor(sumy/il);
+									var stawiaj = true;
+									for(var k = 0;stawiaj && k<miasta.length;k++){
+										if(odl(miasta[k],{x:sumx,y:sumy})<Math.sqrt(miasta[k].size)+Math.sqrt(il))
+											stawiaj = false;
+									}
+									if(stawiaj){
+										miasta[miasta.length] = new miasto(sumx,sumy,il,tabela[i][j].kolor);
+										oddzialy[oddzialy.length] = new oddzial(sumx,sumy,miasta[miasta.length-1].kolor,Math.ceil(Math.sqrt(100000/miasta[miasta.length-1].size)),0);
+										zmien[zmien.length] = miasta[miasta.length-1];
+										zmien[zmien.length] = oddzialy[oddzialy.length-1];
+									}
+								}
+							}
+						}
+					pierw = true;
+                                                first = null
+                                                firsttime = 0
+                                                
+                                                przypiszmiasta();
+									rysuj();
+									setTimeout(anim,50);
+									setTimeout(komploop,500);
+							c2.addEventListener("mouseup", doMouseUp, false);
+							c2.addEventListener("mousedown", doMouseDown, false);
+							c2.addEventListener("mousemove", doMouseMove, false);
+							
+                                                        leftp = 20
+                                                        rightp = cwidth-100-60
+                                                hist.push(getSnap())
+                    initmiast = miasta.length
+						}
+                                        hist = []
+                                        snaps = []
+                                        histmoment = -1
+                                        pauza = false
+                                        historia = false
+						
+					myimg.src = imgot;//fr.result;
+                    
+				}
+				function przypiszmiasta(){
+                                            var lewo = 0;prawo = cwidth-20;gora = 0;dol = cheight-20;
+						for(var i=lewo+1;i<prawo-1;i++){
+							for(var j=gora+1;j<dol-1;j++){
+                                                                atabela[i][j] = tabela[i][j].nalez
+								if(tabela[i][j].value==1 && miasta.filter(m=>(i==m.x && j==m.y)).length==0/*zmien.indexOf(tabela[i][j].nalez)>-1*/){
+									tabela[i][j].nalez = -1;
+									tabela[i][j].odl = cwidth*cheight;
+								}
+							}
+						}
+						//ctx2.strokeRect(lewo,gora,prawo-lewo,dol-gora)
+						
+						
+						narysowane = false;
+						var kolejk = [];          
+						
+                                                    
+                                                    
+                                                    /*
+                                                for(var i=0;!przerw && i<oddzialy.length;i++){
+                                                        if(zmien.indexOf(oddzialy[i])>-1 || (oddzialy[i].x>=lewo && oddzialy[i].x<prawo && oddzialy[i].y>=gora && oddzialy[i].y<dol)){
+                                                                tabela[oddzialy[i].x][oddzialy[i].y].nalez = oddzialy[i];
+                                                                tabela[oddzialy[i].x][oddzialy[i].y].odl = 0;
+                                                                kolejk[kolejk.length] = tabela[oddzialy[i].x][oddzialy[i].y];
+                                                        }
+                                                }
+                                                */
+                                                
+                                                for(var i=0;i<miasta.length;i++){
+                                                        if(miasta[i].x>=lewo && miasta[i].x<prawo && miasta[i].y>=gora && miasta[i].y<dol){
+                                                                tabela[miasta[i].x][miasta[i].y].nalez = miasta[i];
+                                                                tabela[miasta[i].x][miasta[i].y].odl = 0;
+                                                                kolejk[kolejk.length] = tabela[miasta[i].x][miasta[i].y];
+                                                        }
+                                                }
+                                                /*
+                                                while(!przerw && kolejk.length>0){
+                                                        var koko = [];
+                                                        for(var k = 0;k<kolejk.length;k++){
+                                                                if((kolejk[k].odl<maxodl || kolejk[k].odl==cwidth*cheight)){
+                                                                        var gry = bord2(kolejk[k]);
+                                                                        for(var l = 0;l<gry.length;l++){
+                                                                                if(gry[l].odl>kolejk[k].odl+odl(gry[l],kolejk[k]) && !koko.includes(gry[l])){
+                                                                                        koko[koko.length] = gry[l];
+                                                                                        gry[l].nalez = kolejk[k].nalez;
+                                                                                        gry[l].odl = kolejk[k].odl+odl(gry[l],kolejk[k]);
+                                                                                }
+                                                                        }
+                                                                }
+                                                        }
+                                                        kolejk = koko;
+                                                }*/
+                                                while(!przerw && kolejk.length>0){
+                                                        var koko = [];
+                                                        for(var k = 0;k<kolejk.length;k++){
+                                                                if((kolejk[k].odl<maxodl || kolejk[k].odl==cwidth*cheight)){
+                                                                        var gry = bord2(kolejk[k]);
+                                                                        for(var l = 0;l<gry.length;l++){
+                                                                                if(gry[l].value!=0 && gry[l].odl>kolejk[k].odl+odl(gry[l],kolejk[k]) && !koko.includes(gry[l])){
+                                                                                        koko[koko.length] = gry[l];
+                                                                                        gry[l].nalez = kolejk[k].nalez;
+                                                                                        gry[l].odl = kolejk[k].odl+odl(gry[l],kolejk[k]);
+                                                                                }
+                                                                        }
+                                                                }
+                                                        }
+                                                        kolejk = koko;
+                                                }
+                                                
+				}
+				function getSnap(){
+                                    return {oddzialy:oddzialy.map(function(o){return {x:o.x,y:o.y,kolor:o.kolor,akolor:o.akolor,licz:o.licz,rysuj:oddzialrysuj}}),miasta:miasta.map(function(m){return {self:m,x:m.x,y:m.y,kolor:m.kolor,akolor:m.akolor,size:m.size,rysuj:miastorysuj}})}
+				}
+		</script>
+	</head>
+	<body>
+
+	<div id="all">
+		<h2>Taka "jakby" gra :D</h2>  
+		<p>
+		Narysuj coś, ląd narysuj na zielono, rzeki i morza na biało, a miasta na czarno (kształt dowolny).
+		</p>
+			Wczytaj obrazek:
+			<input id="files" name="files[]" onchange="" type="file"><br><br/>
+			<input type="checkbox" name="aa" id="ukryj" onclick="ukryj()"> Ukryj znaczki
+			<div id="mapeczki">
+                            Wybierz mapę:
+                            <img src="kolonizacj.png" onclick="readFromImage('kolonizacj.png')">
+                            <img src="lol.png" onclick="readFromImage('lol.png')">
+                            <img src="rotfl.png" onclick="readFromImage('rotfl.png')">
+                            <img src="notdense.png" onclick="readFromImage('notdense.png')">
+                            <img src="kartablanka.png" onclick="readFromImage('kartablanka.png')">
+                            <img src="zielona wyspa.png" onclick="readFromImage('zielona wyspa.png')">
+                            <img src="prawilnapolska.png" onclick="readFromImage('prawilnapolska.png')">
+			</div>
+	</div>
+        <div id="hidden">
+        <canvas id="canv" width="745" height="506"></canvas>
+        <canvas id="canv2" width="745" height="506"></canvas>
+        </div>
+        <script src="rysowanie.js"></script>
+        <script src="zdarzenia.js"></script>
+        <script src="logika.js"></script>
+        <script>
+            init();
+        </script>
+
+</body></html>
