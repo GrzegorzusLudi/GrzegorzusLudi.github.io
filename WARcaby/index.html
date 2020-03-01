@@ -1,0 +1,1888 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf8">
+<style type="text/css">
+body {color:white;background-color:black;font-family:Helvetica}
+#canv {border:1px solid white}
+</style>
+<script>
+const MAX_PIECES = 11
+
+//Auxiliary class for doin algorithms
+class MaximumFlowGraphOnRiskBoard{
+    constructor(){
+        this.startpoints = []
+        this.endpoints = []
+        this.points = []
+        this.dummyLand = new DummyLand()
+    }
+    newPoint(land, startpointsorendpoints){
+        var point = {land:land, available_pawns:land.pawns, available_dams:land.dams, threat: 0, edges:{}, capacity: 11}
+        this.points.push(point)
+        if(startpointsorendpoints)
+            startpointsorendpoints.push(point)
+        return point
+    }
+    newEdge(point1, point2, capacity){
+        point1.edges[point2.land.id] = {point: point2, pawn_flow:0, dam_flow:0, capacity:capacity}
+    }
+    addPiecesToLogic(point,edge,pawns,dams){
+        var point2 = edge.point
+        
+        if(point2.capacity < pawns + dams)
+            dams = Math.max(0, point2.capacity - pawns)
+            
+        if(point2.capacity < pawns)
+            pawns = Math.max(0, point2.capacity)
+        
+        point2.capacity -= pawns + dams
+        edge.pawn_flow += pawns
+        edge.dam_flow += dams
+        point.threat = Math.max(0, point.threat - pawns - dams * 3)
+        point.available_pawns -= pawns
+        point.available_dams -= dams
+    }
+    calculateWeights(){
+        //calculate things that don't have to be moved
+        for(var i in this.startpoints){
+            var point = this.startpoints[i]
+            if(point.land.id == -1)
+                continue
+            
+            var edge = point.edges[point.land.id]
+            
+            this.addPiecesToLogic(point, edge, point.land.movedPawns, point.land.movedDams)
+            if(point.land.movedPawns + point.land.movedDams == 0){
+                if(point.available_pawns==0){
+                    this.addPiecesToLogic(point, edge, 0, 1)
+                } else {
+                    this.addPiecesToLogic(point, edge, 1, 0)
+                }
+            }
+            
+            if(point.threat>=evalDefence(point.available_pawns,point.available_dams)){
+                this.addPiecesToLogic(point, edge, point.available_pawns, point.available_dams)
+            } else {
+                this.addPiecesToLogic(point, edge, 0, Math.ceil(point.threat/3))
+                if(point.threat>=evalDefence(point.available_pawns,point.available_dams)){
+                    this.addPiecesToLogic(point, edge, point.available_pawns, 0)
+                } else {
+                    this.addPiecesToLogic(point, edge, point.threat, 0)
+                }
+            }
+        }
+        
+        //calculate needs of threatened lands
+        loop1:
+        for(var i in this.points){
+            var threatenedPoints = this.endpoints.filter(x=>x.threat>0).sort((x,y)=>(x.threat-y.threat - evalDefence(x.pawns,x.dams)+evalDefence(y.pawns,y.dams)))
+            var point = this.points[i]
+            if(point.available_dams > 0){
+                for(var j in threatenedPoints){
+                    var tl = threatenedPoints[j]
+                    var edge = point.edges[tl.land.id]
+                    if(point.available_dams * 3 > tl.threat){
+                        this.addPiecesToLogic(point,edge,0,Math.ceil(tl.threat/3)*3)
+                    } else {
+                        this.addPiecesToLogic(point,edge,0,point.available_dams)
+                        continue loop1
+                    }
+                }
+            }
+            if(point.available_pawns > 0){
+                for(var j in threatenedPoints){
+                    var tl = threatenedPoints[j]
+                    var edge = point.edges[tl.land.id]
+                    if(point.available_pawns > tl.threat){
+                        this.addPiecesToLogic(point,edge,tl.threat,0)
+                    } else {
+                        this.addPiecesToLogic(point,edge,point.available_pawns,0)
+                        continue loop1
+                    }
+                }
+            }
+        }
+        
+        //addRemaining
+        for(var c = 0;c<10 && this.points.map(x=>x.available_pawns+x.available_dams).reduce((x,y)=>x+y,0)>0;c++){
+            for(var i in this.points){
+                var point = this.points[i]
+                if(this.endpoints.indexOf(point)>-1){
+                    var edge = point.edges[point.land.id]
+                    this.addPiecesToLogic(point,edge,point.available_pawns,point.available_dams)
+                } else {
+                    if(point.available_dams > 0){
+                        for(var j in this.endpoints){
+                            var ep = this.endpoints[j]
+                            var edge = point.edges[ep.land.id]
+                            this.addPiecesToLogic(point,edge,0,1)
+                        }
+                    }
+                    if(point.available_pawns > 0){
+                        for(var j in this.endpoints){
+                            var ep = this.endpoints[j]
+                            var edge = point.edges[ep.land.id]
+                            this.addPiecesToLogic(point,edge,1,0)
+                        }
+                    }
+                }
+            }
+        }
+        
+        /*
+        for(var i in this.points){
+            var point = this.points[i]
+            for(var id in point.edges){
+                var edge = point.edges[id]
+                if(edge.pawn_flow+edge.dam_flow>0){
+                    console.log("DEPLOYMENT FROM "+point.land.id+" TO "+id+": "+edge.pawn_flow+"P "+edge.dam_flow+"D")
+                }
+            }
+        }*/
+    }
+    addLandsFromRiskBoard(lands, destinationLands){
+        var additionalPoints = lands.length
+        this.dummyLand.pawns = additionalPoints
+        for(var i in lands){
+            var land = lands[i]
+            var point = this.newPoint(land, this.startpoints)
+            if(destinationLands.indexOf(land)>-1){
+                this.endpoints.push(point)
+                point.threat = land.neighbours.filter(x=>x.color != undefined && x.color != land.color).map(x=>evalAttack(x.pawns,x.dams)).reduce((x,y)=>x+y,0)
+                
+                //console.log("Threat for land "+land.id+": "+point.threat)
+            }
+        }
+        this.dummyPoint = this.newPoint(this.dummyLand,this.startpoints)
+        for(var j in this.startpoints){
+            var point2 = this.startpoints[j]
+            for(var i in this.startpoints){
+                var point1 = this.startpoints[i]
+                var capacity = MAX_PIECES
+                this.newEdge(point1, point2, capacity)
+            }
+            this.newEdge(this.dummyPoint, point2, capacity)
+        }
+        this.newEdge(this.dummyPoint, this.dummyPoint, 0)
+        this.calculateWeights()
+    }
+}
+function evalAttack(pawns, dams){
+    if(dams == 0 && pawns == 0) //niemorzliwe
+        return 0
+    if(pawns == 0)
+        return 3 * (dams - 1)
+    return 3 * dams + (pawns - 1)
+}
+function evalDefence(pawns, dams){
+    return 3 * dams + pawns
+}
+class DummyLand{
+    constructor(){
+        this.id = -1
+        this.pawns = 0
+        this.dams = 0
+        this.movedPawns = 0
+        this.movedDams = 0
+        this.neighbours = []
+    }
+}
+class Field{
+    constructor(x,y,model){
+        this.x = x
+        this.y = y
+        this.model = model
+        this.land = null
+    }
+}
+class Land{
+    constructor(model,id){
+        this.model = model
+        this.fields = []
+        this.neighbours = []
+        this.color = null
+        this.pawns = 0
+        this.dams = 0
+        
+        this.movedPawns = 0
+        this.movedDams = 0
+        this.id = id
+        this.x = undefined
+        this.y = undefined
+    }
+    number(){
+        return this.pawns + this.dams
+    }
+    availableNumber(){
+        return this.pawns + this.dams - this.movedPawns - this.movedDams
+    }
+    addField(field){
+        if(this.x == undefined){
+            this.x = field.x
+            this.y = field.y
+        }
+        this.fields.push(field)
+        field.land = this
+        var neighboursOfField = this.model.getNeighbouringFields(field.x,field.y)
+        for(var key in neighboursOfField){
+            if(neighboursOfField[key] != null && neighboursOfField[key].land != null && neighboursOfField[key].land != this){
+                var l = neighboursOfField[key].land
+                if(this.neighbours.indexOf(l) == -1){
+                    l.neighbours.push(this)
+                    this.neighbours.push(l)
+                }
+            }
+        }
+    }
+    getConnected(checkColor,alreadyGot){
+        if(alreadyGot === undefined)
+            alreadyGot = []
+        alreadyGot.push(this)
+        for(var i in this.neighbours){
+            var nei = this.neighbours[i]
+            if(alreadyGot.indexOf(nei)==-1 && (checkColor === undefined || nei.color === this.color)){
+                nei.getConnected(checkColor,alreadyGot)
+            }
+        }
+        return alreadyGot
+    }
+    connectedToLand(land){
+        return this.getConnected(true).filter(x=>x===land).length>0
+    }
+    borderingLands(land){
+        return this.neighbours.filter(x=>x.color !== null && x.color === this.color)
+    }
+    clearMoved(){
+        this.movedPawns = 0
+        this.movedDams = 0
+    }
+    notOnlyOne(){
+        return this.number() > 1
+    }
+}
+class BoardModel{
+    constructor(){
+        this.boardwidth = 60
+        this.boardheight = 50
+        this.colors = [
+            "#a00",
+            "#00a",
+            "#0a0",
+            "#aa0",
+            "#0aa",
+            "#444",
+            "#a60",
+            "#a0a",
+            "#06a",
+            "#6a0",
+        ]
+        //DZIEBUDŻ
+        this.checkersGame = null
+        this.priority = 0
+    }
+    initBoard(lands,radius){
+        if(radius === undefined)
+            radius = 4
+        this.board = []
+        this.fieldArray = []
+        for(var i = 0;i<this.boardwidth;i++){
+            this.board[i] = []
+            for(var j = 0;j<this.boardheight;j++){
+                var f = new Field(i,j,this)
+                this.board[i][j] = f
+                this.fieldArray.push(f)
+            }
+        }
+        
+        //create lands
+        this.emptyfields = this.fieldArray.slice()
+        this.lands = []
+        for(var i = 0;i<lands && this.emptyfields.length>0;i++){
+            var random = Math.floor(Math.random()*this.emptyfields.length)
+            var newland = new Land(this,this.lands.length)
+            this.lands.push(newland)
+            var f = this.emptyfields[random]
+            newland.addField(f)
+            this.emptyfields = this.emptyfields.filter(_f=>(Math.abs(_f.x-f.x)>radius || Math.abs(_f.y-f.y)>radius))
+        }
+        
+        //grow lands ;o
+        var i = 2
+        while(i>0){
+            for(var j in this.lands){
+                var land = this.lands[j]
+                var fields = land.fields
+                var neighbouring = []
+                for(var k in fields){
+                    var ns = this.getNeighbouringFields(fields[k].x,fields[k].y)
+                    for(var l in ns){
+                        if(ns[l] != null && Math.random()<0.5)
+                            neighbouring.push(ns[l])
+                    }
+                }
+                for(var k in neighbouring){
+                    var f = neighbouring[k]
+                    if(f.land == null)
+                        land.addField(f)
+                }
+            }
+            if(this.lands[0].getConnected().length>=lands)
+                i--
+        }
+        
+        //remove little holes ;/
+        for(var i = 0;i<this.boardwidth;i++){
+            for(var j = 0;j<this.boardheight;j++){
+                var f = this.board[i][j]
+                if(f.land==null){
+                    var neighboursOfField = this.getNeighbouringFields(i,j)
+                    var exist = null
+                    var change = true
+                    for(var key in neighboursOfField){
+                        if(neighboursOfField[key] != null){
+                            var l = neighboursOfField[key].land
+                            if(l == null)
+                                change = false
+                            if(exist == null)
+                                exist = l
+                        }
+                    }
+                    if(exist && change)
+                        exist.addField(f)
+                }
+            }
+        }
+    }
+    initPlayers(players){
+        this.players = players
+        this.currentPlayer = 0
+        this.phase = 0  //0 - attack and move, 1 - deploy
+        this.selectedLand = null
+        var landscopy = this.lands.slice()
+        for(var i = 0;i<this.lands.length;i++){
+            var land
+            var lland = landscopy.filter(x=>x.neighbours.filter(y=>y.color!=null).length==0)
+            if(lland.length > 0){
+                land = lland[Math.floor(Math.random()*lland.length)]
+                landscopy.splice(landscopy.indexOf(land),1)
+            } else {
+                land = landscopy.splice(Math.floor(Math.random()*landscopy.length),1)[0]
+            }
+            if(i<players){
+                land.color = this.getColor(i)
+                land.dams = 2
+                land.pawns = 6
+            } else {
+                land.color = null
+                land.pawns = 1+Math.floor(Math.random()*3)
+            }
+            land.additional = 0
+        }
+    }
+    getNeighbouringFields(x,y){
+        return {
+            top:y>0?this.board[x][y-1]:null,
+            right:x<this.boardwidth-1?this.board[x+1][y]:null,
+            bottom:y<this.boardheight-1?this.board[x][y+1]:null,
+            left:x>0?this.board[x-1][y]:null
+        }
+    }
+    pass(){
+        switch(this.phase){
+            case 0:
+                this.phase = 1
+                for(var i in this.lands){
+                    var land = this.lands[i]
+                    if(land.color === this.currentColor())
+                        land.additional++
+                }
+                this.selectedLand = null
+                return true
+            break
+            case 1:
+                this.phase = 0
+                if(!this.gameEnded()){
+                    this.goNextPlayer()
+                    return true
+                }
+            break
+            case 2:
+                return this.checkersGame.move("pass")
+            break
+        }
+    }
+    currentColor(){
+        if(this.currentPlayer == null)
+            return "#000"
+        return this.colors[this.currentPlayer]
+    }
+    legal(){
+        if(this.phase == 2){
+            return this.checkersGame.legal().map(x=>{return {type: "checkers", move: x}})
+        }
+        var possibleMoves = [{type: "pass", move: "pass"}]
+        for(var i in this.lands){
+            var land = this.lands[i]
+            var checked = this.checkLand(land)
+            if(checked != null){
+                possibleMoves.push({type: checked, move: land})
+            }
+        }
+        return possibleMoves
+    }
+    clickLand(land){
+        return this.act(land)
+    }
+    act(move){
+        var legal = this.legal()
+        var moves = legal.filter(x=>x.move == move)
+        if(moves.length > 0){
+            var move = moves[0]
+            if(this.phase == 2){
+                return this.checkersGame.move(move.move)
+            }
+            if(move.type == "pass"){
+                return this.pass()
+            }
+            
+            var land = move.move
+            switch(move.type){
+                case "select":
+                    this.selectedLand = land
+                break
+                case "attack":
+                    var ret = this.attack(this.selectedLand,land)
+                    this.selectedLand = null
+                    return ret
+                break
+                case "move":
+                    return this.move(this.selectedLand,land)
+                break
+                case "deselect":
+                    this.selectedLand = null
+                break
+                case "place":
+                    land.pawns++
+                    land.getConnected(true).filter(x=>x.additional>0)[0].additional--
+                    if(this.remainingTroops() <= 0){
+                        this.pass()
+                    }
+                break
+            }
+            return true
+        }
+        return false
+    }
+    checkLand(land){
+        switch(this.phase){
+            case 0:
+                if(this.selectedLand == null && land.color == this.currentColor()){
+                    //this.selectedLand = land
+                    return "select"
+                } else if(this.selectedLand != null && land.color != this.currentColor() && this.hasMoveLand(land)) {
+                    /*
+                    var ret = this.attack(this.selectedLand,land)
+                    this.selectedLand = null
+                    return ret
+                    */
+                    return "attack"
+                } else if(this.selectedLand != land && land.color == this.currentColor() && this.hasMoveLand(land)){
+                    //return this.move(this.selectedLand,land)
+                    return "move"
+                } else if(this.selectedLand != null) {
+                    return "deselect"
+                    //this.selectedLand = null
+                }
+            break
+            case 1:
+                if(land.color == this.currentColor()){
+                    if(land.number() < MAX_PIECES && this.availableTroops(land)>0){
+                        return "place"
+                        /*
+                        land.pawns++
+                        land.getConnected(true).filter(x=>x.additional>0)[0].additional--
+                        if(this.remainingTroops() <= 0){
+                            this.pass()
+                        }
+                        return true
+                        */
+                    }
+                }
+            break
+        }
+        return null
+    }
+    availableTroops(land){
+        return land.getConnected(true).map(x=>x.additional).reduce((x,y)=>x+y,0)
+    }
+    remainingTroops(){
+        return this.lands.filter(x=>x.color === this.currentColor()).map(x=>x.additional).reduce((x,y)=>x+y,0)
+    }
+    gameEnded(){
+        return (new Set(this.lands.map(x=>x.color).filter(x=>x != null))).size <= 1
+    }
+    goNextPlayer(){
+        for(var i in this.lands){
+            var land = this.lands[i]
+            land.clearMoved()
+        }
+        var set = new Set(this.lands.map(x=>x.color).filter(x=>x != null))
+        this.currentPlayer = (this.currentPlayer + 1) % this.colors.length
+        while(!set.has(this.currentColor())){
+            this.currentPlayer = (this.currentPlayer + 1) % this.colors.length
+        }
+    }
+    changePriority(newPriority){
+        this.priority = newPriority !== undefined ? newPriority : (this.priority+1)%2
+        return true
+    }
+    onBorders(){
+        var bordering = this.borderingToPlaceTroops()
+        while(bordering.length>0){
+            for(var i in bordering){
+                var bord = bordering[i]
+                this.clickLand(bord)
+                if(this.phase != 1){
+                    return true
+                }
+            }
+            bordering = this.borderingToPlaceTroops()
+        }
+        return this.pass()
+    }
+    borderingToPlaceTroops(){
+        return this.lands.filter(x=>x.color == this.currentColor()).filter(x=>x.neighbours.filter(y=>y.color!==this.currentColor()).length>0).filter(x=>x.number()<MAX_PIECES).filter(x=>this.availableTroops(x)>0)
+    }
+    
+    //legal
+    hasMoveLand(land){
+        return this.selectedLand !== null && (this.selectedLand.notOnlyOne() && this.selectedLand.neighbours.filter(x=>x===land).length > 0 || this.selectedLand.color === land.color && land.connectedToLand(this.selectedLand))
+    }
+    
+    //do
+    move(land1,land2){
+        if(land1.number()>1 && land2.number()<MAX_PIECES){
+            if(land1.pawns-land1.movedPawns>0 && land1.pawns > 0 && this.priority == 0){
+                land2.pawns++
+                land2.movedPawns++
+                land1.pawns--
+                return true
+            } else if(land1.dams-land1.movedDams>0 && land1.dams > 0 && this.priority == 1){
+                land2.dams++
+                land2.movedDams++
+                land1.dams--
+                return true
+            }
+        } else if(land1.number()==1) {
+            if(land1.pawns-land1.movedPawns == 1 && land2.dams-land2.movedDams > 0 && land1.pawns > 0 && land2.dams>0 && this.priority == 0){
+                land2.pawns++
+                land2.movedPawns++
+                land1.pawns--
+                land2.dams--
+                land1.dams++
+                land1.movedDams++
+                return true
+            } else if(land2.pawns-land2.movedPawns > 0 && land1.dams-land1.movedDams == 1 && land2.pawns > 0 && land1.dams>0 && this.priority == 1){
+                land2.pawns--
+                land1.pawns++
+                land1.movedPawns++
+                land2.dams++
+                land2.movedDams++
+                land1.dams--
+                return true
+            }
+        } else if(land2.number()==MAX_PIECES){
+            if(land1.pawns-land1.movedPawns > 0 && land2.dams-land2.movedDams > 0 && land1.pawns > 0 && land2.dams>0 && this.priority == 0){
+                land2.pawns++
+                land2.movedPawns++
+                land1.pawns--
+                land2.dams--
+                land1.dams++
+                land1.movedDams++
+                return true
+            } else if(land1.dams-land1.movedDams > 0 && land2.pawns-land2.movedPawns > 0 && land2.pawns > 0 && land1.dams>0 && this.priority == 1){
+                land2.pawns--
+                land1.pawns++
+                land1.movedPawns++
+                land2.dams++
+                land2.movedDams++
+                land1.dams--
+                return true
+            }
+        }
+    }
+    attack(land1,land2){
+        //if(land2.borderingLands())
+        return this.startCheckersGame(land1,land2)
+    }
+    startCheckersGame(land1,land2){
+        this.phase = 2
+        this.checkersGame = new CheckersGame(this)
+        this.checkersGame.addLands(land1,land2)
+        return true
+    }
+    getColor(color){
+        if(color == null)
+            return "#aaa"
+        return this.colors[color]
+        
+    }
+    playerOfLand(land){
+        return this.playerFromColor(land)
+    }
+    playerFromColor(color){
+        if(color == null)
+            return null
+        return this.colors.indexOf(color)
+    }
+    endGame(){
+        if(!this.checkersGame.simulated && !this.checkersGame.canResign()){
+            this.currentPlayer = this.playerFromColor(this.checkersGame.land1color)
+            var land1 = this.checkersGame.land1
+            var land2 = this.checkersGame.land2
+            land1.pawns-=this.checkersGame.placedPawnsPlayer1
+            land1.dams-=this.checkersGame.placedDamsPlayer1
+            if(this.checkersGame.legal().filter(x=>x!="pass").length == 0){
+                land2.pawns = Object.values(this.checkersGame.board).filter(x=>x==0 || x==1).length
+                land2.dams = Object.values(this.checkersGame.board).filter(x=>x==2 || x==3).length
+                if(this.checkersGame.turn == 1){
+                    land2.color = land1.color
+                    land2.movedPawns = land2.pawns
+                    land2.movedDams = land2.dams
+                }
+            } else {
+                land2.pawns = Object.values(this.checkersGame.board).filter(x=>x==1).length
+                land2.dams = Object.values(this.checkersGame.board).filter(x=>x==3).length
+                
+                land1.pawns += Object.values(this.checkersGame.board).filter(x=>x==0).length
+                land1.dams += Object.values(this.checkersGame.board).filter(x=>x==2).length
+                land1.movedPawns += Object.values(this.checkersGame.board).filter(x=>x==0).length
+                land1.movedDams += Object.values(this.checkersGame.board).filter(x=>x==2).length
+            }
+        }
+        if(this.checkersGame.simulated){
+            this.currentPlayer = 0
+        }
+        this.checkersGame = null
+        this.phase = 0
+    }
+}
+class LandMap{
+    constructor(id,land,gameView){
+        this.id = id
+        this.land = land
+        this.gameView = gameView
+        this.piecesPlaced = []
+    }
+    refreshPiecesPlaced(){
+        this.piecesPlaced = []
+    }
+    addPiecePlaced(dam,x,y,w,h){
+    
+        var lx = this.gameView.screen.x + this.gameView.rw * x
+        var ly = this.gameView.screen.y + this.gameView.rh * y
+        var height = dam ? 6 : 0
+        this.piecesPlaced.push({dam:dam,x:lx-9,y:ly-6-height,w:16,h:8+height})
+        
+    }
+    hitTest(x,y){
+        for(var i=this.piecesPlaced.length-1;i>=0;i--){
+            var pm = this.piecesPlaced[i]
+            if(x>pm.x && y>pm.y && x<pm.x+pm.w && y<pm.y+pm.h){
+                return pm.dam
+            }
+        }
+    }
+}
+class GameView{
+    constructor(canvas, initialSetting){
+        this.canvas = canvas
+        this.ctx = canvas.getContext("2d")
+        this.width = canvas.width
+        this.height = canvas.height
+        
+        this.initialSetting = initialSetting
+        
+        this.lock = false
+        
+        this.landMapping = {}
+        
+        this.screen = {x:10, y:10, width:this.width-20, height:this.height-100}
+        
+        this.lscr = 0.15
+        this.wscr = 0.7
+        
+        this.canvas.addEventListener("click",(e)=>this.clickEvent(e))
+        
+        this.panelTop = this.screen.y+this.screen.height
+        this.panelSize = {
+            x: 10,
+            y: this.panelTop+10,
+            w: this.canvas.width-20,
+            h: this.canvas.height-20-this.panelTop,
+        }
+        
+        var th = this
+        this.buttons = [
+            new Button(this,"Dalej",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
+                function(){
+                    th.pass()
+                }
+            ),
+            new Button(this,"Pionki",this.panelSize.x+this.panelSize.w-245,this.panelSize.y+30,80,this.panelSize.h-40,
+                function(){
+                    th.changePriority()
+                    th.draw()
+                }
+            ),
+            new Button(this,"Na granicach",this.panelSize.x+this.panelSize.w-280,this.panelSize.y+20,140,this.panelSize.h-40,
+                function(){
+                    th.model.onBorders()
+                    th.draw()
+                }
+            ),
+            new Button(this,"Gotów",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
+                function(){
+                    th.pass()
+                }
+            ),
+            new Button(this,"Losuj",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
+                function(){
+                    th.pass()
+                }
+            ),
+            new Button(this,"Zrezygnuj",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
+                function(){
+                    th.pass()
+                }
+            ),
+            new Button(this,"Poddaj się",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
+                function(){
+                    th.pass()
+                }
+            ),
+        ]
+        
+        this.loadGame()
+    }
+    loadGame(){
+        this.model = new BoardModel()
+        this.model.initBoard(this.initialSetting.lands)
+        this.model.initPlayers(this.initialSetting.players.length)
+        
+        for(var i in this.model.lands){
+            var land = this.model.lands[i]
+            
+            this.landMapping[land.id] = new LandMap(land.id,land,this)
+        }
+        
+        this.rw = this.screen.width/this.model.boardwidth
+        this.rh = this.screen.height/this.model.boardheight
+
+        //DIEBUŻ
+        /*
+        this.model.phase = 2
+        var th = this
+        let mock = this.getMock()
+        this.model.checkersGame = new CheckersGame(mock)
+        this.model.checkersGame.simulateGame(5,5,0,0)
+        */
+    }
+    getMock(){
+        var th = this
+        return {endGame:function(){th.model.phase = 0;th.model.currentPlayer = 0;},playerFromColor:function(){return 0}}
+    }
+    getTotalMock(){
+        return {endGame:function(){},playerFromColor:function(){return 0}}
+    }
+    
+    isPlayerMove(){
+        return this.initialSetting.players[this.model.currentPlayer] == "player"
+    }
+    isAiMove(){
+        return this.initialSetting.players[this.model.currentPlayer] == "ai" || this.model.currentPlayer == null || this.model.checkersGame != null && this.model.checkersGame.simulated && this.model.checkersGame.turn == 1
+    }
+    pass(){
+        this.model.pass()
+        this.draw()
+    }
+    draw(){
+        //draw board
+        this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
+        this.ctx.strokeStyle = "#ffffff"
+        this.ctx.lineWidth = 1
+        this.ctx.strokeRect(this.screen.x,this.screen.y,this.screen.width,this.screen.height)
+        
+        for(var li in this.model.lands){
+            this.drawLand(this.model.lands[li])
+        }
+        for(var li in this.model.lands){
+            this.drawLandPawns(this.model.lands[li])
+        }
+        
+        if(this.model.phase == 2){
+            this.drawCheckerBoard()
+        }
+        
+        this.drawPanel()
+    }
+    drawLand(land){
+        var alpha = undefined
+        if(this.model.selectedLand === land)
+            alpha = 0.4
+        else if(this.model.hasMoveLand(land))
+            alpha = 0.2
+        else if(this.model.phase == 2 && (land == this.model.checkersGame.land1 || land == this.model.checkersGame.land2))
+            alpha = 0.2
+        for(var i in land.fields){
+            var field = land.fields[i]
+            this.drawField(field,alpha)
+        }
+    }
+    drawLandPawns(land){
+        var listOfPawns = this.pawnList(land.number()).sort((x,y)=>(x[1]-y[1]))
+        var x = Math.max(Math.min(this.model.boardwidth-3,land.x),3)
+        var y = Math.max(Math.min(this.model.boardheight-3,land.y),3)
+        
+        var mapped = this.landMapping[land.id]
+        mapped.refreshPiecesPlaced()
+        for(var i in listOfPawns){
+            var l = listOfPawns[i]
+            var p1 = land.movedDams
+            var p2 = land.dams
+            var p3 = land.dams+land.movedPawns
+            var tx = x+l[0]*1.2, ty = y+l[1]*0.6
+            tx = this.screen.x + this.rw * tx
+            ty = this.screen.y + this.rh * ty
+            this.drawPawn(tx, ty, land.color, i<p2, i<p1 || i>=p2 && i<p3, land == this.model.selectedLand)
+            mapped.addPiecePlaced(i<p2 ? 1 : 0,tx,ty)
+        }
+        if(this.model.phase == 1 && land.color == this.model.currentColor()){
+            var a = this.model.availableTroops(land)
+            if(a>0){
+                this.ctx.font = "14px Courier"
+                this.ctx.textAlign = "center"
+                this.ctx.fillStyle = "#ff0"
+                var sx = this.screen.x + this.rw * x
+                var sy = this.screen.y + this.rh * y
+                this.ctx.fillText("+"+this.model.availableTroops(land),sx+20,sy-20)
+            }
+        }
+    }
+    pawnList(number){
+        return [
+            [0,0],
+            [1,1],
+            [2,0],
+            [1,-1],
+            [0,-2],
+            [-1,-1],
+            [-2,0],
+            [-1,1],
+            [0,2],
+            [-1,3],
+            [1,3],
+        ].slice(0,number)
+    }
+    drawField(f,whiteAlpha){
+        var x = this.screen.x + this.rw * f.x
+        var y = this.screen.y + this.rh * f.y
+        var color = f.land.color ? f.land.color : "#aaa"
+        this.ctx.fillStyle = color
+        this.ctx.fillRect(x,y,this.rw+1,this.rh+1)
+        if(whiteAlpha !== undefined){
+            this.ctx.fillStyle = "#fff"
+            this.ctx.globalAlpha = whiteAlpha
+            this.ctx.fillRect(x,y,this.rw+1,this.rh+1)
+            this.ctx.globalAlpha = 1.0
+        }
+        if(whiteAlpha !== undefined)
+            this.ctx.lineWidth = 2
+        var neighbours = this.model.getNeighbouringFields(f.x,f.y)
+        if(neighbours.left == null || neighbours.left.land != f.land)
+            this.drawLine(x,y,x,y+this.rh)
+        if(neighbours.top == null || neighbours.top.land != f.land)
+            this.drawLine(x,y,x+this.rw,y)
+        if(neighbours.right == null || neighbours.right.land != f.land)
+            this.drawLine(x+this.rw,y,x+this.rw,y+this.rh)
+        if(neighbours.bottom == null || neighbours.bottom.land != f.land)
+            this.drawLine(x,y+this.rh,x+this.rw,y+this.rh)
+        if(whiteAlpha !== undefined)
+            this.ctx.lineWidth = 1
+    }
+    drawPanel(){
+        var color = this.model.getColor(this.model.currentPlayer)
+        
+        this.ctx.fillStyle = color
+        this.ctx.strokeStyle = "#ddd"
+        this.ctx.lineWidth = 2
+        this.ctx.fillRect(this.panelSize.x,this.panelSize.y,this.panelSize.w,this.panelSize.h)
+        this.ctx.strokeRect(this.panelSize.x,this.panelSize.y,this.panelSize.w,this.panelSize.h)
+        
+        this.ctx.fillStyle = "#fff"
+        this.ctx.font = "16px Courier"
+        this.ctx.textAlign = "left"
+        
+        for(var i in this.buttons){
+            var button = this.buttons[i]
+            button.hide()
+        }
+        this.ctx.lineWidth = 1
+        
+        switch(this.model.phase){
+            case 0:
+                this.ctx.fillText("Zaznacz swój obszar, by",this.panelSize.x+15,this.panelSize.y+25)
+                this.ctx.fillText("zaatakować/przemieścić",this.panelSize.x+15,this.panelSize.y+40)
+                this.ctx.fillText("z niego sąsiednie tereny.",this.panelSize.x+15,this.panelSize.y+55)
+                
+                this.buttons[0].show()
+                this.buttons[0].draw()
+                
+                this.ctx.font = "14px Courier"
+                this.ctx.textAlign = "center"
+                this.ctx.fillText("Przenoś:",this.panelSize.x+this.panelSize.w-205,this.panelSize.y+20)
+                
+                this.buttons[1].show()
+                this.buttons[1].draw()
+                
+            break
+            case 1:
+                this.ctx.fillText("Zaznacz obszary, by umieścić ",this.panelSize.x+15,this.panelSize.y+25)
+                this.ctx.fillText("nowe oddziały.",this.panelSize.x+15,this.panelSize.y+40)
+                
+                this.ctx.fillText(`Pozostało ${this.model.remainingTroops()} oddziałów.`,this.panelSize.x+15,this.panelSize.y+55)
+                
+                this.buttons[0].show()
+                this.buttons[0].draw()
+                
+                this.buttons[2].show()
+                this.buttons[2].draw()
+            break
+            case 2:
+                this.ctx.fillText("Kliknij na pola, by",this.panelSize.x+15,this.panelSize.y+25)
+                this.ctx.fillText("umieścić pionki "+(this.model.checkersGame.team == 1?"(musi zostać 1)":0),this.panelSize.x+15,this.panelSize.y+40)
+                this.ctx.fillText(`Pozostało ${this.model.checkersGame.remainingPawns} pionków i ${this.model.checkersGame.remainingDams} damek.`,this.panelSize.x+15,this.panelSize.y+55)
+                
+                if(this.model.checkersGame.remainingPawns > 0 && this.model.checkersGame.remainingDams > 0){
+                    this.ctx.font = "14px Courier"
+                    this.ctx.textAlign = "center"
+                    this.ctx.fillText("Umieszczaj:",this.panelSize.x+this.panelSize.w-205,this.panelSize.y+20)
+                    this.buttons[1].show()
+                    this.buttons[1].draw()
+                }
+                switch(this.model.checkersGame.turn){
+                    case 0:
+                        if(this.model.checkersGame.canResign() || this.model.checkersGame.phase == 1){
+                            this.buttons[5].show()
+                            this.buttons[5].draw()
+                        } else {
+                            this.buttons[3].show()
+                            this.buttons[3].draw()
+                        }
+                    break
+                    case 1:
+                        if(this.model.checkersGame.phase == 0) {
+                            this.buttons[4].show()
+                            this.buttons[4].draw()
+                        } else {
+                            this.buttons[6].show()
+                            this.buttons[6].draw()
+                        }
+                    break
+                }
+                
+            break
+        }
+    }
+    darkerColor(color){
+        if(color == null){
+            return "#888"
+        }
+        return color.replace(/8/g,"6").replace(/a/g,"8").replace(/4/g,"3")
+    }
+    drawPawn(x,y,color,dam,moved,selected,size){
+        if(size === undefined)
+            size = 1
+        var height = dam == undefined || !dam ? 0 : 6
+        this.ctx.lineWidth = selected && this.model.priority == dam ? 2 : 1
+        this.ctx.strokeStyle = moved ? "#666" : "#fff"
+        this.ctx.fillStyle = color ? this.darkerColor(color) : "#888"
+        
+        this.ctx.beginPath()
+        this.ctx.moveTo(x+9*size,y-(2 + height)*size)
+        this.ctx.lineTo(x,y+(2 - height)*size)
+        this.ctx.lineTo(x-9*size,y-(2 + height)*size)
+        this.ctx.lineTo(x-9*size,y+4*size)
+        this.ctx.lineTo(x,y+8*size)
+        this.ctx.lineTo(x+9*size,y+4*size)
+        this.ctx.closePath()
+        this.ctx.fill()
+        this.ctx.stroke()
+        
+        this.ctx.beginPath()
+        this.ctx.moveTo(x,y-(6 + height)*size)
+        this.ctx.lineTo(x+9*size,y-(2 + height)*size)
+        this.ctx.lineTo(x,y+(2 - height)*size)
+        this.ctx.lineTo(x-9*size,y-(2 + height)*size)
+        this.ctx.closePath()
+        this.ctx.fill()
+        this.ctx.stroke()
+        
+        this.ctx.lineWidth = 1
+    }
+    drawCheckerBoard(){
+        this.ctx.lineWidth = 3
+        this.ctx.strokeStyle = "#642"
+        this.ctx.fillStyle = "#da5"
+        this.ctx.globalAlpha = 0.7
+        this.ctx.fillRect(
+            this.screen.x+this.screen.width*0.1,
+            this.screen.y+this.screen.height*0.1,
+            this.screen.width*0.8,
+            this.screen.height*0.8)
+        this.ctx.strokeRect(
+            this.screen.x+this.screen.width*0.1,
+            this.screen.y+this.screen.height*0.1,
+            this.screen.width*0.8,
+            this.screen.height*0.8)
+        this.ctx.lineWidth = 2
+        
+        var legal = this.model.checkersGame.legal()
+        
+        for(var i = 0;i<7;i++){
+            for(var j = 0;j<7;j++){
+                if((i+j)%2 == 0){
+                    var fi = (i+1)+""+(7-j)
+                    this.ctx.fillStyle = legal.indexOf(fi) > -1 || legal.indexOf("p"+fi) > -1 || legal.indexOf("d"+fi) > -1 
+                        ? "#ff8"
+                        : "#da5"
+                    this.ctx.fillRect(
+                        this.screen.x+this.screen.width*(this.lscr+this.wscr*i/7),
+                        this.screen.y+this.screen.height*(this.lscr+this.wscr*j/7),
+                        this.screen.width*this.wscr/7,
+                        this.screen.height*this.wscr/7)
+                this.ctx.strokeStyle = "#642"
+                this.ctx.strokeRect(
+                    this.screen.x+this.screen.width*(this.lscr+this.wscr*i/7),
+                    this.screen.y+this.screen.height*(this.lscr+this.wscr*j/7),
+                    this.screen.width*this.wscr/7,
+                    this.screen.height*this.wscr/7)
+                    if(fi in this.model.checkersGame.board){
+                        var code = this.model.checkersGame.board[fi]
+                        this.model.checkersGame.board[fi]
+                        var c1 = this.model.checkersGame.land1color,
+                            c2 = this.model.checkersGame.land2color
+                        var px = this.screen.x+this.screen.width*(this.lscr+this.wscr*((i+0.5)/7))
+                        var py = this.screen.y+this.screen.height*(this.lscr+this.wscr*((j+0.5)/7))
+                        
+                        switch(code){
+                            case 0:
+                                this.drawPawn(px,py,c1,false,false,false,2.5)
+                            break
+                            case 1:
+                                this.drawPawn(px,py,c2,false,false,false,2.5)
+                            break
+                            case 2:
+                                this.drawPawn(px,py,c1,true,false,false,2.5)
+                            break
+                            case 3:
+                                this.drawPawn(px,py,c2,true,false,false,2.5)
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        this.ctx.lineWidth = 1
+        this.ctx.globalAlpha = 1
+    }
+    drawLine(x1,y1,x2,y2){
+        this.ctx.beginPath()
+        this.ctx.moveTo(x1,y1)
+        this.ctx.lineTo(x2,y2)
+        this.ctx.stroke()
+    }
+    clickEvent(e){
+        var rect = this.canvas.getBoundingClientRect()
+        var x = e.clientX - rect.left
+        var y = e.clientY - rect.top
+        
+        if(this.clickRect(x,y)){
+            this.draw()
+        }
+    }
+    clickRect(x,y){
+        if(this.lock)
+            return false
+        if(this.model.phase == 2 &&
+            x>this.screen.x+this.screen.width*(this.lscr) &&
+            y>this.screen.y+this.screen.height*(this.lscr) &&
+            x<this.screen.x+this.screen.width*(this.lscr+this.wscr) &&
+            y<this.screen.y+this.screen.height*(this.lscr+this.wscr) 
+            ){
+            
+            if(!this.isPlayerMove())
+                return false
+            
+            var bx = 1+Math.floor((x-this.screen.x-this.screen.width*this.lscr)/this.screen.width/this.wscr*7)
+            var by = 7-Math.floor((y-this.screen.y-this.screen.height*this.lscr)/this.screen.height/this.wscr*7)
+
+            var choice = this.model.checkersGame.phase != 0 ? "" : this.model.checkersGame.remainingPawns == 0 || this.model.priority == 1 && this.model.checkersGame.remainingDams > 0 ? "d" : "p"
+            
+            //var phasebefore = this.model.checkersGame.phase
+            
+            return this.tryMoveOnCheckersGame(choice+bx+by)
+        } else if(x>this.screen.x && y>this.screen.y && x<this.screen.x+this.screen.width && y<this.screen.y+this.screen.height){
+            var fx = Math.floor((x-this.screen.x)*this.model.boardwidth/this.screen.width)
+            var fy = Math.floor((y-this.screen.y)*this.model.boardheight/this.screen.height)
+            if(this.model.board[fx][fy].land != null){
+                var land = this.model.board[fx][fy].land
+                var sland = this.model.selectedLand
+                if(this.clickLand(land)){
+                    var ht = this.landMapping[land.id].hitTest(x,y)
+                    if(ht !== undefined && sland === null && this.model.phase == 0){
+                        this.changePriority(ht)
+                    }
+                    return true
+                }
+            }
+        }
+        for(var i in this.buttons){
+            var button = this.buttons[i]
+            if(button.tryHit(x,y))
+                return true
+        }
+        return false
+    }
+    tryMoveOnCheckersGame(move){
+        var moved = this.model.checkersGame.move(move)
+        if(moved && this.model.checkersGame !== null){
+            var legal = this.model.checkersGame.legal().filter(x=>x!=="pass" || this.model.checkersGame.phase !== 1 || this.model.checkersGame.gameEnded())
+            if(legal.length == 1){
+                this.automove()
+                return moved
+            }
+        }
+        return moved
+    }
+    automove(){
+        if(this.model.checkersGame !== null){
+            var legal = this.model.checkersGame.legal().filter(x=>x!=="pass" || this.model.checkersGame.phase !== 1 || this.model.checkersGame.gameEnded())
+            
+            var th = this
+            if(legal.length == 1){
+                this.lock = true
+                setTimeout(()=>{th.lock = false;th.model.checkersGame.move(legal[0]);th.draw();th.automove()}, 200)
+            }
+        }
+    }
+    changePriority(newPriority){
+        if(!this.isPlayerMove())
+            return
+        this.model.changePriority(newPriority)
+        switch(this.model.priority){
+            case 0:
+                this.buttons[1].text = "Pionki"
+            break
+            case 1:
+                this.buttons[1].text = "Damki"
+            break
+        }
+    }
+    clickLand(land){
+        if(this.isPlayerMove())
+            return this.model.clickLand(land)
+        else
+            return false
+    }
+}
+class Button {
+    constructor(gameView,text,x,y,w,h,action){
+        this.gameView = gameView
+        this.showed = false
+        this.ctx = this.gameView.ctx
+        this.text = text
+        this.x = x
+        this.y = y
+        this.w = w
+        this.h = h
+        this.action = action
+    }
+    show(){
+        this.showed = true
+    }
+    hide(){
+        this.showed = false
+    }
+    draw(){
+        if(this.showed){
+            this.ctx.fillStyle = this.gameView.model.getColor(this.gameView.model.currentPlayer)
+            this.ctx.strokeStyle = "#ddd"
+            this.ctx.lineWidth = 2
+            
+            this.ctx.fillRect(this.x,this.y,this.w,this.h)
+            this.ctx.strokeRect(this.x,this.y,this.w,this.h)
+            this.ctx.fillStyle = "#ddd"
+            this.ctx.font = "18px Courier"
+            this.ctx.textAlign = "center"
+            this.ctx.fillText(this.text,this.x+this.w/2,this.y+this.h/2+4)
+        }
+    }
+    tryHit(x,y){
+        if(this.showed){
+            if(x>this.x && y>this.y && x<this.x+this.w && y<this.y+this.h){
+                this.action()
+                return true
+            }
+        }
+        return false
+    }
+}
+class CheckersGame{
+    constructor(parent){
+        this.parent = parent
+        this.board = {} //dictionary, key is string "xy", where x - column, y - row, values: 0 - attacker pawn, 1 - defender pawn, 2 - attacker dam, 3 - defender dam
+        this.turn = 0   //0 - attacker, 1 - defender
+        this.phase = 0  //0 - stawianie, 1 - granie B)
+        this.selected = null
+        this.beating = null
+        this.move()
+        this.simulated = false
+    }
+    addLands(land1,land2){
+        this.land1 = land1
+        this.land2 = land2
+        
+        this.land1pawns = land1.pawns
+        this.land1dams = land1.dams
+        this.land2pawns = land2.pawns
+        this.land2dams = land2.dams
+        this.land1movedPawns = land1.movedPawns
+        this.land1movedDams = land1.movedDams
+        this.land2movedPawns = land2.movedPawns
+        this.land2movedDams = land2.movedDams
+        this.land1color = land1.color
+        this.land2color = land2.color
+        this.placedPawnsPlayer1 = 0
+        this.placedDamsPlayer1 = 0
+        this.placedPawnsPlayer2 = 0
+        this.placedDamsPlayer2 = 0
+        this.remainingDams = land1.dams - land1.movedDams
+        this.remainingPawns = land1.pawns - land1.movedPawns
+    }
+    simulateGame(player1pawns,player2pawns,player1dams,player2dams){
+        this.simulated = true
+    
+        this.land1pawns = player1pawns+1
+        this.land1dams = player1dams+1
+        this.land2pawns = player2pawns+1
+        this.land2dams = player2dams+1
+        this.land1movedPawns = 1
+        this.land1movedDams = 1
+        this.land2movedPawns = 1
+        this.land2movedDams = 1
+        this.land1color = "#a00"
+        this.land2color = "#444"
+        this.placedPawnsPlayer1 = 0
+        this.placedDamsPlayer1 = 0
+        this.placedPawnsPlayer2 = 0
+        this.placedDamsPlayer2 = 0
+        this.remainingDams = this.land1dams - this.land1movedDams
+        this.remainingPawns = this.land1pawns - this.land1movedPawns
+    }
+    canResign(){
+        return this.phase == 0 && this.turn == 0 && Object.values(this.board).filter(x=>x==0 || x==2).length == 0
+    }
+    getMoves(){
+        var moves = this.getBeats()
+        if(moves.length > 0){
+            return moves
+        }
+        for(var key in this.board){
+            var x = +key[0], y = +key[1]
+            var code = this.board[key]
+            var movable = false
+            if(this.turn == code % 2)
+                switch(code){
+                    case 0:
+                    case 1:
+                        var directions = [[-1,1-2*code],[1,1-2*code]]
+                        for(var j in directions){
+                            var [dx,dy] = directions[j]
+                            var i = 1
+                            if(this.possibleMove(x+i*dx,y+i*dy)){
+                                moves.push({from: key, to:(x+i*dx)+""+(y+i*dy)})
+                                movable = true
+                            }
+                        }
+                    break
+                    case 2:
+                    case 3:
+                        var directions = [[-1,-1],[-1,1],[1,-1],[1,1]]
+                        for(var j in directions){
+                            var [dx,dy] = directions[j]
+                            var i = 1
+                            while(this.possibleMove(x+i*dx,y+i*dy)){
+                                moves.push({from: key, to:(x+i*dx)+""+(y+i*dy)})
+                                movable = true
+                                i++
+                            }
+                        }
+                    break
+                }
+            
+            if(this.selected != null && movable){
+                moves.push({from: key, to: key})
+            }
+        }
+        if(Array.from(new Set(moves.map(x=>x.from))).length == 1){
+            return moves.filter(x=>x.from != x.to)
+        }
+        return moves
+    }
+    
+    possibleMove(x,y){
+        return (x>=1 && x<=7 && y>=1 && y<=7) && !(x+""+y in this.board)
+    }
+    
+    enemy(x,y){
+        return this.board[x+""+y]%2 == 1-this.turn
+    }
+    
+    getBeats(){
+        var beats = []
+        
+        for(var key in this.board){
+            if(this.beating != null && key != this.beating)
+                continue
+            var x = +key[0], y = +key[1]
+            var code = this.board[key]
+            var movable = false
+            var directions = [[-1,-1],[-1,1],[1,-1],[1,1]]
+            if(this.turn == code % 2)
+                switch(code){
+                    case 0:
+                    case 1:
+                        for(var j in directions){
+                            var [dx,dy] = directions[j]
+                            if(this.possibleMove(x+dx*2,y+dy*2) && this.enemy(x+dx,y+dy)){
+                                beats.push({from: key, to:(x+dx*2)+""+(y+dy*2),beats: (x+dx)+""+(y+dy)})
+                                movable = true
+                            }
+                        }
+                    break
+                    case 2:
+                    case 3:
+                        var directions = [[-1,-1],[-1,1],[1,-1],[1,1]]
+                        for(var j in directions){
+                            var [dx,dy] = directions[j]
+                            var i = 0
+                            while(i == 0 || this.possibleMove(x+i*dx,y+i*dy)){
+                                if(this.possibleMove(x+(i+2)*dx,y+(i+2)*dy) && this.enemy(x+(i+1)*dx,y+(i+1)*dy)){
+                                    var enemie = (x+(i+1)*dx)+""+(y+(i+1)*dy)
+                                    i+=2
+                                    while(this.possibleMove(x+i*dx,y+i*dy)){
+                                        beats.push({from: key, to:(x+i*dx)+""+(y+i*dy), beats: enemie})
+                                        i++
+                                    }
+                                    movable = true
+                                    break
+                                }
+                                i++
+                            }
+                        }
+                    break
+                }
+            
+            if(this.selected != null && movable){
+                beats.push({from: key, to: key})
+            }
+        }
+        if(Array.from(new Set(beats.map(x=>x.from))).length == 1){
+            return beats.filter(x=>x.from != x.to)
+        }
+        return beats
+    }
+    gameEnded(){
+        return Object.values(this.board).filter(x=>x==0 || x==2).length == 0 || Object.values(this.board).filter(x=>x==1 || x==3).length == 0
+    }
+    move(move){
+        var legal = this.legal()
+        if(legal.indexOf(move) == -1)
+            return false
+        
+        switch(this.phase){
+            case 0:
+                switch(this.turn){
+                    case 0:
+                        if(move == "pass"){
+                            if(this.canResign()){
+                                this.parent.endGame()
+                                return true
+                            } else {
+                                this.changeTurn(1)
+                                this.remainingDams = this.land2dams - this.land2movedDams
+                                this.remainingPawns = this.land2pawns - this.land2movedPawns
+                            }
+                        } else {
+                            var field = move.substr(1,2)
+                            switch(move[0]){
+                                case "p":
+                                    this.board[field] = 0
+                                    this.remainingPawns--
+                                break
+                                case "d":
+                                    this.board[field] = 2
+                                    this.remainingDams--
+                                break
+                            }
+                        }
+                    break
+                    case 1:
+                        if(move == "pass"){
+                            this.changeTurn(0)
+                            this.phase = 1
+                            this.placePiecesRandomly()
+                            this.placedPawnsPlayer1 = Object.values(this.board).filter(x=>x==0).length
+                            this.placedPawnsPlayer2 = Object.values(this.board).filter(x=>x==1).length
+                            this.placedDamsPlayer1 = Object.values(this.board).filter(x=>x==2).length
+                            this.placedDamsPlayer2 = Object.values(this.board).filter(x=>x==3).length
+                        } else {
+                            var field = move.substr(1,2)
+                            switch(move[0]){
+                                case "p":
+                                    this.board[field] = 1
+                                    this.remainingPawns--
+                                break
+                                case "d":
+                                    this.board[field] = 3
+                                    this.remainingDams--
+                                break
+                            }
+                        }
+                    break
+                }
+                
+            break
+            case 1:
+                if(move == "pass"){
+                    this.parent.endGame()
+                    return true
+                }
+                if(this.selected == null){
+                    this.selected = move
+                } else {
+                    var moves = this.getMoves()
+                    for(var i in moves){
+                        var getmove = moves[i]
+                        if(getmove.from != getmove.to && getmove.from == this.selected && getmove.to == move){
+                            this.board[move] = this.board[this.selected]
+                            delete this.board[this.selected]
+                            if(getmove.beats !== undefined){
+                                delete this.board[getmove.beats]
+                                this.beating = move
+                            }
+                            if(getmove.beats === undefined || this.getBeats().filter(x=>x.from == move).length == 0){
+                                if(this.board[move] < 2 && move[1] == 7-6*this.turn)
+                                    this.board[move]+=2
+                                this.changeTurn(1-this.turn)
+                                this.beating = null
+                            }
+                        }
+                    }
+                    this.selected = null
+                }
+            break
+        }
+        var legal = this.legal()
+        if(legal.length == 0){
+            this.parent.endGame()
+            return true
+        }
+        return true
+    }
+    placePiecesRandomly(){
+        
+    }
+    changeTurn(turn){
+        this.turn = turn
+        switch(turn){
+            case 0:
+                this.parent.currentPlayer = this.parent.playerFromColor(this.land1color)
+            break
+            case 1:
+                this.parent.currentPlayer = this.parent.playerFromColor(this.land2color)
+            break
+        }
+    }
+    legal(){
+        switch(this.phase){
+            case 0:
+                var available
+                switch(this.turn){
+                    case 0:
+                        available = ["11","31","51","71","22","42","62","13","33","53","73"]
+                    break
+                    case 1:
+                        available = ["17","37","57","77","26","46","66","15","35","55","75"]
+                    break
+                }
+                available = available.filter(x => Object.keys(this.board).indexOf(x) == -1)
+                
+                var ret = this.turn == 0 || this.remainingPawns+this.remainingDams==0 ? ["pass"] : []
+                if(this.remainingPawns+this.remainingDams>1 || this.turn == 1 || this.land1movedPawns + this.land1movedDams > 0){
+                    if(this.remainingPawns > 0)
+                        ret = ret.concat(available.map(x=>"p"+x))
+                    if(this.remainingDams > 0)
+                        ret = ret.concat(available.map(x=>"d"+x))
+                }
+                return ret
+            break
+            case 1:
+                var pass = this.turn == 0 || Object.values(this.board).filter(x=>x==0 || x==2).length == 0 ? ["pass"] : []
+                if(this.selected == null){
+                    var possibleMoves = this.getMoves().map(x=>x.from)
+                    return Array.from(new Set(possibleMoves)).concat(pass)
+                } else {
+                    var possibleMoves = this.getMoves().filter(x=>x.from == this.selected).map(x=>x.to)
+                    return Array.from(new Set(possibleMoves)).concat(pass)
+                }
+                return pass
+            break
+        }
+    }
+    getCurrentState(){
+        return {
+            board: Object.assign({}, this.board),  //copy
+            turn: this.turn,
+            phase: this.phase,
+            selected : this.selected,
+            beating : this.beating,
+            land1pawns: this.land1pawns,
+            land1dams: this.land1dams,
+            land2pawns: this.land2pawns,
+            land2dams: this.land2dams,
+            land1movedPawns: this.land1movedPawns,
+            land1movedDams: this.land1movedDams,
+            land2movedPawns: this.land2movedPawns,
+            land2movedDams: this.land2movedDams,
+            land1color: this.land1color,
+            land2color: this.land2color,
+            placedPawnsPlayer1: this.placedPawnsPlayer1,
+            placedDamsPlayer1: this.placedPawnsPlayer2,
+            placedPawnsPlayer2: this.placedDamsPlayer1,
+            placedDamsPlayer2: this.placedDamsPlayer2,
+            remainingDams: this.remainingDams,
+            remainingPawns: this.remainingPawns,
+            
+        }
+    }
+    getStateCode(){
+        var keys = Object.keys(this.board)
+        return this.phase+"#"+this.turn+"#"+this.remainingPawns+"#"+this.remainingDams+"#"+keys.map(x=>x+""+this.board[x]).join(";")
+    }
+    setCurrentState(state){
+        this.board = Object.assign({}, state.board),
+        this.turn = state.turn,
+        this.phase = state.phase,
+        this.selected  = state.selected,
+        this.beating  = state.beating,
+        this.land1pawns = state.land1pawns,
+        this.land1dams = state.land1dams,
+        this.land2pawns = state.land2pawns,
+        this.land2dams = state.land2dams,
+        this.land1movedPawns = state.land1movedPawns,
+        this.land1movedDams = state.land1movedDams,
+        this.land2movedPawns = state.land2movedPawns,
+        this.land2movedDams = state.land2movedDams,
+        this.land1color = state.land1color,
+        this.land2color = state.land2color,
+        this.placedPawnsPlayer1 = state.placedPawnsPlayer1,
+        this.placedDamsPlayer1 = state.placedPawnsPlayer2,
+        this.placedPawnsPlayer2 = state.placedDamsPlayer1,
+        this.placedDamsPlayer2 = state.placedDamsPlayer2,
+        this.remainingDams = state.remainingDams,
+        this.remainingPawns = state.remainingPawns
+    }
+    placedValues(){
+        switch(this.turn){
+            case 0:
+                return Object.values(this.board).filter(x=>x==0).length + Object.values(this.board).filter(x=>x==2).length * 3
+            break
+            case 1:
+                return Object.values(this.board).filter(x=>x==1).length + Object.values(this.board).filter(x=>x==3).length * 3
+            break
+        }
+    }
+    opponentValue(){
+        switch(this.turn){
+            case 0:
+                return this.land2.pawns + this.land2.dams * 3
+            break
+            case 1:
+                return this.land1.pawns + this.land1.dams * 3
+            break
+        }
+    }
+}
+class Ai{
+    constructor(gameview){
+        this.gameview = gameview
+        this.live()
+        this.statesInPast = {}
+    }
+    say(message){
+        var iSpeakFor = this.gameview.isAiMove() ? "BOT for player "+(this.gameview.model.currentPlayer + 1) + ": " : "BOT: "
+        console.log(iSpeakFor + message)
+    }
+    live(){
+        this.alive = true
+        this.regrouping = []
+        this.run()
+    }
+    run(){
+        this.think()
+        var th = this
+        setTimeout(()=>{ 
+            if(this.alive) { 
+                th.run() 
+            } 
+        }, 200)
+    }
+    think(){
+        if(this.gameview.isAiMove()){
+            var legal = this.gameview.model.legal()
+            if(legal.length > 0){
+                if(this.gameview.model.phase == 2){
+                    this.playCheckersGame()
+                    
+                    this.phase1set = false
+                    return 
+                } else {
+                    this.statesInPast = {}
+                    if(this.regrouping.length>0){
+                        this.playRegrouping()
+                        this.gameview.draw()
+                    } else if(this.gameview.model.phase == 1){
+                        /*
+                        if(!this.phase1set){
+                            this.bordering = this.gameview.model.lands.filter(x=>x.neighbours.filter(y=>y.color != x.color).length > 0)
+                            
+                            this.phase1set = true
+                        } else {
+                            var legalbordering = null
+                            var fil = legal.filter(x=>x.move!="pass")
+                            if(fil.length>0 && false){
+                                var rand = fil[Math.floor(Math.random()*fil.length)]
+                                this.gameview.model.act(rand.move)
+                            } else {
+                                this.gameview.model.act("pass")
+                            }
+                            this.gameview.draw()
+                        }*/
+                        this.gameview.model.act("pass")
+                        this.gameview.draw()
+                    } else {
+                        var legals = legal.filter(x=>x.move!="pass" && x.type != "move" && x.type != "deselect" && (this.gameview.model.phase == 2 || x.move.neighbours.filter(y=>y.color != x.move.color).length>0 || x.type == "attack" && evalAttack(x.move.pawns - x.move.movedPawns,x.move.dams - x.move.movedDams)-2 <= evalDefence(this.gameview.model.selectedLand.pawns, this.gameview.model.selectedLand.dams)) &&
+                                (this.gameview.model.phase != 0 || ( x.type == "select" && x.move.notOnlyOne() && x.move.availableNumber()>1) || x.type == "attack" && evalAttack(x.move.pawns - x.move.movedPawns,x.move.dams - x.move.movedDams)-2 <= evalDefence(this.gameview.model.selectedLand.pawns, this.gameview.model.selectedLand.dams)) && 
+                                    (this.gameview.model.phase != 2 || x.move != this.gameview.model.checkersGame.selected))
+                        if(legals.length > 0){
+                            var rand = legals[Math.floor(Math.random()*legals.length)]
+                            this.gameview.model.act(rand.move)
+                            this.gameview.draw()
+                        } else if(legal.length > 0 && this.gameview.model.lands.filter(x=>x.color != this.gameview.model.currentColor()).length > 0){
+                            if(this.regrouping.length == 0){
+                                this.regrouping = []
+                                this.planRegrouping()
+                            }
+                        }
+                    }
+                }
+            }
+            this.say(`Playing for player ${this.gameview.model.currentPlayer+1}. ;/`)
+        } else {
+            this.say("It's not my turn yet. ;/")
+        }
+    }
+    playRegrouping(){
+        var regrouping = this.regrouping[0]
+        switch(regrouping.type){
+            case "select":
+            case "deselect":
+            case "move":
+            case "pass":
+            case "place":
+                var did = this.gameview.model.act(regrouping.move)
+                console.log(did)
+            break
+            case "priority":
+                this.gameview.model.changePriority(regrouping.move)
+            break
+        }
+        this.regrouping = this.regrouping.slice(1)
+        
+    }
+    planRegrouping(){
+        var checked = []
+        var groups = []
+        var lands = this.gameview.model.lands
+        for(var i in lands){
+            var land = lands[i]
+            if(land.color != this.gameview.model.currentColor() || checked.indexOf(land) > -1){
+                continue
+            }
+            var connected = land.getConnected(true)
+            groups.push(connected)
+            checked = Array.from(new Set(checked.concat(connected)))
+        }
+        this.regrouping = []
+        for(var i in groups){
+            var group = groups[i]
+            
+            var mfgorb = new MaximumFlowGraphOnRiskBoard()
+            mfgorb.addLandsFromRiskBoard(group, group.filter(x=>x.neighbours.filter(y=>y.color != x.color).length > 0))
+            for(var i in mfgorb.points){
+                var point = mfgorb.points[i]
+                if(point.land.id == 1 || Object.values(point.edges).filter(x=>x.point != point).map(x=>x.pawn_flow+x.dam_flow).reduce((x,y)=>x+y,0)==0)
+                    continue
+                this.regrouping.push({type: "select", move:point.land})
+                for(var j in point.edges){
+                    var edge = point.edges[j]
+                    if(edge.point != point && edge.pawn_flow+edge.dam_flow > 0){
+                        this.regrouping.push({type: "priority", move:0})
+                        for(var k = 0;k<edge.pawn_flow;k++){
+                            this.regrouping.push({type: "move", move:edge.point.land})
+                        }
+                        this.regrouping.push({type: "priority", move:1})
+                        for(var k = 0;k<edge.dam_flow;k++){
+                            this.regrouping.push({type: "move", move:edge.point.land})
+                        }
+                    }
+                }
+                this.regrouping.push({type: "deselect", move:point.land})
+            }
+            this.regrouping.push({type: "pass", move:"pass"})
+            
+            var dummy = mfgorb.dummyPoint
+            for(var j in point.edges){
+                var edge = point.edges[j]
+                if(edge.point != point && edge.pawn_flow+edge.dam_flow > 0){
+                    for(var k = 0;k<edge.pawn_flow;k++){
+                        this.regrouping.push({type: "place", move:edge.point.land})
+                    }
+                }
+            }
+            this.regrouping.push({type: "pass", move:"pass"})
+            
+        }
+    }
+    playCheckersGame(){
+        this.checkedStates = {}
+        var legal = this.gameview.model.checkersGame.legal()
+        var state = this.gameview.model.checkersGame.getCurrentState()
+        var simulated = new CheckersGame(this.gameview.getTotalMock())
+        simulated.setCurrentState(state)
+        var minmax = this.minmax(simulated,8)
+        var code = this.gameview.model.checkersGame.getStateCode()
+        
+        if(legal.indexOf("pass")>-1 && (minmax.move == null || this.statesInPast[code] > 1 || this.gameview.model.checkersGame.phase == 0 && this.gameview.model.checkersGame.opponentValue() <= this.gameview.model.checkersGame.placedValues()-2)){
+            this.gameview.model.checkersGame.move("pass")
+        } else {
+            this.gameview.model.checkersGame.move(minmax.move)
+            if(code in this.statesInPast){
+                this.statesInPast[code]++
+            } else {
+                this.statesInPast[code] = 1
+            }
+        }
+        this.gameview.draw()
+    }
+    evaluate(simulated){
+        var countedBoard = Object.values(simulated.board)
+        var damValue = 3
+        var legals = simulated.legal().filter(x=>x!="pass")
+        if(legals.length==0){
+            var max_possible = 25*25*2+1
+            switch(simulated.turn){
+                case 0:
+                    return -max_possible*(countedBoard.filter(x=>x==0 || x==1).length + countedBoard.filter(x=>x==2 || x==3).length)
+                break
+                case 1:
+                    return max_possible*(countedBoard.filter(x=>x==0 || x==1).length + countedBoard.filter(x=>x==2 || x==3).length)
+                break
+            }
+        }
+        return (countedBoard.filter(x=>x==0).length + countedBoard.filter(x=>x==2).length * damValue - countedBoard.filter(x=>x==1).length - countedBoard.filter(x=>x==3).length * damValue)
+    }
+    minmax(simulated,depth){
+        var max_possible = 25*25*2+1
+        var legals = simulated.legal().filter(x=>x!="pass")
+        if(simulated.phase == 0 && legals.length > 4){
+            legals = [
+                legals[Math.floor(Math.random()*legals.length)],
+                legals[Math.floor(Math.random()*legals.length)],
+                legals[Math.floor(Math.random()*legals.length)],
+            ]
+        }
+        if(legals.length == 0){
+            return {move:null, score:-this.evaluate(simulated)}
+        } else if(depth == 0){
+            return {move:null, score:-this.evaluate(simulated)}
+        } else {
+            var saved = simulated.getCurrentState()
+            var bestmove = legals[0]
+            var turn_factor = 2*simulated.turn-1
+            var bestscore = null
+            var beating = simulated.beating
+            for(var i in legals){
+                var move = legals[i]
+                if(move in simulated.board && simulated.selected != null)
+                    continue
+                simulated.move(move)
+                var code = simulated.getStateCode()
+                if(!(code in this.checkedStates)){
+                    var result = this.minmax(simulated,depth - (beating || simulated.selected == null ? 0 : 1))
+                    this.checkedStates[code] = result
+                } else {
+                    result = this.checkedStates[code]
+                }
+                if(bestscore == null || simulated.turn == 0 && result.score > bestscore || simulated.turn == 1 && result.score < bestscore){
+                    bestscore = result.score
+                    bestmove = move
+                }
+                simulated.setCurrentState(saved)
+            }
+            simulated.setCurrentState(saved)
+            return {move: bestmove, score: bestscore}
+        }
+    }
+}
+function init(){
+    var initialSetting = {
+        lands: 20,
+        players: [
+            "player",
+            "ai",
+            "ai",
+            "ai",
+        ]
+    }
+    var gameview = new GameView(document.getElementById("canv"),initialSetting)
+    var ai = new Ai(gameview)
+    gameview.draw()
+    
+    
+}
+
+</script>
+</head>
+<body>
+<canvas id="canv" width="600" height="600"></canvas>
+<script>
+    init();
+</script>
+</body>
+</html>
+
+
