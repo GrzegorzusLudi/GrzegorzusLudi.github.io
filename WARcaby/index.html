@@ -25,7 +25,7 @@ class MaximumFlowGraphOnRiskBoard{
         return point
     }
     newEdge(point1, point2, capacity){
-        point1.edges[point2.land.id] = {point: point2, pawn_flow:0, dam_flow:0, capacity:capacity}
+        point1.edges[point2.land.id] = {point: point2, pawn_flow:0, dam_flow:0}
     }
     addPiecesToLogic(point,edge,pawns,dams){
         var point2 = edge.point
@@ -142,7 +142,7 @@ class MaximumFlowGraphOnRiskBoard{
         }*/
     }
     addLandsFromRiskBoard(lands, destinationLands){
-        var additionalPoints = lands.length
+        var additionalPoints = lands.length+lands[0].model.availableTroops(lands[0])
         this.dummyLand.pawns = additionalPoints
         for(var i in lands){
             var land = lands[i]
@@ -159,10 +159,9 @@ class MaximumFlowGraphOnRiskBoard{
             var point2 = this.startpoints[j]
             for(var i in this.startpoints){
                 var point1 = this.startpoints[i]
-                var capacity = MAX_PIECES
-                this.newEdge(point1, point2, capacity)
+                this.newEdge(point1, point2)
             }
-            this.newEdge(this.dummyPoint, point2, capacity)
+            this.newEdge(this.dummyPoint, point2)
         }
         this.newEdge(this.dummyPoint, this.dummyPoint, 0)
         this.calculateWeights()
@@ -172,11 +171,11 @@ function evalAttack(pawns, dams){
     if(dams == 0 && pawns == 0) //niemorzliwe
         return 0
     if(pawns == 0)
-        return 3 * (dams - 1)
-    return 3 * dams + (pawns - 1)
+        return Math.min(MAX_PIECES, 3 * (dams - 1))
+    return Math.min(MAX_PIECES, 3 * dams + (pawns - 1))
 }
 function evalDefence(pawns, dams){
-    return 3 * dams + pawns
+    return Math.min(MAX_PIECES, 3 * dams + pawns)
 }
 class DummyLand{
     constructor(){
@@ -1173,7 +1172,7 @@ class GameView{
             var th = this
             if(legal.length == 1){
                 this.lock = true
-                setTimeout(()=>{th.lock = false;th.model.checkersGame.move(legal[0]);th.draw();th.automove()}, 200)
+                setTimeout(()=>{th.lock = false;th.model.checkersGame.move(legal[0]);th.draw();th.automove()}, 50)
             }
         }
     }
@@ -1648,7 +1647,7 @@ class Ai{
             if(this.alive) { 
                 th.run() 
             } 
-        }, 200)
+        }, 50)
     }
     think(){
         if(this.gameview.isAiMove()){
@@ -1684,8 +1683,8 @@ class Ai{
                         this.gameview.model.act("pass")
                         this.gameview.draw()
                     } else {
-                        var legals = legal.filter(x=>x.move!="pass" && x.type != "move" && x.type != "deselect" && (this.gameview.model.phase == 2 || x.move.neighbours.filter(y=>y.color != x.move.color).length>0 || x.type == "attack" && evalAttack(x.move.pawns - x.move.movedPawns,x.move.dams - x.move.movedDams)-2 <= evalDefence(this.gameview.model.selectedLand.pawns, this.gameview.model.selectedLand.dams)) &&
-                                (this.gameview.model.phase != 0 || ( x.type == "select" && x.move.notOnlyOne() && x.move.availableNumber()>1) || x.type == "attack" && evalAttack(x.move.pawns - x.move.movedPawns,x.move.dams - x.move.movedDams)-2 <= evalDefence(this.gameview.model.selectedLand.pawns, this.gameview.model.selectedLand.dams)) && 
+                        var legals = legal.filter(x=>x.move!="pass" && x.type != "move" && x.type != "deselect" && (this.gameview.model.phase == 2 || x.move.neighbours.filter(y=>y.color != x.move.color).length>0 || x.type == "attack" && evalAttack(x.move.pawns - x.move.movedPawns,x.move.dams - x.move.movedDams)-3 <= evalDefence(this.gameview.model.selectedLand.pawns, this.gameview.model.selectedLand.dams)) &&
+                                (this.gameview.model.phase != 0 || ( x.type == "select" && x.move.notOnlyOne() && x.move.availableNumber()>1) || x.type == "attack" && evalAttack(x.move.pawns - x.move.movedPawns,x.move.dams - x.move.movedDams)-3 <= evalDefence(this.gameview.model.selectedLand.pawns, this.gameview.model.selectedLand.dams)) && 
                                     (this.gameview.model.phase != 2 || x.move != this.gameview.model.checkersGame.selected))
                         if(legals.length > 0){
                             var rand = legals[Math.floor(Math.random()*legals.length)]
@@ -1714,7 +1713,6 @@ class Ai{
             case "pass":
             case "place":
                 var did = this.gameview.model.act(regrouping.move)
-                console.log(did)
             break
             case "priority":
                 this.gameview.model.changePriority(regrouping.move)
@@ -1783,10 +1781,17 @@ class Ai{
         var state = this.gameview.model.checkersGame.getCurrentState()
         var simulated = new CheckersGame(this.gameview.getTotalMock())
         simulated.setCurrentState(state)
-        var minmax = this.minmax(simulated,8)
+		var evaluated = this.evaluate(this.gameview.model.checkersGame)
         var code = this.gameview.model.checkersGame.getStateCode()
         
-        if(legal.indexOf("pass")>-1 && (minmax.move == null || this.statesInPast[code] > 1 || this.gameview.model.checkersGame.phase == 0 && this.gameview.model.checkersGame.opponentValue() <= this.gameview.model.checkersGame.placedValues()-2)){
+		this.bestValuesAtDepth1 = {}
+		this.bestValuesAtDepth2 = {}
+		var minmax
+		if(legal.filter(x=>x!="pass").length == 1)
+			minmax = {move: legal.filter(x=>x!="pass")[0], score: null}
+		else
+			minmax = this.minmax(simulated,8)
+        if(legal.indexOf("pass")>-1 && (minmax.move == null || /*(minmax.score != null &&evaluated==minmax.score && this.gameview.model.checkersGame.phase != 0) || */this.statesInPast[code] > 1 || this.gameview.model.checkersGame.phase == 0 && this.gameview.model.checkersGame.opponentValue() <= this.gameview.model.checkersGame.placedValues()-2)){
             this.gameview.model.checkersGame.move("pass")
         } else {
             this.gameview.model.checkersGame.move(minmax.move)
@@ -1800,57 +1805,111 @@ class Ai{
     }
     evaluate(simulated){
         var countedBoard = Object.values(simulated.board)
-        var damValue = 3
+		var sideDamValue = 2;
+		var kys = Object.keys(simulated.board)
+		var onSides = kys.filter(x=>x.length == 2 && (x[0] == '1' || x[0] == '7' || x[1] == '1' || x[1] == '7')).map(x=>simulated.board[x])
+		
+        var penultimal1 = ["62","64","66"].map(x=>simulated.board[x]).filter(x=>x==0).length
+        var penpenultimal1 = ["51","53","55","57"].map(x=>simulated.board[x]).filter(x=>x==0).length
+        var penultimal2 = ["22","24","26"].map(x=>simulated.board[x]).filter(x=>x==1).length
+        var penpenultimal2 = ["31","33","35","37"].map(x=>simulated.board[x]).filter(x=>x==1).length
+		
+        var damValue = 5
+        var max_possible = (25*25*3+1)*(damValue+sideDamValue)
+		var cornerDamValue = max_possible;
+		var onCorners = []
+		var diagonal1 = ["11","22","33","44","55","66","77"]
+		var diagonal2 = ["17","26","35","44","53","62","71"]
+		if(diagonal1.filter(x=>x==2).length > 0 && diagonal1.filter(x=>x==1 || x==3).length == 0)
+			onCorners = onCorners.concat(diagonal1.filter(x=>x==2))
+		if(diagonal1.filter(x=>x==3).length > 0 && diagonal1.filter(x=>x==0 || x==2).length == 0)
+			onCorners = onCorners.concat(diagonal1.filter(x=>x==3))
+		if(diagonal2.filter(x=>x==2).length > 0 && diagonal2.filter(x=>x==1 || x==3).length == 0)
+			onCorners = onCorners.concat(diagonal2.filter(x=>x==2))
+		if(diagonal2.filter(x=>x==3).length > 0 && diagonal2.filter(x=>x==0 || x==2).length == 0)
+			onCorners = onCorners.concat(diagonal2.filter(x=>x==3))
+		
         var legals = simulated.legal().filter(x=>x!="pass")
         if(legals.length==0){
-            var max_possible = 25*25*2+1
-            switch(simulated.turn){
-                case 0:
-                    return -max_possible*(countedBoard.filter(x=>x==0 || x==1).length + countedBoard.filter(x=>x==2 || x==3).length)
-                break
-                case 1:
-                    return max_possible*(countedBoard.filter(x=>x==0 || x==1).length + countedBoard.filter(x=>x==2 || x==3).length)
-                break
-            }
+			return max_possible*max_possible*((countedBoard.filter(x=>x==0).length
+			+countedBoard.filter(x=>x==2).length * damValue)
+			-(countedBoard.filter(x=>x==1).length
+			+countedBoard.filter(x=>x==3).length * damValue))
         }
-        return (countedBoard.filter(x=>x==0).length + countedBoard.filter(x=>x==2).length * damValue - countedBoard.filter(x=>x==1).length - countedBoard.filter(x=>x==3).length * damValue)
+        var result = ((countedBoard.filter(x=>x==0).length
+			+countedBoard.filter(x=>x==2).length * damValue
+			+onSides.filter(x=>x==2).length * sideDamValue
+			+onCorners.filter(x=>x==2).length * cornerDamValue
+			+penultimal1+penpenultimal1*0.5)
+			-(countedBoard.filter(x=>x==1).length
+			+countedBoard.filter(x=>x==3).length * damValue
+			+onSides.filter(x=>x==3).length * sideDamValue
+			+onCorners.filter(x=>x==3).length * cornerDamValue)
+			+penultimal2+penpenultimal2*0.5) + simulated.beating*0.33
+			
+		return result
     }
     minmax(simulated,depth){
         var max_possible = 25*25*2+1
         var legals = simulated.legal().filter(x=>x!="pass")
-        if(simulated.phase == 0 && legals.length > 4){
+        if(simulated.phase == 0 && legals.length > 3){
             legals = [
                 legals[Math.floor(Math.random()*legals.length)],
                 legals[Math.floor(Math.random()*legals.length)],
                 legals[Math.floor(Math.random()*legals.length)],
+                legals[Math.floor(Math.random()*legals.length)],
+                legals[Math.floor(Math.random()*legals.length)],
             ]
+			legals = Array.from(new Set(legals))
         }
         if(legals.length == 0){
-            return {move:null, score:-this.evaluate(simulated)}
+            return {move:null, score:this.evaluate(simulated)}
         } else if(depth == 0){
-            return {move:null, score:-this.evaluate(simulated)}
+            return {move:null, score:this.evaluate(simulated)}
         } else {
             var saved = simulated.getCurrentState()
             var bestmove = legals[0]
-            var turn_factor = 2*simulated.turn-1
             var bestscore = null
             var beating = simulated.beating
+			
+			var turnNow = simulated.turn
+			
             for(var i in legals){
                 var move = legals[i]
-                if(move in simulated.board && simulated.selected != null)
+                if(move == simulated.selected){
                     continue
+				}
                 simulated.move(move)
-                var code = simulated.getStateCode()
+				
+                var result
+				var code = simulated.getStateCode()
                 if(!(code in this.checkedStates)){
-                    var result = this.minmax(simulated,depth - (beating || simulated.selected == null ? 0 : 1))
-                    this.checkedStates[code] = result
+					
+					var evaluated = this.evaluate(simulated)
+					if(turnNow == 0 && this.bestValuesAtDepth1[depth] != undefined && this.bestValuesAtDepth1[depth] > evaluated+10){
+						result = {move:move, score:evaluated}
+					} else if(turnNow == 1 && this.bestValuesAtDepth2[depth] != undefined && this.bestValuesAtDepth2[depth] < evaluated-10){
+						result = {move:move, score:evaluated}
+					} else {
+						result = this.minmax(simulated,depth - ((beating || simulated.selected != null) ? 0 : 1))
+						this.checkedStates[code] = result
+					}
                 } else {
                     result = this.checkedStates[code]
                 }
-                if(bestscore == null || simulated.turn == 0 && result.score > bestscore || simulated.turn == 1 && result.score < bestscore){
-                    bestscore = result.score
-                    bestmove = move
-                }
+				if(result.score == null)
+					throw new Error()
+				if(bestscore == null || turnNow == 0 && result.score > bestscore || turnNow == 1 && result.score < bestscore){
+					bestscore = result.score
+					bestmove = move
+					
+					if(this.bestValuesAtDepth1[depth] == null || turnNow == 0 && bestscore > this.bestValuesAtDepth1[depth]){
+						this.bestValuesAtDepth1[depth] = bestscore
+					}
+					if(this.bestValuesAtDepth2[depth] == null || turnNow == 1 && bestscore < this.bestValuesAtDepth2[depth]){
+						this.bestValuesAtDepth2[depth] = bestscore
+					}
+				}
                 simulated.setCurrentState(saved)
             }
             simulated.setCurrentState(saved)
