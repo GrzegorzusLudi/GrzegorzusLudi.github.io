@@ -370,7 +370,7 @@ class BoardModel{
 				land = landscopy.splice(Math.floor(Math.random()*landscopy.length),1)[0]
 			}
 			if(land == undefined)
-				break
+				break 	
 			if(i<players){
 				land.color = this.getColor(i)
 				land.dams = 2
@@ -1832,7 +1832,7 @@ class Ai{
 			
 			var damValue = 3
 			var max_possible = (25*25*3+1)*(damValue+sideDamValue)
-			var cornerDamValue = max_possible;
+			var cornerDamValue = 4;
 			var onCorners = []
 			var diagonal1 = ["11","22","33","44","55","66","77"]
 			var diagonal2 = ["17","26","35","44","53","62","71"]
@@ -1847,10 +1847,12 @@ class Ai{
 			
 			var legals = simulated.legal().filter(x=>x!="pass")
 			if(legals.length==0){
-				return max_possible*max_possible*((countedBoard.filter(x=>x==0).length
+				result = max_possible*max_possible*((countedBoard.filter(x=>x==0).length
 				+countedBoard.filter(x=>x==2).length * damValue)
 				-(countedBoard.filter(x=>x==1).length
 				+countedBoard.filter(x=>x==3).length * damValue))
+				
+				return result
 			}
 			result = ((countedBoard.filter(x=>x==0).length
 				+countedBoard.filter(x=>x==2).length * damValue - (countedBoard.filter(x=>x==3).length) * damValue*0.5
@@ -1862,7 +1864,7 @@ class Ai{
 				+onSides.filter(x=>x==3).length * sideDamValue
 				+onCorners.filter(x=>x==3).length * cornerDamValue)
 				+penultimal2*0.05+penpenultimal2*0.025) + simulated.beating*0.01
-				
+		
 		return result
     }
 	beginminmax(simulated,depth){
@@ -1907,7 +1909,7 @@ class Ai{
 				
                 var result
 				var code = simulated.getStateCode()
-                if(!(code in this.checkedStates)){
+                if(!(code in this.checkedStates) || this.checkedStates[code] == undefined){
 					
 					var evaluated = this.evaluate(simulated)
 					/*if(turnNow == 0 && this.bestValuesAtDepth1[depth] != undefined && this.bestValuesAtDepth1[depth] > evaluated+20){
