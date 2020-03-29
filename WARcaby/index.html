@@ -1661,7 +1661,6 @@ class Ai{
             if(legal.length > 0){
                 if(this.gameview.model.phase == 2){
                     this.playCheckersGame()
-                    console.log()
                     if(Object.keys(this.checkedStates).length > 10000){
 						var newStates = {}
 						var i = 0
@@ -1806,6 +1805,7 @@ class Ai{
 			minmax = {move: legal.filter(x=>x!="pass")[0], score: null}
 		else
 			minmax = this.beginminmax(simulated,8)
+		console.log(minmax)
         if(legal.indexOf("pass")>-1 && (minmax.move == null || /*(minmax.score != null &&evaluated==minmax.score && this.gameview.model.checkersGame.phase != 0) || */this.statesInPast[code] > 1 || this.gameview.model.checkersGame.phase == 0 && this.gameview.model.checkersGame.opponentValue() <= this.gameview.model.checkersGame.placedValues()-2)){
             this.gameview.model.checkersGame.move("pass")
         } else {
@@ -1821,6 +1821,8 @@ class Ai{
     evaluate(simulated){
 		var result
 			var countedBoard = Object.values(simulated.board)
+			var damValue = 3
+			var cornerDamValue = 2;
 			var sideDamValue = 2;
 			var kys = Object.keys(simulated.board)
 			var onSides = kys.filter(x=>x.length == 2 && (x[0] == '1' || x[0] == '7' || x[1] == '1' || x[1] == '7')).map(x=>simulated.board[x])
@@ -1830,9 +1832,7 @@ class Ai{
 			var penultimal2 = ["22","24","26"].map(x=>simulated.board[x]).filter(x=>x==1).length
 			var penpenultimal2 = ["31","33","35","37"].map(x=>simulated.board[x]).filter(x=>x==1).length
 			
-			var damValue = 3
-			var max_possible = (25*25*3+1)*(damValue+sideDamValue)
-			var cornerDamValue = 4;
+			var max_possible = (25*25*3+1)*(damValue+sideDamValue+cornerDamValue)
 			var onCorners = []
 			var diagonal1 = ["11","22","33","44","55","66","77"]
 			var diagonal2 = ["17","26","35","44","53","62","71"]
@@ -1854,16 +1854,21 @@ class Ai{
 				
 				return result
 			}
-			result = ((countedBoard.filter(x=>x==0).length
+			result = (
+				(simulated.turn === 0 ? 1 : 0.5) *
+				(countedBoard.filter(x=>x==0).length
 				+countedBoard.filter(x=>x==2).length * damValue - (countedBoard.filter(x=>x==3).length) * damValue*0.5
 				+onSides.filter(x=>x==2).length * sideDamValue
 				+onCorners.filter(x=>x==2).length * cornerDamValue
 				+penultimal1*0.05+penpenultimal1*0.025)
-				-(countedBoard.filter(x=>x==1).length
+				
+				-
+				(simulated.turn === 1 ? 1 : 0.5) *
+				(countedBoard.filter(x=>x==1).length
 				+countedBoard.filter(x=>x==3).length * damValue
 				+onSides.filter(x=>x==3).length * sideDamValue
 				+onCorners.filter(x=>x==3).length * cornerDamValue)
-				+penultimal2*0.05+penpenultimal2*0.025) + simulated.beating*0.01
+				+penultimal2*0.05+penpenultimal2*0.025)
 		
 		return result
     }
