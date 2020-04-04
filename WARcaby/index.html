@@ -175,7 +175,7 @@ function evalAttack(pawns, dams){
     return Math.min(MAX_PIECES, 3 * dams + (pawns - 1))
 }
 function evalDefence(pawns, dams){
-    return Math.min(MAX_PIECES, (dams == 0?0:2+dams*3) + pawns)
+    return Math.min(MAX_PIECES, (dams == 0?0:3+dams*3) + pawns)
 }
 class DummyLand{
     constructor(){
@@ -1699,7 +1699,7 @@ class Ai{
                         this.gameview.draw()
                     } else {
                         var legals = legal.filter(x=>x.move!="pass" && x.type != "move" && x.type != "deselect" && (this.gameview.model.phase == 2 || x.move.neighbours.filter(y=>y.color != x.move.color).length>0 || x.type == "attack" && evalAttack(x.move.pawns - x.move.movedPawns,x.move.dams - x.move.movedDams) < evalDefence(this.gameview.model.selectedLand.pawns, this.gameview.model.selectedLand.dams)) &&
-                                (this.gameview.model.phase != 0 || ( x.type == "select" && x.move.notOnlyOne() && x.move.availableNumber()>1) || x.type == "attack" && evalAttack(x.move.pawns - x.move.movedPawns,x.move.dams - x.move.movedDams)-3 <= evalDefence(this.gameview.model.selectedLand.pawns, this.gameview.model.selectedLand.dams)) && 
+                                (this.gameview.model.phase != 0 || ( x.type == "select" && x.move.notOnlyOne() && x.move.availableNumber()>1) || x.type == "attack" && evalAttack(x.move.pawns - x.move.movedPawns,x.move.dams - x.move.movedDams)+1 <= evalDefence(this.gameview.model.selectedLand.pawns, this.gameview.model.selectedLand.dams)) && 
                                     (this.gameview.model.phase != 2 || x.move != this.gameview.model.checkersGame.selected))
                         if(legals.length > 0){
                             var rand = legals[Math.floor(Math.random()*legals.length)]
@@ -1733,7 +1733,12 @@ class Ai{
                 this.gameview.model.changePriority(regrouping.move)
             break
         }
-        this.regrouping = this.regrouping.slice(1)
+		if(did == false){
+			console.log("BAD")
+			console.log(this.regrouping)
+		}
+		this.regrouping = this.regrouping.slice(1)
+		
         
     }
     planRegrouping(){
@@ -1757,7 +1762,7 @@ class Ai{
             mfgorb.addLandsFromRiskBoard(group, group.filter(x=>x.neighbours.filter(y=>y.color != x.color).length > 0))
             for(var i in mfgorb.points){
                 var point = mfgorb.points[i]
-                if(point.land.id == 1 || Object.values(point.edges).filter(x=>x.point != point).map(x=>x.pawn_flow+x.dam_flow).reduce((x,y)=>x+y,0)==0)
+                if(point.land.id == -1 || Object.values(point.edges).filter(x=>x.point != point).map(x=>x.pawn_flow+x.dam_flow).reduce((x,y)=>x+y,0)==0)
                     continue
                 this.regrouping.push({type: "select", move:point.land})
                 for(var j in point.edges){
@@ -1805,7 +1810,6 @@ class Ai{
 			minmax = {move: legal.filter(x=>x!="pass")[0], score: null}
 		else
 			minmax = this.beginminmax(simulated,8)
-		console.log(minmax)
         if(legal.indexOf("pass")>-1 && (minmax.move == null || /*(minmax.score != null &&evaluated==minmax.score && this.gameview.model.checkersGame.phase != 0) || */this.statesInPast[code] > 1 || this.gameview.model.checkersGame.phase == 0 && this.gameview.model.checkersGame.opponentValue() <= this.gameview.model.checkersGame.placedValues()-2)){
             this.gameview.model.checkersGame.move("pass")
         } else {
@@ -1861,14 +1865,17 @@ class Ai{
 				+onSides.filter(x=>x==2).length * sideDamValue
 				+onCorners.filter(x=>x==2).length * cornerDamValue
 				+penultimal1*0.05+penpenultimal1*0.025)
+				+penultimal1*0.05+penpenultimal1*0.025)
 				
 				-
 				(simulated.turn === 1 ? 1 : 0.5) *
 				(countedBoard.filter(x=>x==1).length
 				+countedBoard.filter(x=>x==3).length * damValue
 				+onSides.filter(x=>x==3).length * sideDamValue
-				+onCorners.filter(x=>x==3).length * cornerDamValue)
-				+penultimal2*0.05+penpenultimal2*0.025)
+				+onCorners.filter(x=>x==3).length * cornerDamValue
+				+penultimal2*0.05+penpenultimal2*0.025
+				)
+			)
 		
 		return result
     }
@@ -1953,7 +1960,7 @@ function init(){
     var initialSetting = {
         lands: 20,
         players: [
-            "player",
+            "ai",
             "ai",
             "ai",
             "ai",
