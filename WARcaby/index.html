@@ -1861,10 +1861,9 @@ class Ai{
 			result = (
 				(simulated.turn === 0 ? 1 : 0.5) *
 				(countedBoard.filter(x=>x==0).length
-				+countedBoard.filter(x=>x==2).length * damValue - (countedBoard.filter(x=>x==3).length) * damValue*0.5
+				+countedBoard.filter(x=>x==2).length * damValue - (countedBoard.filter(x=>x==3).length) * damValue*0.7
 				+onSides.filter(x=>x==2).length * sideDamValue
 				+onCorners.filter(x=>x==2).length * cornerDamValue
-				+penultimal1*0.05+penpenultimal1*0.025)
 				+penultimal1*0.05+penpenultimal1*0.025)
 				
 				-
@@ -1957,14 +1956,15 @@ class Ai{
     }
 }
 function init(){
+    var PLAYERS_NO = 6
+    var human = Math.floor(Math.random()*PLAYERS_NO)
+    var players = []
+    for(var i = 0;i<PLAYERS_NO;i++){
+        players.push(i == human ? "player" : "ai")
+    }
     var initialSetting = {
         lands: 20,
-        players: [
-            "ai",
-            "ai",
-            "ai",
-            "ai",
-        ]
+        players: players
     }
     var gameview = new GameView(document.getElementById("canv"),initialSetting)
     var ai = new Ai(gameview)
