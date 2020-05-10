@@ -141,7 +141,7 @@ class MaximumFlowGraphOnRiskBoard{
 			}
 		}*/
 	}
-	addLandsFromRiskBoard(lands, destinationLands){
+	addLandsFromRiskBoard(lands, destinationLands, colorEvaluatingFunction){
 		var additionalPoints = lands.length+lands[0].model.availableTroops(lands[0])
 		this.dummyLand.pawns = additionalPoints
 		for(var i in lands){
@@ -149,7 +149,7 @@ class MaximumFlowGraphOnRiskBoard{
 			var point = this.newPoint(land, this.startpoints)
 			if(destinationLands.indexOf(land)>-1){
 				this.endpoints.push(point)
-				point.threat = land.neighbours.filter(x=>x.color != undefined && x.color != land.color).map(x=>evalAttack(x.pawns,x.dams)).reduce((x,y)=>x+y,0)
+				point.threat = land.neighbours.filter(x=>colorEvaluatingFunction(land.color,x.color,lands)).map(x=>evalAttack(x.pawns,x.dams)).reduce((x,y)=>x+y,0)
 				
 				//console.log("Threat for land "+land.id+": "+point.threat)
 			}
@@ -211,6 +211,8 @@ class Land{
 		this.id = id
 		this.x = undefined
 		this.y = undefined
+		
+		this.checkersGameHidden = false
 	}
 	number(){
 		return this.pawns + this.dams
@@ -443,9 +445,9 @@ class BoardModel{
 	clickLand(land){
 		return this.act(land)
 	}
-	act(move){
+	act(originalMove){
 		var legal = this.legal()
-		var moves = legal.filter(x=>x.type == move.type && x.move == move.move || move==x.move)
+		var moves = legal.filter(x=>x.type == originalMove.type && x.move == originalMove.move || originalMove==x.move)
 		
 		if(moves.length > 0){
 			var move = moves[0]
@@ -461,7 +463,7 @@ class BoardModel{
 					this.selectedLand = land
 				break
 				case "attack":
-					var ret = this.attack(this.selectedLand,land)
+					var ret = this.attack(this.selectedLand,land,originalMove.hidden)
 					this.selectedLand = null
 					return ret
 				break
@@ -621,15 +623,16 @@ class BoardModel{
 			}
 		}
 	}
-	attack(land1,land2){
+	attack(land1,land2,hide){
 		//if(land2.borderingLands())
-		return this.startCheckersGame(land1,land2)
+		return this.startCheckersGame(land1,land2,hide)
 	}
-	startCheckersGame(land1,land2){
+	startCheckersGame(land1,land2,hide){
 		this.phase = 2
+		this.checkersGameHidden = Boolean(hide)
 		this.checkersGame = new CheckersGame(this)
 		this.checkersGame.addLands(land1,land2)
-		return true
+                return true
 	}
 	getColor(color){
 		if(color == null)
@@ -812,6 +815,13 @@ class GameView{
 	isAiMove(){
 		return this.initialSetting.players[this.model.currentPlayer] == "ai" || this.model.currentPlayer == null || this.model.checkersGame != null && this.model.checkersGame.simulated && this.model.checkersGame.turn == 1
 	}
+	isAiColor(color){
+            if(color == null)
+                return true
+                
+            var player = this.model.playerFromColor(color)
+            return this.initialSetting.players[player] == "ai"
+	}
 	pass(){
 		this.model.pass()
 		this.draw()
@@ -830,7 +840,7 @@ class GameView{
 			this.drawLandPawns(this.model.lands[li])
 		}
 		
-		if(this.model.phase == 2){
+		if(this.model.phase == 2 && !this.model.checkersGameHidden){
 			this.drawCheckerBoard()
 		}
 		
@@ -920,8 +930,15 @@ class GameView{
 		if(whiteAlpha !== undefined)
 			this.ctx.lineWidth = 1
 	}
+	playColor(){
+            if(this.model.checkersGame != null)
+                return this.model.checkersGame.land1.color
+            else
+                return this.model.getColor(this.model.currentPlayer)
+	}
 	drawPanel(){
-		var color = this.model.getColor(this.model.currentPlayer)
+                
+		var color = this.playColor()
 		
 		this.ctx.fillStyle = color
 		this.ctx.strokeStyle = "#ddd"
@@ -939,70 +956,93 @@ class GameView{
 		}
 		this.ctx.lineWidth = 1
 		
-		switch(this.model.phase){
-			case 0:
-				this.ctx.fillText("Zaznacz swój obszar, by",this.panelSize.x+15,this.panelSize.y+25)
-				this.ctx.fillText("zaatakować/przemieścić",this.panelSize.x+15,this.panelSize.y+40)
-				this.ctx.fillText("z niego sąsiednie tereny.",this.panelSize.x+15,this.panelSize.y+55)
-				
-				this.buttons[0].show()
-				this.buttons[0].draw()
-				
-				this.ctx.font = "14px Courier"
-				this.ctx.textAlign = "center"
-				this.ctx.fillText("Przenoś:",this.panelSize.x+this.panelSize.w-205,this.panelSize.y+20)
-				
-				this.buttons[1].show()
-				this.buttons[1].draw()
-				
-			break
-			case 1:
-				this.ctx.fillText("Zaznacz obszary, by umieścić ",this.panelSize.x+15,this.panelSize.y+25)
-				this.ctx.fillText("nowe oddziały.",this.panelSize.x+15,this.panelSize.y+40)
-				
-				this.ctx.fillText(`Pozostało ${this.model.remainingTroops()} oddziałów.`,this.panelSize.x+15,this.panelSize.y+55)
-				
-				this.buttons[0].show()
-				this.buttons[0].draw()
-				
-				this.buttons[2].show()
-				this.buttons[2].draw()
-			break
-			case 2:
-				this.ctx.fillText("Kliknij na pola, by",this.panelSize.x+15,this.panelSize.y+25)
-				this.ctx.fillText("umieścić pionki "+(this.model.checkersGame.team == 1?"(musi zostać 1)":0),this.panelSize.x+15,this.panelSize.y+40)
-				this.ctx.fillText(`Pozostało ${this.model.checkersGame.remainingPawns} pionków i ${this.model.checkersGame.remainingDams} damek.`,this.panelSize.x+15,this.panelSize.y+55)
-				
-				if(this.model.checkersGame.remainingPawns > 0 && this.model.checkersGame.remainingDams > 0){
-					this.ctx.font = "14px Courier"
-					this.ctx.textAlign = "center"
-					this.ctx.fillText("Umieszczaj:",this.panelSize.x+this.panelSize.w-205,this.panelSize.y+20)
-					this.buttons[1].show()
-					this.buttons[1].draw()
-				}
-				switch(this.model.checkersGame.turn){
-					case 0:
-						if(this.model.checkersGame.canResign() || this.model.checkersGame.phase == 1){
-							this.buttons[5].show()
-							this.buttons[5].draw()
-						} else {
-							this.buttons[3].show()
-							this.buttons[3].draw()
-						}
-					break
-					case 1:
-						if(this.model.checkersGame.phase == 0) {
-							this.buttons[4].show()
-							this.buttons[4].draw()
-						} else {
-							this.buttons[6].show()
-							this.buttons[6].draw()
-						}
-					break
-				}
-				
-			break
-		}
+		if(!this.isAiMove()){
+                    switch(this.model.phase){
+                            case 0:
+                                    this.ctx.fillText("Zaznacz swój obszar, by",this.panelSize.x+15,this.panelSize.y+25)
+                                    this.ctx.fillText("zaatakować/przemieścić",this.panelSize.x+15,this.panelSize.y+40)
+                                    this.ctx.fillText("z niego sąsiednie tereny.",this.panelSize.x+15,this.panelSize.y+55)
+                                    
+                                    this.buttons[0].show()
+                                    this.buttons[0].draw()
+                                    
+                                    this.ctx.font = "14px Courier"
+                                    this.ctx.textAlign = "center"
+                                    this.ctx.fillText("Przenoś:",this.panelSize.x+this.panelSize.w-205,this.panelSize.y+20)
+                                    
+                                    this.buttons[1].show()
+                                    this.buttons[1].draw()
+                                    
+                            break
+                            case 1:
+                                    this.ctx.fillText("Zaznacz obszary, by umieścić ",this.panelSize.x+15,this.panelSize.y+25)
+                                    this.ctx.fillText("nowe oddziały.",this.panelSize.x+15,this.panelSize.y+40)
+                                    
+                                    this.ctx.fillText(`Pozostało ${this.model.remainingTroops()} oddziałów.`,this.panelSize.x+15,this.panelSize.y+55)
+                                    
+                                    this.buttons[0].show()
+                                    this.buttons[0].draw()
+                                    
+                                    this.buttons[2].show()
+                                    this.buttons[2].draw()
+                            break
+                            case 2:
+                                    this.ctx.fillText("Kliknij na pola, by",this.panelSize.x+15,this.panelSize.y+25)
+                                    this.ctx.fillText("umieścić pionki "+(this.model.checkersGame.team == 1?"(musi zostać 1)":0),this.panelSize.x+15,this.panelSize.y+40)
+                                    this.ctx.fillText(`Pozostało ${this.model.checkersGame.remainingPawns} pionków i ${this.model.checkersGame.remainingDams} damek.`,this.panelSize.x+15,this.panelSize.y+55)
+                                    
+                                    if(this.model.checkersGame.remainingPawns > 0 && this.model.checkersGame.remainingDams > 0){
+                                            this.ctx.font = "14px Courier"
+                                            this.ctx.textAlign = "center"
+                                            this.ctx.fillText("Umieszczaj:",this.panelSize.x+this.panelSize.w-205,this.panelSize.y+20)
+                                            this.buttons[1].show()
+                                            this.buttons[1].draw()
+                                    }
+                                    switch(this.model.checkersGame.turn){
+                                            case 0:
+                                                    if(this.model.checkersGame.canResign() || this.model.checkersGame.phase == 1){
+                                                            this.buttons[5].show()
+                                                            this.buttons[5].draw()
+                                                    } else {
+                                                            this.buttons[3].show()
+                                                            this.buttons[3].draw()
+                                                    }
+                                            break
+                                            case 1:
+                                                    if(this.model.checkersGame.phase == 0) {
+                                                            this.buttons[4].show()
+                                                            this.buttons[4].draw()
+                                                    } else {
+                                                            this.buttons[6].show()
+                                                            this.buttons[6].draw()
+                                                    }
+                                            break
+                                    }
+                                    
+                            break
+                    }
+                } else {
+                    this.ctx.fillStyle = "#fff"
+                    this.ctx.font = "16px Courier"
+                    this.ctx.textAlign = "left"
+                    
+                    this.ctx.fillText("BIP! BIP!",this.panelSize.x+15,this.panelSize.y+30)
+                    
+                    switch(this.model.phase){
+                        case 0:
+                        case 1:
+                            this.ctx.fillText("KOMPUTER MYŚLI!",this.panelSize.x+15,this.panelSize.y+45)
+                        break
+                        case 2:
+                            this.ctx.fillText("KOMPUTER GRA W WARCABY!",this.panelSize.x+15,this.panelSize.y+45)
+                        break
+                    }
+                    
+                    for(var i = 3;i<7;i++){
+                        this.buttons[i].hide()
+                        
+                    }
+                }
 	}
 	darkerColor(color){
 		if(color == null){
@@ -1226,7 +1266,7 @@ class Button {
 	}
 	draw(){
 		if(this.showed){
-			this.ctx.fillStyle = this.gameView.model.getColor(this.gameView.model.currentPlayer)
+			this.ctx.fillStyle = this.gameView.playColor()
 			this.ctx.strokeStyle = "#ddd"
 			this.ctx.lineWidth = 2
 			
@@ -1661,11 +1701,12 @@ class Ai{
 	run(){
 		this.think()
 		var th = this
+		var timeout = this.gameview.model.phase == 2 && this.gameview.model.checkersGameHidden ? 5 : 50
 		setTimeout(()=>{ 
 			if(this.alive) { 
 				th.run() 
 			} 
-		}, 50)
+		}, timeout)
 	}
 	think(){
 		if(this.gameview.isAiMove()){
@@ -1692,9 +1733,10 @@ class Ai{
 						this.gameview.draw()
 					} else if(this.gameview.model.phase == 1){
                                                 this.gameview.model.act({type:"pass", move:"pass"})
-						this.gameview.draw()
+                                                this.gameview.draw()
 					} else if(this.attacking.length>0) {
                                             var moveToPlay = this.attacking[0]
+                                            var attacked = 0
                                             if(this.gameview.model.currentColor() === moveToPlay.land2.color){
                                                 this.attacking = this.attacking.slice(1)
                                             } else if(this.gameview.model.selectedLand == null){
@@ -1705,14 +1747,27 @@ class Ai{
                                                 this.gameview.draw()
                                             } else {
                                                 var leg = legal.filter(x=>x.type==="attack" && x.move===moveToPlay.land2)
-                                                if(leg.length>0)
+                                                if(leg.length>0){
+                                                    if(this.gameview.isAiColor(moveToPlay.land2.color))
+                                                        leg[0].hidden = true
                                                     this.gameview.model.act(leg[0])
+                                                    attacked++
+                                                }
                                                 this.gameview.draw()
                                                 
                                                 this.checkerGamePlannedPawns = moveToPlay.plannedPawns
-                                                this.checkerGamePlannedDams = moveToPlay.plannedPawns
+                                                this.checkerGamePlannedDams = moveToPlay.plannedDams
                                                 
                                                 this.attacking = this.attacking.slice(1)
+                                            }
+                                            
+                                            if(this.attacking.length === 0 && attacked>0){
+                                                this.attacking = this.planAttacking()
+                                            }
+                                            
+                                            if(Array.from(new Set(this.gameview.model.lands.map(x=>x.color).filter(x=>x!=null))).length == 1){
+                                                this.alive = false
+                                                console.log("GAME ENDED :0")
                                             }
                                             
                                             if(this.attacking.length==0) {
@@ -1732,6 +1787,7 @@ class Ai{
                                                     }
                                                 } else {
                                                     this.gameview.model.act({type:"pass", move:"pass"})
+                                                    this.gameview.draw()
                                                 }
                                                 /* else {
 							if(this.regrouping.length == 0){
@@ -1782,7 +1838,7 @@ class Ai{
 		}
 		if(did == false){
 			console.log("BAD")
-			console.log(this.regrouping)
+			//console.log(this.regrouping)
 		}
 		this.regrouping = this.regrouping.slice(1)
 		
@@ -1806,7 +1862,7 @@ class Ai{
 			var group = groups[i]
 			
 			var mfgorb = new MaximumFlowGraphOnRiskBoard()
-			mfgorb.addLandsFromRiskBoard(group, group.filter(x=>x.neighbours.filter(y=>y.color != x.color).length > 0))
+			mfgorb.addLandsFromRiskBoard(group, group.filter(x=>x.neighbours.filter(y=>y.color != x.color).length > 0), this.isEnemy)
 			for(var i in mfgorb.points){
 				var point = mfgorb.points[i]
 				if(point.land.id == -1 || Object.values(point.edges).filter(x=>x.point != point).map(x=>x.pawn_flow+x.dam_flow).reduce((x,y)=>x+y,0)==0)
@@ -1838,15 +1894,43 @@ class Ai{
 					}
 				}
 			}
-			this.regrouping.push({type: "pass", move:"pass"})
 			
 		}
 	}
 	compareLandsToAttack(attacker, defender){
-            return evalAttack(attacker.pawns - attacker.movedPawns, attacker.dams - attacker.movedDams) - evalDefence(defender.pawns, defender.dams)
+            var factor
+            if(defender.color == null)
+                factor = 1
+            else
+                factor = 2
+            return (evalAttack(attacker.pawns - attacker.movedPawns, attacker.dams - attacker.movedDams) - evalDefence(defender.pawns, defender.dams)) * factor
+	}
+	isEnemy(color1, color2, lands){
+            var strengthByColor = {}
+            var totalStrength = 0
+            for(var i in lands){
+                var land = lands[i]
+                var strength = evalAttack(land.pawns,land.dams) + 11
+                totalStrength += strength
+                if(land.color !== null){
+                    if(!(land.color in strengthByColor))
+                        strengthByColor[land.color] = strength
+                    else
+                        strengthByColor[land.color] += strength
+                }
+            }
+            var prevailing = null
+            for(var color in strengthByColor){
+                if(strengthByColor[color] / totalStrength > 0.3 && (prevailing === null || strengthByColor[color]>strengthByColor[prevailing]))
+                    prevailing = color
+            }
+            if(prevailing == null)
+                return color1 != color2
+            else
+                return (color1 == prevailing && color1 != color2) || color2 == prevailing || color2 == null
 	}
 	planAttacking(){
-            var landPlanned = this.gameview.model.lands.filter(x=>x.color == this.gameview.model.currentColor()).filter(x=>x.neighbours.filter(y=>y.color != x.color).length > 0).map(x=>new Object({land:x, plannedPawns: x.pawns-x.movedPawns + (x.pawns-x.movedPawns > 0 ? -1 : 0), plannedDams: x.dams-x.movedDams+ (x.pawns-x.movedPawns > 0 ? 0 : -1)}))
+            var landPlanned = this.gameview.model.lands.filter(x=>x.color == this.gameview.model.currentColor()).filter(x=>x.neighbours.filter(y=>this.isEnemy(x.color, y.color, this.gameview.model.lands)).length > 0).map(x=>new Object({land:x, plannedPawns: x.pawns-x.movedPawns + (x.pawns > 0 ? -1 : 0), plannedDams: x.dams-x.movedDams+ (x.pawns > 0 ? 0 : -1)}))
             
             var attackingPlan = {}
             for(var i in landPlanned){
@@ -1854,14 +1938,14 @@ class Ai{
                 attackingPlan[lp.land.id] = lp
             }
             
-            var edgesByLand = this.gameview.model.lands.filter(x=>x.color == this.gameview.model.currentColor() && x.canAttack()).map(x=>new Object({land:x, enemies:x.neighbours.filter(y=>y.color != x.color).map(y=>new Object({land1:x, land2:y, plannedPawns: 0, plannedDams: 0, potential: this.compareLandsToAttack(x,y)}))})).filter(x=>x.enemies.length > 0)
+            var edgesByLand = this.gameview.model.lands.filter(x=>x.color == this.gameview.model.currentColor() && x.canAttack()).map(x=>new Object({land:x, enemies:x.neighbours.filter(y=>this.isEnemy(x.color, y.color, this.gameview.model.lands)).map(y=>new Object({land1:x, land2:y, plannedPawns: 0, plannedDams: 0, potential: this.compareLandsToAttack(x,y)}))})).filter(x=>x.enemies.length > 0)
             
             var defendingPlan = {}
             
             for(var i in edgesByLand){
                 var ebl = edgesByLand[i]
                 var ap = attackingPlan[ebl.land.id]
-                var enms = ebl.enemies.map(x=>x).sort((x,y)=>(Math.min(4,x.potential) - Math.min(4,y.potential))).filter(x=>x.potential>=0)
+                var enms = ebl.enemies.map(x=>x).sort((x,y)=>(Math.min(4,x.potential) - Math.min(4,y.potential))).filter(x=>x.potential>=-1)
                 var len = enms.length
                 for(var j in enms){
                     var e = enms[j]
@@ -1872,11 +1956,10 @@ class Ai{
                 var remaining = null
                 for(var j in enms){
                     var e = enms[j]
-                    
-                    if(j==enms.length-1 || evalAttack(ap.plannedPawns,ap.plannedDams)<defendingPlan[enms[j].land2.id].power){
-                        remaining = e
+                    /*
+                    if(j==enms.length-1 || evalAttack(ap.plannedPawns,ap.plannedDams)-2<=defendingPlan[enms[j].land2.id].power){
                         break
-                    }
+                    }*/
                     
                     while((defendingPlan[e.land2.id].power>-2) && ap.plannedPawns+ap.plannedDams > 0){
                         if(ap.plannedPawns>0){
@@ -1892,6 +1975,7 @@ class Ai{
                             e.potential-=this.damValue
                         }
                     }
+                    remaining = e
                 }
                 if(remaining !== null){
                     var e = remaining
@@ -1902,9 +1986,15 @@ class Ai{
                     e.plannedDams+=ap.plannedDams
                     ap.plannedDams=0
                 }
-                
             }
-            return edgesByLand.map(x=>x.enemies).reduce((x,y)=>x.concat(y),[]).filter(x=>x.plannedPawns+x.plannedDams>0)
+            
+            for(var i in edgesByLand){
+                var ebl = edgesByLand[i]
+                ebl.enemies = ebl.enemies.filter(x=>x.plannedPawns+x.plannedDams>0 && !this.noSenseInLongerPlayCheckConfiguration(x.plannedPawns,x.land2.pawns,x.plannedDams,x.land2.dams))
+            }
+            
+            
+            return edgesByLand.map(x=>x.enemies).reduce((x,y)=>x.concat(y),[]).filter(x=>x.plannedPawns+x.plannedDams>0 && evalAttack(x.plannedPawns,x.plannedDams)+5 >= evalDefence(x.land2.pawns,x.land2.dams))
 	}
 	//works if turn is 0
 	noSenseInLongerPlay(state){
@@ -1913,6 +2003,10 @@ class Ai{
             var myDams = Object.values(state.board).filter(x=>x==2).length
             var opponentDams = Object.values(state.board).filter(x=>x==3).length
             
+            
+            return this.noSenseInLongerPlayCheckConfiguration(myPawns,opponentPawns,myDams,opponentDams)
+        }
+        noSenseInLongerPlayCheckConfiguration(myPawns,opponentPawns,myDams,opponentDams){
             
             var noSenseConfigurations = [
                 {myPawns: 0, myDams: 1, opponentPawns: 0, opponentDams: 1},
@@ -1954,13 +2048,15 @@ class Ai{
 		if(legal.filter(x=>x!="pass").length == 1)
 			minmax = {move: legal.filter(x=>x!="pass")[0], score: null}
 		else {
-                    var depth = 8
+                    var depth = this.gameview.isAiColor(this.gameview.model.checkersGame.land2.color) ? 5 : 8
                     while(minmax.score * turnfactor <= -this.max_possible && depth > 0){
 			minmax = this.beginminmax(simulated,depth)
 			depth -= 2
                     }
                 }
-		if(legal.indexOf("pass")>-1 && (minmax.move == null || this.statesInPast[code] > 1 || this.gameview.model.checkersGame.phase == 0 && this.gameview.model.checkersGame.opponentValue() < this.gameview.model.checkersGame.placedValues()-2 || this.noSenseInLongerPlay(simulated))){
+		if(legal.indexOf("pass")>-1 && (minmax.move == null || this.statesInPast[code] > 1/* || this.gameview.model.checkersGame.phase == 0 && this.gameview.model.checkersGame.opponentValue() < this.gameview.model.checkersGame.placedValues()-2*/ || this.noSenseInLongerPlay(simulated))){
+                    if(this.noSenseInLongerPlay(simulated))
+                        console.log(this.noSenseInLongerPlay(simulated))
 			this.gameview.model.checkersGame.move("pass")
 		} else {
 			this.gameview.model.checkersGame.move(minmax.move)
@@ -2047,7 +2143,7 @@ class Ai{
 	}
 	minmax(simulated,depth,initialDepth){
                 this.alreadyCheckedStates++
-                if(Math.random()>1/(1 + Math.floor(this.alreadyCheckedStates/1000)))
+                if(depth >= 4 && Math.random()>1/(1 + Math.floor(this.alreadyCheckedStates/1000)))
                     depth = 0
 		if(depth<initialDepth-1 && simulated.phase == 0){
 			simulated.phase = 1
@@ -2055,8 +2151,8 @@ class Ai{
 		}
 		var max_possible = 25*25*2+1
 		var legals = simulated.legal().filter(x=>x!="pass")
-		if(simulated.turn === 0 && simulated.phase == 0 &&  this.placedDams(simulated,0) >= this.checkerGamePlannedDams && this.placedPawns(simulated,0) >= this.checkerGamePlannedPawns)
-                    legals = []
+		if(simulated.turn === 0 && simulated.phase == 0 && this.placedDams(simulated,0) >= this.checkerGamePlannedDams && this.placedPawns(simulated,0) >= this.checkerGamePlannedPawns)
+                    legals = ["pass"]
                     
 		if(simulated.phase == 0 && legals.length >= 2){
                     if(simulated.remainingPawns+simulated.remainingDams>=3){
@@ -2142,7 +2238,7 @@ class Ai{
 	}
 }
 function init(){
-	var PLAYERS_NO = 6
+	var PLAYERS_NO = 7
 	var human = Math.floor(Math.random()*PLAYERS_NO)
 	var players = []
 	for(var i = 0;i<PLAYERS_NO;i++){
