@@ -424,11 +424,6 @@ class BoardModel{
 			break
 		}
 	}
-	currentColor(){
-		if(this.currentPlayer == null)
-			return "#000"
-		return this.colors[this.currentPlayer]
-	}
 	legal(){
 		if(this.phase == 2){
 			return this.checkersGame.legal().map(x=>{return {type: "checkers", move: x}})
@@ -641,6 +636,9 @@ class BoardModel{
 		return this.colors[color]
 		
 	}
+	currentColor(){
+		return this.getColor(this.currentPlayer)
+	}
 	playerOfLand(land){
 		return this.playerFromColor(land)
 	}
@@ -708,17 +706,155 @@ class LandMap{
 		}
 	}
 }
+class GameController{
+    constructor(initialSetting){
+            this.initialSetting = initialSetting
+            this.gameview = null
+            var th = this
+            this.publicMethods = {
+                pass: ()=>th.pass(),
+                tryMoveOnCheckersGame: (move)=>th.tryMoveOnCheckersGame(move),
+                changePriority: (newPriority)=>th.changePriority(newPriority),
+                isAiMove: ()=>th.isAiMove(),
+                isPlayerMove: ()=>th.isPlayerMove(),
+                clickLand: (land)=>th.clickLand(land),
+                onBorders: ()=>th.onBorders(),
+            }
+    }
+    addView(gameview){
+        this.gameview = gameview
+    }
+    init(){
+        this.model = new BoardModel()
+        this.model.initBoard(this.initialSetting.lands)
+        this.model.initPlayers(this.initialSetting.players.length)
+        this.initView()
+    }
+    initView(){
+        if(this.gameview !== null){
+            this.gameview.loadGame(this.model.boardwidth, this.model.boardheight, this.publicMethods, this.model)   //TODO: remove model
+        }
+    }
+    updateView(){
+        if(this.gameview !== null){
+            this.gameview.draw()
+        }
+    }
+    
+    
+    getMock(){
+            var th = this
+            return {endGame:function(){th.model.phase = 0;th.model.currentPlayer = 0;},playerFromColor:function(){return 0}}
+    }
+    getTotalMock(){
+            return {endGame:function(){},playerFromColor:function(){return 0}}
+    }
+    
+    isAiColor(color){
+        if(color == null)
+            return true
+            
+        var player = this.model.playerFromColor(color)
+        return this.initialSetting.players[player] == "ai"
+    }
+    
+    automove(){
+            if(this.model.checkersGame !== null){
+                    var legal = this.model.checkersGame.legal().filter(x=>x!=="pass" || this.model.checkersGame.phase !== 1 || this.model.checkersGame.gameEnded())
+                    
+                    var th = this
+                    if(legal.length == 1){
+                            this.lock = true
+                            setTimeout(()=>{
+                                th.lock = false;
+                                if(th.model.checkersGame !== null){
+                                    th.checkersGameMove(legal[0]);
+                                }
+                                th.gameview.draw();th.automove()
+                            }, this.framerate())
+                    }
+            }
+    }
+    framerate(){
+        return this.model.phase == 2 && this.model.checkersGameHidden ? 10 : 50
+    }
+    act(move){
+        var result = this.model.act(move)
+        if(result)
+            this.gameview.draw()
+        return result
+    }
+    checkersGameMove(move){
+        var result = this.model.checkersGame.move(move)
+        if(result)
+            this.gameview.draw()
+        return result
+    }
+    
+    // "PUBLIC" methods
+    changePriority(newPriority){
+            if(!this.isPlayerMove())
+                    return
+            this.model.changePriority(newPriority)
+            /*
+            switch(this.model.priority){
+                    case 0:
+                            this.buttons[1].text = "Pionki"
+                    break
+                    case 1:
+                            this.buttons[1].text = "Damki"
+                    break
+            }*/
+    }
+    isPlayerMove(){
+            return this.initialSetting.players[this.model.currentPlayer] == "player"
+    }
+    tryMoveOnCheckersGame(move){
+            var moved = this.checkersGameMove(move)
+            if(moved && this.model.checkersGame !== null){
+                    var legal = this.model.checkersGame.legal().filter(x=>x!=="pass" || this.model.checkersGame.phase !== 1 || this.model.checkersGame.gameEnded())
+                    if(legal.length == 1){
+                            this.automove()
+                    }
+            }
+            if(moved)
+                this.gameview.draw()
+            return moved
+    }
+    isAiMove(){
+            return this.initialSetting.players[this.model.currentPlayer] == "ai" || this.model.currentPlayer == null || this.model.checkersGame != null && this.model.checkersGame.simulated && this.model.checkersGame.turn == 1
+    }
+    onBorders(){
+        return this.model.onBorders()
+    }
+    clickLand(land){
+        var result
+        if(this.isPlayerMove())
+            result = this.model.clickLand(land)
+        else
+            result = false
+            
+        if(result)
+            this.gameview.draw()
+        return result
+    }
+    pass(){
+        this.model.pass()
+        this.gameview.draw()
+    }
+}
 class GameView{
-	constructor(canvas, initialSetting){
+	constructor(canvas){
 		this.canvas = canvas
 		this.ctx = canvas.getContext("2d")
 		this.width = canvas.width
 		this.height = canvas.height
 		
-		this.initialSetting = initialSetting
+		this.gamecontroller = null
+		
+		this.gameState = {}
 		
 		this.lock = false
-		
 		this.landMapping = {}
 		
 		this.screen = {x:10, y:10, width:this.width-20, height:this.height-100}
@@ -740,60 +876,59 @@ class GameView{
 		this.buttons = [
 			new Button(this,"Dalej",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
 				function(){
-					th.pass()
+					th.gamecontroller.pass()
 				}
 			),
-			new Button(this,"Pionki",this.panelSize.x+this.panelSize.w-245,this.panelSize.y+30,80,this.panelSize.h-40,
+			new Button(this,() => th.model.priority == 0 ? "Pionki" : "Damki",this.panelSize.x+this.panelSize.w-245,this.panelSize.y+30,80,this.panelSize.h-40,
 				function(){
-					th.changePriority()
+					th.gamecontroller.changePriority()
 					th.draw()
 				}
 			),
 			new Button(this,"Na granicach",this.panelSize.x+this.panelSize.w-280,this.panelSize.y+20,140,this.panelSize.h-40,
 				function(){
-					th.model.onBorders()
+					th.gamecontroller.onBorders()
 					th.draw()
 				}
 			),
 			new Button(this,"Gotów",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
 				function(){
-					th.pass()
+					th.gamecontroller.pass()
 				}
 			),
 			new Button(this,"Losuj",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
 				function(){
-					th.pass()
+					th.gamecontroller.pass()
 				}
 			),
 			new Button(this,"Zrezygnuj",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
 				function(){
-					th.pass()
+					th.gamecontroller.pass()
 				}
 			),
 			new Button(this,"Poddaj się",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
 				function(){
-					th.pass()
+					th.gamecontroller.pass()
 				}
 			),
 		]
 		
-		this.loadGame()
 	}
-	loadGame(){
-		this.model = new BoardModel()
-		this.model.initBoard(this.initialSetting.lands)
-		this.model.initPlayers(this.initialSetting.players.length)
-		
-		for(var i in this.model.lands){
-			var land = this.model.lands[i]
-			
-			this.landMapping[land.id] = new LandMap(land.id,land,this)
-		}
-		
-		this.rw = this.screen.width/this.model.boardwidth
-		this.rh = this.screen.height/this.model.boardheight
+	loadGame(boardwidth,boardheight,publicMethods,model){
+		this.rw = this.screen.width/boardwidth
+		this.rh = this.screen.height/boardheight
 
-		//DIEBUŻ
+		this.model = model
+		
+		this.gamecontroller = publicMethods
+		
+                for(var i in this.model.lands){
+                        var land = this.model.lands[i]
+                        
+                        this.landMapping[land.id] = new LandMap(land.id,land,this)
+                }
+
+		//DEBUG
 		/*
 		this.model.phase = 2
 		var th = this
@@ -801,31 +936,6 @@ class GameView{
 		this.model.checkersGame = new CheckersGame(mock)
 		this.model.checkersGame.simulateGame(5,5,0,0)
 		*/
-	}
-	getMock(){
-		var th = this
-		return {endGame:function(){th.model.phase = 0;th.model.currentPlayer = 0;},playerFromColor:function(){return 0}}
-	}
-	getTotalMock(){
-		return {endGame:function(){},playerFromColor:function(){return 0}}
-	}
-	
-	isPlayerMove(){
-		return this.initialSetting.players[this.model.currentPlayer] == "player"
-	}
-	isAiMove(){
-		return this.initialSetting.players[this.model.currentPlayer] == "ai" || this.model.currentPlayer == null || this.model.checkersGame != null && this.model.checkersGame.simulated && this.model.checkersGame.turn == 1
-	}
-	isAiColor(color){
-            if(color == null)
-                return true
-                
-            var player = this.model.playerFromColor(color)
-            return this.initialSetting.players[player] == "ai"
-	}
-	pass(){
-		this.model.pass()
-		this.draw()
 	}
 	draw(){
 		//draw board
@@ -935,7 +1045,7 @@ class GameView{
             if(this.model.checkersGame != null)
                 return this.model.checkersGame.land1.color
             else
-                return this.model.getColor(this.model.currentPlayer)
+                return this.model.currentColor()
 	}
 	drawPanel(){
                 
@@ -957,7 +1067,7 @@ class GameView{
 		}
 		this.ctx.lineWidth = 1
 		
-		if(!this.isAiMove()){
+		if(!this.gamecontroller.isAiMove()){
                     switch(this.model.phase){
                             case 0:
                                     this.ctx.fillText("Zaznacz swój obszar, by",this.panelSize.x+15,this.panelSize.y+25)
@@ -1172,7 +1282,7 @@ class GameView{
 			y<this.screen.y+this.screen.height*(this.lscr+this.wscr) 
 			){
 			
-			if(!this.isPlayerMove())
+			if(!this.gamecontroller.isPlayerMove())
 				return false
 			
 			var bx = 1+Math.floor((x-this.screen.x-this.screen.width*this.lscr)/this.screen.width/this.wscr*7)
@@ -1182,17 +1292,17 @@ class GameView{
 			
 			//var phasebefore = this.model.checkersGame.phase
 			
-			return this.tryMoveOnCheckersGame(choice+bx+by)
+			return this.gamecontroller.tryMoveOnCheckersGame(choice+bx+by)
 		} else if(x>this.screen.x && y>this.screen.y && x<this.screen.x+this.screen.width && y<this.screen.y+this.screen.height){
 			var fx = Math.floor((x-this.screen.x)*this.model.boardwidth/this.screen.width)
 			var fy = Math.floor((y-this.screen.y)*this.model.boardheight/this.screen.height)
 			if(this.model.board[fx][fy].land != null){
 				var land = this.model.board[fx][fy].land
 				var sland = this.model.selectedLand
-				if(this.clickLand(land)){
+				if(this.gamecontroller.clickLand(land)){
 					var ht = this.landMapping[land.id].hitTest(x,y)
 					if(ht !== undefined && sland === null && this.model.phase == 0){
-						this.changePriority(ht)
+						this.gamecontroller.changePriority(ht)
 					}
 					return true
 				}
@@ -1204,47 +1314,6 @@ class GameView{
 				return true
 		}
 		return false
-	}
-	tryMoveOnCheckersGame(move){
-		var moved = this.model.checkersGame.move(move)
-		if(moved && this.model.checkersGame !== null){
-			var legal = this.model.checkersGame.legal().filter(x=>x!=="pass" || this.model.checkersGame.phase !== 1 || this.model.checkersGame.gameEnded())
-			if(legal.length == 1){
-				this.automove()
-				return moved
-			}
-		}
-		return moved
-	}
-	automove(){
-		if(this.model.checkersGame !== null){
-			var legal = this.model.checkersGame.legal().filter(x=>x!=="pass" || this.model.checkersGame.phase !== 1 || this.model.checkersGame.gameEnded())
-			
-			var th = this
-			if(legal.length == 1){
-				this.lock = true
-				setTimeout(()=>{th.lock = false;th.model.checkersGame.move(legal[0]);th.draw();th.automove()}, 50)
-			}
-		}
-	}
-	changePriority(newPriority){
-		if(!this.isPlayerMove())
-			return
-		this.model.changePriority(newPriority)
-		switch(this.model.priority){
-			case 0:
-				this.buttons[1].text = "Pionki"
-			break
-			case 1:
-				this.buttons[1].text = "Damki"
-			break
-		}
-	}
-	clickLand(land){
-		if(this.isPlayerMove())
-			return this.model.clickLand(land)
-		else
-			return false
 	}
 }
 class Button {
@@ -1276,7 +1345,7 @@ class Button {
 			this.ctx.fillStyle = "#ddd"
 			this.ctx.font = "18px Courier"
 			this.ctx.textAlign = "center"
-			this.ctx.fillText(this.text,this.x+this.w/2,this.y+this.h/2+4)
+			this.ctx.fillText(typeof this.text == "string" ? this.text : this.text(),this.x+this.w/2,this.y+this.h/2+4)
 		}
 	}
 	tryHit(x,y){
@@ -1677,8 +1746,8 @@ class CheckersGame{
 	}
 }
 class Ai{
-	constructor(gameview){
-		this.gameview = gameview
+	constructor(gamecontroller){
+		this.gamecontroller = gamecontroller
 		this.live()
 		this.statesInPast = {}
 		this.checkedStates = {}
@@ -1690,7 +1759,7 @@ class Ai{
                 this.max_possible = (25*25*3+1)*(this.damValue+this.sideDamValue+this.cornerDamValue)
 	}
 	say(message){
-		var iSpeakFor = this.gameview.isAiMove() ? "BOT for player "+(this.gameview.model.currentPlayer + 1) + ": " : "BOT: "
+		var iSpeakFor = this.gamecontroller.isAiMove() ? "BOT for player "+(this.gamecontroller.model.currentPlayer + 1) + ": " : "BOT: "
 		console.log(iSpeakFor + message)
 	}
 	live(){
@@ -1702,7 +1771,7 @@ class Ai{
 	run(){
 		this.think()
 		var th = this
-		var timeout = this.gameview.model.phase == 2 && this.gameview.model.checkersGameHidden ? 5 : 50
+		var timeout = this.gamecontroller.framerate()
 		setTimeout(()=>{ 
 			if(this.alive) { 
 				th.run() 
@@ -1710,10 +1779,10 @@ class Ai{
 		}, timeout)
 	}
 	think(){
-		if(this.gameview.isAiMove()){
-			var legal = this.gameview.model.legal()
+		if(this.gamecontroller.isAiMove()){
+			var legal = this.gamecontroller.model.legal()
 			if(legal.length > 0){
-				if(this.gameview.model.phase == 2){
+				if(this.gamecontroller.model.phase == 2){
 					this.playCheckersGame()
 					if(Object.keys(this.checkedStates).length > 10000){
 						var newStates = {}
@@ -1731,30 +1800,30 @@ class Ai{
 					this.statesInPast = {}
 					if(this.regrouping.length>0){
 						this.playRegrouping()
-						this.gameview.draw()
-					} else if(this.gameview.model.phase == 1){
-                                                this.gameview.model.act({type:"pass", move:"pass"})
-                                                this.gameview.draw()
+						//this.gamecontroller.draw()
+					} else if(this.gamecontroller.model.phase == 1){
+                                                this.gamecontroller.act({type:"pass", move:"pass"})
+                                                //this.gamecontroller.draw()
 					} else if(this.attacking.length>0) {
                                             var moveToPlay = this.attacking[0]
                                             var attacked = 0
-                                            if(this.gameview.model.currentColor() === moveToPlay.land2.color){
+                                            if(this.gamecontroller.model.currentColor() === moveToPlay.land2.color){
                                                 this.attacking = this.attacking.slice(1)
-                                            } else if(this.gameview.model.selectedLand == null){
+                                            } else if(this.gamecontroller.model.selectedLand == null){
                                                 var leg = legal.filter(x=>x.type==="select" && x.move===moveToPlay.land1)
                                                 
                                                 if(leg.length>0)
-                                                    this.gameview.model.act(leg[0])
-                                                this.gameview.draw()
+                                                    this.gamecontroller.act(leg[0])
+                                                //this.gamecontroller.draw()
                                             } else {
                                                 var leg = legal.filter(x=>x.type==="attack" && x.move===moveToPlay.land2)
                                                 if(leg.length>0){
-                                                    if(this.gameview.isAiColor(moveToPlay.land2.color))
+                                                    if(this.gamecontroller.isAiColor(moveToPlay.land2.color))
                                                         leg[0].hidden = true
-                                                    this.gameview.model.act(leg[0])
+                                                    this.gamecontroller.act(leg[0])
                                                     attacked++
                                                 }
-                                                this.gameview.draw()
+                                                //this.gamecontroller.draw()
                                                 
                                                 this.checkerGamePlannedPawns = moveToPlay.plannedPawns
                                                 this.checkerGamePlannedDams = moveToPlay.plannedDams
@@ -1766,7 +1835,7 @@ class Ai{
                                                 this.attacking = this.planAttacking()
                                             }
                                             
-                                            if(Array.from(new Set(this.gameview.model.lands.map(x=>x.color).filter(x=>x!=null))).length == 1){
+                                            if(Array.from(new Set(this.gamecontroller.model.lands.map(x=>x.color).filter(x=>x!=null))).length == 1){
                                                 this.alive = false
                                                 console.log("GAME ENDED :0")
                                             }
@@ -1787,8 +1856,8 @@ class Ai{
                                                         this.planRegrouping()
                                                     }
                                                 } else {
-                                                    this.gameview.model.act({type:"pass", move:"pass"})
-                                                    this.gameview.draw()
+                                                    this.gamecontroller.act({type:"pass", move:"pass"})
+                                                    //this.gamecontroller.draw()
                                                 }
                                                 /* else {
 							if(this.regrouping.length == 0){
@@ -1797,14 +1866,14 @@ class Ai{
 							}
                                                 }*/
                                                 /*
-						var legals = legal.filter(x=>x.move!="pass" && x.type != "move" && x.type != "deselect" && (this.gameview.model.phase == 2 || x.move.neighbours.filter(y=>y.color != x.move.color).length>0 || x.type == "attack" && this.worthAttacking(x)) &&
-								(this.gameview.model.phase != 0 || ( x.type == "select" && x.move.notOnlyOne() && x.move.availableNumber()>1) || x.type == "attack" && this.worthAttacking(x)) && 
-									(this.gameview.model.phase != 2 || x.move != this.gameview.model.checkersGame.selected))
+						var legals = legal.filter(x=>x.move!="pass" && x.type != "move" && x.type != "deselect" && (this.gamecontroller.model.phase == 2 || x.move.neighbours.filter(y=>y.color != x.move.color).length>0 || x.type == "attack" && this.worthAttacking(x)) &&
+								(this.gamecontroller.model.phase != 0 || ( x.type == "select" && x.move.notOnlyOne() && x.move.availableNumber()>1) || x.type == "attack" && this.worthAttacking(x)) && 
+									(this.gamecontroller.model.phase != 2 || x.move != this.gamecontroller.model.checkersGame.selected))
 						if(legals.length > 0){
 							var rand = legals[Math.floor(Math.random()*legals.length)]
-							this.gameview.model.act(rand.move)
-							this.gameview.draw()
-						} else if(legal.length > 0 && this.gameview.model.lands.filter(x=>x.color != this.gameview.model.currentColor()).length > 0){
+							this.gamecontroller.act(rand.move)
+							this.gamecontroller.draw()
+						} else if(legal.length > 0 && this.gamecontroller.model.lands.filter(x=>x.color != this.gamecontroller.model.currentColor()).length > 0){
 							if(this.regrouping.length == 0){
 								this.regrouping = []
 								this.planRegrouping()
@@ -1813,15 +1882,15 @@ class Ai{
 					}
 				}
 			}
-			this.say(`Playing for player ${this.gameview.model.currentPlayer+1}. ;/`)
+			this.say(`Playing for player ${this.gamecontroller.model.currentPlayer+1}. ;/`)
 		} else {
 			this.say("It's not my turn yet. ;/")
 		}
 	}
 	worthAttacking(x){
-            var buildup = (this.gameview.model.selectedLand.pawns - this.gameview.model.selectedLand.movedPawns + this.gameview.model.selectedLand.dams - this.gameview.model.selectedLand.movedDams < 6) ? 2 : 0
+            var buildup = (this.gamecontroller.model.selectedLand.pawns - this.gamecontroller.model.selectedLand.movedPawns + this.gamecontroller.model.selectedLand.dams - this.gamecontroller.model.selectedLand.movedDams < 6) ? 2 : 0
             
-            return evalAttack(this.gameview.model.selectedLand.pawns - this.gameview.model.selectedLand.movedPawns,this.gameview.model.selectedLand.dams - this.gameview.model.selectedLand.movedDams)-buildup >= evalDefence(x.move.pawns, x.move.dams)
+            return evalAttack(this.gamecontroller.model.selectedLand.pawns - this.gamecontroller.model.selectedLand.movedPawns,this.gamecontroller.model.selectedLand.dams - this.gamecontroller.model.selectedLand.movedDams)-buildup >= evalDefence(x.move.pawns, x.move.dams)
 	}
 	playRegrouping(){
 		var regrouping = this.regrouping[0]
@@ -1831,15 +1900,14 @@ class Ai{
 			case "move":
 			case "pass":
 			case "place":
-				var did = this.gameview.model.act(regrouping)
+				var did = this.gamecontroller.act(regrouping)
 			break
 			case "priority":
-				this.gameview.model.changePriority(regrouping.move)
+				this.gamecontroller.changePriority(regrouping.move)
 			break
 		}
 		if(did == false){
 			console.log("BAD")
-			//console.log(this.regrouping)
 		}
 		this.regrouping = this.regrouping.slice(1)
 		
@@ -1848,10 +1916,10 @@ class Ai{
 	planRegrouping(){
 		var checked = []
 		var groups = []
-		var lands = this.gameview.model.lands
+		var lands = this.gamecontroller.model.lands
 		for(var i in lands){
 			var land = lands[i]
-			if(land.color != this.gameview.model.currentColor() || checked.indexOf(land) > -1){
+			if(land.color != this.gamecontroller.model.currentColor() || checked.indexOf(land) > -1){
 				continue
 			}
 			var connected = land.getConnected(true)
@@ -1931,7 +1999,7 @@ class Ai{
                 return (color1 == prevailing && color1 != color2) || color2 == prevailing || color2 == null
 	}
 	planAttacking(){
-            var landPlanned = this.gameview.model.lands.filter(x=>x.color == this.gameview.model.currentColor()).filter(x=>x.neighbours.filter(y=>this.isEnemy(x.color, y.color, this.gameview.model.lands)).length > 0).map(x=>new Object({land:x, plannedPawns: x.pawns-x.movedPawns + (x.pawns > 0 ? -1 : 0), plannedDams: x.dams-x.movedDams+ (x.pawns > 0 ? 0 : -1)}))
+            var landPlanned = this.gamecontroller.model.lands.filter(x=>x.color == this.gamecontroller.model.currentColor()).filter(x=>x.neighbours.filter(y=>this.isEnemy(x.color, y.color, this.gamecontroller.model.lands)).length > 0).map(x=>new Object({land:x, plannedPawns: x.pawns-x.movedPawns + (x.pawns > 0 ? -1 : 0), plannedDams: x.dams-x.movedDams+ (x.pawns > 0 ? 0 : -1)}))
             
             var attackingPlan = {}
             for(var i in landPlanned){
@@ -1939,7 +2007,7 @@ class Ai{
                 attackingPlan[lp.land.id] = lp
             }
             
-            var edgesByLand = this.gameview.model.lands.filter(x=>x.color == this.gameview.model.currentColor() && x.canAttack()).map(x=>new Object({land:x, enemies:x.neighbours.filter(y=>this.isEnemy(x.color, y.color, this.gameview.model.lands)).map(y=>new Object({land1:x, land2:y, plannedPawns: 0, plannedDams: 0, potential: this.compareLandsToAttack(x,y)}))})).filter(x=>x.enemies.length > 0)
+            var edgesByLand = this.gamecontroller.model.lands.filter(x=>x.color == this.gamecontroller.model.currentColor() && x.canAttack()).map(x=>new Object({land:x, enemies:x.neighbours.filter(y=>this.isEnemy(x.color, y.color, this.gamecontroller.model.lands)).map(y=>new Object({land1:x, land2:y, plannedPawns: 0, plannedDams: 0, potential: this.compareLandsToAttack(x,y)}))})).filter(x=>x.enemies.length > 0)
             
             var defendingPlan = {}
             
@@ -2035,12 +2103,12 @@ class Ai{
             return false
 	}
 	playCheckersGame(pawns, dams){
-		var legal = this.gameview.model.checkersGame.legal()
-		var state = this.gameview.model.checkersGame.getCurrentState()
-		var simulated = new CheckersGame(this.gameview.getTotalMock())
+		var legal = this.gamecontroller.model.checkersGame.legal()
+		var state = this.gamecontroller.model.checkersGame.getCurrentState()
+		var simulated = new CheckersGame(this.gamecontroller.getTotalMock())
 		simulated.setCurrentState(state)
-		var evaluated = this.evaluate(this.gameview.model.checkersGame)
-		var code = this.gameview.model.checkersGame.getStateCode(0,0)
+		var evaluated = this.evaluate(this.gamecontroller.model.checkersGame)
+		var code = this.gamecontroller.model.checkersGame.getStateCode(0,0)
 		
 		this.bestValuesAtDepth1 = {}
 		this.bestValuesAtDepth2 = {}
@@ -2049,25 +2117,25 @@ class Ai{
 		if(legal.filter(x=>x!="pass").length == 1)
 			minmax = {move: legal.filter(x=>x!="pass")[0], score: null}
 		else {
-                    var depth = this.gameview.isAiColor(this.gameview.model.checkersGame.land2.color) ? 5 : 8
+                    var depth = this.gamecontroller.isAiColor(this.gamecontroller.model.checkersGame.land2.color) ? 5 : 8
                     while(minmax.score * turnfactor <= -this.max_possible && depth > 0){
 			minmax = this.beginminmax(simulated,depth)
 			depth -= 2
                     }
                 }
-		if(legal.indexOf("pass")>-1 && (minmax.move == null || this.statesInPast[code] > 1/* || this.gameview.model.checkersGame.phase == 0 && this.gameview.model.checkersGame.opponentValue() < this.gameview.model.checkersGame.placedValues()-2*/ || this.noSenseInLongerPlay(simulated))){
+		if(legal.indexOf("pass")>-1 && (minmax.move == null || this.statesInPast[code] > 1/* || this.gamecontroller.model.checkersGame.phase == 0 && this.gamecontroller.model.checkersGame.opponentValue() < this.gamecontroller.model.checkersGame.placedValues()-2*/ || this.noSenseInLongerPlay(simulated))){
                     if(this.noSenseInLongerPlay(simulated))
                         console.log(this.noSenseInLongerPlay(simulated))
-			this.gameview.model.checkersGame.move("pass")
+			this.gamecontroller.checkersGameMove("pass")
 		} else {
-			this.gameview.model.checkersGame.move(minmax.move)
+			this.gamecontroller.checkersGameMove(minmax.move)
 			if(code in this.statesInPast){
 				this.statesInPast[code]++
 			} else {
 				this.statesInPast[code] = 1
 			}
 		}
-		this.gameview.draw()
+		//this.gamecontroller.draw()
 	}
 	evaluate(simulated){
 		var result
@@ -2249,8 +2317,11 @@ function init(){
 		lands: 20,
 		players: players
 	}
-	var gameview = new GameView(document.getElementById("canv"),initialSetting)
-	var ai = new Ai(gameview)
+	var gamecontroller = new GameController(initialSetting)
+	var gameview = new GameView(document.getElementById("canv"))
+	gamecontroller.addView(gameview)
+	gamecontroller.init()
+	var ai = new Ai(gamecontroller)
 	gameview.draw()
 	
 	
