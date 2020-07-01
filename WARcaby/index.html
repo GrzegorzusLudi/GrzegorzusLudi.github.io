@@ -2171,20 +2171,20 @@ class Ai{
 				*/
 				return this.max_possible * this.max_possible * (
 				((countedBoard.filter(x=>x==0).length
-				+countedBoard.filter(x=>x==2).length) > 0 ? 1 : 0) + 
+				+countedBoard.filter(x=>x==2).length)/* > 0 ? 1 : 0*/) + 
 				((countedBoard.filter(x=>x==1).length
-				+countedBoard.filter(x=>x==3).length) > 0 ? -1 : 0)
+				+countedBoard.filter(x=>x==3).length)/* > 0 ? -1 : 0*/)
 				)
 			}
 			result = (
 				(simulated.turn === 0 ? 1 : 0.5) *
                                 (countedBoard.filter(x=>x==0).length
 				+countedBoard.filter(x=>x==2).length * this.damValue
-				-(countedBoard.filter(x=>x==3).length > 0 ? 1 : 0) * this.damValue*0.05
+				//-(countedBoard.filter(x=>x==3).length > 0 ? 1 : 0) * this.damValue*0.05
 				+onSides.filter(x=>x==2).length * this.sideDamValue
-				+onCorners.filter(x=>x==2).length * this.cornerDamValue
-				+onCorners.filter(x=>x==0).length * 0.5
-				+penultimal1*0.05+penpenultimal1*0.025
+				+onCorners.filter(x=>x==2).length * this.max_possible
+				//+onCorners.filter(x=>x==0).length * 0.5
+				//+penultimal1*0.05+penpenultimal1*0.025
 				)
 				
 				-
@@ -2192,12 +2192,17 @@ class Ai{
 				(countedBoard.filter(x=>x==1).length
 				+countedBoard.filter(x=>x==3).length * this.damValue
 				+onSides.filter(x=>x==3).length * this.sideDamValue
-				+onCorners.filter(x=>x==3).length * this.cornerDamValue
-				+onCorners.filter(x=>x==1).length * 0.5
-				+penultimal2*0.05+penpenultimal2*0.025
+				+onCorners.filter(x=>x==3).length * this.max_possible
+				//+onCorners.filter(x=>x==1).length * 0.5
+				//+penultimal2*0.05+penpenultimal2*0.025
 				)
 			)
-		
+		if(onCorners.filter(x=>x==2).length && result<0)
+                    result = 0
+                    
+		if(onCorners.filter(x=>x==3).length && result>0)
+                    result = 0
+                    
 		return result
 	}
 	beginminmax(simulated,depth){
@@ -2214,9 +2219,9 @@ class Ai{
                 this.alreadyCheckedStates++
                 if(depth >= 4 && Math.random()>1/(1 + Math.floor(this.alreadyCheckedStates/1000)))
                     depth = 0
-		if(depth<initialDepth-1 && simulated.phase == 0){
+		if(depth<initialDepth-2 && simulated.phase == 0){
 			simulated.phase = 1
-			depth = 4
+			depth = 3
 		}
 		var max_possible = 25*25*2+1
 		var legals = simulated.legal().filter(x=>x!="pass")
