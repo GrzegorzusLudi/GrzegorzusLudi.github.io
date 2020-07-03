@@ -381,8 +381,8 @@ class BoardModel{
 				break 	
 			if(i<players){
 				land.color = this.getColor(i)
-				land.dams = 2
-				land.pawns = 6
+				land.dams = 0
+				land.pawns = 8
 			} else {
 				land.color = null
 				land.pawns = 1+Math.floor(Math.random()*3)
@@ -2059,11 +2059,13 @@ class Ai{
             
             for(var i in edgesByLand){
                 var ebl = edgesByLand[i]
-                ebl.enemies = ebl.enemies.filter(x=>x.plannedPawns+x.plannedDams>0 && !this.noSenseInLongerPlayCheckConfiguration(x.plannedPawns,x.land2.pawns,x.plannedDams,x.land2.dams))
+                ebl.enemies = ebl.enemies.filter(x=>x.plannedPawns+x.plannedDams>0 && 
+                !this.noSenseInLongerPlayCheckConfiguration(x.plannedPawns,x.land2.pawns,x.plannedDams,x.land2.dams))
             }
             
             
-            return edgesByLand.map(x=>x.enemies).reduce((x,y)=>x.concat(y),[]).filter(x=>x.plannedPawns+x.plannedDams>0 && evalAttack(x.plannedPawns,x.plannedDams)+5 >= evalDefence(x.land2.pawns,x.land2.dams))
+            return edgesByLand.map(x=>x.enemies).reduce((x,y)=>x.concat(y),[]).filter(x=>x.plannedPawns+x.plannedDams>0 && evalAttack(x.plannedPawns,x.plannedDams)+5 >= evalDefence(x.land2.pawns,x.land2.dams) &&
+                (x.land1.pawns-x.land1.movedPawns+(x.land1.dams-x.land1.movedDams)*3 > 1))
 	}
 	//works if turn is 0
 	noSenseInLongerPlay(state){
@@ -2072,8 +2074,21 @@ class Ai{
             var myDams = Object.values(state.board).filter(x=>x==2).length
             var opponentDams = Object.values(state.board).filter(x=>x==3).length
             
-            
-            return this.noSenseInLongerPlayCheckConfiguration(myPawns,opponentPawns,myDams,opponentDams)
+            return this.noSenseInLongerPlayCheckConfiguration(myPawns,opponentPawns,myDams,opponentDams) || this.damOnDiagonal(state)
+        }
+        damOnDiagonal(state){
+                var onCorners = []
+                
+                var diagonal1 = ["11","22","33","44","55","66","77"]
+                var corners1 = ["11","77"]
+                var diagonal2 = ["17","26","35","44","53","62","71"]
+                var corners2 = ["17","71"]
+                if(corners1.map(x=>state.board[x]).filter(x=>x==3).length > 0 && diagonal1.map(x=>state.board[x]).filter(x=>x==0 || x==2).length == 0)
+                        onCorners = onCorners.concat(diagonal1.map(x=>state.board[x]).filter(x=>x==3))
+                if(corners2.map(x=>state.board[x]).filter(x=>x==3).length > 0 && diagonal2.map(x=>state.board[x]).filter(x=>x==0 || x==2).length == 0)
+                        onCorners = onCorners.concat(diagonal2.map(x=>state.board[x]).filter(x=>x==3))
+                return onCorners.length > 0
+			
         }
         noSenseInLongerPlayCheckConfiguration(myPawns,opponentPawns,myDams,opponentDams){
             
@@ -2127,6 +2142,7 @@ class Ai{
                     if(this.noSenseInLongerPlay(simulated))
                         console.log(this.noSenseInLongerPlay(simulated))
 			this.gamecontroller.checkersGameMove("pass")
+			this.attacking = this.attacking.slice(1)
 		} else {
 			this.gamecontroller.checkersGameMove(minmax.move)
 			if(code in this.statesInPast){
@@ -2151,14 +2167,14 @@ class Ai{
 			var onCorners = []
 			var diagonal1 = ["11","22","33","44","55","66","77"]
 			var diagonal2 = ["17","26","35","44","53","62","71"]
-			if(diagonal1.filter(x=>x==2).length > 0 && diagonal1.filter(x=>x==1 || x==3).length == 0)
-				onCorners = onCorners.concat(diagonal1.filter(x=>x==2))
-			if(diagonal1.filter(x=>x==3).length > 0 && diagonal1.filter(x=>x==0 || x==2).length == 0)
-				onCorners = onCorners.concat(diagonal1.filter(x=>x==3))
-			if(diagonal2.filter(x=>x==2).length > 0 && diagonal2.filter(x=>x==1 || x==3).length == 0)
-				onCorners = onCorners.concat(diagonal2.filter(x=>x==2))
-			if(diagonal2.filter(x=>x==3).length > 0 && diagonal2.filter(x=>x==0 || x==2).length == 0)
-				onCorners = onCorners.concat(diagonal2.filter(x=>x==3))
+			if(diagonal1.map(x=>simulated.board[x]).filter(x=>x==2).length > 0 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==1 || x==3).length == 0)
+				onCorners = onCorners.concat(diagonal1.map(x=>simulated.board[x]).filter(x=>x==2))
+			if(diagonal1.map(x=>simulated.board[x]).filter(x=>x==3).length > 0 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==0 || x==2).length == 0)
+				onCorners = onCorners.concat(diagonal1.map(x=>simulated.board[x]).filter(x=>x==3))
+			if(diagonal2.map(x=>simulated.board[x]).filter(x=>x==2).length > 0 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==1 || x==3).length == 0)
+				onCorners = onCorners.concat(diagonal2.map(x=>simulated.board[x]).filter(x=>x==2))
+			if(diagonal2.map(x=>simulated.board[x]).filter(x=>x==3).length > 0 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==0 || x==2).length == 0)
+				onCorners = onCorners.concat(diagonal2.map(x=>simulated.board[x]).filter(x=>x==3))
 			
 			var legals = simulated.legal().filter(x=>x!="pass")
 			if(legals.length==0){/*
@@ -2169,31 +2185,31 @@ class Ai{
 				
 				return result
 				*/
-				return this.max_possible * this.max_possible * (
+				return this.max_possible * this.max_possible * (this.gamecontroller.turn*2-1) /*(
 				((countedBoard.filter(x=>x==0).length
-				+countedBoard.filter(x=>x==2).length)/* > 0 ? 1 : 0*/) + 
+				+countedBoard.filter(x=>x==2).length) > 0 ? 1 : 0) + 
 				((countedBoard.filter(x=>x==1).length
-				+countedBoard.filter(x=>x==3).length)/* > 0 ? -1 : 0*/)
-				)
+				+countedBoard.filter(x=>x==3).length) > 0 ? -1 : 0)
+				)*/
 			}
 			result = (
-				(simulated.turn === 0 ? 1 : 0.5) *
+				(simulated.turn === 0 ? 1 : 1) *
                                 (countedBoard.filter(x=>x==0).length
 				+countedBoard.filter(x=>x==2).length * this.damValue
 				//-(countedBoard.filter(x=>x==3).length > 0 ? 1 : 0) * this.damValue*0.05
 				+onSides.filter(x=>x==2).length * this.sideDamValue
-				+onCorners.filter(x=>x==2).length * this.max_possible
-				//+onCorners.filter(x=>x==0).length * 0.5
+				+onCorners.filter(x=>x==2).length * this.cornerDamValue
+				+onCorners.filter(x=>x==0).length * 1.1
 				//+penultimal1*0.05+penpenultimal1*0.025
 				)
 				
 				-
-				(simulated.turn === 1 ? 1 : 0.5) *
+				(simulated.turn === 1 ? 1 : 1) *
 				(countedBoard.filter(x=>x==1).length
 				+countedBoard.filter(x=>x==3).length * this.damValue
 				+onSides.filter(x=>x==3).length * this.sideDamValue
 				+onCorners.filter(x=>x==3).length * this.max_possible
-				//+onCorners.filter(x=>x==1).length * 0.5
+				+onCorners.filter(x=>x==1).length * 1.1
 				//+penultimal2*0.05+penpenultimal2*0.025
 				)
 			)
