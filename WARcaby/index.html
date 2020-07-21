@@ -283,6 +283,16 @@ class BoardModel{
 			"#a0a",
 			"#06a",
 			"#6a0",
+			"#a55",
+			"#55a",
+			"#5a5",
+			"#aa5",
+			"#5aa",
+			"#777",
+			"#a85",
+			"#a5a",
+			"#58a",
+			"#8a5",
 		]
 		//DZIEBUDŻ
 		this.checkersGame = null
@@ -1757,7 +1767,7 @@ class Ai{
 		
                 this.pawnValue = 1
                 this.damValue = 3
-                this.cornerDamValue = 5;
+                this.cornerDamValue = 3;
                 this.sideDamValue = 1;
                 this.max_possible = (25*25*3+1)*(this.damValue+this.sideDamValue+this.cornerDamValue)
 	}
@@ -1889,12 +1899,12 @@ class Ai{
 		} else {
 			this.say("It's not my turn yet. ;/")
 		}
-	}
+	}/*
 	worthAttacking(x){
             var buildup = (this.gamecontroller.model.selectedLand.pawns - this.gamecontroller.model.selectedLand.movedPawns + this.gamecontroller.model.selectedLand.dams - this.gamecontroller.model.selectedLand.movedDams < 6) ? 2 : 0
             
             return evalAttack(this.gamecontroller.model.selectedLand.pawns - this.gamecontroller.model.selectedLand.movedPawns,this.gamecontroller.model.selectedLand.dams - this.gamecontroller.model.selectedLand.movedDams)-buildup >= evalDefence(x.move.pawns, x.move.dams)
-	}
+	}*/
 	playRegrouping(){
 		var regrouping = this.regrouping[0]
 		switch(regrouping.type){
@@ -1975,7 +1985,7 @@ class Ai{
                 factor = 1
             else
                 factor = 2
-            return (evalAttack(attacker.pawns - attacker.movedPawns, attacker.dams - attacker.movedDams) - evalDefence(defender.pawns, defender.dams) - (defender.color == null ? 1 : 0)) * factor
+            return (evalAttack(attacker.pawns - attacker.movedPawns, attacker.dams - attacker.movedDams) - evalDefence(defender.pawns, defender.dams) - (defender.color == null ? 2 : 0)) * factor
 	}
 	isEnemy(color1, color2, lands){
             var strengthByColor = {}
@@ -2002,9 +2012,10 @@ class Ai{
                 return (color1 == prevailing && color1 != color2) || color2 == prevailing || color2 == null
 	}
 	planAttacking(){
+            var curcolor = this.gamecontroller.model.currentColor()
             var landsShuffled = shuffle(this.gamecontroller.model.lands)
             var landPlanned = landsShuffled.filter(
-                x=>x.color == this.gamecontroller.model.currentColor()
+                x=>x.color == curcolor
             ).filter(
                 x=>x.neighbours.filter(
                     y=>this.isEnemy(x.color, y.color, this.gamecontroller.model.lands)
@@ -2016,6 +2027,27 @@ class Ai{
                     plannedDams: x.dams-x.movedDams+ (x.pawns > 0 ? 0 : -1)}
                 )
             )
+            
+            var enemies = landsShuffled
+            .filter(x=>x.color === curcolor)
+                .map(x=>x.neighbours.filter(y=>
+                    this.isEnemy(x.color, y.color, this.gamecontroller.model.lands) && 
+                    y.color !== null))
+                .reduce((x,y)=>x.concat(y),[])
+                
+            var enemiesStrength = Array.from(new Set(enemies))
+                .map(x=>evalAttack(x.pawns,x.dams))
+                .reduce((x,y)=>x+y,0)
+            
+            var mystrength = landsShuffled
+            .filter(x=>x.color === curcolor)
+                .map(x=>evalAttack(x.pawns,x.dams) + x.additional).reduce((x,y)=>x+y,0)
+            
+            console.log(mystrength+" "+enemiesStrength)
+            if(mystrength*1.3+2<enemiesStrength){
+                console.log("HALT")
+                return []
+            }
             
             var attackingPlan = {}
             for(var i in landPlanned){
@@ -2122,9 +2154,9 @@ class Ai{
                 var corners1 = ["11","77"]
                 var diagonal2 = ["17","26","35","44","53","62","71"]
                 var corners2 = ["17","71"]
-                if(corners1.map(x=>state.board[x]).filter(x=>x==3).length > 0 && diagonal1.map(x=>state.board[x]).filter(x=>x==0 || x==2).length == 0)
+                if(corners1.map(x=>state.board[x]).filter(x=>x==3).length > 0 && diagonal1.map(x=>state.board[x]).filter(x=>x==0 || x==2 || x==1).length == 0)
                         onCorners = onCorners.concat(diagonal1.map(x=>state.board[x]).filter(x=>x==3))
-                if(corners2.map(x=>state.board[x]).filter(x=>x==3).length > 0 && diagonal2.map(x=>state.board[x]).filter(x=>x==0 || x==2).length == 0)
+                if(corners2.map(x=>state.board[x]).filter(x=>x==3).length > 0 && diagonal2.map(x=>state.board[x]).filter(x=>x==0 || x==2 || x==1).length == 0)
                         onCorners = onCorners.concat(diagonal2.map(x=>state.board[x]).filter(x=>x==3))
                 return onCorners.length > 0
 			
@@ -2167,11 +2199,11 @@ class Ai{
 		this.bestValuesAtDepth1 = {}
 		this.bestValuesAtDepth2 = {}
 		var turnfactor = state.turn == 0 ? 1 : -1
-		var minmax = {score: -this.max_possible * turnfactor}
+		var minmax = {score: -this.max_possible*this.max_possible * turnfactor}
 		if(legal.filter(x=>x!="pass").length == 1)
 			minmax = {move: legal.filter(x=>x!="pass")[0], score: null}
 		else {
-                    var depth = this.gamecontroller.isAiColor(this.gamecontroller.model.checkersGame.land2.color) ? 6 : 8
+                    var depth = this.gamecontroller.isAiColor(this.gamecontroller.model.checkersGame.land2.color) ? 4 : 8
                     while(minmax.score * turnfactor <= -this.max_possible && depth > 0){
 			minmax = this.beginminmax(simulated,depth)
 			depth -= 2
@@ -2235,7 +2267,7 @@ class Ai{
 				+countedBoard.filter(x=>x==2).length * this.damValue
 				//-(countedBoard.filter(x=>x==3).length > 0 ? 1 : 0) * this.damValue*0.05
 				//+onSides.filter(x=>x==2).length * this.sideDamValue
-				+(onCorners.filter(x=>x==2).length > 0 ? 1 : 0) * this.max_possible
+				+(onCorners.filter(x=>x==2).length > 0 ? 1 : 0) * this.cornerDamValue
 				//+onSides.filter(x=>x==0).length * 0.1
 				//+onCorners.filter(x=>x==0).length * 0.7
 				//+penultimal1*0.05
@@ -2246,7 +2278,7 @@ class Ai{
 				countedBoard.filter(x=>x==1).length
 				+countedBoard.filter(x=>x==3).length * this.damValue
 				//+onSides.filter(x=>x==3).length * this.sideDamValue
-				+(onCorners.filter(x=>x==3).length > 0 ? 1 : 0) * this.max_possible
+				+(onCorners.filter(x=>x==3).length > 0 ? 1 : 0) * this.cornerDamValue
 				//+onSides.filter(x=>x==1).length * 0.1
 				//+onCorners.filter(x=>x==1).length * 0.7
 				//+penultimal2*0.05
@@ -2294,16 +2326,17 @@ class Ai{
             for(var i = 1;i<7 && i<=max;i++){
                 var key = (x+xv*i)+""+(y+yv*i)
                 var color = board[key] === 0 || board[key] === 2 ? -1 : board[key] === 1 || board[key] === 3 ? 1 : null
+                var result = x === y || x === 7 - y + 1 ? color1 * 1.5 : color1
                 if(color !== null || x+xv*i<0 || x+xv*i>6 || y+yv*i<0 || y+yv*i>6)
                     break
                 else if(!(key in placements))
-                    placements[key] = color1
+                    placements[key] = result
                 else if(placements[key] != color1)
                     placements[key] = 0
             }
 	}
 	beginminmax(simulated,depth){
-		this.checkedStates = {}
+		//this.checkedStates = {}
                 this.alreadyCheckedStates = 0
 		return this.minmax(simulated,depth,depth)
 	}
@@ -2321,7 +2354,7 @@ class Ai{
                 //DO THINGS
             }*/
                 this.alreadyCheckedStates++
-                if(depth >= 7 && Math.random()>1/(1 + Math.floor(this.alreadyCheckedStates/10000)))
+                if(depth >= 7 && Math.random()>1/(1 + Math.floor(this.alreadyCheckedStates/2000)))
                     depth = 0
 		if(depth>=initialDepth-2 && depth<initialDepth && simulated.phase == 0){
 			simulated.phase = 1
@@ -2333,7 +2366,7 @@ class Ai{
                     legals = ["pass"]
                     
 		if(simulated.phase == 0 && legals.length >= 1){
-                    if(simulated.remainingPawns+simulated.remainingDams>=4){
+                    if(simulated.remainingPawns + simulated.remainingDams>=3 || simulated.land1Dams === 0 && simulated.land2Dams === 0){
                         var sequence
                         switch(simulated.turn){
                             case 0:
@@ -2450,14 +2483,14 @@ function shuffle(a) {
     return a;
 }
 function init(){
-	var PLAYERS_NO = 7
+	var PLAYERS_NO = 8
 	var human = Math.floor(Math.random()*PLAYERS_NO)
 	var players = []
 	for(var i = 0;i<PLAYERS_NO;i++){
 		players.push(i == human ? "player" : "ai")
 	}
 	var initialSetting = {
-		lands: 20,
+		lands: 30,
 		players: players
 	}
 	var gamecontroller = new GameController(initialSetting)
