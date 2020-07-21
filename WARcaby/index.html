@@ -1862,7 +1862,7 @@ class Ai{
                                                 var legals = legal.filter(x=>x.type!="pass" || x!="pass")
                                                 if(legals.length > 0){
                                                     console.log("PLANNING ATTACKING")
-                                                    this.attacking = this.planAttacking()
+                                                    this.attacking = this.planAttacking(true)
                                                     if(this.attacking.length === 0){
                                                         this.regrouping = []
                                                         console.log("PLANNING REGROUPING")
@@ -2011,7 +2011,7 @@ class Ai{
             else
                 return (color1 == prevailing && color1 != color2) || color2 == prevailing || color2 == null
 	}
-	planAttacking(){
+	planAttacking(canhalt){
             var curcolor = this.gamecontroller.model.currentColor()
             var landsShuffled = shuffle(this.gamecontroller.model.lands)
             var landPlanned = landsShuffled.filter(
@@ -2027,26 +2027,26 @@ class Ai{
                     plannedDams: x.dams-x.movedDams+ (x.pawns > 0 ? 0 : -1)}
                 )
             )
-            
-            var enemies = landsShuffled
-            .filter(x=>x.color === curcolor)
-                .map(x=>x.neighbours.filter(y=>
-                    this.isEnemy(x.color, y.color, this.gamecontroller.model.lands) && 
-                    y.color !== null))
-                .reduce((x,y)=>x.concat(y),[])
+            if(canhalt){
+                var enemies = landsShuffled
+                .filter(x=>x.color === curcolor)
+                    .map(x=>x.neighbours.filter(y=>
+                        this.isEnemy(x.color, y.color, this.gamecontroller.model.lands) && 
+                        y.color !== null))
+                    .reduce((x,y)=>x.concat(y),[])
+                    
+                var enemiesStrength = Array.from(new Set(enemies))
+                    .map(x=>evalAttack(x.pawns,x.dams))
+                    .reduce((x,y)=>x+y,0)
                 
-            var enemiesStrength = Array.from(new Set(enemies))
-                .map(x=>evalAttack(x.pawns,x.dams))
-                .reduce((x,y)=>x+y,0)
-            
-            var mystrength = landsShuffled
-            .filter(x=>x.color === curcolor)
-                .map(x=>evalAttack(x.pawns,x.dams) + x.additional).reduce((x,y)=>x+y,0)
-            
-            console.log(mystrength+" "+enemiesStrength)
-            if(mystrength*1.3+2<enemiesStrength){
-                console.log("HALT")
-                return []
+                var mystrength = landsShuffled
+                .filter(x=>x.color === curcolor)
+                    .map(x=>evalAttack(x.pawns,x.dams) + x.additional).reduce((x,y)=>x+y,0)
+                
+                if(mystrength*1.7+2<enemiesStrength){
+                    console.log("HALT")
+                    return []
+                }
             }
             
             var attackingPlan = {}
@@ -2077,6 +2077,7 @@ class Ai{
             
             var defendingPlan = {}
             
+            for(var z = 0;z<2;z++){
             for(var i in edgesByLand){
                 var ebl = edgesByLand[i]
                 var ap = attackingPlan[ebl.land.id]
@@ -2126,6 +2127,7 @@ class Ai{
                     e.plannedDams+=ap.plannedDams
                     ap.plannedDams=0
                 }
+            }
             }
             
             for(var i in edgesByLand){
