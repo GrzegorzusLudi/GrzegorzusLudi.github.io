@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+    <head>
+        <title>CzasoZiemia editor</title>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="static/css/style.css" />
+    </head>
+    <body>
+        <div id="all">
+            <div id="top">
+                CzasoZiemia editor
+            </div>
+            <div id="middle">
+                <div id="leftpanel">
+                    <div id="leftpaneltop">
+                        <a href="#">
+                            <img id="button-import" class="menu-img" src="static/img/import.png" alt="import" title="import" />
+                        </a>
+                    </div>
+                    Layers:
+                    <div id="leftpanelcontent">
+                        
+                    </div>
+                    
+                </div>
+                <div id="movable">
+                    
+                </div>
+                <div id="rightpanel">
+                    <div id="stage">
+                        <canvas id="canv">
+                        </canvas>
+                    </div>
+                    <div id="bottompanel">
+                        
+                    </div>
+                </div>
+            </div>
+            <div id="bottom">
+            
+            </div>
+        </div>
+        <div class="dialog-window" id="layer-import">
+            <div class="window-closer">X</div>
+            <h4>Import</h4>
+            <div class="dialog-window-title">Choose file:</div>
+            <div class="dialog-window-row">
+                File: <input type="file" id="layer-import-file" />
+            </div>
+            <div class="dialog-window-title">Chose file type:</div>
+            <div class="dialog-window-row">
+                File type:
+                <select id="layer-import-datatype">
+                    <option value="null" name="null">-- choose --</option>
+                    <option value="geojson" name="geojson">geojson</option>
+                    <option value="json" name="geojson">json</option>
+                    <option value="text" name="text">text</option>
+                </select>
+            </div>
+            <div class="dialog-window-row hidden" id="layer-import-hidden">
+                <p>
+                    <b>File loaded :)</b>
+                </p>
+                <p>
+                    There should be chosen the coordinate system.
+                </p>
+                <input type="button" id="dialog-window-add" value="ADD TO STAGE" />
+            </div>
+        </div>
+        <script src="static/js/script.js"></script>
+        <script src="static/js/window.js"></script>
+        <script src="static/js/layers.js"></script>
+        
+        <script src="static/external-js/wellknown.js"></script>
+    </body>
+</html>
+

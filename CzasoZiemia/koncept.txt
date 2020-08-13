@@ -1,0 +1,146 @@
+
+Int - int64
+String - string(200)
+Longstring - string(unlimited)
+
+format CzasoZiemski:
+
+Grupa {
+    szef: User
+    zastępcy: [User]
+    członowie: [User]
+}
+
+User {
+    id: Int
+    nick: String
+}
+
+Baza {
+    warstwa: Warstwy
+    nadadmin: User
+    admini: [Grupa]
+}
+
+
+KażdyObiekt ma atrybuty typu:
+-właściciel: User
+-edytorzy: [Grupa]
+-edited: 
+-edited:
+-previous: 
+
+
+GrupaWarstw {
+    warstwy: [Warstwa]
+    maska: Geometria
+}
+
+Warstwa {
+    obiekty: Obiekt
+    typ: TypWarstwy
+    maska: Geometria
+}
+
+TypWarstwy => Wielokąt, Punkt, Linia, Geometria, 
+
+Obiekt {
+    obramowanie: Obramowanie
+    kształt: Kształt
+}
+
+Widok {
+    kształt: Kształt
+}
+
+Kształt {
+    koordynaty: Funkcja
+}
+
+//specyfikacja
+Geometria : Kształt {
+    id: Int
+    Koordynaty: koordynaty
+    czasOd: Czas
+    czasDo: Czas
+}
+
+GeometriaWirtualna : Kształt 
+
+OdwołanieDoGeometrii : GeometriaWirtualna {
+    geometrie: [Geometria]
+    działanie: Działanie
+}
+
+Działanie => Suma, Różnica, Przekrój, 
+
+
+
+
+
+
+
+
+
+ColumnScheme {
+    name: SchemeName
+    type: SchemaTypeName
+}
+
+Layer {
+    name: String
+    columns: [ColumnScheme]
+    features: [Feature]
+}
+
+Column {
+    layer: Layer
+    columnScheme: ColumnScheme
+}
+
+Feature {
+    geometry: GeometryExpression
+    properties: Dict<Column, SchemaTypeValue>
+    from: Date
+    to: Date
+}
+
+ForeignKey {
+    columnLeft: Column | AllFeatures
+    columnRight: Column | AllFeatures
+    type: OneToOne, OneToMany
+    maskExpression: GeometryExpression
+    relationToOtherGeometries: Leave | Remove
+}
+
+GeometryExpression = Intersection | Complement | Sum | Geometry | Column
+
+Intersection {
+    layers: [GeometryExpression]
+}
+
+Complement {
+    layer1: GeometryExpression
+    subtractedLayers: [GeometryExpression]
+}
+
+Sum {
+    layers: [GeometryExpression]
+}
+
+Geometry = GeometryCollection | Polygon | MultiPolygon | Line | MultiLine | Point | MultiPoint {
+    coords: [Float,1] | [Float,2] | [Float,3] | [Float,4]
+    timeFrom: Time | Interval
+    timeTo: Time | Interval
+}
+
+
+
+
+
+
+
+
+
+
+

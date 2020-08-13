@@ -1,0 +1,121 @@
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+p {
+    padding: 5px;
+}
+#all {
+    width:100%;
+    height:100vh;
+}
+#top {
+    top:0px;
+    height: 40px;
+    padding:5px;
+    border-bottom: 2px solid #336;
+}
+#middle {
+    top:40px;
+    height: calc( 100% - 60px );
+}
+#bottom {
+    font-size: 8pt;
+}
+#leftpanel {
+    font-size:12pt;
+    width: 200px;
+    height: 100%;
+    float:left;
+}
+#movable {
+    width: 20px;
+    height: 100%;
+    float:left;
+    background-color: #aaa;
+    border-left: 1px solid #336;
+    border-right: 1px solid #336;
+}
+#rightpanel {
+    height: 100%;
+    float:left;
+}
+#bottom {
+    border-top: 2px solid #336;
+    bottom:0px;
+    height: 20px;
+}
+#stage {
+    width: 100%;
+    height: 100%;
+}
+#leftpaneltop {
+    height: 30px;
+    width: 100%;
+    border-bottom: 2px solid #669;
+}
+#leftpanelcontent {
+    height: calc( 100vh - 115px );
+    border-top: 1px solid black;
+    width: 100%;
+    overflow-y: scroll;
+}
+.dialog-window {
+    background-color: #fff;
+    border: 1px solid #aaa;
+    position: absolute;
+    text-align:center;
+    padding:20px;
+    display:none;
+}
+.hidden {
+    display:none;
+}
+.dialog-window-row {
+    border: 1px solid #000;
+    padding: 20px;
+}
+.dialog-window-title {
+    text-align:left;
+    font-size:12px;
+    margin-top:10px;
+}
+#layer-import {
+    left: 25vw;
+    width: 50vw;
+    top: 15vh;
+    /*height: 70vh;*/
+}
+
+.menu-img {
+    border-right:1px solid black;
+    height:29px;
+}
+a {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    
+}
+.window-closer {
+    border: 1px solid black;
+    background-color: white;/*
+    font-weight:bold;*/
+    text-align:center;
+    position: absolute;
+    right:10px;
+    top:10px;
+    width:40px;
+    height:40px;
+    font-size:25px;
+}
+div {
+    /*border: 1px solid red; /*TEMPORARY
+    */box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
