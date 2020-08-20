@@ -6,7 +6,7 @@ class GameModel {
         this.gamer = new LeGamer(0,0)
         this.gamer.setColor("#66f")
         this.elements.push(this.gamer)
-        for(var i in elements){
+        for(var i in this.elements){
             
         }
         for(var i = -300;i<300;i+=10){
