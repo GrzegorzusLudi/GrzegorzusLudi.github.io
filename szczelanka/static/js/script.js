@@ -243,7 +243,7 @@ class AbstractCanvas {
         this.setStyle({strokeStyle:"#000",fillStyle:"#fff",lineWidth:2})
         var things = this.gameModel.elements.filter(x=>this.camera.checkIfFits(x,this.bounds)).sort((a,b)=>this.camera.getAbsoluteY(a.x,a.y,this.bounds)-this.camera.getAbsoluteY(b.x,b.y,this.bounds))
         for(var i in things){
-            this.drawThing(things[i].render())
+            this.drawThing(things[i].getThing())
         }
     }
     drawThing(rendered){
