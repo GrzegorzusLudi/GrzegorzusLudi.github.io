@@ -2090,7 +2090,7 @@ class Ai{
                 .filter(x=>x.color === curcolor )
                     .map(x=>evalDefence(x.pawns,x.dams) + x.additional).reduce((x,y)=>x+y,0)
                 
-                if(mystrength*1.5+1<enemiesStrength){
+                if(mystrength*1.3+1<enemiesStrength){
                     console.log("HALT")
                     return []
                 }
@@ -2258,12 +2258,12 @@ class Ai{
 		if(legal.filter(x=>x!="pass").length == 1)
 			minmax = {move: legal.filter(x=>x!="pass")[0], score: null}
 		else {
-                    var depth = this.gamecontroller.isAiColor(this.gamecontroller.model.checkersGame.land2.color) ? 4 : 11
-                    while(minmax.score * turnfactor <= -this.max_possible && depth > 0){
-			minmax = this.beginminmax(simulated,depth)
-			depth = depth > 2 ? 2 : 0
-			depth = 0
-                    }
+                    var isai = this.gamecontroller.isAiColor(this.gamecontroller.model.checkersGame.land2.color)
+                    //while(minmax.score * turnfactor <= -this.max_possible && depth > 0){
+			minmax = isai ? this.beginminmax(simulated,200,40) : this.beginminmax(simulated,3000,200)
+			//depth = depth > 2 ? 2 : 0
+			//depth = 0
+                    //}
                     console.log(minmax.score)
                 }
 		if(legal.indexOf("pass")>-1 && (minmax.move == null || this.statesInPast[code] > 1/* || this.gamecontroller.model.checkersGame.phase == 0 && this.gamecontroller.model.checkersGame.opponentValue() < this.gamecontroller.model.checkersGame.placedValues()-2*/ || (this.noSenseInLongerPlay(simulated) && simulated.turn === 0))){
@@ -2392,10 +2392,10 @@ class Ai{
                     placements[key] = 0
             }
 	}
-	beginminmax(simulated,depth){
+	beginminmax(simulated,totalCheckedStates,maxCheckedStates){
 		//this.checkedStates = {}
                 this.alreadyCheckedStates = 0
-		return this.minmaxIterative(simulated,1000,200)
+		return this.minmaxIterative(simulated,totalCheckedStates,maxCheckedStates)
 		//return this.minmax(simulated,depth,depth)
 	}
 	placedPawns(simulated,player){
@@ -2408,6 +2408,8 @@ class Ai{
             
             var savedFirst = simulated.getCurrentState()
             var code = simulated.getStateCode(0,0)
+            
+            var firstTurn = simulated.turn
             
             var turnfactor = simulated.turn == 0 ? 1 : -1
             
@@ -2439,7 +2441,7 @@ class Ai{
                 
                 var legals = simulated.legal().filter(x=>x!="pass" && x!=simulated.selected)
                 
-		if(simulated.turn === 0 && simulated.phase == 0 && this.placedDams(simulated,0) >= this.checkerGamePlannedDams && this.placedPawns(simulated,0) >= this.checkerGamePlannedPawns)
+		if(simulated.turn === 0 && firstState.sequence.length > 0 && simulated.phase == 0 && this.placedDams(simulated,0) >= this.checkerGamePlannedDams && this.placedPawns(simulated,0) >= this.checkerGamePlannedPawns)
                     legals = ["pass"]
                 
 		if(simulated.phase == 0 && legals.length >= 1){
@@ -2510,7 +2512,12 @@ class Ai{
                 }
                 if(!beating && checkedStatesStack.length>maxStates){
                     checkedStatesStack.sort((x,y)=>(x.value-y.value)*turnfactor)
-                    checkedStatesStack = checkedStatesStack.filter(x=>(x.score-tree.score+3)*turnfactor>=0).slice(maxStates)
+                    var checkedStatesStack2 = checkedStatesStack
+                    checkedStatesStack = checkedStatesStack.filter(x=>simulated.turn !== firstTurn || 
+                    (x.score-tree.score+3)*turnfactor>=0).slice(maxStates)
+                    if(checkedStatesStack.length < 3){
+                        checkedStatesStack = checkedStatesStack2
+                    }
                 }
                 totalCheckedStates++
             }
@@ -2529,7 +2536,7 @@ class Ai{
                 }
             }
             if(bestmove == undefined){
-                bestmove = simulated.legal()[0]
+                bestmove = simulated.legal().sort((x,y)=>x=="pass")[0]
             }
             
             return {move: bestmove, score: bestscore, depth:0, truedepth:0}
