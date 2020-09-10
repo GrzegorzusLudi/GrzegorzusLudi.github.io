@@ -2260,7 +2260,7 @@ class Ai{
 		else {
                     var isai = this.gamecontroller.isAiColor(this.gamecontroller.model.checkersGame.land2.color)
                     //while(minmax.score * turnfactor <= -this.max_possible && depth > 0){
-			minmax = isai ? this.beginminmax(simulated,200,40) : this.beginminmax(simulated,3000,200)
+			minmax = isai ? this.beginminmax(simulated,1000,40) : this.beginminmax(simulated,3000,200)
 			//depth = depth > 2 ? 2 : 0
 			//depth = 0
                     //}
@@ -2419,13 +2419,17 @@ class Ai{
             
             var evaluated = this.evaluate(simulated)
             
-            var legals = simulated.legal().filter(x=>x!="pass" && x!=simulated.selected)
+            var legals = simulated.legal().sort(x=>Math.random()>0.5).filter(x=>x!="pass" && x!=simulated.selected)
             
             var nos = simulated.turn === 0 && evaluated < -this.max_possible*0.8 || simulated.turn === 1 && evaluated > this.max_possible*0.8 || (this.noSenseInLongerPlay(simulated) && simulated.turn == 0)
             if(nos){
                     return {move:"pass", score:evaluated,depth:0,truedepth:0}
             } else if(legals.length == 0){
                     return {move:"pass", score:evaluated,depth:0,truedepth:0}
+            }
+            
+            if(legals.length === 1){
+                    return {move:legals[0], score:evaluated,depth:0,truedepth:0}
             }
             
             while(totalCheckedStates < maxCheckedStates){
