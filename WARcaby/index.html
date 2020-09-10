@@ -2090,7 +2090,7 @@ class Ai{
                 .filter(x=>x.color === curcolor )
                     .map(x=>evalDefence(x.pawns,x.dams) + x.additional).reduce((x,y)=>x+y,0)
                 
-                if(mystrength*1.3+1<enemiesStrength){
+                if(mystrength*1.4+1<enemiesStrength){
                     console.log("HALT")
                     return []
                 }
@@ -2428,6 +2428,9 @@ class Ai{
                     return {move:"pass", score:evaluated,depth:0,truedepth:0}
             }
             
+            if(simulated.turn === 0 && simulated.phase == 0 && this.placedDams(simulated,0) >= this.checkerGamePlannedDams && this.placedPawns(simulated,0) >= this.checkerGamePlannedPawns)
+                legals = ["pass"]
+            
             if(legals.length === 1){
                     return {move:legals[0], score:evaluated,depth:0,truedepth:0}
             }
@@ -2445,8 +2448,6 @@ class Ai{
                 
                 var legals = simulated.legal().filter(x=>x!="pass" && x!=simulated.selected)
                 
-		if(simulated.turn === 0 && firstState.sequence.length > 0 && simulated.phase == 0 && this.placedDams(simulated,0) >= this.checkerGamePlannedDams && this.placedPawns(simulated,0) >= this.checkerGamePlannedPawns)
-                    legals = ["pass"]
                 
 		if(simulated.phase == 0 && legals.length >= 1){
                     if(simulated.remainingPawns + simulated.remainingDams>=3 || simulated.land1Dams === 0 && simulated.land2Dams === 0){
