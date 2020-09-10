@@ -178,7 +178,7 @@ function evalAttack(pawns, dams){
     return Math.min(value, MAX_PIECES)
 }
 function evalDefence(pawns, dams){
-	return Math.min((dams > 0 && dams + pawns<6?2:0) + dams*3 + pawns, MAX_PIECES-1)
+	return Math.min((dams > 0 && dams + pawns<6?3:0) + dams*3 + pawns + 1, MAX_PIECES-1)
 }
 class DummyLand{
 	constructor(){
@@ -1989,7 +1989,7 @@ class Ai{
                 factor = 1
             else
                 factor = 2
-            return (evalAttack(attacker.pawns - attacker.movedPawns, attacker.dams - attacker.movedDams) - evalDefence(defender.pawns, defender.dams) - (defender.color == null ? 2 : 0)) * factor
+            return (evalAttack(attacker.pawns - attacker.movedPawns, attacker.dams - attacker.movedDams) - evalDefence(defender.pawns, defender.dams)/* - (defender.color === null ? 2 : 0)*/)// * factor
 	}
 	isEnemy(color1, color2, lands){
             var strengthByColor = {}
@@ -2155,8 +2155,7 @@ class Ai{
                             ap.plannedPawns--
                             defendingPlan[e.land2.id].power-=this.pawnValue
                             e.potential-=this.pawnValue
-                        }
-                        if(ap.plannedDams>0){
+                        } else if(ap.plannedDams>0){
                             e.plannedDams++
                             ap.plannedDams--
                             defendingPlan[e.land2.id].power-=this.damValue
@@ -2260,7 +2259,7 @@ class Ai{
 		else {
                     var isai = this.gamecontroller.isAiColor(this.gamecontroller.model.checkersGame.land2.color)
                     //while(minmax.score * turnfactor <= -this.max_possible && depth > 0){
-			minmax = isai ? this.beginminmax(simulated,1000,40) : this.beginminmax(simulated,3000,200)
+			minmax = isai ? this.beginminmax(simulated,500,50) : this.beginminmax(simulated,3000,200)
 			//depth = depth > 2 ? 2 : 0
 			//depth = 0
                     //}
@@ -2413,7 +2412,7 @@ class Ai{
             
             var turnfactor = simulated.turn == 0 ? 1 : -1
             
-            var checkedStatesStack = [{state:savedFirst,sequence:[],code:code,value:this.evaluate(simulated)}]
+            var checkedStatesStack = [{state:savedFirst,sequence:[],code:code,depth:0,value:this.evaluate(simulated)}]
             var tree = {move:null,score:-this.max_possible * turnfactor,moves:{},turnfactor:turnfactor,parent:null}
             var totalCheckedStates = 0
             
@@ -2431,10 +2430,42 @@ class Ai{
             if(simulated.turn === 0 && simulated.phase == 0 && this.placedDams(simulated,0) >= this.checkerGamePlannedDams && this.placedPawns(simulated,0) >= this.checkerGamePlannedPawns)
                 legals = ["pass"]
             
+            if(simulated.phase == 0 && legals.length >= 1){
+                if(simulated.remainingPawns + simulated.remainingDams>=2 || simulated.land1Dams === 0 && simulated.land2Dams === 0){
+                    var sequence
+                    switch(simulated.turn){
+                        case 0:
+                            sequence = [11,71,33,53,31,51,22,72,13,73,52]
+                        break
+                        case 1:
+                            sequence = [17,77,35,55,37,57,26,76,15,75,56]
+                            
+                        break
+                    }
+                    if(simulated.remainingDams>0 && (simulated.turn === 1 || this.placedDams(simulated,0) < this.checkerGamePlannedDams)){
+                        for(var i in sequence){
+                            if(legals.indexOf("d"+sequence[i])>-1){
+                                legals = ["d"+sequence[i]]
+                                break
+                            }
+                        }
+                    } else if(simulated.turn === 1 || this.placedPawns(simulated,0) < this.checkerGamePlannedPawns) {
+                        for(var i in sequence){
+                            if(legals.indexOf("p"+sequence[i])>-1){
+                                legals = ["p"+sequence[i]]
+                                break
+                            }
+                        }
+                    }
+                } else {
+                    legals = Array.from(new Set(legals))
+                }
+            }
+            
             if(legals.length === 1){
                     return {move:legals[0], score:evaluated,depth:0,truedepth:0}
             }
-            
+            var maxdepth = 0
             while(totalCheckedStates < maxCheckedStates){
                 var firstState = checkedStatesStack[0]
                 if(firstState == null){
@@ -2449,37 +2480,7 @@ class Ai{
                 var legals = simulated.legal().filter(x=>x!="pass" && x!=simulated.selected)
                 
                 
-		if(simulated.phase == 0 && legals.length >= 1){
-                    if(simulated.remainingPawns + simulated.remainingDams>=3 || simulated.land1Dams === 0 && simulated.land2Dams === 0){
-                        var sequence
-                        switch(simulated.turn){
-                            case 0:
-                                sequence = [11,71,33,53,31,51,22,72,13,73,52]
-                            break
-                            case 1:
-                                sequence = [17,77,35,55,37,57,26,76,15,75,56]
-                                
-                            break
-                        }
-                        if(simulated.remainingDams>0 && (simulated.turn === 1 || this.placedDams(simulated,0) < this.checkerGamePlannedDams)){
-                            for(var i in sequence){
-                                if(legals.indexOf("d"+sequence[i])>-1){
-                                    legals = ["d"+sequence[i]]
-                                    break
-                                }
-                            }
-                        } else if(simulated.turn === 1 || this.placedPawns(simulated,0) < this.checkerGamePlannedPawns) {
-                            for(var i in sequence){
-                                if(legals.indexOf("p"+sequence[i])>-1){
-                                    legals = ["p"+sequence[i]]
-                                    break
-                                }
-                            }
-                        }
-                    } else {
-                        legals = Array.from(new Set(legals))
-                    }
-		}
+                
                 
                 var codez = firstState.sequence.map(x=>x.code)
                 for(var i in legals){
@@ -2497,8 +2498,10 @@ class Ai{
                             sequence:firstState.sequence.concat([move]),
                             code:code,
                             value:value,
+                            depth:firstState.depth+1,
                             turnfactor:turnfactor2
                         })
+                        maxdepth = Math.max(maxdepth, firstState.depth+1)
                         var turnfactor2 = simulated.turn == 0 ? 1 : -1
                         var tr = tree
                         for(var j in firstState.sequence){
@@ -2518,7 +2521,7 @@ class Ai{
                 if(!beating && checkedStatesStack.length>maxStates){
                     checkedStatesStack.sort((x,y)=>(x.value-y.value)*turnfactor)
                     var checkedStatesStack2 = checkedStatesStack
-                    checkedStatesStack = checkedStatesStack.filter(x=>simulated.turn !== firstTurn || 
+                    checkedStatesStack = checkedStatesStack.filter(x=>simulated.turn !== firstTurn || x.depth>=maxdepth-2 || 
                     (x.score-tree.score+3)*turnfactor>=0).slice(maxStates)
                     if(checkedStatesStack.length < 3){
                         checkedStatesStack = checkedStatesStack2
