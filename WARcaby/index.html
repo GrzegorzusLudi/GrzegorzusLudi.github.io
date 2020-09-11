@@ -2511,7 +2511,7 @@ class Ai{
                             }
                             tr = tr.moves[mov]
                         }
-                        while(tr.move!==null && (tr.score - tr.parent.score)*tr.parent.turnfactor > 0){
+                        while(tr.move!==null && (Object.keys(tr.parent.moves).length === 1 || (tr.score - tr.parent.score)*tr.parent.turnfactor > 0)){
                             tr.parent.score = tr.score
                             tr = tr.parent
                         }
@@ -2521,10 +2521,10 @@ class Ai{
                 if(!beating && checkedStatesStack.length>maxStates){
                     checkedStatesStack.sort((x,y)=>(x.value-y.value)*turnfactor)
                     var checkedStatesStack2 = checkedStatesStack
-                    checkedStatesStack = checkedStatesStack.filter(x=>simulated.turn !== firstTurn || x.depth>=maxdepth-2 || 
+                    checkedStatesStack = checkedStatesStack.filter(x=>simulated.turn !== firstTurn || x.depth>=maxdepth-3 || 
                     (x.score-tree.score+3)*turnfactor>=0).slice(maxStates)
                     if(checkedStatesStack.length < 3){
-                        checkedStatesStack = checkedStatesStack2
+                        checkedStatesStack = checkedStatesStack2.slice(3)
                     }
                 }
                 totalCheckedStates++
