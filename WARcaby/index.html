@@ -2090,7 +2090,7 @@ class Ai{
                 .filter(x=>x.color === curcolor )
                     .map(x=>evalDefence(x.pawns,x.dams) + x.additional).reduce((x,y)=>x+y,0)
                 
-                if(mystrength*1.4+1<enemiesStrength){
+                if(mystrength*1.5+1<enemiesStrength){
                     console.log("HALT")
                     return []
                 }
@@ -2155,7 +2155,8 @@ class Ai{
                             ap.plannedPawns--
                             defendingPlan[e.land2.id].power-=this.pawnValue
                             e.potential-=this.pawnValue
-                        } else if(ap.plannedDams>0){
+                        }
+                        if(ap.plannedDams>0 && (ap.plannedPawns == 0 || e.plannedDams == 0)){
                             e.plannedDams++
                             ap.plannedDams--
                             defendingPlan[e.land2.id].power-=this.damValue
