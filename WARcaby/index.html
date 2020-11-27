@@ -3,8 +3,19 @@
 <head>
 <meta charset="utf8">
 <style type="text/css">
-body {color:white;background-color:black;font-family:Helvetica}
-#canv {border:1px solid white}
+* {border-collapse:collapse;border-collapse:collapse;
+-moz-box-sizing:border-box;
+-webkit-box-sizing:border-box;
+box-sizing:border-box;margin:0px;padding:0px}
+html,body {color:white;background-color:black;font-family:Helvetica;width:100%; height:100%;}
+#whole {margin:auto}
+@media (max-aspect-ratio: 1) {
+    #whole {width:100vw;height:100vw}
+}
+@media (min-aspect-ratio: 1) {
+    #whole {width:100vh;height:100vh}
+}
+#canv {border:1px solid white;width:100%;height:100%;display:block;}
 </style>
 <script>
 	
@@ -2260,7 +2271,7 @@ class Ai{
 		else {
                     var isai = this.gamecontroller.isAiColor(this.gamecontroller.model.checkersGame.land2.color)
                     //while(minmax.score * turnfactor <= -this.max_possible && depth > 0){
-			minmax = isai ? this.beginminmax(simulated,500,50) : this.beginminmax(simulated,3000,200)
+			minmax = isai ? this.beginminmax(simulated,500,50) : this.beginminmax(simulated,4000,400)
 			//depth = depth > 2 ? 2 : 0
 			//depth = 0
                     //}
@@ -2302,6 +2313,7 @@ class Ai{
 			if(diagonal2.map(x=>simulated.board[x]).filter(x=>x==3).length > 0 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==0 || x==2).length == 0)
 				onCorners = onCorners.concat(diagonal2.map(x=>simulated.board[x]).filter(x=>x==3))
 			*/
+			
 			var legals = simulated.legal().filter(x=>x!="pass")
 			if(legals.length==0){/*
 				result = this.max_possible*this.max_possible*((countedBoard.filter(x=>x==0).length
@@ -2431,8 +2443,8 @@ class Ai{
             if(simulated.turn === 0 && simulated.phase == 0 && this.placedDams(simulated,0) >= this.checkerGamePlannedDams && this.placedPawns(simulated,0) >= this.checkerGamePlannedPawns)
                 legals = ["pass"]
             
-            if(simulated.phase == 0 && legals.length >= 1){
-                if(simulated.remainingPawns + simulated.remainingDams>=2 || simulated.land1Dams === 0 && simulated.land2Dams === 0){
+            if(simulated.phase == 0 && simulated.turn == 1 && legals.length >= 1){
+                if(simulated.remainingPawns + simulated.remainingDams>=4){
                     var sequence
                     switch(simulated.turn){
                         case 0:
@@ -2616,7 +2628,7 @@ class Ai{
                     legals = ["pass"]
                     
 		if(simulated.phase == 0 && legals.length >= 1){
-                    if(simulated.remainingPawns + simulated.remainingDams>=3 || simulated.land1Dams === 0 && simulated.land2Dams === 0){
+                    if(simulated.remainingPawns + simulated.remainingDams>=3/* || simulated.land1Dams === 0 && simulated.land2Dams === 0*/){
                         var sequence
                         switch(simulated.turn){
                             case 0:
@@ -2728,6 +2740,10 @@ class Ai{
                     
                 return {move: bestmove, score: bestscore, depth:bestDepth, truedepth:truedepth}
 	}
+	
+	landSignificance(land){
+            
+	}
 }
 function shuffle(a) {
     for (let i = a.length - 1; i > 0; i--) {
@@ -2760,7 +2776,9 @@ function init(){
 </script>
 </head>
 <body>
+<div id="whole">
 <canvas id="canv" width="600" height="600"></canvas>
+</div>
 <script>
 	init();
 </script>
