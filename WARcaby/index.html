@@ -1285,9 +1285,10 @@ class GameView{
 		this.ctx.stroke()
 	}
 	clickEvent(e){
+                var originalSize = 600
 		var rect = this.canvas.getBoundingClientRect()
-		var x = e.clientX - rect.left
-		var y = e.clientY - rect.top
+		var x = Math.round((e.clientX - rect.left)*originalSize/rect.width)
+		var y = Math.round((e.clientY - rect.top)*originalSize/rect.height)
 		
 		if(this.clickRect(x,y)){
 			this.draw()
