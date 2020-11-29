@@ -251,7 +251,8 @@ class GameController{
                 act: (move)=>th.act(move),
                 setCell: (x,y,color)=>th.setCell(x,y,color),
                 fall: ()=>th.fall(),
-                getGameTree: ()=>th.getGameTree()
+                getGameTree: ()=>th.getGameTree(),
+                clearTree: ()=>th.clearTree(),
             }
     }
     addView(gameview){
@@ -268,6 +269,11 @@ class GameController{
     }
     getGameTree(){
         return this.currentNode
+    }
+    clearTree(){
+        this.tree = new TreeNode(this.model.getState(),null)
+        this.currentNode = this.tree
+        this.currentNode.setDict(this.model.getValues())
     }
     
     initView(){
@@ -356,6 +362,9 @@ class View{
 	}
 	changePhase(phase){
             this.phase = phase
+            if(this.phase == 1 && this.model.getState() !== this.gamecontroller.getGameTree().gamecode){
+                this.gamecontroller.clearTree()
+            }
             this.draw()
 	}
 	loadGame(boardwidth,boardheight,publicMethods,model){
