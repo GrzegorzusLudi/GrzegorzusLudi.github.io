@@ -1,0 +1,632 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf8">
+<style type="text/css">
+* {border-collapse:collapse;border-collapse:collapse;
+-moz-box-sizing:border-box;
+-webkit-box-sizing:border-box;
+box-sizing:border-box;margin:0px;padding:0px}
+html,body {color:white;background-color:black;font-family:Helvetica;width:100%; height:100%;}
+#whole {margin:auto}
+@media (max-aspect-ratio: 1) {
+    #whole {width:100vw;height:100vw}
+}
+@media (min-aspect-ratio: 1) {
+    #whole {width:100vh;height:100vh}
+}
+#canv {border:1px solid white;width:100%;height:100%;display:block;}
+</style>
+<script>
+
+class BoardModel{
+	constructor(){
+		this.colors = [
+			"#a00",
+			"#00a",
+			"#0a0",
+			"#aa0",
+			"#0aa",
+			"#444",
+			"#a60",
+			"#a0a",
+			"#06a",
+			"#6a0",
+			"#a55",
+			"#55a",
+			"#5a5",
+			"#aa5",
+			"#5aa",
+			"#777",
+			"#a85",
+			"#a5a",
+			"#58a",
+			"#8a5",
+		]
+		//DZIEBUDŻ
+		this.checkersGame = null
+		this.priority = 0
+		
+	}
+	initBoard(edge, maxcolor){
+		this.boardwidth = edge
+		this.boardheight = edge
+		this.board = []
+		this.fieldArray = []
+		this.maxcolor = maxcolor
+		for(var i = 0;i<this.boardwidth;i++){
+			this.board[i] = []
+			for(var j = 0;j<this.boardheight;j++){
+                                
+				this.board[i][j] = Math.floor(Math.random()*maxcolor)+1
+			}
+		}
+		this.points = 0
+	}
+	getNeighbouringFields(x,y){
+		return {
+			top:y>0?this.board[x][y-1]:null,
+			right:x<this.boardwidth-1?this.board[x+1][y]:null,
+			bottom:y<this.boardheight-1?this.board[x][y+1]:null,
+			left:x>0?this.board[x-1][y]:null
+		}
+	}
+	legal(){
+            var {counted, tboard} = this.counted()
+            var legals = []
+            for(var i = 0;i<this.boardwidth;i++){
+                for(var j = 0;j<this.boardheight;j++){
+                    if(tboard[i][j] !== 0 && counted[tboard[i][j]] > 1)
+                        legals.push([i,j])
+                }
+            }
+            return legals
+	}
+	counted(){
+            var tboard = []
+            for(var i = 0;i<this.boardwidth;i++){
+                tboard[i] = []
+                for(var j = 0;j<this.boardheight;j++){
+                    tboard[i][j] = -1
+                }
+            }
+            var counted = {}
+            for(var i = 0;i<this.boardwidth;i++){
+                for(var j = 0;j<this.boardheight;j++){
+                    if(tboard[i][j] === -1 && this.board[i][j] !== 0){
+                        this.propagate(tboard,i,j,i+','+j)
+                    }
+                    if(tboard[i][j] !== -1)
+                        if(counted[tboard[i][j]] == undefined)
+                            counted[tboard[i][j]] = 1
+                        else
+                            counted[tboard[i][j]]++
+                }
+            }
+            return {counted: counted, tboard: tboard}
+	}
+	bordering(x,y){
+            var ret = []
+            if(x>0)
+                ret.push([x-1,y])
+            if(y>0)
+                ret.push([x,y-1])
+            if(x<this.boardwidth-1)
+                ret.push([x+1,y])
+            if(y<this.boardheight-1)
+                ret.push([x,y+1])
+            return ret
+	}
+	propagate(tboard,x,y,num){
+            tboard[x][y] = num
+            var borderingt = this.bordering(x,y)
+            for(var i in borderingt){
+                var bo = borderingt[i]
+                if(this.board[bo[0]][bo[1]] === this.board[x][y] && tboard[bo[0]][bo[1]] === -1){
+                    this.propagate(tboard,bo[0],bo[1],num)
+                }
+            }
+	}
+        fall(){
+            for(var i = 0;i<this.boardwidth;i++){
+                var good = this.board[i].filter(x=>x!==0)
+                this.board[i] = this.board[i].map(x=>0)
+                for(var j = 0;j<good.length;j++){
+                    this.board[i][j+this.boardheight-good.length] = good[j]
+                }
+            }
+            var good = this.board.filter(x=>x.filter(y=>y!==0).length > 0)
+            this.board = this.board.map(x=>x.map(y=>0))
+            for(var j = 0;j<good.length;j++){
+                this.board[j+this.boardwidth-good.length] = good[j]
+            }
+        }
+	sandboxlegal(){
+            var ret = []
+            for(var i = 0;i<this.boardwidth;i++){
+                for(var j = 0;j<this.boardheight;j++){
+                    ret.push([i,j])
+                }
+            }
+            return ret
+            
+	}
+	getState(){
+            var string = this.boardwidth+","+this.maxcolor+","+this.points+","
+            for(var i = 0;i<this.boardwidth;i++){
+                    for(var j = 0;j<this.boardheight;j++){
+                            string+=this.board[i][j]+","
+                    }
+            }
+            return string
+	}
+	setState(string){
+            var arr = string.split(',')
+            this.initBoard(arr[0], arr[1])
+            this.points = arr[2]
+            for(var i = 0;i<this.boardwidth;i++){
+                    for(var j = 0;j<this.boardheight;j++){
+                            this.board[i][j] = arr[3 + i*this.boardwidth + j]
+                    }
+            }
+            this.fall()
+	}
+	setCell(x,y,color){
+            this.board[x][y] = color
+	}
+	
+	act(originalMove){
+		var legal = this.legal()
+		var moves = legal.filter(x=>x[0] == originalMove[0] && x[1] == originalMove[1])
+		if(moves.length > 0){
+			var move = moves[0]
+			this.move(move[0],move[1])
+			return true
+		}
+		return false
+	}
+	getValues(){
+                var LB = Object.values(this.counted().counted).map(x=>x*(x-1)).filter(x=>x>0).sort((x,y)=>y-x)[0]
+                if(isNaN(LB))
+                    LB = 0
+                var cols = {}
+                for(var i = 0;i<this.boardwidth;i++){
+                    for(var j = 0;j<this.boardheight;j++){
+                        var col = this.board[i][j]
+                        if(col !== 0){
+                            if(cols[col] == undefined)
+                                cols[col] = 1
+                            else
+                                cols[col]++
+                        }
+                    }
+                }
+                var UB = Object.values(cols).map(x=>x*(x-1)).reduce((x,y)=>x+y,0)
+                return {points:this.points,LB:this.points+LB,UB:this.points+UB}
+	}
+	
+	//do
+	move(x,y){
+            var {counted, tboard} = this.counted()
+            
+            var code = tboard[x][y]
+            for(var i = 0;i<this.boardwidth;i++){
+                for(var j = 0;j<this.boardheight;j++){
+                    if(tboard[i][j] === code)
+                        this.board[i][j] = 0
+                }
+            }
+            this.points += counted[code]*(counted[code]-1)
+            this.fall()
+	}
+}
+class TreeNode {
+    constructor(gamecode,parent){
+        this.gamecode = gamecode
+        this.parent = parent
+        this.children = []
+        this.dict = {}
+    }
+    addChild(gamecode){
+        var newNode = new TreeNode(gamecode,this)
+        this.children.push(newNode)
+        return newNode
+    }
+    setDict(dict){
+        this.dict = dict
+    }
+}
+class GameController{
+    constructor(initialSetting){
+            this.initialSetting = initialSetting
+            this.gameview = null
+            var th = this
+            this.publicMethods = {
+                pass: ()=>th.pass(),
+                tryMoveOnCheckersGame: (move)=>th.tryMoveOnCheckersGame(move),
+                changePriority: (newPriority)=>th.changePriority(newPriority),
+                isAiMove: ()=>th.isAiMove(),
+                isPlayerMove: ()=>th.isPlayerMove(),
+                onBorders: ()=>th.onBorders(),
+                act: (move)=>th.act(move),
+                setCell: (x,y,color)=>th.setCell(x,y,color),
+                fall: ()=>th.fall(),
+                getGameTree: ()=>th.getGameTree()
+            }
+    }
+    addView(gameview){
+        this.gameview = gameview
+    }
+    init(){
+        this.model = new BoardModel(this.initialSetting.edge)
+        this.model.initBoard(this.initialSetting.edge, this.initialSetting.colors)
+        
+        this.tree = new TreeNode(this.model.getState(),null)
+        this.currentNode = this.tree
+        this.currentNode.setDict(this.model.getValues())
+        this.initView()
+    }
+    getGameTree(){
+        return this.currentNode
+    }
+    
+    initView(){
+        if(this.gameview !== null){
+            this.gameview.loadGame(this.model.boardwidth, this.model.boardheight, this.publicMethods, this.model)
+        }
+    }
+    updateView(){
+        if(this.gameview !== null){
+            this.gameview.draw()
+        }
+    }
+    act(move){
+        var result = this.model.act(move)
+        if(result){
+            this.currentNode = this.currentNode.addChild(this.model.getState())
+            this.currentNode.setDict(this.model.getValues())
+            this.gameview.draw()
+        }
+        return result
+    }
+    setCell(x,y,color){
+        this.model.setCell(x,y,color)
+    }
+    pass(){
+        this.model.pass()
+        this.gameview.draw()
+    }
+    fall(){
+        this.model.fall()
+        this.gameview.draw()
+    }
+}
+class View{
+	constructor(canvas){
+		this.canvas = canvas
+		this.ctx = canvas.getContext("2d")
+		this.width = canvas.width
+		this.height = canvas.height
+		
+		this.gamecontroller = null
+		
+		this.gameState = {}
+		
+		this.lock = false
+		this.landMapping = {}
+		
+		this.screen = {x:10, y:10, width:this.width-20, height:this.height-100}
+		
+		this.lscr = 0.15
+		this.wscr = 0.7
+		
+		this.canvas.addEventListener("click",(e)=>this.clickEvent(e))
+		this.canvas.addEventListener("mousedown",(e)=>this.mousedown(e))
+		this.canvas.addEventListener("mousemove",(e)=>this.mousemove(e))
+		this.canvas.addEventListener("mouseup",(e)=>this.mouseup(e))
+		
+		
+                this.phase = 0
+                this.colorPickerColor = 1
+                this.mousemoving = false
+                
+                var p = 5
+                this.boardBounds = {left: 300+p, top: 0+p, right: 600 - p, bottom: 300 - p}
+                var cpw = 60
+                this.colorPickerBounds = {left: 300+p, top: 300+p, right: 300+p+cpw, bottom: 300+p+cpw}
+                
+		this.b1size = {
+			x: 600-p - 100,
+			y: 300+p,
+			w: 100,
+			h: 50,
+		}
+		
+		var th = this
+		this.buttons = [
+			new Button(this,() => th.phase == 0 ? "Symulacja" : "Koniec",this.b1size.x,this.b1size.y,this.b1size.w,this.b1size.h,
+				function(){
+					th.changePhase(1 - th.phase)
+					th.draw()
+				}
+			),
+		]
+		
+		
+	}
+	changePhase(phase){
+            this.phase = phase
+            this.draw()
+	}
+	loadGame(boardwidth,boardheight,publicMethods,model){
+		this.rw = this.screen.width/boardwidth
+		this.rh = this.screen.height/boardheight
+
+		this.model = model
+		
+		this.gamecontroller = publicMethods
+		
+                for(var i in this.model.lands){
+                        var land = this.model.lands[i]
+                        
+                        this.landMapping[land.id] = new LandMap(land.id,land,this)
+                }
+
+		//DEBUG
+		/*
+		this.model.phase = 2
+		var th = this
+		let mock = this.getMock()
+		this.model.checkersGame = new CheckersGame(mock)
+		this.model.checkersGame.simulateGame(5,5,0,0)
+		*/
+	}
+	drawLine(x1,y1,x2,y2){
+		this.ctx.beginPath()
+		this.ctx.moveTo(x1,y1)
+		this.ctx.lineTo(x2,y2)
+		this.ctx.stroke()
+	}
+	getMouseEventCoords(e){
+                var originalSize = 600
+		var rect = this.canvas.getBoundingClientRect()
+		var x = Math.round((e.clientX - rect.left)*originalSize/rect.width)
+		var y = Math.round((e.clientY - rect.top)*originalSize/rect.height)
+		return {x: x, y: y}
+	}
+	clickEvent(e){
+            var { x, y } = this.getMouseEventCoords(e)
+            if(this.clickRect(x,y)){
+                this.draw()
+            }
+	}
+	
+	mousedown(e){
+            var { x, y } = this.getMouseEventCoords(e)
+            if(this.phase == 0 && this.testBoard(x,y)){
+                this.mousemoving = true
+                var {cx,cy} = this.getCellCoords(x,y)
+                this.gamecontroller.setCell(cx,cy,this.colorPickerColor)
+                this.draw()
+            }
+	}
+	mousemove(e){
+            var { x, y } = this.getMouseEventCoords(e)
+            if(this.phase == 0 && this.mousemoving && this.testBoard(x,y)){
+                this.mousemoving = true
+                var {cx,cy} = this.getCellCoords(x,y)
+                this.gamecontroller.setCell(cx,cy,this.colorPickerColor)
+                this.draw()
+            }
+	}
+	mouseup(e){
+            var { x, y } = this.getMouseEventCoords(e)
+            if(this.phase == 0){
+                this.gamecontroller.fall()
+                this.mousemoving = false
+            }
+	}
+	
+	clickRect(x,y){
+                if(this.testBoard(x,y)){
+                    if(this.phase === 1)
+                        this.act(x,y)
+                    return true
+                }
+                    
+                if(this.colorButton(x,y)){
+                    this.colorPickerColor++
+                    if(this.colorPickerColor > this.model.maxcolor)
+                        this.colorPickerColor = 0
+                    return true
+                }
+                
+		for(var i in this.buttons){
+			var button = this.buttons[i]
+			if(button.tryHit(x,y))
+				return true
+		}
+		return false
+	}
+	colorButton(x,y){
+            var {left, top, right, bottom} = this.colorPickerBounds
+            if(x >= left && x <= right && y >= top && y <= bottom){
+                return true
+            }
+            return false
+	}
+	draw(){
+            this.ctx.lineWidth = 1
+            this.ctx.clearRect(0,0,600,600)
+            this.ctx.strokeStyle = "#fff"
+            var p = 5
+            this.ctx.strokeRect(300+p,0+p,300-2*p,300-2*p)
+            if(this.model !== null){
+                this.drawGameTree()
+                this.drawBoard()
+                
+                var {left, top, right, bottom} = this.colorPickerBounds
+                this.ctx.fillStyle = this.getColorForNum(this.colorPickerColor)
+                this.ctx.fillRect(left,top,right-left,bottom-top)
+                this.ctx.strokeRect(left,top,right-left,bottom-top)
+            
+                this.buttons[0].show()
+                this.buttons[0].draw()
+                var {points,LB,UB} = this.model.getValues()
+                this.ctx.textAlign = "left"
+                this.ctx.fillStyle = "#fff"
+                this.ctx.font = "16px Courier"
+                this.ctx.fillText("Points: "+points,380,320)
+                this.ctx.fillText("LB: "+LB,380,340)
+                this.ctx.fillText("UB: "+UB,380,360)
+            }
+	}
+	testBoard(x,y){
+            var {left, top, right, bottom} = this.boardBounds
+            if(x >= left && x <= right && y >= top && y <= bottom){
+                return true
+            }
+            return false
+	}
+	getCellCoords(x,y){
+            var {left, top, right, bottom} = this.boardBounds
+            var {lstep, rstep} = this.boardCellSizes()
+            var cx = Math.floor((x - left) / lstep)
+            var cy = Math.floor((y - top) / rstep)
+            return {cx: cx, cy: cy}
+	}
+	act(x,y){
+            var {cx,cy} = this.getCellCoords(x,y)
+            this.gamecontroller.act([cx,cy])
+            
+	}
+	boardCellSizes(){
+            var {left, top, right, bottom} = this.boardBounds
+            return {
+                lstep: (right-left)/this.model.boardwidth,
+                rstep: (bottom-top)/this.model.boardheight,
+            }
+	}
+	getColorForNum(num){
+            if(num == 0)
+                return "#00000000"
+            return this.model.colors[num - 1]
+	}
+	drawGameTree(){
+            var tree = this.gamecontroller.getGameTree()
+            this.drawNode(tree,0,null)
+	}
+	drawNode(node,level,previous){
+            var w = 8,left = 150,top = 300,dist = 20
+            this.ctx.fillStyle = "#822"
+            this.ctx.fillRect(left-w,top-w+level*dist,w*2,w*2)
+            this.ctx.strokeRect(left-w,top-w+level*dist,w*2,w*2) 
+            this.ctx.fillStyle = "#fff"
+            this.ctx.font = "12px Courier"
+            this.ctx.fillText(node.dict.points+"/"+node.dict.LB+"/"+node.dict.UB,left+w*2,top+level*dist) 
+            
+            if(previous != null){
+                this.drawLine(left,top+level*dist+w,left,top+(level+1)*dist-w)
+            }
+            
+            if(node.parent != null){
+                this.drawNode(node.parent,level-1,node)
+            }
+	}
+	drawBoard(){
+            var {left, top, right, bottom} = this.boardBounds
+            var {lstep, rstep} = this.boardCellSizes()
+            this.ctx.strokeStyle = "#fff"
+            for(var i = 0;i<this.model.boardwidth;i++){
+                for(var j = 0;j<this.model.boardheight;j++){
+                    var value = this.model.board[i][j]
+                    this.ctx.fillStyle = this.getColorForNum(value)
+                    this.ctx.fillRect(left + lstep*i,top + rstep*j,lstep,rstep)
+                    this.ctx.strokeRect(left + lstep*i,top + rstep*j,lstep,rstep)
+                    
+                }
+            }
+	}
+}
+class Button {
+	constructor(gameView,text,x,y,w,h,action){
+		this.gameView = gameView
+		this.showed = false
+		this.ctx = this.gameView.ctx
+		this.text = text
+		this.x = x
+		this.y = y
+		this.w = w
+		this.h = h
+		this.action = action
+	}
+	show(){
+		this.showed = true
+	}
+	hide(){
+		this.showed = false
+	}
+	draw(){
+		if(this.showed){
+			this.ctx.fillStyle = "#888"
+			this.ctx.strokeStyle = "#ddd"
+			this.ctx.lineWidth = 2
+			
+			this.ctx.fillRect(this.x,this.y,this.w,this.h)
+			this.ctx.strokeRect(this.x,this.y,this.w,this.h)
+			this.ctx.fillStyle = "#ddd"
+			this.ctx.font = "18px Courier"
+			this.ctx.textAlign = "center"
+			this.ctx.fillText(typeof this.text == "string" ? this.text : this.text(),this.x+this.w/2,this.y+this.h/2+4)
+		}
+	}
+	tryHit(x,y){
+		if(this.showed){
+			if(x>this.x && y>this.y && x<this.x+this.w && y<this.y+this.h){
+				this.action()
+				return true
+			}
+		}
+		return false
+	}
+}
+function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+function init(){
+	var PLAYERS_NO = 8
+	var human = Math.floor(Math.random()*PLAYERS_NO)
+	var players = []
+	for(var i = 0;i<PLAYERS_NO;i++){
+		players.push(i == human ? "player" : "ai")
+	}
+	var initialSetting = {
+		edge: 10,
+		colors: 5
+	}
+	var gamecontroller = new GameController(initialSetting)
+	var gameview = new View(document.getElementById("canv"))
+	gamecontroller.addView(gameview)
+	gamecontroller.init()
+	gameview.draw()
+	
+	
+}
+
+</script>
+</head>
+<body>
+<div id="whole">
+<canvas id="canv" width="600" height="600"></canvas>
+</div>
+<script>
+	init();
+</script>
+</body>
+</html>
+
+
