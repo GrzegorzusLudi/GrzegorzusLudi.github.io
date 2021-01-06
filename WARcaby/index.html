@@ -765,10 +765,10 @@ class GameController{
     
     getMock(){
             var th = this
-            return {endGame:function(){th.model.phase = 0;th.model.currentPlayer = 0;},playerFromColor:function(){return 0}}
+            return {endGame:function(){th.model.phase = 0;th.model.currentPlayer = 0;},updateCheckersCount:function(){},playerFromColor:function(){return 0}}
     }
     getTotalMock(){
-            return {endGame:function(){},playerFromColor:function(){return 0}}
+            return {endGame:function(){},updateCheckersCount:function(){},playerFromColor:function(){return 0}}
     }
     
     isAiColor(color){
@@ -807,8 +807,9 @@ class GameController{
     }
     checkersGameMove(move){
         var result = this.model.checkersGame.move(move)
-        if(result)
+        if(result){
             this.gameview.draw()
+        }
         return result
     }
     
@@ -969,7 +970,7 @@ class GameView{
 			this.drawLand(this.model.lands[li])
 		}
 		for(var li in this.model.lands){
-			this.drawLandPawns(this.model.lands[li])
+			this.drawLandPawns(this.model.lands[li], this.model.checkersGame)
 		}
 		
 		if(this.model.phase == 2 && !this.model.checkersGameHidden){
@@ -991,8 +992,24 @@ class GameView{
 			this.drawField(field,alpha)
 		}
 	}
-	drawLandPawns(land){
-		var listOfPawns = this.pawnList(land.number()).sort((x,y)=>(x[1]-y[1]))
+	drawLandPawns(land, checkersGame){
+                var number = land.number()
+                var movedDams = land.movedDams
+                var dams = land.dams
+                var movedPawns = land.movedPawns
+                if(checkersGame != null){
+                    var board = checkersGame.board
+                    if(land === checkersGame.land1){
+                        number += Object.values(board).filter(x=>x==0 || x==2).length - checkersGame.placedPawnsPlayer1 - checkersGame.placedDamsPlayer1 
+                        
+                        dams += Object.values(board).filter(x=>x==2).length - checkersGame.placedDamsPlayer1 
+                    } else if(land === checkersGame.land2){
+                        number += Object.values(board).filter(x=>x==1 || x==3).length - checkersGame.placedPawnsPlayer2 - checkersGame.placedDamsPlayer2
+                        
+                        dams += Object.values(board).filter(x=>x==3).length - checkersGame.placedDamsPlayer2 
+                    }
+                }
+		var listOfPawns = this.pawnList(number).sort((x,y)=>(x[1]-y[1]))
 		var x = Math.max(Math.min(this.model.boardwidth-3,land.x),3)
 		var y = Math.max(Math.min(this.model.boardheight-3,land.y),3)
 		
@@ -1000,9 +1017,9 @@ class GameView{
 		mapped.refreshPiecesPlaced()
 		for(var i in listOfPawns){
 			var l = listOfPawns[i]
-			var p1 = land.movedDams
-			var p2 = land.dams
-			var p3 = land.dams+land.movedPawns
+			var p1 = movedDams
+			var p2 = dams
+			var p3 = dams+movedPawns
 			var tx = x+l[0]*1.2, ty = y+l[1]*0.6
 			tx = this.screen.x + this.rw * tx
 			ty = this.screen.y + this.rh * ty
@@ -1587,10 +1604,6 @@ class CheckersGame{
 							this.changeTurn(0)
 							this.phase = 1
 							this.placePiecesRandomly()
-							this.placedPawnsPlayer1 = Object.values(this.board).filter(x=>x==0).length
-							this.placedPawnsPlayer2 = Object.values(this.board).filter(x=>x==1).length
-							this.placedDamsPlayer1 = Object.values(this.board).filter(x=>x==2).length
-							this.placedDamsPlayer2 = Object.values(this.board).filter(x=>x==3).length
 						} else {
 							var field = move.substr(1,2)
 							switch(move[0]){
@@ -1606,6 +1619,10 @@ class CheckersGame{
 						}
 					break
 				}
+                                this.placedPawnsPlayer1 = Object.values(this.board).filter(x=>x==0).length
+                                this.placedPawnsPlayer2 = Object.values(this.board).filter(x=>x==1).length
+                                this.placedDamsPlayer1 = Object.values(this.board).filter(x=>x==2).length
+                                this.placedDamsPlayer2 = Object.values(this.board).filter(x=>x==3).length
 				
 			break
 			case 1:
@@ -1644,6 +1661,7 @@ class CheckersGame{
 			this.parent.endGame()
 			return true
 		}
+		
 		return true
 	}
 	placePiecesRandomly(){
@@ -2301,7 +2319,7 @@ class Ai{
 			var penpenultimal1 = ["51","53","55","57"].map(x=>simulated.board[x]).filter(x=>x==0).length
 			var penultimal2 = ["22","24","26"].map(x=>simulated.board[x]).filter(x=>x==1).length
 			var penpenultimal2 = ["31","33","35","37"].map(x=>simulated.board[x]).filter(x=>x==1).length
-			*//*
+			*/
 			var onCorners = []
 			var diagonal1 = ["11","22","33","44","55","66","77"]
 			var diagonal2 = ["17","26","35","44","53","62","71"]
@@ -2313,7 +2331,7 @@ class Ai{
 				onCorners = onCorners.concat(diagonal2.map(x=>simulated.board[x]).filter(x=>x==2))
 			if(diagonal2.map(x=>simulated.board[x]).filter(x=>x==3).length > 0 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==0 || x==2).length == 0)
 				onCorners = onCorners.concat(diagonal2.map(x=>simulated.board[x]).filter(x=>x==3))
-			*/
+			
 			
 			var legals = simulated.legal().filter(x=>x!="pass")
 			if(legals.length==0){/*
@@ -2324,12 +2342,12 @@ class Ai{
 				
 				return result
 				*/
-				return this.max_possible * this.max_possible * (simulated.turn*2-1) * (
+				return this.max_possible * this.max_possible * (simulated.turn*2-1) /* * (
 				(countedBoard.filter(x=>x==0).length
 				+countedBoard.filter(x=>x==2).length*this.damValue) +
 				(countedBoard.filter(x=>x==1).length
 				+countedBoard.filter(x=>x==3).length*this.damValue)
-				)
+				)*/
 			}
 			result = (
 				(
@@ -2337,7 +2355,7 @@ class Ai{
 				+countedBoard.filter(x=>x==2).length * this.damValue
 				//-(countedBoard.filter(x=>x==3).length > 0 ? 1 : 0) * this.damValue*0.05
 				//+onSides.filter(x=>x==2).length * this.sideDamValue
-				//+(onCorners.filter(x=>x==2).length > 0 ? 1 : 0) * this.cornerDamValue
+				+(onCorners.filter(x=>x==2).length > 0 ? 1 : 0) * this.cornerDamValue
 				//+onSides.filter(x=>x==0).length * 0.1
 				//+onCorners.filter(x=>x==0).length * 0.7
 				//+penultimal1*0.05
@@ -2348,7 +2366,7 @@ class Ai{
 				countedBoard.filter(x=>x==1).length
 				+countedBoard.filter(x=>x==3).length * this.damValue
 				//+onSides.filter(x=>x==3).length * this.sideDamValue
-				//+(onCorners.filter(x=>x==3).length > 0 ? 1 : 0) * this.cornerDamValue
+				+(onCorners.filter(x=>x==3).length > 0 ? 1 : 0) * this.max_possible
 				//+onSides.filter(x=>x==1).length * 0.1
 				//+onCorners.filter(x=>x==1).length * 0.7
 				//+penultimal2*0.05
