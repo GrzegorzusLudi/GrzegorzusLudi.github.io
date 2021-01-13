@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Canvas Hexagonal Map</title>
+        <style type="text/css">
+			body{
+				background-color:black;
+				color:white;
+				font-family:Trebuchet MS;
+				font-size:8pt;
+			}
+            canvas { 
+                border:0;
+                display:block;
+                margin:0 auto;
+            }
+        </style>
+        <script src="hexagons.js"></script>
+    </head>
+    <body onload="init()">
+        <canvas id="hexmap" width="630" height="530"></canvas><br/>
+		<div>
+		<input type="button" value="SCAL PO 1" onclick="scal(1)" />
+		<input type="button" value="SCAL PO 2" onclick="scal(2)" />
+		<input type="button" value="SCAL PO 3" onclick="scal(3)" />
+		<input type="button" value="SCAL PO 4" onclick="scal(4)" />
+		<input type="button" value="SCAL PO 5" onclick="scal(5)" />
+		<input type="button" value="SCAL PO 6" onclick="scal(6)" />
+		
+		<input type="button" value="GENERUJ NOWE" onclick="generuj();" />
+		SZEROK.:
+		<input type="text" value="60" id="szer" />
+		WYSOK.:
+		<input type="text" value="60" id="wys" />
+		P-wo białego: <input type="range" min="0" max="100" value="50" step="1" id="pwo" onchange="ptwo()" />
+		<span id="pok">
+		50
+		</span>
+		</div>
+		<div>
+		P-wo wzgórzy i gór: <input type="range" min="0" max="100" value="30" step="1" id="pwo2" onchange="ptwo2()" />
+		<span id="pok2">
+		30
+		</span>
+		<input type="button" value="Rysuj góry i pagórki" onclick="goruj()" />
+		</div>
+    </body>
+</html>
