@@ -51,9 +51,18 @@ class Camera {
                 :
             (/*this.y + */roty * this.skewed  + (this.z-z)*this.getAntiSkewed()) * this.magnification + bounds.height/2
     }
-    getAbsoluteY(x,y,bounds){
-        var roty = (this.x-x) * Math.sin(this.rotation) + (this.y-y) * Math.cos(this.rotation)
+    getAbsoluteY(x,y,bounds,additionalRotation){
+        var additionalRotation = 0
+        var roty = (this.x-x) * Math.sin(this.rotation+additionalRotation) + (this.y-y) * Math.cos(this.rotation+additionalRotation)
         return (roty * this.skewed) * this.magnification + bounds.height/2
+    }
+    getRelativeY(x,y,additionalRotation){
+        
+        var roty = (x) * Math.sin(this.rotation-additionalRotation) + (y) * Math.cos(this.rotation-additionalRotation)
+        
+        if(Math.random()<0.0001)
+            console.log(roty,additionalRotation)
+        return (roty) * this.magnification
     }
     checkIfFits(objwithXandY,bounds){
         var padding = 10
@@ -243,21 +252,39 @@ class AbstractCanvas {
         this.setStyle({strokeStyle:"#000",fillStyle:"#fff",lineWidth:2})
         var things = this.gameModel.elements.filter(x=>this.camera.checkIfFits(x,this.bounds)).sort((a,b)=>this.camera.getAbsoluteY(a.x,a.y,this.bounds)-this.camera.getAbsoluteY(b.x,b.y,this.bounds))
         for(var i in things){
-            this.drawThing(things[i].getThing())
+            this.drawThing(things[i].getThing(),things[i].rotation)
         }
     }
-    drawThing(rendered){
-        for(var i in rendered.objs){
-            var obj = rendered.objs[i]
+    drawThing(rendered,rotation){
+        var r = rotation
+        var t = this
+        var objs = rendered.objs.sort((a,b)=>-t.getThingPosition(a,r)+t.getThingPosition(b,r))
+        for(var i in objs){
+            var obj = objs[i]
             this.setStyle({strokeStyle:(obj.stroke ? obj.stroke : "#000"),fillStyle:(obj.fill ? obj.fill : "#fff"),lineWidth:2})
             switch(obj.type){
                 case "line":
                     this.drawPolyLine(obj.coords,false,rendered.x,rendered.y,rendered.z,rendered.rotation)
                     break
+                case "rect":
+                    this.drawPolygon(obj.coords,false,rendered.x,rendered.y,rendered.z,rendered.rotation)
+                    break
                 case "ball":
                     this.drawBall(obj.coords,false,rendered.x,rendered.y,rendered.z)
                     break
             }
+        }
+    }
+    getThingPosition(obj,rotation){
+        switch(obj.type){
+            case "line":
+            case "rect":
+            case "ball":
+                var summed = obj.coords.reduce((a,b)=>([a[0]+b[0],a[1]+b[1],a[2]+b[2]]),[0,0,0])
+                    
+                var ret = this.camera.getRelativeY(summed[0]/obj.coords.length,summed[1]/obj.coords.length,rotation*Math.PI/180)
+                return ret
+                break
         }
     }
     drawGrid(){
@@ -428,8 +455,8 @@ class TwoDCanvas extends AbstractCanvas {
         this.context.fill()
         this.context.stroke()
     }
-    drawPolygon(polygon){
-        
+    drawPolygon(line, closed,x,y,z,rotation){
+        /*
         if(polygon.length === 0)
             return
             
@@ -480,7 +507,38 @@ class TwoDCanvas extends AbstractCanvas {
             this.context.lineTo(x1,y1)
             this.context.closePath()
             this.context.stroke()
+        }*/
+        
+        if(line.length === 0)
+            return
+            
+        this.context.beginPath()
+        
+        var sin = Math.sin(rotation*Math.PI/180)
+        var cos = Math.cos(rotation*Math.PI/180)
+        
+        var x1,y1
+        for(var point in line){
+            var pointx = this.camera.degreesToPixels(
+                line[point][0]*cos+line[point][1]*sin+x,
+                -line[point][0]*sin+line[point][1]*cos+y,
+                this.bounds,true,line[point][2]+z)
+            var pointy = this.camera.degreesToPixels(
+                line[point][0]*cos+line[point][1]*sin+x,
+                -line[point][0]*sin+line[point][1]*cos+y,
+                this.bounds,false,line[point][2]+z)
+            
+            if(point === 0){
+                this.context.moveTo(pointx,pointy)  
+                x1 = pointx
+                y1 = pointy
+            } else
+                this.context.lineTo(pointx,pointy)
         }
+            this.context.lineTo(x1,y1)
+        this.context.closePath()
+        this.context.fill()
+        this.context.stroke()
     }
 }
 class Controller {

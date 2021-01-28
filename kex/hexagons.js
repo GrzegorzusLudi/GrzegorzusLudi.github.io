@@ -10,10 +10,10 @@ function Heks(a,b){
 	this.glebok = -1;
 	if(Math.random()*100>prawdopodobienstwo){
 		this.kolor = 1;
-		
 	}
 	this.przechow = -1;
 	this.gora = 0;
+        this.place = 0; // 0 - nic, 
 }
 function ptwo(){
 	prawdopodobienstwo = document.getElementById("pwo").value;
@@ -311,9 +311,8 @@ function init(){
         canvasContext.closePath();
 		if(kolorzachowany){
 			if(heks[xx][yy].kolor==0){
-                            if(heks[xx][yy].gora==0)
-				canvasContext.fillStyle = "#fff";
-                            else if(heks[xx][yy].gora==1)
+                            canvasContext.fillStyle = "#fff";
+                            if(heks[xx][yy].gora>=2)
 				canvasContext.fillStyle = "#ddd";
 			}
 			if(heks[xx][yy].kolor==1){
@@ -327,9 +326,18 @@ function init(){
 		if(heks[xx][yy].gora==1){
 			canvasContext.strokeStyle = "#666";
 			canvasContext.beginPath();
-			canvasContext.arc(x + hexRadius, y + hexRectangleHeight,hexRadius*1.4,-0.75*Math.PI,-0.25*Math.PI);
+			canvasContext.arc(x + hexRadius, y + hexRectangleHeight*0.65,hexRadius*1,-0.85*Math.PI,-0.15*Math.PI);
+			canvasContext.stroke();
+		} else if(heks[xx][yy].gora==2){
+			canvasContext.strokeStyle = "#666";
+			canvasContext.beginPath();
+			canvasContext.moveTo(x , y + hexRectangleHeight/2);
+			canvasContext.lineTo(x + hexRadius, y);
+			canvasContext.lineTo(x + hexRadius*2, y + hexRectangleHeight/2);
 			canvasContext.stroke();
 		}
+		canvasContext.fillStyle = heks[xx][yy].kolor==0 ? "#000" : "#fff"
+                //canvasContext.fillText(heks[xx][yy].glebok,x+hexRadius*0.3,y+hexRadius*1.8);
 			/*if(heks[xx][yy].kolor==0){
 				canvasContext.fillStyle = "#000";
 				canvasContext.fillText(heks[xx][yy].glebok,x+hexRadius/2,y+hexHeight*2);
