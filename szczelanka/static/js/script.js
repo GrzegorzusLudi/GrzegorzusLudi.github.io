@@ -27,14 +27,14 @@ class Camera {
     setY(y){ this.y = y }
     
     getZ(){ return this.z }
-    setZ(y){ this.z = z }
+    setZ(z){ this.z = z }
     
     getRotation(){ return this.rotation / Math.PI * 180 }
     setRotation(r){ this.rotation = r * Math.PI / 180 }
     
     getSkewed(){ return this.skewed }
     getAntiSkewed(){ return Math.sqrt(1 - this.skewed * this.skewed) }
-    setSkewed(skewed){ this.skewed = Math.min(Math.max(skewed,0),1) }
+    setSkewed(skewed){ this.skewed = Math.min(Math.max(skewed,0.1),1) }
     
     getMouseX() { return this.mouseX }
     getMouseY() { return this.mouseY }
@@ -51,6 +51,11 @@ class Camera {
                 :
             (/*this.y + */roty * this.skewed  + (this.z-z)*this.getAntiSkewed()) * this.magnification + bounds.height/2
     }
+    getAbsoluteX(x,y,bounds,additionalRotation){
+        var additionalRotation = 0
+        var rotx = (this.x-x) * Math.cos(this.rotation+additionalRotation) - (this.y-y) * Math.sin(this.rotation+additionalRotation)
+        return rotx * this.magnification + bounds.width/2
+    }
     getAbsoluteY(x,y,bounds,additionalRotation){
         var additionalRotation = 0
         var roty = (this.x-x) * Math.sin(this.rotation+additionalRotation) + (this.y-y) * Math.cos(this.rotation+additionalRotation)
@@ -60,15 +65,37 @@ class Camera {
         
         var roty = (x) * Math.sin(this.rotation-additionalRotation) + (y) * Math.cos(this.rotation-additionalRotation)
         
-        if(Math.random()<0.0001)
-            console.log(roty,additionalRotation)
         return (roty) * this.magnification
     }
+
     checkIfFits(objwithXandY,bounds){
         var padding = 10
-        var x = this.degreesToPixels(objwithXandY.x,objwithXandY.y,bounds,true,objwithXandY.z)
-        var y = this.degreesToPixels(objwithXandY.x,objwithXandY.y,bounds,false,objwithXandY.z)
-        return x > -padding && y > -padding && x < bounds.width+padding && y < bounds.height+padding
+        var objbounds = objwithXandY.getBounds()
+        
+        var translatedx = [
+            this.degreesToPixels(objwithXandY.x+objbounds[0][0],objwithXandY.y+objbounds[0][1],bounds,true,objwithXandY.z+objbounds[0][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[0][0],objwithXandY.y+objbounds[1][1],bounds,true,objwithXandY.z+objbounds[0][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[0][0],objwithXandY.y+objbounds[0][1],bounds,true,objwithXandY.z+objbounds[1][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[0][0],objwithXandY.y+objbounds[1][1],bounds,true,objwithXandY.z+objbounds[1][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[1][0],objwithXandY.y+objbounds[0][1],bounds,true,objwithXandY.z+objbounds[0][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[1][0],objwithXandY.y+objbounds[1][1],bounds,true,objwithXandY.z+objbounds[0][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[1][0],objwithXandY.y+objbounds[0][1],bounds,true,objwithXandY.z+objbounds[1][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[1][0],objwithXandY.y+objbounds[1][1],bounds,true,objwithXandY.z+objbounds[1][2]),
+        ]
+        var translatedy = [
+            this.degreesToPixels(objwithXandY.x+objbounds[0][0],objwithXandY.y+objbounds[0][1],bounds,false,objwithXandY.z+objbounds[0][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[0][0],objwithXandY.y+objbounds[1][1],bounds,false,objwithXandY.z+objbounds[0][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[0][0],objwithXandY.y+objbounds[0][1],bounds,false,objwithXandY.z+objbounds[1][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[0][0],objwithXandY.y+objbounds[1][1],bounds,false,objwithXandY.z+objbounds[1][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[1][0],objwithXandY.y+objbounds[0][1],bounds,false,objwithXandY.z+objbounds[0][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[1][0],objwithXandY.y+objbounds[1][1],bounds,false,objwithXandY.z+objbounds[0][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[1][0],objwithXandY.y+objbounds[0][1],bounds,false,objwithXandY.z+objbounds[1][2]),
+            this.degreesToPixels(objwithXandY.x+objbounds[1][0],objwithXandY.y+objbounds[1][1],bounds,false,objwithXandY.z+objbounds[1][2]),
+        ]
+        
+        //if(Math.random()<0.0001)
+        //var y = this.degreesToPixels(objwithXandY.x,objwithXandY.y,bounds,false,objwithXandY.z)
+        return translatedx.reduce((a,b)=>Math.max(a,b)) > -padding && translatedy.reduce((a,b)=>Math.max(a,b)) > -padding && translatedx.reduce((a,b)=>Math.min(a,b)) < bounds.width+padding && translatedy.reduce((a,b)=>Math.min(a,b)) < bounds.height+padding
     }
     
     /*
@@ -226,7 +253,7 @@ class AbstractCanvas {
     }
     actualizeElementSize(){
         var bounds = this.parentDiv.getBoundingClientRect()
-        console.log(bounds)
+        
         this.canvasElement.width = bounds.width
         this.canvasElement.height = bounds.height-5
         
@@ -235,7 +262,7 @@ class AbstractCanvas {
     
     draw(){
         this.clear()
-        this.setStyle({strokeStyle:"#000",fillStyle:"#ddffdd",lineWidth:1})
+        this.setStyle({strokeStyle:"#000",fillStyle:"#ddffdd",lineWidth:this.camera.magnification/2})
         this.drawGrid()
         this.drawThings()
     }
@@ -247,10 +274,30 @@ class AbstractCanvas {
             bottom: this.degreeBoundsBottom,
         }
     }
-    
+    compareTwoObjects(a,b){
+        var ac = a.getCenter(this.camera,this.bounds)
+        var bc = b.getCenter(this.camera,this.bounds)
+        if(ac[5] <= bc[4] || bc[5] <= ac[4])
+            return a.z - b.z
+        if(ac[3] < bc[2] || bc[3] < ac[2])
+            return (ac[0] + ac[1] - bc[0] - bc[1])/2
+        else {
+            return (ac[0] + ac[1] - bc[0] - bc[1])/2
+        }
+            
+//         if(ac instanceof Array){
+//             if(bc instanceof Array)
+//                 bc = (bc[0] + bc[1]) / 2
+//             return ac[0] == ac[1] ? ac[0] > bc : ac[0] + (this.camera.getAbsoluteX(b.x,b.y,this.bounds) - ac[2]) / (ac[3] - ac[2]) * (ac[1] - ac[0]) > bc
+//         } else if(bc instanceof Array) {
+//             return bc[0] == bc[1] ? ac > bc[0] : ac > bc[0] + (this.camera.getAbsoluteX(a.x,a.y,this.bounds) - bc[2]) / (bc[3] - bc[2]) * (bc[1] - bc[0])
+//         } else {
+//             return ac > bc
+//         }
+    }
     drawThings(){
-        this.setStyle({strokeStyle:"#000",fillStyle:"#fff",lineWidth:2})
-        var things = this.gameModel.elements.filter(x=>this.camera.checkIfFits(x,this.bounds)).sort((a,b)=>this.camera.getAbsoluteY(a.x,a.y,this.bounds)-this.camera.getAbsoluteY(b.x,b.y,this.bounds))
+        this.setStyle({strokeStyle:"#000",fillStyle:"#fff",lineWidth:this.camera.magnification})
+        var things = this.gameModel.elements.filter(x=>this.camera.checkIfFits(x,this.bounds)).sort((a,b)=>this.compareTwoObjects(a,b)/*this.camera.getAbsoluteY(a.x,a.y,this.bounds)-this.camera.getAbsoluteY(b.x,b.y,this.bounds)*/)
         for(var i in things){
             this.drawThing(things[i].getThing(),things[i].rotation)
         }
@@ -261,7 +308,7 @@ class AbstractCanvas {
         var objs = rendered.objs.sort((a,b)=>-t.getThingPosition(a,r)+t.getThingPosition(b,r))
         for(var i in objs){
             var obj = objs[i]
-            this.setStyle({strokeStyle:(obj.stroke ? obj.stroke : "#000"),fillStyle:(obj.fill ? obj.fill : "#fff"),lineWidth:2})
+            this.setStyle({strokeStyle:(obj.stroke ? obj.stroke : "#000"),fillStyle:(obj.fill ? obj.fill : "#fff"),lineWidth:this.camera.magnification/2})
             switch(obj.type){
                 case "line":
                     this.drawPolyLine(obj.coords,false,rendered.x,rendered.y,rendered.z,rendered.rotation)

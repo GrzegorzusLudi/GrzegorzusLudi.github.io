@@ -5,47 +5,25 @@ class GameModel {
         this.solid = []
         
         
-        this.elements.push(new Cube("#ffb",-0,-100,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-20,-100,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-40,-100,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-60,-100,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-80,-100,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-100,-100,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-120,-100,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-140,-100,0,10,10,50))
-        
-        this.elements.push(new Cube("#ffb",-140,-120,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-140,-140,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-140,-160,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-140,-180,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-140,-200,0,10,10,50))
-        
-        this.elements.push(new Cube("#ffb",-140,-240,0,10,10,50))
-        
-        this.elements.push(new Cube("#ffb",-0,-240,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-20,-240,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-40,-240,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-60,-240,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-80,-240,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-100,-240,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-120,-240,0,10,10,50))
-        
-        this.elements.push(new Cube("#ffb",-0,-120,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-0,-140,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-0,-160,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-0,-180,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-0,-200,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-0,-220,0,10,10,50))
-        this.elements.push(new Cube("#ffb",-0,-240,0,10,10,50))
+        this.elements.push(new Cube("#ffb",0-80,-100,0,10,90,50))
+        this.elements.push(new Cube("#ffb",0,-100-80,0,70,10,50))
+        this.elements.push(new Cube("#ffb",0+80,-100,0,10,90,50))
+        this.elements.push(new Cube("#ffb",0-10,-100+80,0,60,10,50))
         
         
-        this.elements.push(new Cube("#f00",200,120,0,16,16,10))
-        this.elements.push(new Cube("#f80",200,120,10,14,14,10))
-        this.elements.push(new Cube("#ff0",200,120,20,12,12,10))
-        this.elements.push(new Cube("#0f0",200,120,30,10,10,10))
-        this.elements.push(new Cube("#08f",200,120,40,8,8,10))
-        this.elements.push(new Cube("#00c",200,120,50,6,6,10))
-        this.elements.push(new Cube("#80f",200,120,60,4,4,10))
+        
+        this.elements.push(new Cube("#f00",200,160,0,140,140,20))
+        this.elements.push(new Cube("#f80",200,160,20,120,120,20))
+        this.elements.push(new Cube("#ff0",200,160,40,100,100,20))
+        this.elements.push(new Cube("#0f0",200,160,60,80,80,20))
+        this.elements.push(new Cube("#08f",200,160,80,60,60,20))
+        this.elements.push(new Cube("#00c",200,160,100,40,40,20))
+        this.elements.push(new Cube("#80f",200,160,120,20,20,20))
+        
+        this.elements.push(new Cube("#777",200,-120,0,50,50,400))
+        this.elements.push(new Cube("#777",320,-120,0,50,50,400))
+        
+        this.elements.push(new Cube("#0a0",380,120,-1,50,80,6))
         
         
         this.gamer = new LeGamer(0,0)
@@ -123,56 +101,65 @@ class GameModel {
                 var nwb = nw.getBounds()
                 
                 if(a!==nw){
+                        var ax = a.x
+                        var ay = a.y
+                        var nwx = nw.x
+                        var nwy = nw.y
+                        var avx = a.vx
+                        var avy = a.vy
+                        var nwvx = nw.vx
+                        var nwvy = nw.vy
+                        if(
+                            (nwx - ax <= ab[1][0] - nwb[0][0] && ax - nwx <= -ab[0][0] + nwb[1][0]) &&
+                            (nw.y - a.y <= ab[1][1] - nwb[0][1] && a.y - nw.y <= -ab[0][1] + nwb[1][1])
+                        ){
+                            if(a.z < nw.z && a.vz >= nw.vz && a.z+ab[1][2]-20 <= nw.z+nwb[0][2] && a.z+ab[1][2] >= nw.z+nwb[0][2]){
+                                nw.notifyCollisions(5, a.static ? -nw.vz : Math.max(1,a.vz), a.static, a.z-nwb[0][2]+ab[1][2])
+                                a.notifyCollisions(2, nw.static ? a.vz : Math.max(1,-nw.vz), nw.static, nw.z+nwb[0][2]-ab[1][2])
+                            }
+                            if(a.z > nw.z && a.vz <= nw.vz && a.z+ab[0][2] >= nw.z+nwb[1][2]-20 && a.z+ab[0][2] <= nw.z+nwb[1][2]){
+                                nw.notifyCollisions(2, a.static ? nw.vz : Math.max(1,-a.vz), a.static, a.z+nwb[1][2]-ab[0][2])
+                                a.notifyCollisions(5, nw.static ? -a.vz : Math.max(1,nw.vz), nw.static, nw.z-nwb[1][2]+ab[0][2])
+                            }
+                        }   
+                        
                         if(
                             (nw.y - a.y <= ab[1][1] - nwb[0][1] && a.y - nw.y <= -ab[0][1] + nwb[1][1]) &&
-                            (nw.z - a.z <= ab[1][2] - nwb[0][2] && a.z - nw.z <= -ab[0][2] + nwb[1][2])
+                            (nw.z - a.z <= ab[1][2] - nwb[0][2]-5 && a.z - nw.z <= -ab[0][2] + nwb[1][2]-5)
                         ){
                             if(
                             Math.abs(nw.x - nwb[0][0] - a.x + ab[1][0]) <= Math.abs(nw.y - nwb[0][1] - a.y + ab[1][1])
                                 ||
                             Math.abs(nw.x - nwb[1][0] - a.x + ab[0][0]) <= Math.abs(nw.y - nwb[1][1] - a.y + ab[0][1])
                             ){
-                                if(a.x < nw.x && a.x+ab[1][0] > nw.x+nwb[0][0]){
-                                    nw.notifyCollisions(3, a.static ? -nw.vx : Math.max(1,a.vx))
-                                    a.notifyCollisions(0, nw.static ? a.vx : Math.max(1,-nw.vx))
+                                if(a.x < nw.x && a.vx >= nw.vx && a.x+ab[1][0] > nw.x+nwb[0][0]){
+                                    nw.notifyCollisions(3, a.static ? Math.abs(-nw.vx) : Math.max(1,a.vx), a.static)
+                                    a.notifyCollisions(0, nw.static ? Math.abs(a.vx) : Math.max(1,-nw.vx), nw.static)
                                 }
-                                if(a.x > nw.x && a.x+ab[0][0] < nw.x+nwb[1][0]){
-                                    nw.notifyCollisions(0, a.static ? nw.vx :  Math.max(1,-a.vx))
-                                    a.notifyCollisions(3, nw.static ? -a.vx :  Math.max(1,nw.vx))
+                                if(a.x > nw.x && a.vx <= nw.vx && a.x+ab[0][0] < nw.x+nwb[1][0]){
+                                    nw.notifyCollisions(0, a.static ? Math.abs(nw.vx) :  Math.max(1,-a.vx), a.static)
+                                    a.notifyCollisions(3, nw.static ? Math.abs(-a.vx) :  Math.max(1,nw.vx), nw.static)
                                     
                                 }
                             }
                         }
                         if(
-                            (nw.x - a.x <= ab[1][0] - nwb[0][0] && a.x - nw.x <= -ab[0][0] + nwb[1][0]) &&
-                            (nw.z - a.z <= ab[1][2] - nwb[0][2] && a.z - nw.z <= -ab[0][2] + nwb[1][2])
+                            (nwx - ax <= ab[1][0] - nwb[0][0] && ax - nwx <= -ab[0][0] + nwb[1][0]) &&
+                            (nw.z - a.z <= ab[1][2] - nwb[0][2]-5 && a.z - nw.z <= -ab[0][2] + nwb[1][2]-5)
                         ){
                             if(
-                            Math.abs(nw.x - nwb[0][0] - a.x + ab[1][0]) > Math.abs(nw.y - nwb[0][1] - a.y + ab[1][1])
+                            Math.abs(nwx - nwb[0][0] - ax + ab[1][0]) > Math.abs(nwy - nwb[0][1] - ay + ab[1][1])
                                 ||
-                            Math.abs(nw.x - nwb[1][0] - a.x + ab[0][0]) > Math.abs(nw.y - nwb[1][1] - a.y + ab[0][1])
+                            Math.abs(nwx - nwb[1][0] - ax + ab[0][0]) > Math.abs(nwy - nwb[1][1] - ay + ab[0][1])
                             ){
-                            if(a.y < nw.y && a.y+ab[1][1] > nw.y+nwb[0][1]){
-                                nw.notifyCollisions(4, a.static ? -nw.vy :  Math.max(1,a.vy))
-                                a.notifyCollisions(1, nw.static ? a.vy :  Math.max(1,-nw.vy))
+                            if(ay < nwy && avy >= nwvy && ay+ab[1][1] > nwy+nwb[0][1]){
+                                nw.notifyCollisions(4, a.static ? Math.abs(-nwvy) :  Math.max(1,avy), a.static)
+                                a.notifyCollisions(1, nw.static ? Math.abs(avy) :  Math.max(1,-nwvy), nw.static)
                             }
-                            if(a.y > nw.y && a.y+ab[0][1] < nw.y+nwb[1][1]){
-                                nw.notifyCollisions(1, a.static ? nw.vy :   Math.max(1,-a.vy))
-                                a.notifyCollisions(4, nw.static ? -a.vy :   Math.max(1,nw.vy))
+                            if(ay > nwy && avy <= nwvy && ay+ab[0][1] < nw.y+nwb[1][1]){
+                                nw.notifyCollisions(1, a.static ? Math.abs(nwvy) :   Math.max(1,-avy), a.static)
+                                a.notifyCollisions(4, nw.static ? Math.abs(-avy) :   Math.max(1,nwvy), nw.static)
                             }
-                            }
-                        }
-                        if(
-                            (nw.x - a.x <= ab[1][0] - nwb[0][0] && a.x - nw.x <= -ab[0][0] + nwb[1][0]) &&
-                            (nw.y - a.y <= ab[1][1] - nwb[0][1] && a.y - nw.y <= -ab[0][1] + nwb[1][1])
-                        ){
-                            if(a.z < nw.z && a.z+ab[1][2] > nw.z+nwb[0][2]){
-                                nw.notifyCollisions(5, nw.static ? 0 : 1)
-                                a.notifyCollisions(2, a.static ? 0 :  1)
-                            }
-                            if(a.z > nw.z && a.z+ab[0][2] < nw.z+nwb[1][2]){
-                                nw.notifyCollisions(2, nw.static ? 0 :  1)
-                                a.notifyCollisions(5, a.static ? 0 :  1)
                             }
                         }
                        
@@ -190,6 +177,7 @@ class GameModel {
         this.cam.setRotation(this.gamer.rotation)
         this.cam.setX(this.gamer.x)
         this.cam.setY(this.gamer.y)
+        this.cam.setZ(this.gamer.z)
         /*
         if(this.keypressed["ArrowLeft"]){
             this.cam.setRotation(rot + 10)
@@ -273,6 +261,36 @@ class GameObject {
     refreshDrawing(){
         this.cache = null
     }
+    /*getCenter(camera,bounds){
+        return camera.getAbsoluteY(this.x,this.y,bounds)
+    }*/
+    
+    getCenter(camera,cameraBounds){
+        var objBounds = this.getBounds()
+        //[[-this.widthx,-this.widthy,0],[this.widthx,this.widthy,this.height]]
+        //this.camera.getAbsoluteY(a.x,a.y,this.bounds)
+        var pts = [
+            [this.x+objBounds[0][0],this.y+objBounds[0][1]],
+            [this.x+objBounds[1][0],this.y+objBounds[0][1]],
+            [this.x+objBounds[0][0],this.y+objBounds[1][1]],
+            [this.x+objBounds[1][0],this.y+objBounds[1][1]]
+        ]
+        
+        var minx = pts[0]
+        var maxx = pts[0]
+        for(var i = 1;i<4;i++){
+            if(camera.getAbsoluteX(pts[i][0],pts[i][1],cameraBounds) < camera.getAbsoluteX(minx[0],minx[1],cameraBounds))
+                minx = pts[i]
+            if(camera.getAbsoluteX(pts[i][0],pts[i][1],cameraBounds) > camera.getAbsoluteX(maxx[0],maxx[1],cameraBounds))
+                maxx = pts[i]
+        }
+        
+        return [
+            camera.getAbsoluteY(minx[0],minx[1],cameraBounds), camera.getAbsoluteY(maxx[0],maxx[1],cameraBounds),
+            camera.getAbsoluteX(minx[0],minx[1],cameraBounds), camera.getAbsoluteX(maxx[0],maxx[1],cameraBounds),
+            this.z+objBounds[0][2],this.z+objBounds[1][2]
+        ]
+    }
     getThing(){
         if(this.cache === null)
             this.cache = this.render()
@@ -289,6 +307,7 @@ class SolidGameObject extends GameObject {
         this.lastx = x
         this.lasty = y
         this.lastz = z
+        this.airresistance = 0
         this.vx = 0
         this.vy = 0
         this.vz = 0
@@ -304,20 +323,77 @@ class SolidGameObject extends GameObject {
         }
     }
     move(){
+        this.lastx = this.x
+        this.lasty = this.y
+        this.lasyz = this.z
         this.x += this.vx
         this.y += this.vy
         this.z += this.vz
+        if(this.falling()){
+            this.vz = Math.max(this.vz-1,-16*(1-this.airresistance))
+            this.refreshDrawing()
+        } else {
+            if(this.vz != 0){
+                //this.vz = 0
+                this.refreshDrawing()
+            }
+            if(this.z < 0){
+                this.z = 0
+            }
+        }
+        //this.restartCollisions()
     }
-    notifyCollisions(index,force){
+    falling(){
+        return this.z > 0 && this.potentialCollisions[5] == 0 
+    }
+    revertLastPosition(index){
+        /*
+        switch(index){
+            case 0:
+            case 3:*/
+            this.x = this.lastx/*
+            break
+            case 1:
+            case 4:*/
+            this.y = this.lasty/*
+            break
+            case 2:
+            case 5:*/
+            this.z = this.lastz
+//             break
+//         }
+    }
+    notifyCollisions(index,force,solid,border){
         this.potentialCollisions[index] = force
         this.refreshDrawing()
+        if(solid){
+            this.revertLastPosition(index)
+        }
+        this.lastx = this.x
+        this.lasty = this.y
+        this.lasyz = this.z
+        
         switch(index){
             case 0: this.x -= force; break
             case 1: this.y -= force; break
-            case 2: this.z -= force; break
+            case 2: 
+            if(this.z > border){
+                this.z = border
+                //this.vz = 0
+            }
+            this.z -= force;
+            this.z = Math.max(0,this.z) 
+                break
             case 3: this.x += force; break
             case 4: this.y += force; break
-            case 5: this.z += force; break
+            case 5: 
+            if(this.z < border){
+                this.z = border
+                //this.vz = 0
+            }
+            this.z += force; 
+            this.z = Math.max(0,this.z)
+            break
         }
     }
 }
@@ -368,7 +444,7 @@ class StaticGameObject extends GameObject {
 }
 class LeGamer extends SolidGameObject {
     constructor(x,y){
-        super(x,y,0)
+        super(x,y,1000)
         this.rotation = Math.random()*360
         this.color = ["#fff","#d80","#740","#ff6"][Math.floor(Math.random()*Math.random()*4*Math.random()*4)]
         this.veloc = 0
@@ -381,6 +457,7 @@ class LeGamer extends SolidGameObject {
         
         var heightdifference = 6
         this.additionaHeight = Math.pow(Math.random()*heightdifference*2-heightdifference,3)/heightdifference/heightdifference
+        this.airresistance = 0.1 + (1+this.additionaHeight/6)*0.2
         
         this.step = 0
         this.stepdirection = 0
@@ -420,7 +497,7 @@ class LeGamer extends SolidGameObject {
         if(keypressed["ArrowUp"]){
             if(this.stepdirection === 0)
                 this.stepdirection = 1
-            this.veloc = keypressed["r"] ? 12 : 5
+            this.veloc = keypressed["x"] ? 12 : 5
         }
         if(keypressed["ArrowDown"]){
             if(this.stepdirection === 0)
@@ -430,6 +507,10 @@ class LeGamer extends SolidGameObject {
         if(!keypressed["ArrowUp"] && !keypressed["ArrowDown"]){
             this.stepdirection = 0
             this.veloc = 0
+        }
+        
+        if(keypressed["z"] && !this.falling()){
+            this.vz = 6
         }
 
         this.vx = Math.sin(this.rotation*Math.PI/180) * this.veloc
@@ -547,7 +628,7 @@ class LeGamer extends SolidGameObject {
         }
     }
 }
-class BajoJajo extends StaticGameObject{
+class BajoJajo extends SolidGameObject{
     constructor(x,y){
         super(x,y,0,0)
         this.color = "#"+["0","0","0","0","0","0"].map(x=>"0123456789ab"[Math.floor(Math.random()*11)]).join("")
