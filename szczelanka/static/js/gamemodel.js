@@ -26,17 +26,17 @@ class GameModel {
         this.elements.push(new Cube("#0a0",380,120,-1,50,80,6))
         
         
-        this.gamer = new LeGamer(0,0)
+        this.gamer = new LeGamer(0,0,1000)
         this.gamer.setColor("#66f")
         this.elements.push(this.gamer)
         for(var i = -300;i<300;i+=10){
             for(var j = -300;j<300;j+=10){
                 if(this.elements.filter(x=>Math.abs(x.x-i)<19 && Math.abs(x.y-j)<19).length == 0)
                     if(Math.random()<0.2*Math.pow(0.8,1+(Math.abs(i)+Math.abs(j))/40)){
-                        var g = new LeGamer(i+Math.random()*8-4,j+Math.random()*8-4)
+                        var g = new LeGamer(i+Math.random()*8-4,j+Math.random()*8-4,1000)
                         this.elements.push(g)
                         g.thinking = true
-                    } else if(Math.random()<0.003){
+                    } else if(Math.random()<0.006){
                         this.elements.push(new BajoJajo(i+Math.random()*8-4,j+Math.random()*8-4))
                     }
             }
@@ -75,7 +75,7 @@ class GameModel {
                     t.run()
                     t.canvas.draw()
                 }
-                ,50)
+                ,35)
         
     }
     checkCollisions(){
@@ -94,11 +94,12 @@ class GameModel {
         var lastSorted = []
         for(var i in solidsorted){
             var nw = solidsorted[i]
+            var nwb = nw.getBounds()
+
             lastSorted = lastSorted.filter(a=>Math.abs(a.x-nw.x<=maxCollisionx))
             for(var i in lastSorted){
                 var a = lastSorted[i]
                 var ab = a.getBounds()
-                var nwb = nw.getBounds()
                 
                 if(a!==nw){
                         var ax = a.x
@@ -113,53 +114,63 @@ class GameModel {
                             (nwx - ax <= ab[1][0] - nwb[0][0] && ax - nwx <= -ab[0][0] + nwb[1][0]) &&
                             (nw.y - a.y <= ab[1][1] - nwb[0][1] && a.y - nw.y <= -ab[0][1] + nwb[1][1])
                         ){
-                            if(a.z < nw.z && a.vz >= nw.vz && a.z+ab[1][2]-20 <= nw.z+nwb[0][2] && a.z+ab[1][2] >= nw.z+nwb[0][2]){
-                                nw.notifyCollisions(5, a.static ? -nw.vz : Math.max(1,a.vz), a.static, a.z-nwb[0][2]+ab[1][2])
-                                a.notifyCollisions(2, nw.static ? a.vz : Math.max(1,-nw.vz), nw.static, nw.z+nwb[0][2]-ab[1][2])
+                                //if(a == this.gamer)
+                                  //  console.log('aa',nw.z,nwb,a.z,ab)
+                            if(a.z < nw.z && a.vz >= nw.vz && (Math.abs(ab[0][2]+ab[1][2])<40 || a.z+ab[1][2]-20 <= nw.z+nwb[0][2]) && a.z+ab[1][2] > nw.z+nwb[0][2]){
+                                nw.notifyCollisions(5, a.static ? -nw.vz : Math.max(3,a.vz), a.static, a.z-nwb[0][2]+ab[1][2])
+                                a.notifyCollisions(2, nw.static ? a.vz : Math.max(3,-nw.vz), nw.static, nw.z-nwb[0][2]+ab[1][2])
                             }
-                            if(a.z > nw.z && a.vz <= nw.vz && a.z+ab[0][2] >= nw.z+nwb[1][2]-20 && a.z+ab[0][2] <= nw.z+nwb[1][2]){
-                                nw.notifyCollisions(2, a.static ? nw.vz : Math.max(1,-a.vz), a.static, a.z+nwb[1][2]-ab[0][2])
-                                a.notifyCollisions(5, nw.static ? -a.vz : Math.max(1,nw.vz), nw.static, nw.z-nwb[1][2]+ab[0][2])
+                            if(a.z > nw.z && a.vz <= nw.vz && (Math.abs(nwb[0][2]+nwb[1][2])<40 || a.z+ab[0][2] >= nw.z+nwb[1][2]-20) && a.z+ab[0][2] < nw.z+nwb[1][2]){
+                                nw.notifyCollisions(2, a.static ? nw.vz : Math.max(3,-a.vz), a.static, a.z+nwb[1][2]-ab[0][2])
+                                a.notifyCollisions(5, nw.static ? -a.vz : Math.max(3,nw.vz), nw.static, nw.z+nwb[1][2]-ab[0][2])
                             }
                         }   
                         
                         if(
                             (nw.y - a.y <= ab[1][1] - nwb[0][1] && a.y - nw.y <= -ab[0][1] + nwb[1][1]) &&
-                            (nw.z - a.z <= ab[1][2] - nwb[0][2]-5 && a.z - nw.z <= -ab[0][2] + nwb[1][2]-5)
+                            (nw.z - a.z <= ab[1][2] - nwb[0][2]-10 && a.z - nw.z <= -ab[0][2] + nwb[1][2]-10)
                         ){
                             if(
-                            Math.abs(nw.x - nwb[0][0] - a.x + ab[1][0]) <= Math.abs(nw.y - nwb[0][1] - a.y + ab[1][1])
+                            Math.abs(nw.x - nwb[0][0] - a.x + ab[1][0])*Math.abs(nwb[0][1]) >= Math.abs(nw.y - nwb[0][1] - a.y + ab[1][1])*Math.abs(nwb[0][0])
                                 ||
-                            Math.abs(nw.x - nwb[1][0] - a.x + ab[0][0]) <= Math.abs(nw.y - nwb[1][1] - a.y + ab[0][1])
+                            Math.abs(nw.x - nwb[1][0] - a.x + ab[0][0])*Math.abs(nwb[1][1]) >= Math.abs(nw.y - nwb[1][1] - a.y + ab[0][1])*Math.abs(nwb[1][0])
+                                ||
+                            Math.abs(nw.x - nwb[0][0] - a.x + ab[1][0])*Math.abs(ab[1][1]) >= Math.abs(nw.y - nwb[0][1] - a.y + ab[1][1])*Math.abs(ab[1][0])
+                                ||
+                            Math.abs(nw.x - nwb[1][0] - a.x + ab[0][0])*Math.abs(ab[0][1]) >= Math.abs(nw.y - nwb[1][1] - a.y + ab[0][1])*Math.abs(ab[0][0])
                             ){
                                 if(a.x < nw.x && a.vx >= nw.vx && a.x+ab[1][0] > nw.x+nwb[0][0]){
-                                    nw.notifyCollisions(3, a.static ? Math.abs(-nw.vx) : Math.max(1,a.vx), a.static)
-                                    a.notifyCollisions(0, nw.static ? Math.abs(a.vx) : Math.max(1,-nw.vx), nw.static)
+                                    nw.notifyCollisions(3, a.static ? Math.max(1,Math.abs(-nw.vx)) : Math.max(1,a.vx), a.static, a.x+ab[1][0])
+                                    a.notifyCollisions(0, nw.static ? Math.max(1,Math.abs(a.vx)) : Math.max(1,-nw.vx), nw.static, nw.x-nwb[0][0])
                                 }
                                 if(a.x > nw.x && a.vx <= nw.vx && a.x+ab[0][0] < nw.x+nwb[1][0]){
-                                    nw.notifyCollisions(0, a.static ? Math.abs(nw.vx) :  Math.max(1,-a.vx), a.static)
-                                    a.notifyCollisions(3, nw.static ? Math.abs(-a.vx) :  Math.max(1,nw.vx), nw.static)
+                                    nw.notifyCollisions(0, a.static ? Math.max(3,Math.abs(nw.vx)) :  Math.max(1,-a.vx), a.static, a.x-ab[0][0])
+                                    a.notifyCollisions(3, nw.static ? Math.max(3,Math.abs(-a.vx)) :  Math.max(1,nw.vx), nw.static, nw.x+nwb[1][0])
                                     
                                 }
                             }
                         }
                         if(
                             (nwx - ax <= ab[1][0] - nwb[0][0] && ax - nwx <= -ab[0][0] + nwb[1][0]) &&
-                            (nw.z - a.z <= ab[1][2] - nwb[0][2]-5 && a.z - nw.z <= -ab[0][2] + nwb[1][2]-5)
+                            (nw.z - a.z <= ab[1][2] - nwb[0][2]-10 && a.z - nw.z <= -ab[0][2] + nwb[1][2]-10)
                         ){
                             if(
-                            Math.abs(nwx - nwb[0][0] - ax + ab[1][0]) > Math.abs(nwy - nwb[0][1] - ay + ab[1][1])
+                            Math.abs(nwx - nwb[0][0] - ax + ab[1][0])*Math.abs(nwb[0][1]) < Math.abs(nwy - nwb[0][1] - ay + ab[1][1])*Math.abs(nwb[0][0])
                                 ||
-                            Math.abs(nwx - nwb[1][0] - ax + ab[0][0]) > Math.abs(nwy - nwb[1][1] - ay + ab[0][1])
+                            Math.abs(nwx - nwb[1][0] - ax + ab[0][0])*Math.abs(nwb[1][1]) < Math.abs(nwy - nwb[1][1] - ay + ab[0][1])*Math.abs(nwb[1][0])
+                                ||
+                            Math.abs(nwx - nwb[0][0] - ax + ab[1][0])*Math.abs(ab[1][1]) < Math.abs(nwy - nwb[0][1] - ay + ab[1][1])*Math.abs(ab[1][0])
+                                ||
+                            Math.abs(nwx - nwb[1][0] - ax + ab[0][0])*Math.abs(ab[0][1]) < Math.abs(nwy - nwb[1][1] - ay + ab[0][1])*Math.abs(ab[0][0])
                             ){
-                            if(ay < nwy && avy >= nwvy && ay+ab[1][1] > nwy+nwb[0][1]){
-                                nw.notifyCollisions(4, a.static ? Math.abs(-nwvy) :  Math.max(1,avy), a.static)
-                                a.notifyCollisions(1, nw.static ? Math.abs(avy) :  Math.max(1,-nwvy), nw.static)
-                            }
-                            if(ay > nwy && avy <= nwvy && ay+ab[0][1] < nw.y+nwb[1][1]){
-                                nw.notifyCollisions(1, a.static ? Math.abs(nwvy) :   Math.max(1,-avy), a.static)
-                                a.notifyCollisions(4, nw.static ? Math.abs(-avy) :   Math.max(1,nwvy), nw.static)
-                            }
+                                if(ay < nwy && avy >= nwvy && ay+ab[1][1] > nwy+nwb[0][1]){
+                                    nw.notifyCollisions(4, a.static ? Math.max(1,Math.abs(-nwvy)) :  Math.max(1,avy), a.static, a.y+ab[1][1])
+                                    a.notifyCollisions(1, nw.static ? Math.max(1,Math.abs(avy)) :  Math.max(1,-nwvy), nw.static, nw.y-nwb[0][1])
+                                }
+                                if(ay > nwy && avy <= nwvy && ay+ab[0][1] < nw.y+nwb[1][1]){
+                                    nw.notifyCollisions(1, a.static ? Math.max(1,Math.abs(nwvy)) :   Math.max(1,-avy), a.static, a.y-ab[0][1])
+                                    a.notifyCollisions(4, nw.static ? Math.max(1,Math.abs(-avy)) :   Math.max(1,nwvy), nw.static, nw.y+nwb[1][1])
+                                }
                             }
                         }
                        
@@ -200,23 +211,23 @@ class GameModel {
         
         var skewed = this.cam.getSkewed()
         if(this.keypressed["t"]){
-            var veloc = 0.05
+            var veloc = 0.03
             this.cam.setSkewed(skewed+veloc)
         }
         if(this.keypressed["g"]){
-            var veloc = 0.05
+            var veloc = 0.03
             this.cam.setSkewed(skewed-veloc)
         }
         var mag = this.cam.getMagnification()
         if(this.keypressed["y"]){
             if(mag<16){
-                mag *= 1.125
+                mag *= 1.115
             }
             this.cam.setMagnification(mag)
         }
         if(this.keypressed["h"]){
             if(mag>1){
-                mag /= 1.125
+                mag /= 1.115
             }
             this.cam.setMagnification(mag)
         }
@@ -330,11 +341,11 @@ class SolidGameObject extends GameObject {
         this.y += this.vy
         this.z += this.vz
         if(this.falling()){
-            this.vz = Math.max(this.vz-1,-16*(1-this.airresistance))
+            this.vz = Math.max(this.vz-0.5,-16*(1-this.airresistance))
             this.refreshDrawing()
         } else {
-            if(this.vz != 0){
-                //this.vz = 0
+            if(this.vz <= 0){
+                this.vz = 0
                 this.refreshDrawing()
             }
             if(this.z < 0){
@@ -344,57 +355,106 @@ class SolidGameObject extends GameObject {
         //this.restartCollisions()
     }
     falling(){
-        return this.z > 0 && this.potentialCollisions[5] == 0 
+        return this.z > 0 && this.potentialCollisions[5] == 0
     }
     revertLastPosition(index){
-        /*
+        
         switch(index){
             case 0:
-            case 3:*/
-            this.x = this.lastx/*
+            case 3:
+            this.x = this.lastx
             break
             case 1:
-            case 4:*/
-            this.y = this.lasty/*
+            case 4:
+            this.y = this.lasty
             break
             case 2:
-            case 5:*/
+            case 5:
             this.z = this.lastz
-//             break
-//         }
+             break
+         }
+        switch(index){
+            case 0:
+            case 3:
+            this.vx = 0
+            break
+            case 1:
+            case 4:
+            this.vy = 0
+            break
+            case 2:
+            case 5:
+            this.vz = 0
+             break
+         }
     }
-    notifyCollisions(index,force,solid,border){
+    notifyCollisions(index,force,arg1,arg2){
+        var solid = arg1,border = arg2
         this.potentialCollisions[index] = force
         this.refreshDrawing()
         if(solid){
-            this.revertLastPosition(index)
+            //this.revertLastPosition(index)
+        }
+        
+        var MOVE = 10
+        switch(index){
+            case 0: 
+            if(solid && this.x > border && border !== undefined){
+                this.x = this.x > border+MOVE ? this.x-MOVE : border-1
+                //this.vx = 0
+            }
+            this.x -= force; 
+            if(this.vx > 0)
+                this.vx = -this.vx/2
+            break
+            case 1: 
+            if(solid && this.y > border && border !== undefined){
+                this.y = this.y > border+MOVE ? this.y-MOVE : border-1
+                //this.vy = 0
+            }
+            this.y -= force; 
+            if(this.vy > 0)
+                this.vy = -this.vy/2
+            break
+            case 2: 
+            if(this.z > border && border !== undefined){
+                this.z = this.z > border+10 ? this.z-10 : border
+            }
+            this.vz = 0
+            break
+            
+            case 3: 
+            if(solid && this.x < border && border !== undefined){
+                this.x = this.x < border-MOVE ? this.x+MOVE :border+1
+                //this.vx = 0
+            }
+            this.x += force; 
+            if(this.vx < 0)
+                this.vx = -this.vx/2
+            break
+            case 4: 
+            if(solid && this.y < border && border !== undefined){
+                this.y = this.y < border-MOVE ? this.y+MOVE :border+1
+                //this.vy = 0
+            }
+            this.y += force; 
+            if(this.vy < 0)
+                this.vy = -this.vy/2
+            break
+            case 5: 
+            if(this.z < border && border !== undefined){
+                this.z = this.z < border-10 ? this.z+10 :border
+            }
+            
+            if(this.z < 0){
+                this.z = 0
+            }
+            this.vz = 0
+            break
         }
         this.lastx = this.x
         this.lasty = this.y
         this.lasyz = this.z
-        
-        switch(index){
-            case 0: this.x -= force; break
-            case 1: this.y -= force; break
-            case 2: 
-            if(this.z > border){
-                this.z = border
-                //this.vz = 0
-            }
-            this.z -= force;
-            this.z = Math.max(0,this.z) 
-                break
-            case 3: this.x += force; break
-            case 4: this.y += force; break
-            case 5: 
-            if(this.z < border){
-                this.z = border
-                //this.vz = 0
-            }
-            this.z += force; 
-            this.z = Math.max(0,this.z)
-            break
-        }
     }
 }
 class StaticGameObject extends GameObject {
@@ -428,7 +488,7 @@ class StaticGameObject extends GameObject {
         this.z += this.vz
         */
     }
-    notifyCollisions(index,force){
+    notifyCollisions(index,force,arg1,arg2){
         this.potentialCollisions[index] = force
         /*
         this.refreshDrawing()
@@ -443,8 +503,8 @@ class StaticGameObject extends GameObject {
     }
 }
 class LeGamer extends SolidGameObject {
-    constructor(x,y){
-        super(x,y,1000)
+    constructor(x,y,z){
+        super(x,y,z)
         this.rotation = Math.random()*360
         this.color = ["#fff","#d80","#740","#ff6"][Math.floor(Math.random()*Math.random()*4*Math.random()*4)]
         this.veloc = 0
@@ -457,7 +517,7 @@ class LeGamer extends SolidGameObject {
         
         var heightdifference = 6
         this.additionaHeight = Math.pow(Math.random()*heightdifference*2-heightdifference,3)/heightdifference/heightdifference
-        this.airresistance = 0.1 + (1+this.additionaHeight/6)*0.2
+        this.airresistance = 0.1 + (1+this.additionaHeight/6)*0.1
         
         this.step = 0
         this.stepdirection = 0
@@ -471,22 +531,22 @@ class LeGamer extends SolidGameObject {
         var firsty = this.y
         var firstz = this.z
         if(keypressed["ArrowLeft"]){
-            this.rotating = Math.max(0,Math.min(20,this.rotating))
-            this.rotating += 1.5
+            this.rotating = Math.max(0,Math.min(15,this.rotating))
+            this.rotating += 1.2
             
             this.rotation += this.rotating
         }
         if(keypressed["ArrowRight"]){
-            this.rotating = Math.max(-20,Math.min(0,this.rotating))
-            this.rotating -= 1.5
+            this.rotating = Math.max(-15,Math.min(0,this.rotating))
+            this.rotating -= 1.2
             
             this.rotation += this.rotating
         }
         if(!(keypressed["ArrowLeft"] ^ keypressed["ArrowRight"])){
-            if(this.rotating <= -8){
-                this.rotating += 8
-            } else if(this.rotating >= 8){
-                this.rotating -= 8
+            if(this.rotating <= -5){
+                this.rotating += 5
+            } else if(this.rotating >= 5){
+                this.rotating -= 5
             } else {
                 this.rotating = 0
             }
@@ -497,15 +557,16 @@ class LeGamer extends SolidGameObject {
         if(keypressed["ArrowUp"]){
             if(this.stepdirection === 0)
                 this.stepdirection = 1
-            this.veloc = keypressed["x"] ? 12 : 5
+            this.veloc = keypressed["x"] ? 8 : 4
         }
         if(keypressed["ArrowDown"]){
             if(this.stepdirection === 0)
                 this.stepdirection = 1
-            this.veloc = -4
+            this.veloc = -3
         }
         if(!keypressed["ArrowUp"] && !keypressed["ArrowDown"]){
-            this.stepdirection = 0
+            if(!this.falling())
+                this.stepdirection = 0
             this.veloc = 0
         }
         
@@ -528,15 +589,22 @@ class LeGamer extends SolidGameObject {
         if(this.thinking){
             this.think()
         }
-        var stepvelocity = Math.max(Math.abs(this.veloc),1)
+        var ENDSTEP = 5
+        var stepvelocity = Math.max(Math.abs(this.veloc/2),Math.max(-this.vz/2,ENDSTEP),0.5)
+        if(this.falling() && this.vz < -2 && this.stepdirection == 0)
+            this.stepdirection = 1
         if(this.stepdirection === 1){
             this.step += stepvelocity
-            if(this.step>=5)
+            if(this.step>=ENDSTEP){
+                this.step = ENDSTEP
                 this.stepdirection = -1
+            }
         } else if(this.stepdirection === -1) {
             this.step -= stepvelocity
-            if(this.step<=-5)
+            if(this.step<=-ENDSTEP){
+                this.step = -ENDSTEP
                 this.stepdirection = 1
+            }
         } else if(this.stepdirection === 0){
             if(this.step <= -stepvelocity){
                 this.step += stepvelocity
@@ -547,9 +615,11 @@ class LeGamer extends SolidGameObject {
             }
         }
     }
-    notifyCollisions(index,force){
-        super.notifyCollisions(index,force)
+    notifyCollisions(index,force,arg1,arg2){
+        super.notifyCollisions(index,force,arg1,arg2)
         if(this.thinking && this.stateofmind === 0 || this.stateofmind === 5){
+            if(index == 5)
+                return
             switch(index){
                 case 0: this.rotation = 270; break
                 case 1: this.rotation = 0; break
@@ -566,7 +636,7 @@ class LeGamer extends SolidGameObject {
         switch(this.stateofmind){
             case 0:
                 this.moveGamer({})
-                if(Math.random() <= 0.001){
+                if(Math.random() <= 0.005){
                     var x = Math.random() * 400 - 200
                     var y = Math.random() * 400 - 200
                     this.changeStateOfMind(1,{time:10})
@@ -616,16 +686,41 @@ class LeGamer extends SolidGameObject {
             y:this.y,
             z:this.z,
             rotation:this.rotation,
-            objs:[
+            objs:!this.falling() ? this.walker() : this.faller()
+        }
+    }
+    head(){
+        return [
+            {type:"ball",stroke:"#000",fill:this.color,coords:[[-2.5,-2.5,13+this.additionaHeight],[2.5,2.5,18+this.additionaHeight]]},
+            {type:"line",stroke:"#000",coords:[[1,2,15+this.additionaHeight],[1,2,17+this.additionaHeight]]},
+            {type:"line",stroke:"#000",coords:[[-1,2,15+this.additionaHeight],[-1,2,17+this.additionaHeight]]},
+        ]
+    }
+    walker(){
+        var obj = [
+            {type:"line",stroke:"#000",coords:[[-3,this.step,0],[0,0,8+this.additionaHeight/2],[3,-this.step,0]]},
+            {type:"line",stroke:"#000",coords:[[0,0,8+this.additionaHeight/2],[0,0,13+this.additionaHeight]]},
+            {type:"line",stroke:"#000",coords:[[-3,-this.step/2,8+this.additionaHeight/2],[0,0,13+this.additionaHeight],[3,this.step/2,8+this.additionaHeight/2]]},
+        ]
+        return obj.concat(this.head())
+    }
+    faller(){
+        var obj
+        var progress = Math.min(this.vz/5,0.7)
+        if(this.vz > 0){
+            obj = [
+                {type:"line",stroke:"#000",coords:[[-3*(1-progress),0,-3*(progress/2)],[0,0,8+this.additionaHeight/2],[3*(1-progress),0,-3*(progress/2)]]},
+                {type:"line",stroke:"#000",coords:[[0,0,8+this.additionaHeight/2],[0,0,13+this.additionaHeight]]},
+                {type:"line",stroke:"#000",coords:[[-3*(1-progress),0,8+this.additionaHeight/2-3*(progress/2)],[0,0,13+this.additionaHeight],[3*(1-progress),0,8+this.additionaHeight/2-3*(progress/2)]]},
+            ]
+        } else {
+            obj = [
                 {type:"line",stroke:"#000",coords:[[-3,this.step,0],[0,0,8+this.additionaHeight/2],[3,-this.step,0]]},
                 {type:"line",stroke:"#000",coords:[[0,0,8+this.additionaHeight/2],[0,0,13+this.additionaHeight]]},
-                {type:"line",stroke:"#000",coords:[[-3,-this.step/2,8+this.additionaHeight/2],[0,0,13+this.additionaHeight],[3,this.step/2,8+this.additionaHeight/2]]},
-                //
-                {type:"ball",stroke:"#000",fill:this.color,coords:[[-2.5,-2.5,13+this.additionaHeight],[2.5,2.5,18+this.additionaHeight]]},
-                {type:"line",stroke:"#000",coords:[[1,2,15+this.additionaHeight],[1,2,17+this.additionaHeight]]},
-                {type:"line",stroke:"#000",coords:[[-1,2,15+this.additionaHeight],[-1,2,17+this.additionaHeight]]},
+                {type:"line",stroke:"#000",coords:[[-3*(1-progress/3),-this.step/2,8+this.additionaHeight/2-3*(progress/2)],[0,0,13+this.additionaHeight],[3*(1-progress/3),this.step/2,8+this.additionaHeight/2-3*(progress/2)]]},
             ]
         }
+        return obj.concat(this.head())
     }
 }
 class BajoJajo extends SolidGameObject{
@@ -635,8 +730,9 @@ class BajoJajo extends SolidGameObject{
         this.width = 5 + Math.pow(Math.random(),2) * 10
         this.height = 10 + Math.pow(Math.random(),2) * 5
     }
-    move(){
-    }
+    //move(){
+    //    super.move()
+    //}
     generateBounds(){
         return [[-this.width,-this.width,0],[this.width,this.width,this.height*2.44]]
     }
