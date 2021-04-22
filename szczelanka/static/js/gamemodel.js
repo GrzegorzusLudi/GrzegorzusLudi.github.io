@@ -4,13 +4,64 @@ class GameModel {
         this.elements = []
         this.solid = []
         
+        var TOTALSIZE = 4000
+        var YSKIP = -3000
+        this.elements.push(new Fill("#ffd",0,YSKIP,-1,TOTALSIZE,TOTALSIZE,0))
+        this.elements.push(new Fill("#888",-230,-1430,1,40,1240,0))
+        
+        this.elements.push(new Cube("#ffd",-TOTALSIZE,YSKIP,0,10,TOTALSIZE,100))
+        this.elements.push(new Cube("#ffd",0,-TOTALSIZE+YSKIP,0,TOTALSIZE,10,100))
+        this.elements.push(new Cube("#ffd",TOTALSIZE,YSKIP,0,10,TOTALSIZE,100))
+        this.elements.push(new Cube("#ffd",0,TOTALSIZE+YSKIP,0,TOTALSIZE,10,100))
+        
+        
+        this.elements.push(new Cube("#840",-400,0,0,5,400,10))
+        this.elements.push(new Cube("#840",120,-400,0,280,5,10))
+        this.elements.push(new Cube("#840",-340,-400,0,60,5,10))
+        this.elements.push(new Cube("#840",400,0,0,5,400,10))
+        this.elements.push(new Cube("#840",-20,400,0,380,5,10))
+        
         
         this.elements.push(new Cube("#ffb",0-80,-100,0,10,90,50))
         this.elements.push(new Cube("#ffb",0,-100-80,0,70,10,50))
         this.elements.push(new Cube("#ffb",0+80,-100,0,10,90,50))
         this.elements.push(new Cube("#ffb",0-10,-100+80,0,60,10,50))
+        this.elements.push(new Cube("#b92",0,-100,50 ,80,80,10))
+        
+        this.elements.push(new Cube("#ffb",0-230,-100,80 ,100,100,20))
+        this.elements.push(new Cube("#ffb",0-230,-100,0 ,110,110,5))
+        this.elements.push(new Cube("#ffb",0-230,-100,5 ,90,90,5))
+        this.elements.push(new Cube("#ffb",0-230-80,-100-80,10 ,5,5,70))
+        this.elements.push(new Cube("#ffb",0-230-80,-100+80,10 ,5,5,70))
+        this.elements.push(new Cube("#ffb",0-230+80,-100-80,10 ,5,5,70))
+        this.elements.push(new Cube("#ffb",0-230+80,-100+80,10 ,5,5,70))
         
         
+        this.elements.push(new Cube("#f00",0-230-8,-100,10 ,6,6,8))
+        this.elements.push(new Cube("#f00",0-230+8,-100,10 ,6,6,8))
+        this.elements.push(new Cube("#f00",0-230,-100,18 ,14,6,28))
+        this.elements.push(new Cube("#fff",0-230,-100+8,32 ,9,2,8))
+        
+        
+        this.elements.push(new Cube("#ccc",0-750,-2500,0 ,600,400,5))
+        
+        this.elements.push(new Cube("#aaa",0-750,-2500-400,0 ,600,10,70))
+        this.elements.push(new Cube("#aaa",0-750-50,-2500+400,0 ,600-50,10,70))
+        this.elements.push(new Cube("#aaa",0-750-600,-2500,0 ,10,400,70))
+        this.elements.push(new Cube("#aaa",0-750+600,-2500,0 ,10,400,70))
+        
+        this.elements.push(new Cube("#aaa",0-750+500,-2500+60,0 ,10,340,70))
+        this.elements.push(new Cube("#aaa",0-750+400,-2500-60,0 ,10,340,70))
+        this.elements.push(new Cube("#aaa",0-750+300,-2500+300,0 ,10,100,70))
+        this.elements.push(new Cube("#aaa",0-750-100,-2500+200,0 ,400,10,70))
+        
+        for(var i = 0;i<=3;i++){
+            for(var j = 0;j<=3;j++){
+                this.elements.push(new Cube("#eee",0-750+100-i*120,-2500+100-j*100,0 ,20,20,30))
+            }
+        }
+        this.elements.push(new Cube("#eee",0-750-500,-2500-100,0 ,100,200,30))
+        this.elements.push(new Cube("#eee",0-750-570,-2500+150,0 ,20,50,15))
         
         this.elements.push(new Cube("#f00",200,160,0,140,140,20))
         this.elements.push(new Cube("#f80",200,160,20,120,120,20))
@@ -26,14 +77,14 @@ class GameModel {
         this.elements.push(new Cube("#0a0",380,120,-1,50,80,6))
         
         
-        this.gamer = new LeGamer(0,0,1000)
+        this.gamer = new LeGamer(0,0,0)
         this.gamer.setColor("#66f")
         this.elements.push(this.gamer)
-        for(var i = -300;i<300;i+=10){
-            for(var j = -300;j<300;j+=10){
-                if(this.elements.filter(x=>Math.abs(x.x-i)<19 && Math.abs(x.y-j)<19).length == 0)
-                    if(Math.random()<0.2*Math.pow(0.8,1+(Math.abs(i)+Math.abs(j))/40)){
-                        var g = new LeGamer(i+Math.random()*8-4,j+Math.random()*8-4,1000)
+        for(var i = -400;i<400;i+=20){
+            for(var j = -400;j<400;j+=20){
+                if(this.elements.filter(x=>x.solid && Math.abs(x.x-i)<x.getWidthX() && Math.abs(x.y-j)<x.getWidthY()).length == 0)
+                    if(Math.random()<0.9*Math.pow(0.8,1+(Math.abs(i)+Math.abs(j))/40)){
+                        var g = new LeGamer(i+Math.random()*8-4,j+Math.random()*8-4,200)
                         this.elements.push(g)
                         g.thinking = true
                     } else if(Math.random()<0.006){
@@ -41,6 +92,40 @@ class GameModel {
                     }
             }
         }
+        for(var i = -TOTALSIZE;i<TOTALSIZE;i+=60){
+            for(var j = -TOTALSIZE+YSKIP;j<TOTALSIZE+YSKIP;j+=60){
+                if(this.elements.filter(x=>x.solid && Math.abs(x.x-i)<x.getWidthX() && Math.abs(x.y-j)<x.getWidthY()).length == 0){
+                    if(Math.random()<0.007){
+                        for(var i2 = -40;i2<40;i2+=10){
+                            for(var j2 = -40;j2<40;j2+=10){
+                                if(Math.random()<0.05)
+                                    this.elements.push(new GeorgeBush("#ffd",i+i2,j+j2,0,10,10,10))
+                            }
+                        }
+                    } else if(Math.random()<0.003){
+                        for(var i2 = -40;i2<40;i2+=10){
+                            for(var j2 = -40;j2<40;j2+=10){
+                                if(Math.random()<0.05)
+                                    this.elements.push(new JebBush("#ffd",i+i2,j+j2,0,10,10,10))
+                            }
+                        }
+                    } else if(Math.random()<0.01){
+                        for(var i2 = -60;i2<60;i2+=30){
+                            for(var j2 = -60;j2<60;j2+=30){
+                                if(Math.random()<0.1){
+                                    var w = 5*(1+Math.random()*5)
+                                    var h = w * (0.5+Math.random())
+                                    this.elements.push(new Rock("#fe0",i+i2,j+j2,0,w,w,h))
+                                }
+                            }
+                        }
+                    }
+                }
+                
+            }
+        }
+        this.elements.push(new GeorgeBush("#ffd",20,20,0,10,10,10))
+        this.elements.push(new JebBush("#ffd",20,40,0,10,8,8))
         
 
         for(var i in this.elements){
@@ -87,18 +172,20 @@ class GameModel {
             var a = this.solid[i]
             a.restartCollisions()
             var k = Math.abs(a.getBounds()[0][0]-a.getBounds()[1][0])
-            if(k>maxCollisionx)
+            if(k>maxCollisionx && !a.static)
                 maxCollisionx = k
         }
-        var solidsorted = this.solid.sort((a,b)=>a.x-b.x)
+        var solidsorted = this.solid.sort((a,b)=>a.x+a.getBounds()[0][0]-b.x-b.getBounds()[0][0])
         var lastSorted = []
         for(var i in solidsorted){
             var nw = solidsorted[i]
             var nwb = nw.getBounds()
 
-            lastSorted = lastSorted.filter(a=>Math.abs(a.x-nw.x<=maxCollisionx))
+            lastSorted = lastSorted.filter(a=>a.x+a.getBounds()[1][0] >= nw.x+nw.getBounds()[0][0]/*(Math.abs(a.x-nw.x)<=maxCollisionx || a.static || nw.static)*/)
             for(var i in lastSorted){
                 var a = lastSorted[i]
+                if(nw.static && a.static)
+                    continue
                 var ab = a.getBounds()
                 
                 if(a!==nw){
@@ -220,15 +307,15 @@ class GameModel {
         }
         var mag = this.cam.getMagnification()
         if(this.keypressed["y"]){
-            if(mag<16){
+            //if(mag<16){
                 mag *= 1.115
-            }
+            //}
             this.cam.setMagnification(mag)
         }
         if(this.keypressed["h"]){
-            if(mag>1){
+            //if(mag>1){
                 mag /= 1.115
-            }
+            //}
             this.cam.setMagnification(mag)
         }
         
@@ -268,9 +355,23 @@ class GameObject {
         this.rotation = rotation ? rotation : 0
         this.cache = null
         this.solid = false
+        this.bounds = null
     }
     refreshDrawing(){
         this.cache = null
+    }
+    getBounds(){
+        if(this.bounds === null)
+            this.bounds = this.generateBounds()
+        return this.bounds
+    }
+    getWidthX(){
+        var b = this.getBounds()
+        return Math.abs(b[0][0]-b[1][0])
+    }
+    getWidthY(){
+        var b = this.getBounds()
+        return Math.abs(b[0][1]-b[1][1])
     }
     /*getCenter(camera,bounds){
         return camera.getAbsoluteY(this.x,this.y,bounds)
@@ -313,7 +414,6 @@ class SolidGameObject extends GameObject {
         super(x,y,z,rotation)
         this.solid = true
         this.static = false
-        this.bounds = null
         this.potentialCollisions = [0,0,0,0,0,0]
         this.lastx = x
         this.lasty = y
@@ -322,11 +422,6 @@ class SolidGameObject extends GameObject {
         this.vx = 0
         this.vy = 0
         this.vz = 0
-    }
-    getBounds(){
-        if(this.bounds === null)
-            this.bounds = this.generateBounds()
-        return this.bounds
     }
     restartCollisions(){
         for(var i in this.potentialCollisions){
@@ -781,26 +876,277 @@ class Cube extends StaticGameObject{
             z:this.z,
             rotation:this.rotation,
             objs:[
-                {type:"rect",stroke:"#000",fill:this.color,coords:
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
                     [[x1,y1,z1],[x2,y1,z1],[x2,y2,z1],[x1,y2,z1]],
                 },
-                {type:"rect",stroke:"#000",fill:this.color,coords:
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
                     [[x1,y1,z2],[x2,y1,z2],[x2,y2,z2],[x1,y2,z2]],
                 },
                 
-                {type:"rect",stroke:"#000",fill:this.color,coords:
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
                     [[x1,y1,z1],[x2,y1,z1],[x2,y1,z2],[x1,y1,z2]],
                 },
-                {type:"rect",stroke:"#000",fill:this.color,coords:
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
                     [[x1,y2,z1],[x2,y2,z1],[x2,y2,z2],[x1,y2,z2]],
                 },
                 
-                {type:"rect",stroke:"#000",fill:this.color,coords:
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
                     [[x1,y1,z1],[x1,y1,z2],[x1,y2,z2],[x1,y2,z1]],
                 },
-                {type:"rect",stroke:"#000",fill:this.color,coords:
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
                     [[x2,y1,z1],[x2,y1,z2],[x2,y2,z2],[x2,y2,z1]],
                 },
+                //{type:"line",coords:[[0,0,20],[2.5,0,25],[0,0,30],[-2.5,0,25],[0,0,20]]},
+            ]
+        }
+    }
+}
+
+class Fill extends GameObject{
+    constructor(color,x,y,z,wx,wy,h){
+        super(x,y,z,0)
+        this.color = color
+        this.widthx = wx
+        this.widthy = wy
+        this.height = h
+    }
+    move(){
+        
+    }
+    generateBounds(){
+        return [[-this.widthx,-this.widthy,0],[this.widthx,this.widthy,this.height]]
+    }
+    render(){
+        var x1 = -this.widthx
+        var x2 = +this.widthx
+        var y1 = -this.widthy
+        var y2 = +this.widthy
+        var z1 = 0
+        var z2 = this.height
+        
+        var objs = []
+        
+        if(y1-y2 != 0 && x1-x2 != 0){
+            objs = objs.concat([
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
+                    [[x1,y1,z1],[x2,y1,z1],[x2,y2,z1],[x1,y2,z1]],
+                },
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
+                    [[x1,y1,z2],[x2,y1,z2],[x2,y2,z2],[x1,y2,z2]],
+                }
+            ])
+        }
+        
+        if(z1-z2 != 0 && x1-x2 != 0){
+            objs = objs.concat([
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
+                    [[x1,y1,z1],[x2,y1,z1],[x2,y1,z2],[x1,y1,z2]],
+                },
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
+                    [[x1,y2,z1],[x2,y2,z1],[x2,y2,z2],[x1,y2,z2]],
+                }
+            ])
+        }
+        
+        if(y1-y2 != 0 && z1-z2 != 0){
+            objs = objs.concat([
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
+                    [[x1,y1,z1],[x1,y1,z2],[x1,y2,z2],[x1,y2,z1]],
+                },
+                {type:"polygon",stroke:"#000",fill:this.color,coords:
+                    [[x2,y1,z1],[x2,y1,z2],[x2,y2,z2],[x2,y2,z1]],
+                },
+            ])
+        }
+        
+        
+        return {
+            x:this.x,
+            y:this.y,
+            z:this.z,
+            rotation:this.rotation,
+            objs:objs
+                //{type:"line",coords:[[0,0,20],[2.5,0,25],[0,0,30],[-2.5,0,25],[0,0,20]]},
+        }
+    }
+}
+class GeorgeBush extends GameObject{
+    constructor(color,x,y,z,wx,wy,h){
+        super(x,y,z,0)
+        this.color = color
+        this.widthx = wx
+        this.widthy = wy
+        this.height = h
+    }
+    move(){
+    }
+    generateBounds(){
+        return [[-this.widthx*0.8,-this.widthy*0.8,0],[this.widthx*0.8,this.widthy*0.8,this.height]]
+    }
+    render(){
+        var x1 = -this.widthx
+        var x2 = +this.widthx
+        var y1 = -this.widthy
+        var y2 = +this.widthy
+        var z1 = 0
+        var z2 = this.height
+
+        var woodcolor = "#840"
+        return {
+            x:this.x,
+            y:this.y,
+            z:this.z,
+            rotation:this.rotation,
+            objs:[
+                {type:"polygon",stroke:"#000",fill:woodcolor,coords:[
+                    [-this.widthx,0,0],
+                    [-this.widthx/8,-this.widthy/8,0],
+                    [0,-this.widthy,0],
+                    [this.widthx/8,-this.widthy/8,0],
+                    [this.widthx,0,0],
+                    [this.widthx/8,this.widthy/8,0],
+                    [0,this.widthy,0],
+                    [-this.widthx/8,this.widthy/8,0],
+                ]},
+                {type:"polygon",stroke:"#000",fill:woodcolor,coords:[
+                    [-this.widthx/8,0,0],
+                    [-this.widthx,-this.widthy,this.height],
+                    [0,-this.widthy/8,0],
+                    [this.widthx,-this.widthy,this.height],
+                    [this.widthx/8,0,0],
+                    [this.widthx,this.widthy,this.height],
+                    [0,this.widthy/8,0],
+                    [-this.widthx,this.widthy,this.height],
+                ]},
+                {type:"polygon",stroke:"#000",fill:woodcolor,coords:[
+                    [-this.widthx/8,-this.widthy/8,0],
+                    [0,0,this.height],
+                    [this.widthx/8,-this.widthy/8,0],
+                ]},
+                
+            ]
+        }
+    }
+}
+
+
+class JebBush extends GameObject{
+    constructor(color,x,y,z,wx,wy,h){
+        super(x,y,z,0)
+        this.color = color
+        this.widthx = wx
+        this.widthy = wy
+        this.height = h
+    }
+    move(){
+    }
+    generateBounds(){
+        return [[-this.widthx*0.8,-this.widthy*0.8,0],[this.widthx*0.8,this.widthy*0.8,this.height]]
+    }
+    render(){
+        var x1 = -this.widthx
+        var x2 = +this.widthx
+        var y1 = -this.widthy
+        var y2 = +this.widthy
+        var z1 = 0
+        var z2 = this.height
+        
+        var greencolor = "#280"
+
+        var woodcolor = "#840"
+        return {
+            x:this.x,
+            y:this.y,
+            z:this.z,
+            rotation:this.rotation,
+            objs:[
+                {type:"polygon",stroke:"#000",fill:greencolor,coords:[
+                    [-this.widthx,0,0],
+                    [-this.widthx/4,-this.widthy/4,0],
+                    [0,-this.widthy,0],
+                    [this.widthx/4,-this.widthy/4,0],
+                    [this.widthx,0,0],
+                    [this.widthx/4,this.widthy/4,0],
+                    [0,this.widthy,0],
+                    [-this.widthx/4,this.widthy/4,0],
+                ]},
+                {type:"polygon",stroke:"#000",fill:greencolor,coords:[
+                    [-this.widthx/4,0,0],
+                    [-this.widthx,-this.widthy,this.height],
+                    [0,-this.widthy/4,0],
+                    [this.widthx,-this.widthy,this.height],
+                    [this.widthx/4,0,0],
+                    [this.widthx,this.widthy,this.height],
+                    [0,this.widthy/4,0],
+                    [-this.widthx,this.widthy,this.height],
+                ]},
+                {type:"polygon",stroke:"#000",fill:greencolor,coords:[
+                    [-this.widthx/6,-this.widthy/6,0],
+                    [0,0,this.height],
+                    [this.widthx/6,-this.widthy/6,0],
+                ]},
+                    
+                {type:"ball",stroke:"#000",fill:greencolor,coords:[[0,0,0],[this.widthx/4,this.widthy/4,this.height/4]]},
+                {type:"ball",stroke:"#000",fill:greencolor,coords:[[0,0,0],[this.widthx/4,-this.widthy/4,this.height/4]]},
+                {type:"ball",stroke:"#000",fill:greencolor,coords:[[0,0,0],[-this.widthx/4,this.widthy/4,this.height/4]]},
+                {type:"ball",stroke:"#000",fill:greencolor,coords:[[0,0,0],[-this.widthx/4,-this.widthy/4,this.height/4]]},
+                    
+            ]
+        }
+    }
+}
+
+class Rock extends StaticGameObject{
+    constructor(color,x,y,z,wx,wy,h){
+        super(x,y,z,0)
+        this.color = color
+        this.widthx = wx
+        this.widthy = wy
+        this.rotation = Math.random()*360
+        this.height = h
+    }
+    move(){
+    }
+    generateBounds(){
+        return [[-this.widthx,-this.widthy,0],[this.widthx,this.widthy,this.height]]
+    }
+    render(){
+        var xp1 = -this.widthx*(Math.random()*0.4+0.8)
+        var yp1 = -this.widthy*(Math.random()*0.4+0.8)
+        var xp2 = -this.widthx*(Math.random()*0.4+0.8)
+        var yp2 = this.widthy*(Math.random()*0.4+0.8)
+        var xp3 = this.widthx*(Math.random()*0.4+0.8)
+        var yp3 = this.widthy*(Math.random()*0.4+0.8)
+        var xp4 = this.widthx*(Math.random()*0.4+0.8)
+        var yp4 = -this.widthy*(Math.random()*0.4+0.8)
+        
+        var xq1 = -this.widthx*(Math.random()*0.4+0.8)*0.8
+        var yq1 = -this.widthy*(Math.random()*0.4+0.8)*0.8
+        var xq2 = -this.widthx*(Math.random()*0.4+0.8)*0.8
+        var yq2 = this.widthy*(Math.random()*0.4+0.8)*0.8
+        var xq3 = this.widthx*(Math.random()*0.4+0.8)*0.8
+        var yq3 = this.widthy*(Math.random()*0.4-0.2)*0.8
+        var z1 = 0
+        var z2 = this.height
+        return {
+            x:this.x,
+            y:this.y,
+            z:this.z,
+            rotation:this.rotation,
+            objs:[
+                //{type:"polygon",stroke:"#000",fill:this.color,coords:[[xp1,yp1,z1],[xp2,yp2,z1],[xp3,yp3,z1],[xp4,yp4,z1]],},
+                {type:"polygon",stroke:"#000",fill:this.color,coords:[[xq1,yq1,z2],[xq2,yq2,z2],[xq3,yq3,z2]]},
+                
+                {type:"polygon",stroke:"#000",fill:this.color,coords:[[xp1,yp1,z1],[xp2,yp2,z1],[xq1,yq1,z2]]},
+                {type:"polygon",stroke:"#000",fill:this.color,coords:[[xp2,yp2,z1],[xp3,yp3,z1],[xq2,yq2,z2]]},
+                {type:"polygon",stroke:"#000",fill:this.color,coords:[[xp3,yp3,z1],[xp4,yp4,z1],[xq3,yq3,z2]]},
+                {type:"polygon",stroke:"#000",fill:this.color,coords:[[xp4,yp4,z1],[xp1,yp1,z1],[xq1,yq1,z2]]},
+                
+                {type:"polygon",stroke:"#000",fill:this.color,coords:[[xp2,yp2,z1],[xq2,yq2,z2],[xq1,yq1,z2]]},
+                {type:"polygon",stroke:"#000",fill:this.color,coords:[[xp3,yp3,z1],[xq3,yq3,z2],[xq2,yq2,z2]]},
+                {type:"polygon",stroke:"#000",fill:this.color,coords:[[xp4,yp4,z1],[xq3,yq3,z2],[xq1,yq1,z2]]},
+                //{type:"polygon",stroke:"#000",fill:this.color,coords:[[xp1,yp1,z2],[xq1,yq1,z2],[xq3,yq3,z2]]},
+                //{type:"polygon",stroke:"#000",fill:this.color,coords:[[xq1,yq1,z2],[xq1,yq1,z2],[xq3,yq3,z2]]},
                 //{type:"line",coords:[[0,0,20],[2.5,0,25],[0,0,30],[-2.5,0,25],[0,0,20]]},
             ]
         }

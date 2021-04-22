@@ -117,8 +117,8 @@ class Camera {
     // (number of pixels)/1degree, not incremented, but multiplied by a factor
     getMagnification(){ return this.magnification }
     setMagnification(magnification){ 
-        var MIN_MAGNIFICATION = 0.5
-        var MAX_MAGNIFICATION = 1000
+        var MIN_MAGNIFICATION = 0.05
+        var MAX_MAGNIFICATION = 10
         if(magnification < MIN_MAGNIFICATION)
             this.magnification = MIN_MAGNIFICATION
         else if(magnification > MAX_MAGNIFICATION)
@@ -277,8 +277,8 @@ class AbstractCanvas {
     compareTwoObjects(a,b){
         var ac = a.getCenter(this.camera,this.bounds)
         var bc = b.getCenter(this.camera,this.bounds)
-        if(ac[5] <= bc[4] || bc[5] <= ac[4])
-            return a.z - b.z
+        if(ac[5]-5 <= bc[4] || bc[5]-5 <= ac[4])
+            return (ac[4] + ac[5] - bc[4] - bc[5])/2
         if(ac[3] < bc[2] || bc[3] < ac[2])
             return (ac[0] + ac[1] - bc[0] - bc[1])/2
         else {
@@ -313,7 +313,7 @@ class AbstractCanvas {
                 case "line":
                     this.drawPolyLine(obj.coords,false,rendered.x,rendered.y,rendered.z,rendered.rotation)
                     break
-                case "rect":
+                case "polygon":
                     this.drawPolygon(obj.coords,false,rendered.x,rendered.y,rendered.z,rendered.rotation)
                     break
                 case "ball":
@@ -325,7 +325,7 @@ class AbstractCanvas {
     getThingPosition(obj,rotation){
         switch(obj.type){
             case "line":
-            case "rect":
+            case "polygon":
             case "ball":
                 var summed = obj.coords.reduce((a,b)=>([a[0]+b[0],a[1]+b[1],a[2]+b[2]]),[0,0,0])
                     
