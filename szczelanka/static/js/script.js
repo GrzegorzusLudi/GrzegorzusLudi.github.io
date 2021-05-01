@@ -95,7 +95,7 @@ class Camera {
         
         //if(Math.random()<0.0001)
         //var y = this.degreesToPixels(objwithXandY.x,objwithXandY.y,bounds,false,objwithXandY.z)
-        return translatedx.reduce((a,b)=>Math.max(a,b)) > -padding && translatedy.reduce((a,b)=>Math.max(a,b)) > -padding && translatedx.reduce((a,b)=>Math.min(a,b)) < bounds.width+padding && translatedy.reduce((a,b)=>Math.min(a,b)) < bounds.height+padding
+        return translatedx.reduce((a,b)=>Math.max(a,b)) > -padding+bounds.left && translatedy.reduce((a,b)=>Math.max(a,b)) > -padding+bounds.top && translatedx.reduce((a,b)=>Math.min(a,b)) < bounds.width+padding && translatedy.reduce((a,b)=>Math.min(a,b)) < bounds.height+padding
     }
     
     /*
@@ -274,6 +274,17 @@ class AbstractCanvas {
             bottom: this.degreeBoundsBottom,
         }
     }
+    compareWithCamera(a){
+        var ac = a.getCenter(this.camera,this.bounds)
+        var bc = [0,0,0,0,this.camera.z,this.camera.z]
+        if(ac[5]-5 <= bc[4] || bc[5]-5 <= ac[4])
+            return (ac[4] + ac[5] - bc[4] - bc[5])/2
+        if(ac[3] < bc[2] || bc[3] < ac[2])
+            return (ac[0] + ac[1] - bc[0] - bc[1])/2
+        else {
+            return (ac[0] + ac[1] - bc[0] - bc[1])/2
+        }
+    }
     compareTwoObjects(a,b){
         var ac = a.getCenter(this.camera,this.bounds)
         var bc = b.getCenter(this.camera,this.bounds)
@@ -299,16 +310,19 @@ class AbstractCanvas {
         this.setStyle({strokeStyle:"#000",fillStyle:"#fff",lineWidth:this.camera.magnification})
         var things = this.gameModel.elements.filter(x=>this.camera.checkIfFits(x,this.bounds)).sort((a,b)=>this.compareTwoObjects(a,b)/*this.camera.getAbsoluteY(a.x,a.y,this.bounds)-this.camera.getAbsoluteY(b.x,b.y,this.bounds)*/)
         for(var i in things){
-            this.drawThing(things[i].getThing(),things[i].rotation)
+            this.drawThing(things[i].getThing(),things[i].rotation,things[i].hidable && this.checkHide(things[i]))
         }
     }
-    drawThing(rendered,rotation){
+    checkHide(thing){
+        return this.camera.checkIfFits(thing,{left:0,top:0,width:0,height:0}) && this.compareWithCamera(thing) > 25
+    }
+    drawThing(rendered,rotation,tohide){
         var r = rotation
         var t = this
         var objs = rendered.objs.sort((a,b)=>-t.getThingPosition(a,r)+t.getThingPosition(b,r))
         for(var i in objs){
             var obj = objs[i]
-            this.setStyle({strokeStyle:(obj.stroke ? obj.stroke : "#000"),fillStyle:(obj.fill ? obj.fill : "#fff"),lineWidth:this.camera.magnification/2})
+            this.setStyle({strokeStyle:(obj.stroke ? obj.stroke : "#000"),fillStyle:(tohide ? "#00000000" : obj.fill ? obj.fill : "#fff"),lineWidth:this.camera.magnification/2})
             switch(obj.type){
                 case "line":
                     this.drawPolyLine(obj.coords,false,rendered.x,rendered.y,rendered.z,rendered.rotation)
