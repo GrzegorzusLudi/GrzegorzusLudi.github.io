@@ -1,31 +1,31 @@
 
 				function makepath(u,cx,cy,zaz,map){
-							var zaza = zaz/4;
-							if(zaz>0 && Math.floor(u.licz*zaza)>0){
-								oddzialy[oddzialy.length] = new oddzial(u.x,u.y,u.kolor,Math.floor(u.licz*zaza),0);
-								u.licz-=Math.floor(u.licz*zaza);
-							}
+                                        var zaza = zaz/4;
+                                        if(zaz>0 && Math.floor(u.licz*zaza)>0){
+                                                oddzialy[oddzialy.length] = new oddzial(u.x,u.y,u.kolor,Math.floor(u.licz*zaza),0);
+                                                u.licz-=Math.floor(u.licz*zaza);
+                                        }
 
-										var tat = map==undefined?distmap(u):map;
-										var px = Math.floor((cx-2)/5);
-										var py = Math.floor((cy-2)/5);
-										var pth = [];
-										var i = 0
-										while(tat.map[px][py].prevx!=null){
-											var dx = tat.map[px][py].prevx;
-											var dy = tat.map[px][py].prevy;
-											pth[pth.length] = {x:px*5+2,y:py*5+2};
-											if(i>100 && pth.filter(e=>(e.x==px*5+2 && e.y==py*5+2)).length>0)
-                                                                                            return undefined
-											px = dx;
-											py = dy;
-											i++
-										}
-										pth.reverse();
-										if(pth.length>0){
-											pth[pth.length] = {x:cx,y:cy};
-										}
-										u.path = pth;
+                                        var tat = map==undefined?distmap(u):map;
+                                        var px = Math.floor((cx-2)/5);
+                                        var py = Math.floor((cy-2)/5);
+                                        var pth = [];
+                                        var i = 0
+                                        while(tat.map[px][py].prevx!=null){
+                                                var dx = tat.map[px][py].prevx;
+                                                var dy = tat.map[px][py].prevy;
+                                                pth[pth.length] = {x:px*5+2,y:py*5+2};
+                                                if(i>100 && pth.filter(e=>(e.x==px*5+2 && e.y==py*5+2)).length>0)
+                                                    return undefined
+                                                px = dx;
+                                                py = dy;
+                                                i++
+                                        }
+                                        pth.reverse();
+                                        if(pth.length>0){
+                                                pth[pth.length] = {x:cx,y:cy};
+                                        }
+                                        u.path = pth;
 				}
 				/*
 				@@@@@  @@  @  @  @@   @@
@@ -107,6 +107,7 @@
                                         if(firsttime == 0 && zbior[0].il>sumofall*alert){
                                             first = zbior[0].kolor
                                             firsttime = 200
+                                            resetRevenge()
                                         } else if(firsttime>0) {
                                             firsttime--
                                             if(miasta.filter(x=>x.kolor==first).length==0){
@@ -154,8 +155,8 @@
                                     resetas = 5;
 				}
 				function komp(odd,escape,sparesome){
-                    if(sparesome == undefined)
-                        sparesome = false
+                                        if(sparesome == undefined)
+                                            sparesome = false
                                         resetas--
 					if(wybranykolor!=-1 && odd.kolor!=wybranykolor && (!escape || ailevel[odd.kolor]>=3)){
 						var kolo = odd.kolor;
@@ -167,7 +168,7 @@
 								if(kolo==first || first==null)
                                                                     tat = tat.filter(x=>(x.m.kolor!=kolo)).slice(0,10).concat(tat.filter(x=>(x.m.kolor==kolo)).slice(0,10)).sort((a,b)=>(a.dist-b.dist))
 								else
-                                                                    tat = tat.filter(x=>(x.m.kolor==first)).slice(0,10).concat(tat.filter(x=>(x.m.kolor==kolo)).slice(0,10)).sort((a,b)=>(a.dist-b.dist))
+                                                                    tat = tat.filter(x=>(x.m.kolor==first || revenge[kolo][x.m.kolor] > 0)).slice(0,10).concat(tat.filter(x=>(x.m.kolor==kolo)).slice(0,10)).sort((a,b)=>(a.dist-b.dist))
                                                                     
 								var maxscore = 0;
 								var maxcity = null;
@@ -178,8 +179,10 @@
 								var enemies = 0;
 								var potential = []
 								for(var j = 0;j<Math.min(tat.length,20);j++){
+                                                                    //if(revenge[kolo][tat[j].m.kolor] > 0 && tat[j].m.kolor != first && kolo != first)
+                                                                        //console.log(kolo,tat[j].m.kolor,revenge[kolo][tat[j].m.kolor])
                                                                     if(escape==undefined)
-                                                                        if(tat[j].m.kolor!=kolo && (first==null || odd.kolor == first || tat[j].m.kolor==first)){
+                                                                        if(tat[j].m.kolor!=kolo && (first==null || odd.kolor == first || tat[j].m.kolor==first || revenge[kolo][tat[j].m.kolor] > 0)){
                                                                                 //makepath(odd,tat[j].m.x,tat[j].m.y,2);
                                                                                 var unitHere = getUnit(tat[j].m)
                                                                                 if(unitHere!=null){
@@ -281,7 +284,7 @@
                                                                         zmien.push(tabela[mm.x][mm.y])
                                                                     }
                                                             }
-                                                            if(!o.toDelete && o.kolor!=wybranykolor && o.path.length>0 && first!=null && o.kolor!=first && tabela[o.path[o.path.length-1].x][o.path[o.path.length-1].y].miasto!=null && tabela[o.path[o.path.length-1].x][o.path[o.path.length-1].y].miasto.kolor!=first && tabela[o.path[o.path.length-1].x][o.path[o.path.length-1].y].miasto.kolor!=o.kolor){
+                                                            if(!o.toDelete && o.kolor!=wybranykolor && o.path.length>2 && first!=null && o.kolor!=first && revenge[o.kolor][tabela[o.path[o.path.length-1].x][o.path[o.path.length-1].y].miasto.kolor] <= 0 && tabela[o.path[o.path.length-1].x][o.path[o.path.length-1].y].miasto!=null && tabela[o.path[o.path.length-1].x][o.path[o.path.length-1].y].miasto.kolor!=first && tabela[o.path[o.path.length-1].x][o.path[o.path.length-1].y].miasto.kolor!=o.kolor){
                                                                 o.path = []
                                                                 komp(o)
                                                             }
@@ -301,6 +304,12 @@
 													if(tabela[oddzialy[j].x][oddzialy[j].y].miasto!=null){
 														var mm = tabela[oddzialy[j].x][oddzialy[j].y].miasto
 														if(mm.kolor!=oddzialy[i].kolor){
+                                                                        revenge[mm.kolor][oddzialy[i].kolor] += mm.size
+                                                                        revenge[oddzialy[i].kolor][mm.kolor] -= mm.size
+                                                                        
+                                                                        //if(mm.kolor != first && oddzialy[i].kolor != first)
+                                                                        //console.log(mm.kolor," <= ",oddzialy[i].kolor, revenge[mm.kolor][oddzialy[i].kolor], revenge[oddzialy[i].kolor][mm.kolor])
+
                                                                                                                     mm.kolor = oddzialy[i].kolor;
                                                                                                                     mm.akolor = hexToRgb(mm.kolor)
                                                                                                                     zmien.push(mm)
@@ -556,7 +565,7 @@
                                                                                     var mia = dis[t[j].x][t[j].y].miasto
                                                                                     if(mia.kolor == unit.kolor)
                                                                                         swoi++
-                                                                                    if((first!=null && mia.kolor == first && unit.kolor!=first) || ((first==null || first==unit.kolor) && mia.kolor != unit.kolor))
+                                                                                    if((first!=null && mia.kolor == first && unit.kolor!=first) || ((first==null || first==unit.kolor || revenge[unit.kolor][mia.kolor]>0) && mia.kolor != unit.kolor))
                                                                                         oni++
                                                                                     miest[miest.length] = {m:dis[t[j].x][t[j].y].miasto,dist:tabl[i].dist};
 										}

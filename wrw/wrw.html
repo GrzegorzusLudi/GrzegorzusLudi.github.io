@@ -32,6 +32,15 @@
 			}
 			return ret;
 		}
+		function resetRevenge(){
+                    revenge = {}
+                    for(var i = 0;i<kolory.length;i++){
+                        revenge[kolory[i]] = {}
+                        for(var j = 0;j<kolory.length;j++){
+                            revenge[kolory[i]][kolory[j]] = 0
+                        }
+                    }
+		}
 		function miasto(x,y,size,kolor){
 			this.x = x;
 			this.y = y;
@@ -47,6 +56,7 @@
 			this.port = null;
 			this.rosn = 0;
 			this.wyprod = 0;
+			
 			this.znajd = [];
 			this.pkolor = ()=>historia?this.hhkolor:this.kolor
 			var szer = Math.floor(Math.sqrt(this.size))+5;
@@ -354,6 +364,7 @@
                                                         rightp = cwidth-100-60
                                                 hist.push(getSnap())
                     initmiast = miasta.length
+                    resetRevenge()
 						}
                                         hist = []
                                         snaps = []
