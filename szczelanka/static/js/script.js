@@ -260,11 +260,16 @@ class AbstractCanvas {
         this.bounds = bounds
     }
     
+    drawPanel(){
+        
+    }
+    
     draw(){
         this.clear()
         this.setStyle({strokeStyle:"#000",fillStyle:"#ddffdd",lineWidth:this.camera.magnification/2})
         this.drawGrid()
         this.drawThings()
+        this.drawPanel()
     }
     getDegreeBounds(){
         return {

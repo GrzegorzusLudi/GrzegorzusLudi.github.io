@@ -72,8 +72,75 @@ class GameModel {
         this.elements.push(new Cube("#00c",200,160,100,40,40,20))
         this.elements.push(new Cube("#80f",200,160,120,20,20,20))
         
-        this.elements.push(new Cube("#777",200,-120,0,50,50,400))
-        this.elements.push(new Cube("#777",320,-120,0,50,50,400))
+        //this.elements.push(new Cube("#777",200,-120,0,50,50,400))
+        //this.elements.push(normalCorrdsCube("#777",150,-270,0,350,-70,400))
+        //this.elements.push(normalCorrdsCube("#777",150,-270,380,350,-70,400))
+        this.elements.push(normalCorrdsCube("#777",150,-270,0,170,-70,400))
+        this.elements.push(normalCorrdsCube("#777",150,-270,0,350,-250,400))
+        this.elements.push(normalCorrdsCube("#777",330,-270,0,350,-70,400))
+        this.elements.push(normalCorrdsCube("#777",150,-90,40,350,-70,400))
+        this.elements.push(normalCorrdsCube("#777",220,-90,0,350,-70,40))
+        
+        this.elements.push(normalCorrdsCube("#aaa",200,-250,0,220,-220,10))
+        this.elements.push(normalCorrdsCube("#aaa",210,-250,10,230,-220,20))
+        this.elements.push(normalCorrdsCube("#aaa",220,-250,20,240,-220,30))
+        this.elements.push(normalCorrdsCube("#aaa",230,-250,30,250,-220,40))
+        this.elements.push(normalCorrdsCube("#aaa",240,-250,40,250,-220,50))
+        this.elements.push(normalCorrdsCube("#aaa",250,-250,50,260,-220,60))
+        this.elements.push(normalCorrdsCube("#aaa",260,-250,60,270,-220,70))
+        this.elements.push(normalCorrdsCube("#aaa",270,-250,70,280,-220,80))
+        this.elements.push(normalCorrdsCube("#aaa",280,-250,80,290,-220,90))
+        this.elements.push(normalCorrdsCube("#aaa",290,-250,90,350,-220,100))
+        
+        
+        this.elements.push(normalCorrdsCube("#aaa",150,-250,90,240,-220,100))
+        this.elements.push(normalCorrdsCube("#aaa",150,-220,90,350,-90,100))
+        
+        this.elements.push(normalCorrdsCube("#aaa",200,-250,0+100,220,-220,10+100))
+        this.elements.push(normalCorrdsCube("#aaa",210,-250,10+100,230,-220,20+100))
+        this.elements.push(normalCorrdsCube("#aaa",220,-250,20+100,240,-220,30+100))
+        this.elements.push(normalCorrdsCube("#aaa",230,-250,30+100,250,-220,40+100))
+        this.elements.push(normalCorrdsCube("#aaa",240,-250,40+100,250,-220,50+100))
+        this.elements.push(normalCorrdsCube("#aaa",250,-250,50+100,260,-220,60+100))
+        this.elements.push(normalCorrdsCube("#aaa",260,-250,60+100,270,-220,70+100))
+        this.elements.push(normalCorrdsCube("#aaa",270,-250,70+100,280,-220,80+100))
+        this.elements.push(normalCorrdsCube("#aaa",280,-250,80+100,290,-220,90+100))
+        this.elements.push(normalCorrdsCube("#aaa",290,-250,90+100,350,-220,100+100))
+        
+        this.elements.push(normalCorrdsCube("#aaa",150,-250,90+100,240,-220,100+100))
+        this.elements.push(normalCorrdsCube("#aaa",150,-220,90+100,350,-90,100+100))
+        
+        
+        this.elements.push(normalCorrdsCube("#aaa",200,-250,0+200,220,-220,10+200))
+        this.elements.push(normalCorrdsCube("#aaa",210,-250,10+200,230,-220,20+200))
+        this.elements.push(normalCorrdsCube("#aaa",220,-250,20+200,240,-220,30+200))
+        this.elements.push(normalCorrdsCube("#aaa",230,-250,30+200,250,-220,40+200))
+        this.elements.push(normalCorrdsCube("#aaa",240,-250,40+200,250,-220,50+200))
+        this.elements.push(normalCorrdsCube("#aaa",250,-250,50+200,260,-220,60+200))
+        this.elements.push(normalCorrdsCube("#aaa",260,-250,60+200,270,-220,70+200))
+        this.elements.push(normalCorrdsCube("#aaa",270,-250,70+200,280,-220,80+200))
+        this.elements.push(normalCorrdsCube("#aaa",280,-250,80+200,290,-220,90+200))
+        this.elements.push(normalCorrdsCube("#aaa",290,-250,90+200,350,-220,100+200))
+    
+        this.elements.push(normalCorrdsCube("#aaa",170,-250,90+200,240,-220,100+200))
+        this.elements.push(normalCorrdsCube("#aaa",170,-220,90+200,330,-90,100+200))
+        
+        this.elements.push(normalCorrdsCube("#aaa",200,-250,0+300,220,-220,10+300))
+        this.elements.push(normalCorrdsCube("#aaa",210,-250,10+300,230,-220,20+300))
+        this.elements.push(normalCorrdsCube("#aaa",220,-250,20+300,240,-220,30+300))
+        this.elements.push(normalCorrdsCube("#aaa",230,-250,30+300,250,-220,40+300))
+        this.elements.push(normalCorrdsCube("#aaa",240,-250,40+300,250,-220,50+300))
+        this.elements.push(normalCorrdsCube("#aaa",250,-250,50+300,260,-220,60+300))
+        this.elements.push(normalCorrdsCube("#aaa",260,-250,60+300,270,-220,70+300))
+        this.elements.push(normalCorrdsCube("#aaa",270,-250,70+300,280,-220,80+300))
+        this.elements.push(normalCorrdsCube("#aaa",280,-250,80+300,290,-220,90+300))
+        
+        this.elements.push(normalCorrdsCube("#777",290,-270,90+300,350,-220,100+300))
+    
+        this.elements.push(normalCorrdsCube("#777",170,-270,90+300,240,-220,100+300))
+        this.elements.push(normalCorrdsCube("#777",170,-220,90+300,330,-70,100+300))
+        
+        //this.elements.push(new Cube("#777",320,-120,0,50,50,400))
         
         this.elements.push(new Cube("#0a0",380,120,-1,50,80,6))
         
@@ -84,7 +151,7 @@ class GameModel {
         for(var i = -400;i<400;i+=20){
             for(var j = -400;j<400;j+=20){
                 if(this.elements.filter(x=>x.solid && Math.abs(x.x-i)<x.getWidthX() && Math.abs(x.y-j)<x.getWidthY()).length == 0)
-                    if(Math.random()<0.9*Math.pow(0.8,1+(Math.abs(i)+Math.abs(j))/40)){
+                    if(Math.random()<3.9*Math.pow(0.8,1+(Math.abs(i)+Math.abs(j))/40)){
                         var g = new LeGamer(i+Math.random()*8-4,j+Math.random()*8-4,200)
                         this.elements.push(g)
                         g.thinking = true
@@ -151,8 +218,8 @@ class GameModel {
         for(var i in this.elements){
             this.elements[i].move()
         }
-        this.checkCollisions()
         this.gamer.moveGamer(this.keypressed)
+        this.checkCollisions()
         this.moveCanvas()
         
         let t = this
@@ -200,58 +267,58 @@ class GameModel {
                         var nwvy = nw.vy
                         if(
                             (nwx - ax <= ab[1][0] - nwb[0][0] && ax - nwx <= -ab[0][0] + nwb[1][0]) &&
-                            (nw.y - a.y <= ab[1][1] - nwb[0][1] && a.y - nw.y <= -ab[0][1] + nwb[1][1])
+                            (nwy - ay <= ab[1][1] - nwb[0][1] && ay - nwy <= -ab[0][1] + nwb[1][1])
                         ){
                                 //if(a == this.gamer)
                                   //  console.log('aa',nw.z,nwb,a.z,ab)
-                            if(a.z < nw.z && a.vz >= nw.vz && (Math.abs(ab[0][2]+ab[1][2])<40 || a.z+ab[1][2]-20 <= nw.z+nwb[0][2]) && a.z+ab[1][2] > nw.z+nwb[0][2]){
-                                nw.notifyCollisions(5, a.static ? -nw.vz : Math.max(3,a.vz), a.static, a.z-nwb[0][2]+ab[1][2])
-                                a.notifyCollisions(2, nw.static ? a.vz : Math.max(3,-nw.vz), nw.static, nw.z-nwb[0][2]+ab[1][2])
+                            if(a.z < nw.z && a.vz >= nw.vz && (Math.abs(ab[0][2]+ab[1][2])<10 || a.z+ab[1][2]-10 <= nw.z+nwb[0][2]) && a.z+ab[1][2] > nw.z+nwb[0][2]){
+                                nw.notifyCollisions(5, a.static ? Math.max(1,Math.abs(-nw.vz)) : Math.max(1,a.vz), a.static, a.z-nwb[0][2]+ab[1][2])
+                                a.notifyCollisions(2, nw.static ? Math.max(1,Math.abs(a.vz)) : Math.max(1,-nw.vz), nw.static, nw.z-nwb[0][2]+ab[1][2])
                             }
-                            if(a.z > nw.z && a.vz <= nw.vz && (Math.abs(nwb[0][2]+nwb[1][2])<40 || a.z+ab[0][2] >= nw.z+nwb[1][2]-20) && a.z+ab[0][2] < nw.z+nwb[1][2]){
-                                nw.notifyCollisions(2, a.static ? nw.vz : Math.max(3,-a.vz), a.static, a.z+nwb[1][2]-ab[0][2])
-                                a.notifyCollisions(5, nw.static ? -a.vz : Math.max(3,nw.vz), nw.static, nw.z+nwb[1][2]-ab[0][2])
+                            if(a.z > nw.z && a.vz <= nw.vz && (Math.abs(nwb[0][2]+nwb[1][2])<10 || a.z+ab[0][2] >= nw.z+nwb[1][2]-10) && a.z+ab[0][2] < nw.z+nwb[1][2]){
+                                nw.notifyCollisions(2, a.static ? Math.max(1,Math.abs(nw.vz)) : Math.max(1,-a.vz), a.static, a.z+nwb[1][2]-ab[0][2])
+                                a.notifyCollisions(5, nw.static ? Math.max(1,Math.abs(-a.vx)) : Math.max(1,nw.vz), nw.static, nw.z+nwb[1][2]-ab[0][2])
                             }
-                        }   
+                        }
                         
                         if(
-                            (nw.y - a.y <= ab[1][1] - nwb[0][1] && a.y - nw.y <= -ab[0][1] + nwb[1][1]) &&
+                            (nw.y-nwvy - a.y+avy <= ab[1][1] - nwb[0][1] && a.y-avy - nw.y+nwvy <= -ab[0][1] + nwb[1][1]) &&
                             (nw.z - a.z <= ab[1][2] - nwb[0][2]-10 && a.z - nw.z <= -ab[0][2] + nwb[1][2]-10)
                         ){
-                            if( Math.min(Math.abs(ay+ab[1][1] - nwy-nwb[0][1]),Math.abs(-ay-ab[0][1] + nwy+nwb[1][1])) >=
-                                Math.min(Math.abs(a.x+ab[1][0] - nw.x-nwb[0][0]),Math.abs(-a.x-ab[0][0] + nw.x+nwb[1][0]))
+                            if( Math.min(Math.abs(a.x-a.vx+ab[1][0] - nw.x+nw.vx-nwb[0][0]),Math.abs(-a.x+a.vx-ab[0][0] + nw.x-nw.vx+nwb[1][0])) <
+                                Math.min(Math.abs(ay-avy+ab[1][1] - nwy+nwvy-nwb[0][1]),Math.abs(-ay+a.vy-ab[0][1] + nwy-nwvy+nwb[1][1]))
                                 &&
-                                Math.min(Math.abs(a.x+ab[1][0] - nw.x-nwb[0][0]),Math.abs(-a.x-ab[0][0] + nw.x+nwb[1][0])) <
-                                Math.min(Math.abs(a.z+ab[1][2] - nw.z-nwb[0][2]),Math.abs(-a.z-ab[0][2] + nw.z+nwb[1][2]))
+                                Math.min(Math.abs(a.x-a.vx+ab[1][0] - nw.x+nw.vx-nwb[0][0]),Math.abs(-a.x+a.vx-ab[0][0] + nw.x-nw.vx+nwb[1][0])) <
+                                Math.min(Math.abs(a.z-a.vz+ab[1][2] - nw.z+nw.vz-nwb[0][2]),Math.abs(-a.z+a.vz-ab[0][2] + nw.z-nw.vz+nwb[1][2]))
                             ){
-                                if(a.x < nw.x && a.vx >= nw.vx && a.x+ab[1][0] > nw.x+nwb[0][0]){
-                                    nw.notifyCollisions(3, a.static ? Math.max(1,Math.abs(-nw.vx)) : Math.max(1,a.vx), a.static, a.x+ab[1][0])
-                                    a.notifyCollisions(0, nw.static ? Math.max(1,Math.abs(a.vx)) : Math.max(1,-nw.vx), nw.static, nw.x-nwb[0][0])
+                                if(a.x-a.vx < nw.x-nw.vx && a.vx >= nw.vx && a.x+ab[1][0] > nw.x+nwb[0][0]){
+                                    nw.notifyCollisions(3, a.static ? Math.max(0,Math.abs(-nw.vx)) : Math.max(1,a.vx), a.static, a.x+ab[1][0])
+                                    a.notifyCollisions(0, nw.static ? Math.max(0,Math.abs(a.vx)) : Math.max(1,-nw.vx), nw.static, nw.x-nwb[0][0])
                                 }
-                                if(a.x > nw.x && a.vx <= nw.vx && a.x+ab[0][0] < nw.x+nwb[1][0]){
-                                    nw.notifyCollisions(0, a.static ? Math.max(3,Math.abs(nw.vx)) :  Math.max(1,-a.vx), a.static, a.x-ab[0][0])
-                                    a.notifyCollisions(3, nw.static ? Math.max(3,Math.abs(-a.vx)) :  Math.max(1,nw.vx), nw.static, nw.x+nwb[1][0])
+                                if(a.x-a.vx > nw.x-nw.vx && a.vx <= nw.vx && a.x+ab[0][0] < nw.x+nwb[1][0]){
+                                    nw.notifyCollisions(0, a.static ? Math.max(0,Math.abs(nw.vx)) : Math.max(1,-a.vx), a.static, a.x-ab[0][0])
+                                    a.notifyCollisions(3, nw.static ? Math.max(0,Math.abs(-a.vx)) : Math.max(1,nw.vx), nw.static, nw.x+nwb[1][0])
                                     
                                 }
                             }
                         }
                         if(
-                            (nwx - ax <= ab[1][0] - nwb[0][0] && ax - nwx <= -ab[0][0] + nwb[1][0]) &&
+                            (nwx-nwvx - ax+avx <= ab[1][0] - nwb[0][0] && ax-avx - nwx+nwvx <= -ab[0][0] + nwb[1][0]) &&
                             (nw.z - a.z <= ab[1][2] - nwb[0][2]-10 && a.z - nw.z <= -ab[0][2] + nwb[1][2]-10)
                         ){
-                            if( Math.min(Math.abs(ay+ab[1][1] - nwy-nwb[0][1]),Math.abs(-ay-ab[0][1] + nwy+nwb[1][1])) <
-                                Math.min(Math.abs(a.x+ab[1][0] - nw.x-nwb[0][0]),Math.abs(-a.x-ab[0][0] + nw.x+nwb[1][0]))
+                            if( Math.min(Math.abs(ay-avy+ab[1][1] - nwy+nwvy-nwb[0][1]),Math.abs(-ay+avy-ab[0][1] + nwy-nwvy+nwb[1][1])) <
+                                Math.min(Math.abs(ax-avx+ab[1][0] - nwx+nwvx-nwb[0][0]),Math.abs(-ax+avx-ab[0][0] + nwx-nwvx+nwb[1][0]))
                                 &&
-                                Math.min(Math.abs(ay+ab[1][1] - nwy-nwb[0][1]),Math.abs(-ay-ab[0][1] + nwy+nwb[1][1])) <
-                                Math.min(Math.abs(a.z+ab[1][2] - nw.z-nwb[0][2]),Math.abs(-a.z-ab[0][2] + nw.z+nwb[1][2]))
+                                Math.min(Math.abs(ay-avy+ab[1][1] - nwy+nwvy-nwb[0][1]),Math.abs(-ay+avy-ab[0][1] + nwy-nwvy+nwb[1][1])) <
+                                Math.min(Math.abs(a.z-a.vz+ab[1][2] - nw.z+nw.vz-nwb[0][2]),Math.abs(-a.z+a.vz-ab[0][2] + nw.z-nw.vz+nwb[1][2]))
                             ){
-                                if(ay < nwy && avy >= nwvy && ay+ab[1][1] > nwy+nwb[0][1]){
-                                    nw.notifyCollisions(4, a.static ? Math.max(1,Math.abs(-nwvy)) :  Math.max(1,avy), a.static, a.y+ab[1][1])
-                                    a.notifyCollisions(1, nw.static ? Math.max(1,Math.abs(avy)) :  Math.max(1,-nwvy), nw.static, nw.y-nwb[0][1])
+                                if(ay-avy < nwy-nwvy && avy >= nwvy && ay+ab[1][1] > nwy+nwb[0][1]){
+                                    nw.notifyCollisions(4, a.static ? Math.max(0,Math.abs(-nwvy)) :  Math.max(1,avy), a.static, ay+ab[1][1])
+                                    a.notifyCollisions(1, nw.static ? Math.max(0,Math.abs(avy)) :  Math.max(1,-nwvy), nw.static, nwy-nwb[0][1])
                                 }
-                                if(ay > nwy && avy <= nwvy && ay+ab[0][1] < nwy+nwb[1][1]){
-                                    nw.notifyCollisions(1, a.static ? Math.max(1,Math.abs(nwvy)) :   Math.max(1,-avy), a.static, a.y-ab[0][1])
-                                    a.notifyCollisions(4, nw.static ? Math.max(1,Math.abs(-avy)) :   Math.max(1,nwvy), nw.static, nw.y+nwb[1][1])
+                                if(ay-avy > nwy-nwvy && avy <= nwvy && ay+ab[0][1] < nwy+nwb[1][1]){
+                                    nw.notifyCollisions(1, a.static ? Math.max(0,Math.abs(nwvy)) :   Math.max(1,-avy), a.static, ay-ab[0][1])
+                                    a.notifyCollisions(4, nw.static ? Math.max(0,Math.abs(-avy)) :   Math.max(1,nwvy), nw.static, nwy+nwb[1][1])
                                 }
                             }
                         }
@@ -482,28 +549,28 @@ class SolidGameObject extends GameObject {
     notifyCollisions(index,force,arg1,arg2){
         var solid = arg1,border = arg2
         this.potentialCollisions[index] = force
-        this.refreshDrawing()
-        if(solid){
-            //this.revertLastPosition(index)
+        //this.refreshDrawing()
+        if(solid && index != 2 && index != 5){
+            this.revertLastPosition(index)
         }
         
-        var MOVE = 10
+        var MOVE = 15
         switch(index){
             case 0: 
             if(solid && this.x > border && border !== undefined){
                 this.x = this.x > border+MOVE ? this.x-MOVE : border-1
-                //this.vx = 0
+                this.vx = 0
             }
-            this.x -= force; 
+            //this.x -= force; 
             if(this.vx > 0)
                 this.vx = -this.vx/2
             break
             case 1: 
             if(solid && this.y > border && border !== undefined){
                 this.y = this.y > border+MOVE ? this.y-MOVE : border-1
-                //this.vy = 0
+                this.vy = 0
             }
-            this.y -= force; 
+            //this.y -= force; 
             if(this.vy > 0)
                 this.vy = -this.vy/2
             break
@@ -517,9 +584,9 @@ class SolidGameObject extends GameObject {
             case 3: 
             if(solid && this.x < border && border !== undefined){
                 this.x = this.x < border-MOVE ? this.x+MOVE :border+1
-                //this.vx = 0
+                this.vx = 0
             }
-            this.x += force; 
+            //this.x += force; 
             if(this.vx < 0)
                 this.vx = -this.vx/2
             break
@@ -528,7 +595,7 @@ class SolidGameObject extends GameObject {
                 this.y = this.y < border-MOVE ? this.y+MOVE :border+1
                 //this.vy = 0
             }
-            this.y += force; 
+            //this.y += force; 
             if(this.vy < 0)
                 this.vy = -this.vy/2
             break
@@ -603,6 +670,8 @@ class LeGamer extends SolidGameObject {
         this.thinking = false
         this.stateofmind = 0
         this.memory = {}
+        
+        this.inventory = []
         
         this.running = false
         
@@ -723,7 +792,7 @@ class LeGamer extends SolidGameObject {
                 case 4: this.rotation = 180; break
             }
             this.rotation += Math.random()*30-15
-            this.changeStateOfMind(5,{time:5})
+            this.changeStateOfMind(5,{time:15})
             this.think()
         }
     }
@@ -849,6 +918,10 @@ class BajoJajo extends SolidGameObject{
             ]
         }
     }
+}
+
+function normalCorrdsCube(color,x1,y1,z1,x2,y2,z2){
+    return new Cube(color,(x1+x2)/2,(y1+y2)/2,z1,(x2-x1)/2,(y2-y1)/2,z2-z1)
 }
 
 class Cube extends StaticGameObject{
