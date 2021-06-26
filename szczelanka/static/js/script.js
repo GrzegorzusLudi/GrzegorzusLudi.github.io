@@ -155,7 +155,7 @@ class AbstractCanvas {
     constructor(canvasElement,parentDiv,gameModel){
         this.canvasElement = canvasElement
         this.parentDiv = parentDiv
-        this.gameModel = gameModel
+        this.gameModel = gameModel 
         this.bounds = null
         
         this.styles = {
