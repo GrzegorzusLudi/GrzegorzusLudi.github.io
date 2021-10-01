@@ -685,6 +685,7 @@ class Chud extends Human {
         }
         
     }
+    
     loot(){
         for(var i = 0;i<3;i++){
             var loot
