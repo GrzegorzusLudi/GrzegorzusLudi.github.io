@@ -4,15 +4,17 @@ class GameModel {
         this.keypressed = {}
         this.elements = []
         
+        this.alreadypressed = {}
+        
         this.soyak = new Soyak(this.elements,0,200)
         this.elements.push(this.soyak)
         this.elements.push(new Chud(this.elements,1800,50))
         this.elements.push(new Chud(this.elements,2000,50))
         
-        this.elements.push(new Chud(this.elements,2630,50))
-        this.elements.push(new Chud(this.elements,2650,50))
-        this.elements.push(new Chud(this.elements,2650,100))
-        this.elements.push(new Chud(this.elements,2670,50))
+        this.elements.push(new Chud(this.elements,2710,50))
+        this.elements.push(new Chud(this.elements,2750,50))
+        this.elements.push(new Chud(this.elements,2750,250))
+        this.elements.push(new Chud(this.elements,2790,50))
         
         
         this.elements.push(new Text(500,100,['nigga',"i'm nuts"]))
@@ -29,6 +31,84 @@ class GameModel {
         this.elements.push(new Rectangle(3700,-3000,15,3150))
         this.elements.push(new Rectangle(3805,-3000,15,3150))
         this.elements.push(new Piperino(3700,-3000,120,3150))
+        
+        
+        this.elements.push(new Rectangle(3200,-3200,2400,50))
+        this.elements.push(new Rectangle(3200,-3200,50,400))
+        this.elements.push(new Rectangle(3200,-2800,500,50))
+        
+        this.elements.push(new Soylent(3300,-2880))
+        this.elements.push(new Soylent(3400,-2880))
+        this.elements.push(new Buggerino(3300,-2980,4))
+        this.elements.push(new Buggerino(3400,-2980,3))
+        
+        this.elements.push(new ScienceGuard(this.elements,4200,-3000))
+        this.elements.push(new Text(4200,-2900,['WEAR THE FUCKING','MASK OR I','FUCKING KILL YOU','!!!!!!!!!']))
+        
+        this.elements.push(new Rectangle(5600,-3500,50,300))
+        this.elements.push(new Rectangle(5600,-3500,1700,50))
+        this.elements.push(new Rectangle(7300,-3500,50,300))
+        
+        this.elements.push(new Rectangle(6000,-3200,200,50))
+        this.elements.push(new Rectangle(6600,-3200,250,50))
+        
+        this.elements.push(new Text(5700,-2900,['WATCH OUT OR YOU','LAND IN THE','CHUD ZOO']))
+
+        this.elements.push(new Rectangle(7300,-3200,2800,50))
+        
+        
+        this.elements.push(new Buggerino(7600,-3000,4))
+        this.elements.push(new Buggerino(7600,-2900,1))
+        this.elements.push(new Buggerino(7700,-3000,3))
+        this.elements.push(new Buggerino(7700,-2900,3))
+        this.elements.push(new Buggerino(7800,-3000,2))
+        this.elements.push(new Buggerino(7800,-2900,6))
+        this.elements.push(new Buggerino(7900,-3000,6))
+        this.elements.push(new Buggerino(7900,-2900,5))
+        this.elements.push(new Buggerino(8000,-3000,1))
+        this.elements.push(new Buggerino(8000,-2900,4))
+        
+        this.elements.push(new Buggerino(8200,-3000,4))
+        this.elements.push(new Buggerino(8200,-2900,1))
+        this.elements.push(new Buggerino(8300,-3000,3))
+        this.elements.push(new Soylent(8300,-2900))
+        this.elements.push(new Buggerino(8400,-3000,2))
+        this.elements.push(new Soylent(8400,-2900))
+        this.elements.push(new Buggerino(8500,-3000,6))
+        this.elements.push(new Buggerino(8500,-2900,5))
+        this.elements.push(new Buggerino(8600,-3000,1))
+        this.elements.push(new Buggerino(8600,-2900,4))
+        
+        this.elements.push(new BackgroundImage(8700,-3150,'enby.png',[0,0,100,200]))
+        this.elements.push(new Text(8900,-3000,['HEY!','DO YOU KNOW SOME','MORE EFFECTIVE INSULTS','AGAINS CHUDS?','PRESS I, C or P']))
+        
+        
+        this.elements.push(new Chud(this.elements,5800,-3400))
+        this.elements.push(new Chud(this.elements,6000,-3400))
+        this.elements.push(new Chud(this.elements,6200,-3400))
+        this.elements.push(new Chud(this.elements,6300,-3400))
+        this.elements.push(new Chud(this.elements,6500,-3400))
+        this.elements.push(new Chud(this.elements,6700,-3400))
+        this.elements.push(new Chud(this.elements,6900,-3400))
+        this.elements.push(new Chud(this.elements,7100,-3400))
+        
+        this.elements.push(new Rectangle(9300,-3150,50,50))
+        this.elements.push(new Rectangle(10100,-3250,50,150))
+        this.elements.push(new Rectangle(10100,-3300,2000,50))
+        this.elements.push(new Rectangle(10700,-3250,50,50))
+        this.elements.push(new Rectangle(11300,-3250,50,50))
+        this.elements.push(new Rectangle(12100,-3250,50,100))
+        this.elements.push(new Rectangle(12100,-3200,500,50))
+        this.elements.push(new Rectangle(12600,-3200,500,2000))
+        
+        
+        
+        this.elements.push(new Chud(this.elements,9500,-3000))
+        this.elements.push(new SerialShooter(this.elements,9600,-3000))
+        this.elements.push(new Chud(this.elements,10500,-3200))
+        this.elements.push(new Chud(this.elements,10600,-3200))
+        this.elements.push(new SerialShooter(this.elements,11000,-3200))
+        this.elements.push(new Chud(this.elements,11100,-3200))
         
         //borderinos
         this.elements.push(new Rectangle(-1000,-100,4700,100))
@@ -80,6 +160,13 @@ class GameModel {
         this.elements.push(new Buggerino(1300,100,3))
         this.elements.push(new Buggerino(1400,100,3))
         this.elements.push(new Buggerino(1500,100,4))
+        
+        this.elements.push(new Buggerino(2800,200,4))
+        this.elements.push(new Buggerino(2900,200,1))
+        this.elements.push(new Buggerino(3000,200,5))
+        this.elements.push(new Buggerino(2800,300,3))
+        this.elements.push(new Buggerino(2900,300,3))
+        this.elements.push(new Buggerino(3000,300,2))
     }
     addCanvas(canvas){
         this.canvas = canvas
@@ -248,9 +335,38 @@ class GameModel {
             this.soyak.tryJump()
         }
         if(this.keypressed[" "] == true && this.soyak.throwing == 0){
+            this.alreadypressed[" "] = true
             this.soyak.prepareToThrow("downvote",this.elements)
         }
-        if(this.keypressed[" "] != true && this.soyak.throwing == 1){
+        if(this.keypressed[" "] != true && this.alreadypressed[" "] == true && this.soyak.throwing == 1){
+            delete this.alreadypressed[" "]
+            this.soyak.throw()
+        }
+        
+        if(this.keypressed["i"] == true && this.soyak.throwing == 0){
+            this.alreadypressed["i"] = true
+            this.soyak.prepareToThrow("incelphobicslur",this.elements)
+        }
+        if(this.keypressed["i"] != true && this.alreadypressed["i"] == true && this.soyak.throwing == 1){
+            delete this.alreadypressed["i"]
+            this.soyak.throw()
+        }
+        
+        if(this.keypressed["c"] == true && this.soyak.throwing == 0){
+            this.alreadypressed["c"] = true
+            this.soyak.prepareToThrow("chudphobicslur",this.elements)
+        }
+        if(this.keypressed["c"] != true && this.alreadypressed["c"] == true && this.soyak.throwing == 1){
+            delete this.alreadypressed["c"]
+            this.soyak.throw()
+        }
+        
+        if(this.keypressed["p"] == true && this.soyak.throwing == 0){
+            this.alreadypressed["p"] = true
+            this.soyak.prepareToThrow("pissbabyphobicslur",this.elements)
+        }
+        if(this.keypressed["p"] != true && this.alreadypressed["p"] == true && this.soyak.throwing == 1){
+            delete this.alreadypressed["p"]
             this.soyak.throw()
         }
     }
@@ -330,6 +446,8 @@ class Mob extends Thing {
         this.politicalposition = null
     }
     tryTake(thing){
+        if(this == thing.owner)
+            return
         if(thing.taken)
             return
     }
@@ -395,6 +513,143 @@ class Mob extends Thing {
             this.vy = 0
     }
 }
+class ScienceGuard extends Mob {
+    constructor(elementArray,x,y){
+        super(elementArray,x,y)
+        this.moving = 0
+        this.friction = 0.3
+        this.maxAirSpeed = 15
+        this.sideLeft = true
+        this.head = null
+        this.throwing = 0
+        this.throwthink = 10
+        this.deading = 5
+        this.throwingObject = null
+        this.bounds = [-90,-80,90,80]
+        
+        this.hp = 10
+        this.maxhp = 10
+        
+    }
+    canThrow(objectName){
+        switch(objectName){
+            case "bullet":
+                return new Bullet(0,Math.random()*20-50,this)
+                break
+        }
+        return null
+    }
+    move(){
+        super.move()
+            
+            
+        var previousSL = this.sideLeft
+        if(this.moving < 0)
+            this.sideLeft = true
+        else if(this.moving > 0)
+            this.sideLeft = false
+        if(this.sideLeft != previousSL)
+            this.cached = null
+            
+        if(this.dead){
+            this.moving = 0
+            return
+        }
+        
+        if(this.triggered != null){
+            var lastside = this.sideLeft
+            if(this.triggered.x < this.x - 80) {
+                this.moving = -5
+                this.sideLeft = true
+            } else if(this.triggered.x > this.x + 80){
+                this.moving = 5
+                this.sideLeft = false
+            } else {
+                this.moving = 0
+            }
+            if(this.sideLeft != lastside)
+                this.cached = null
+            
+            if(this.throwthink == 0 && this.throwing == 0){
+                this.prepareToThrow("bullet",this.elementArray)
+                this.throwthink = 5
+            }
+            if(this.throwthink > 0 && this.throwthink < 4 && this.throwing == 1){
+                this.throw()
+            }
+        } else {
+            if(this.throwingObject != null)
+                this.throw()
+        }
+        
+        if(this.throwthink > 0){
+            this.throwthink--
+        }
+        if(this.throwingObject != null){
+            this.alignThrowingObject()
+        } else if(this.throwing == 2){
+            this.throwing = 0
+            this.cached = null
+        }
+    }
+    prepareToThrow(name,elementArray){
+        var object = this.canThrow(name)
+        if(object){
+            elementArray.push(object)
+            this.cached = null
+            this.throwing = 1
+            this.throwingObject = object
+            this.alignThrowingObject()
+        }
+    }
+    throw(){
+        this.cached = null
+        this.throwing = 2
+        this.throwingObject.throw()
+        this.throwingObject.vy = Math.random()*6-3
+        this.throwingObject = null
+    }
+    alignThrowingObject(){
+        this.throwingObject.x = this.x + (this.sideLeft ? -100 : 100)
+        this.throwingObject.y = this.y-20
+        this.throwingObject.cached = null
+    }
+    seen(someone){
+        var nottriggered = this.triggered == null
+        if(this.sideLeft && someone.x < this.x || !this.sideLeft && someone.x > this.x || this.triggered == someone)
+            if(someone.masked != true)
+                this.triggered = someone
+        
+        if(this.triggered == someone && someone.dead == true){
+            this.triggered = null
+        }
+        
+        if(nottriggered && this.triggered)
+            this.cached = null
+    }
+    getThing(){
+        if(this.cached == null){
+            var body
+            switch(this.throwing){
+                case 0: body = this.triggered == null ? 'scienceguard.png' : 'scienceguard-angry.png'; break
+                case 1: body = 'scienceguard-angry.png'; break
+                case 2: body = 'scienceguard-angry-shot.png'; break
+            }
+                this.cached = {
+                    objs:[
+                        {
+                            type:'image',
+                            src:body,
+                            bounds:[-120 + (this.sideLeft ? -30 : 30),-80,120 + (this.sideLeft ? -30 : 30),80], 
+                            flipped:this.sideLeft
+                        }
+                    ],
+                }
+        }
+        return this.cached
+    }
+    
+}
 class Human extends Mob {
     constructor(elementArray,x,y){
         super(elementArray,x,y)
@@ -406,6 +661,7 @@ class Human extends Mob {
         this.throwing = 0
         this.deading = 5
         this.throwingObject = null
+        this.headwarp = [1,1,1,1,1,1]
         
     }
     move(){
@@ -440,6 +696,22 @@ class Human extends Mob {
             this.throwing = 0
             this.cached = null
         }
+    }
+    tryTake(thing){
+        super.tryTake(thing)
+        if(thing.owner == this)
+            return
+        if(thing.taken)
+            return
+        switch(thing.name){
+            case "bullet":
+                this.hp -= 5
+                this.vx += thing.vx/2
+                this.vy += 5
+                thing.taken = true
+                break
+        }
+        this.cached = null
     }
     tryJump(){
         if(this.lastCollisions['down'] > 0)
@@ -487,7 +759,7 @@ class Human extends Mob {
                         {
                             type:'image',
                             src:this.head,
-                            bounds:[-25 + (this.sideLeft ? 5 : -5),-13,25 + (this.sideLeft ? 5 : -5),50], 
+                            bounds:[-25*this.headwarp[0] + (this.sideLeft ? 5 : -5)*this.headwarp[4],-13*this.headwarp[1],25*this.headwarp[2] + (this.sideLeft ? 5 : -5)*this.headwarp[4],50*this.headwarp[3]], 
                             flipped:this.sideLeft
                         },
                     ],
@@ -504,7 +776,7 @@ class Human extends Mob {
                         {
                             type:'image',
                             src:this.headdead,
-                            bounds:[-25 + (this.sideLeft ? 5 : -5),-13,25 + (this.sideLeft ? 5 : -5),50], 
+                            bounds:[-25*this.headwarp[0] + (this.sideLeft ? 5 : -5)*this.headwarp[4],-13*this.headwarp[1],25*this.headwarp[2] + (this.sideLeft ? 5 : -5)*this.headwarp[4],50*this.headwarp[3]], 
                             flipped:this.sideLeft
                         },
                     ],
@@ -551,6 +823,21 @@ class Soyak extends Human {
             case "downvote":
                 if(this.getSoypoints(3)){
                     return new Downvote(0,0,this)
+                }
+                break
+            case "incelphobicslur":
+                if(this.getSoypoints(10)){
+                    return new RedditComment(0,0,this,'INCEL')
+                }
+                break
+            case "chudphobicslur":
+                if(this.getSoypoints(10)){
+                    return new RedditComment(0,0,this,'CHUDCEL')
+                }
+                break
+            case "pissbabyphobicslur":
+                if(this.getSoypoints(10)){
+                    return new RedditComment(0,0,this,'PISSBABY')
                 }
                 break
         }
@@ -653,6 +940,9 @@ class Chud extends Human {
             } else if(this.lastCollisions['right'] > 1){
                 this.moving = 5
             }
+            if(this.throwingObject != null)
+                this.throw()
+        
         } else {
             if(this.lastCollisions['left'] > 1 || this.lastCollisions['right'] > 1){
                 this.tryJump()
@@ -717,7 +1007,136 @@ class Chud extends Human {
                 this.vy += 5
                 thing.taken = true
                 break
+            case "redditcomment":
+                this.hp -= 5
+                this.vx += thing.vx/2
+                this.vy += 5
+                thing.taken = true
+                break
         }
+    }
+}
+class SerialShooter extends Chud {
+    constructor(elementArray,x,y){
+        super(elementArray,x,y)    
+        this.head = 'serial-killer.png'
+        this.headdead = 'czuddead.png'
+    }
+    canThrow(objectName){
+        switch(objectName){
+            case "bullet":
+                return new Bullet(0,0,this)
+                break
+        }
+        return null
+    }
+    move(){
+        Human.prototype.move.call(this)
+        
+        if(this.dead){
+            if(this.cached == null)
+                this.bounds = [-25,-50,25,0]
+            return
+        }
+        
+        if(this.triggered == null){
+            if(this.lastCollisions['left'] > 1){
+                this.moving = -5
+            } else if(this.lastCollisions['right'] > 1){
+                this.moving = 5
+            }
+            if(this.throwingObject != null)
+                this.throw()
+        
+        } else {
+            if(this.lastCollisions['left'] > 1 || this.lastCollisions['right'] > 1){
+                this.tryJump()
+            }
+            var lastside = this.sideLeft
+            if(this.triggered.x < this.x - 80) {
+                this.moving = -5
+                this.sideLeft = true
+            } else if(this.triggered.x > this.x + 80){
+                this.moving = 5
+                this.sideLeft = false
+            } else {
+                this.moving = 0
+            }
+            if(this.sideLeft != lastside)
+                this.cached = null
+            
+            if(this.throwthink == 0 && this.throwing == 0){
+                var slurtype = "bullet"
+                this.prepareToThrow(slurtype,this.elementArray)
+                this.throwthink = 10
+            }
+            if(this.throwthink > 0 && this.throwthink < 7 && this.throwing == 1){
+                this.throw()
+            }
+        }
+        
+        if(this.throwthink > 0){
+            this.throwthink--
+        }
+        
+    }
+    getThing(){
+        if(this.cached == null){
+            var body = 'handless.png'
+            if(!this.dead){
+                this.cached = {
+                    objs:[
+                        {
+                            type:'image',
+                            src:body,
+                            bounds:[-25 + (this.sideLeft ? 5 : -5),-50,25 + (this.sideLeft ? 5 : -5),50], 
+                            flipped:this.sideLeft
+                        },
+                        {
+                            type:'image',
+                            src:this.head,
+                            bounds:[-40 - 3.1*(this.sideLeft ? 5 : -5),-13,40 - 3.1*(this.sideLeft ? 5 : -5),70], 
+                            flipped:this.sideLeft
+                        },
+                    ],
+                }
+            } else if(this.deading > 0){
+                this.cached = {
+                    objs:[
+                        {
+                            type:'image',
+                            src:'deading.png',
+                            bounds:[-25 + (this.sideLeft ? 5 : -5),-50,25 + (this.sideLeft ? 5 : -5),50], 
+                            flipped:this.sideLeft
+                        },
+                        {
+                            type:'image',
+                            src:this.headdead,
+                            bounds:[-25*this.headwarp[0] + (this.sideLeft ? 5 : -5)*this.headwarp[4],-13*this.headwarp[1],25*this.headwarp[2] + (this.sideLeft ? 5 : -5)*this.headwarp[4],50*this.headwarp[3]], 
+                            flipped:this.sideLeft
+                        },
+                    ],
+                }
+            } else {
+                this.cached = {
+                    objs:[
+                        {
+                            type:'image',
+                            src:'dead.png',
+                            bounds:[-25 + (this.sideLeft ? 5 : -5),-53,25 + (this.sideLeft ? 5 : -5),0], 
+                            flipped:!this.sideLeft
+                        },
+                        {
+                            type:'image',
+                            src:(this.headdead ? this.headdead : this.head),
+                            bounds:[-25 -(this.sideLeft ? 15 : -15),-43,25 - (this.sideLeft ? 15 : -15),15], 
+                            flipped:this.sideLeft
+                        },
+                    ],
+                }
+            }
+        }
+        return this.cached
     }
 }
 
@@ -980,6 +1399,30 @@ class Downvote extends Throwable {
     }
 }
 
+class Bullet extends Throwable {
+    constructor(x,y,owner){
+        super(x,y,owner)
+        this.cached = null
+        this.bounds = [-25,-15,25,15]
+        this.name = "bullet"
+        this.owner = owner
+    }
+    getThing(){
+        if(this.cached == null)
+        this.cached = {
+            objs:[
+                {
+                    type:'image',
+                    src:'szczał.png',
+                    bounds:this.bounds,
+                    flipped:this.owner.sideLeft,
+                }
+            ],
+        }
+        return this.cached
+    }
+}
+
 class Greentext extends Throwable {
     constructor(x,y,owner,slur){
         super(x,y,owner)
@@ -1005,7 +1448,39 @@ class Greentext extends Throwable {
         }
         return this.cached
     }
-    
+}
+
+class RedditComment extends Throwable {
+    constructor(x,y,owner,slur){
+        super(x,y,owner)
+        this.cached = null
+        this.bounds = [-60,0,100,32]
+        this.name = "redditcomment"
+        this.slur = slur
+        this.owner = owner
+    }
+    getThing(){
+        if(this.cached == null)
+        this.cached = {
+            objs:[
+                {
+                    type:'text',
+                    font:'16px sans-serif',
+                    text:this.slur,
+                    x:-20,
+                    y:0,
+                    fill:'#000000'
+                },
+                {
+                    type:'image',
+                    src:'redditcomment.png',
+                    bounds:this.bounds,
+                    flipped:false,
+                }
+            ],
+        }
+        return this.cached
+    }
 }
 
 class Piperino extends Thing {

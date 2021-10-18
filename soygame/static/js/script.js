@@ -403,7 +403,7 @@ function loadImages(urls){
 }
 
 function init(){
-    loadImages(['sojak.png','sojakdead.png','czud.png','czuddead.png','normal.png','throwing.png','throwed.png','pychota1.png','robal1.png','robal2.png','robal3.png','robal4.png','robal5.png','robal6.png','nigga.png','szwab.png','downvote.png','deading.png','dead.png','mask.png'])
+    loadImages(['sojak.png','sojakdead.png','czud.png','czuddead.png','normal.png','throwing.png','throwed.png','pychota1.png','robal1.png','robal2.png','robal3.png','robal4.png','robal5.png','robal6.png','nigga.png','szwab.png','downvote.png','deading.png','dead.png','mask.png','scienceguard.png','scienceguard-angry.png','scienceguard-angry-shot.png','szczał.png','enby.png','redditcomment.png','serial-killer.png','handless.png'])
 }
 
 function initAfterImageLoad(imgs){
