@@ -9,12 +9,35 @@
         <div id="all">
             <div id="top">
                 CzasoZiemia editor
+                <span id="edit-layer-buttons">
+                    <span class="separator"></span>
+                    <img id="add-polygon" class="toolbar-button" src="static/img/add-polygon.png" alt="add polygon" title="add polygon" />
+                    <img id="add-linestring" class="toolbar-button" src="static/img/add-lines.png" alt="add linestring" title="add linestring" />
+                    <img id="add-point" class="toolbar-button" src="static/img/add-point.png" alt="add point" title="add point" />
+                    <img id="delete-shape" class="toolbar-button" src="static/img/gummi.png" alt="delete shape" title="delete shape" />
+                    <img id="add-whole-lines" class="toolbar-button" src="static/img/add-whole-lines.png" alt="add whole lines" title="add whole lines" />
+                </span>
+                <span id="edit-feature-buttons">
+                    <span class="separator"></span>
+                    <img id="add-polygon-to-feature" class="toolbar-button" src="static/img/add-polygon-to-feature.png" alt="add polygon to feature" title="add polygon to feature" />
+                    <img id="remove-polygon-from-feature" class="toolbar-button" src="static/img/remove-polygon-from-feature.png" alt="remove polygon from feature" title="remove polygon from feature" />
+                    
+                    <span class="separator"></span>
+                    <img id="add-other-polygon-to-feature" class="toolbar-button" src="static/img/add-other-polygon-to-feature.png" alt="add polygon to feature" title="add polygon to feature" />
+                    <img id="intersect-other-polygon-to-feature" class="toolbar-button" src="static/img/intersect-other-polygon-to-feature.png" alt="intersect other polygon to feature" title="intersect other polygon to feature" />
+                    <img id="remove-other-polygon-from-feature" class="toolbar-button" src="static/img/remove-other-polygon-from-feature.png" alt="remove other polygon from feature" title="remove other polygon from feature" />
+                    <img id="operate-feature-to-layer" class="toolbar-button" src="static/img/operate-feature-to-layer.png" alt="intersect or differ feature with layer" title="intersect or differ feature with layer" />
+                    
+                </span>
             </div>
             <div id="middle">
                 <div id="leftpanel">
                     <div id="leftpaneltop">
                         <a href="#">
-                            <img id="button-import" class="menu-img" src="static/img/import.png" alt="import" title="import" />
+                        <img id="button-import" class="menu-img" src="static/img/import.png" alt="import" title="import" />
+                        </a>
+                        <a href="#">
+                        <img id="button-add-layer" class="menu-img" src="static/img/add-layer.png" alt="add layer" title="add layer" />
                         </a>
                     </div>
                     Layers:
@@ -28,8 +51,8 @@
                 </div>
                 <div id="rightpanel">
                     <div id="stage">
-                        <canvas id="canv">
-                        </canvas>
+                        <canvas id="canv"></canvas>
+                        <canvas id="canv2"></canvas>
                     </div>
                     <div id="bottompanel">
                         
@@ -43,28 +66,248 @@
         <div class="dialog-window" id="layer-import">
             <div class="window-closer">X</div>
             <h4>Import</h4>
-            <div class="dialog-window-title">Choose file:</div>
-            <div class="dialog-window-row">
-                File: <input type="file" id="layer-import-file" />
+            <div id="layer-import-tab1">
+                <div class="dialog-window-title">Choose file:</div>
+                <div class="dialog-window-row">
+                    File: <input type="file" id="layer-import-file" />
+                    <p class="small-font">
+                    Hint: you can get jsons from: <a href="http://geojson.xyz/" target="_blank" rel="noopener noreferrer">geojson.xyz</a>
+                    </p>
+                </div>
             </div>
-            <div class="dialog-window-title">Chose file type:</div>
+            <div id="layer-import-tab2" class="hidden">
+                <div class="dialog-window-title">Chose file type:</div>
+                <div class="dialog-window-row">
+                    File type:
+                    <select id="layer-import-datatype">
+                        <option value="null" name="null">-- choose --</option>
+                        <option value="geojson" name="geojson">geojson</option>
+                        <option value="json" name="geojson">json</option>
+                        <option value="text" name="text">text</option>
+                    </select>
+                </div>
+                <div id="layer-import-file-loaded" class="dialog-window-row hidden">
+                    <p class="little-padding little-padding">
+                        <b>File loaded :)</b>
+                    </p>
+                    <p class="little-padding">
+                        There should be chosen the coordinate system.
+                    </p>
+                    <input type="button" id="dialog-window-import-add" value="ADD TO STAGE" />
+                </div>
+            </div>
+        </div>
+        <div class="dialog-window" id="layer-add">
+            <div class="window-closer">X</div>
+            <h4>New layer/schema</h4>
+            <div class="dialog-window-title">Choose layer type:</div>
             <div class="dialog-window-row">
-                File type:
-                <select id="layer-import-datatype">
+                Name:
+                <input type="text" id="layer-add-layer-name">
+            </div>
+            <div class="dialog-window-row">
+                Layer type:
+                <select id="layer-add-datatype">
                     <option value="null" name="null">-- choose --</option>
-                    <option value="geojson" name="geojson">geojson</option>
-                    <option value="json" name="geojson">json</option>
-                    <option value="text" name="text">text</option>
+                    <option value="geotempjson" name="geotempjson">spatiotemporal</option>
+                    <option value="geojson" name="geojson">spatial</option>
+                    <option value="text" name="text">table</option>
                 </select>
+            
             </div>
-            <div class="dialog-window-row hidden" id="layer-import-hidden">
-                <p>
-                    <b>File loaded :)</b>
-                </p>
-                <p>
+            <div id="layer-add-file-loaded" class="dialog-window-row">
+                <p class="little-padding">
                     There should be chosen the coordinate system.
                 </p>
-                <input type="button" id="dialog-window-add" value="ADD TO STAGE" />
+                <input type="button" id="dialog-window-add-add" value="ADD TO STAGE" />
+            </div>
+        </div>
+        <div class="dialog-window" id="feature-properties">
+            <div class="window-closer">X</div>
+            <h4>Feature properties</h4>
+            <div class="dialog-window-title">Properties:</div>
+            <div class="dialog-window-row scrollable-y">
+                <table class="feature-table" id="feature-table">
+                <tr>
+                <td>
+                </td>
+                <td>
+                    Names:
+                </td>
+                <td>
+                </td>
+                <td>
+                    Values:
+                </td>
+                </tr>
+                <tr>
+                <td>
+                    [-]
+                </td>
+                <td>
+                    <input type="text" class="table-input" id="property-name-1">
+                </td>
+                <td>
+                :
+                </td>
+                <td>
+                    <textarea class="table-input" id="property-value-1" cols="40" rows="1"></textarea>
+                </td>
+                </tr>
+                <tr>
+                <td>
+                    [-]
+                </td>
+                <td>
+                    <input type="text" class="table-input" id="property-name-2">
+                </td>
+                <td>
+                :
+                </td>
+                <td>
+                    <textarea class="table-input" id="property-value-2" cols="40" rows="1"></textarea>
+                </td>
+                </tr>
+                <tr>
+                <td>
+                    <a href='#' id='property-column-add-button'>[+]</a>
+                </td>
+                <td>
+                    <input type="text" class="table-input" id="property-column-add" />
+                </td>
+                <td>
+                </td>
+                <td>
+                </td>
+                </tr>
+                </table>
+            </div>
+            <div class="dialog-window-row">
+                <input type="button" id="feature-properties-update" value="UPDATE" />
+            </div>
+        </div>
+        <div class="dialog-window" id="layer-properties">
+            <div class="window-closer">X</div>
+            <h4>Feature properties</h4>
+            <div class="dialog-window-title">Properties:</div>
+            <div class="dialog-window-row scrollable-y">
+                <table class="layer-property-table" id="layer-property-table">
+                <tr>
+                <td></td>
+                <td>Predefined:</td>
+                <td></td>
+                <td>From column:</td>
+                </tr>
+                
+                <tr>
+                <td>Fill color:</td>
+                <td><input class="table-input" id="layer-property-input-fill" /></td>
+                <td></td>
+                <td>
+                    <select class="table-input" id="layer-property-select-fill">
+                        <option value="" name="none">-- NONE --</option>
+                    </select>
+                </td>
+                </tr>
+                
+                <tr>
+                <td>Line color:</td>
+                <td><input class="table-input" id="layer-property-input-line" /></td>
+                <td></td>
+                <td>
+                    <select class="table-input" id="layer-property-select-line">
+                        <option value="" name="none">-- NONE --</option>
+                    </select>
+                </td>
+                </tr>
+                
+                <tr>
+                <td>Line width:</td>
+                <td><input class="table-input" id="layer-property-input-line-width" /></td>
+                <td></td>
+                <td>
+                    <select class="table-input" id="layer-property-select-line-width">
+                        <option value="" name="none">-- NONE --</option>
+                    </select>
+                </td>
+                </tr>
+                
+                <tr>
+                <td>Point size:</td>
+                <td><input class="table-input" id="layer-property-input-point-size" /></td>
+                <td></td>
+                <td>
+                    <select class="table-input" id="layer-property-select-point-size">
+                        <option value="" name="none">-- NONE --</option>
+                    </select>
+                </td>
+                </tr>
+                
+                <tr>
+                <td>Point shape:</td>
+                <td><input class="table-input" id="layer-property-input-point-shape" /></td>
+                <td></td>
+                <td>
+                    <select class="table-input" id="layer-property-select-point-shape">
+                        <option value="" name="none">-- NONE --</option>
+                    </select>
+                </td>
+                </tr>
+                
+                <tr>
+                <td>Opacity:</td>
+                <td><input class="table-input" id="layer-property-input-opacity" /></td>
+                <td></td>
+                <td>
+                    <select class="table-input" id="layer-property-select-opacity">
+                        <option value="" name="none">-- NONE --</option>
+                    </select>
+                </td>
+                </tr>
+                
+                <tr>
+                <td>Point text:</td>
+                <td><input class="table-input" id="layer-property-input-point-text" /></td>
+                <td></td>
+                <td>
+                    <select class="table-input" id="layer-property-select-point-text">
+                        <option value="" name="none">-- NONE --</option>
+                    </select>
+                </td>
+                </tr>
+                </table>
+            </div>
+            <div class="dialog-window-row">
+                <input type="button" id="layer-property-update" value="UPDATE" />
+            </div>
+        </div>
+        <div class="dialog-window" id="layer-operation">
+            <div class="window-closer">X</div>
+            <h4>Layer operation</h4>
+            <div class="dialog-window-row">
+                Operation type:
+                <select id="layer-operation-type">
+                    <option value="null" name="null">-- choose --</option>
+                    <option value="intersect" name="intersect">intersect</option>
+                    <option value="difference" name="difference">difference</option>
+                </select>
+            </div>
+            <div class="dialog-window-row">
+                Layer:
+                <select id="layer-operation-layer">
+                    <option value="null" name="null">-- choose --</option>
+                </select>
+            </div>
+            <div class="dialog-window-row">
+                <input type="button" id="layer-operation-update" value="UPDATE" />
+            </div>
+        </div>
+        <div class="dialog-window" id="yes-no-window">
+            <div class="window-closer">X</div>
+            <h4 id="yes-no-dialog-window">Are you sure to </h4>
+            <div class="dialog-window-row">
+                    <input type="button" id="yes-no-window-yes" value="YES" />
+                    <input type="button" id="yes-no-window-no" value="NO" />
             </div>
         </div>
         <script src="static/js/script.js"></script>
@@ -72,6 +315,7 @@
         <script src="static/js/layers.js"></script>
         
         <script src="static/external-js/wellknown.js"></script>
+        <script src="static/external-js/turf.min.js"></script>
     </body>
 </html>
 

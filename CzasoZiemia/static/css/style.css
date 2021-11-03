@@ -7,6 +7,12 @@ body {
 p {
     padding: 5px;
 }
+#canv {
+    position:absolute;
+}
+#canv2 {
+    position:absolute;
+}
 #all {
     width:100%;
     height:100vh;
@@ -69,6 +75,13 @@ p {
     text-align:center;
     padding:20px;
     display:none;
+    
+    left: 25vw;
+    width: 50vw;
+    top: 15vh;
+}
+.shown-debug{
+    display:block;
 }
 .hidden {
     display:none;
@@ -83,12 +96,18 @@ p {
     margin-top:10px;
 }
 #layer-import {
-    left: 25vw;
-    width: 50vw;
-    top: 15vh;
     /*height: 70vh;*/
 }
 
+.little-padding {
+    margin-top:15px;
+    padding:2px;
+}
+.small-font {
+    margin-top:15px;
+    padding:2px;
+    font-size:12px;
+}
 .menu-img {
     border-right:1px solid black;
     height:29px;
@@ -113,9 +132,38 @@ a {
     height:40px;
     font-size:25px;
 }
+.separator {
+    border: 1px solid #888;
+    margin:0px 3px 0px 3px
+}
+.toolbar-button {
+    width:23px;
+    height:23px;
+}
+.table-input {
+    border:2px solid black;
+    width:100%;
+    height:100%;
+}
+.gray-border {
+    border:1px solid gray;
+}
+.feature-table {
+    text-align:left
+}
+.scrollable-y {
+    overflow-y: scroll;
+    height:calc( 100vh - 300px );
+}
 div {
     /*border: 1px solid red; /*TEMPORARY
     */box-sizing: border-box;
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
 }
+
+
+
+
+
+
