@@ -7,15 +7,54 @@
 -moz-box-sizing:border-box;
 -webkit-box-sizing:border-box;
 box-sizing:border-box;margin:0px;padding:0px}
-html,body {color:white;background-color:black;font-family:Helvetica;width:100%; height:100%;}
+html,body {color:white;background-color:black;font-family:Courier;width:100%; height:100%;}
 #whole {margin:auto}
 @media (max-aspect-ratio: 1/1) {
     #whole {width:100vw;height:100vw}
+    #menu {width:100vw;height:100vw}
+    #title {font-size:9vw;padding-top:2vw}
+    #start {font-size:4vw;padding-top:1.5vw}
+    .switch {font-size:4vw;padding-top:1.3vw}
+    .fontsmall {font-size:3vw;padding-top:2vw}
 }
 @media (min-aspect-ratio: 1/1) {
     #whole {width:100vh;height:100vh}
+    #menu {width:100vh;height:100vh}
+    #title {font-size:9vh;padding-top:2vh}
+    #start {font-size:4vh;padding-top:1.5vh}
+    .switch {font-size:4vh;padding-top:1.3vh}
+    .fontsmall {font-size:3vh;padding-top:2vh}
 }
+#popupinside {position:absolute;display:inline-block;width:40%;height:30%;left:30%;top:20%;border:3px solid white;background-color:#aa0000;text-align:center;display:none}
 #canv {border:1px solid white;width:100%;height:100%;display:block}
+#menu {position:absolute;display:inline-block}
+#menupopup {position:absolute;display:none}
+#title {position:absolute;display:inline-block;width:70%;height:15%;left:15%;top:10%;border:3px solid white;background-color:#aa0000;text-align:center}
+#start {position:absolute;display:inline-block;width:20%;height:8%;left:40%;top:82%;border:3px solid white;background-color:#aa0000;text-align:center}
+
+.switch {position:absolute;display:inline-block;width:20%;height:8%;border:2px solid white;text-align:center}
+
+#team0 {left:5%;top:37%;}
+#team1 {left:5%;top:45%;}
+#team2 {left:5%;top:53%;}
+#team3 {left:5%;top:61%;}
+#team4 {left:5%;top:69%;}
+
+#team5 {left:27%;top:37%;}
+#team6 {left:27%;top:45%;}
+#team7 {left:27%;top:53%;}
+#team8 {left:27%;top:61%;}
+#team9 {left:27%;top:69%;}
+
+#teams {left:7%;top:28%;width:38%;height:7%;background-color:#aa0000}
+#lands {left:53%;top:28%;width:38%;height:7%;background-color:#aa0000}
+#lands0 {left:59%;top:37%;background-color:#aa0000;width:25%}
+#placement {left:53%;top:48%;width:38%;height:7%;background-color:#aa0000}
+#placement0 {left:59%;top:57%;background-color:#aa0000;width:25%}
+#placement1 {left:59%;top:66%;background-color:#aa0000;width:25%}
+
+#menuyesbutton {position:relative;height:30%;width:30%;padding:3%;margin-top:10%;text-align:center;background-color:#aa0000}
+#menunobutton {position:relative;height:30%;width:30%;padding:3%;margin-top:10%;text-align:center;background-color:#aa0000}
 </style>
 <script>
 	
@@ -382,13 +421,14 @@ class BoardModel{
 			}
 		}
 	}
-	initPlayers(players){
-		this.players = players
+	initPlayers(initialSetting){
+		this.players = initialSetting.players.length
 		this.currentPlayer = 0
 		this.phase = 0  //0 - attack and move, 1 - deploy
 		this.selectedLand = null
 		var landscopy = this.lands.slice()
 		var k = 0
+		var nundef = initialSetting.players.filter(x=>x!=undefined).length
 		for(var i = 0;i<this.lands.length;i++){
 			var land
 			var lland = landscopy.filter(x=>x.neighbours.filter(y=>y.color!=null).length==0)
@@ -400,14 +440,26 @@ class BoardModel{
 			}
 			if(land == undefined)
 				break 	
-			if(i<players){
-				land.color = this.getColor(i)
-				land.dams = 0
-				land.pawns = 8
+                        
+                        var pawndict = {"3":{pawns:3,dams:0}, "8":{pawns:8,dams:0}, "8+2":{pawns:8,dams:2}, "+4":{pawns:0,dams:4}}
+                        if(initialSetting.placementland == 0){
+                            if(i<initialSetting.players.length && !(initialSetting.players[i] == undefined && i < initialSetting.players.length)){
+                                    land.color = this.getColor(i)
+                                    land.dams = pawndict[initialSetting.placementpawns].dams
+                                    land.pawns = pawndict[initialSetting.placementpawns].pawns
+                            } else {
+                                    land.color = null
+                                    land.pawns = 1+Math.floor(Math.random()*3)
+                                    land.dams = 0
+                            }
 			} else {
-				land.color = null
-				land.pawns = 1+Math.floor(Math.random()*3)
+                            var n = i % nundef
+                            land.color = this.getColor(n)
+                            land.dams = pawndict[initialSetting.placementpawns].dams
+                            land.pawns = pawndict[initialSetting.placementpawns].pawns
 			}
+			land.movedPawns = 0
+			land.movedDams = 0
 			land.additional = 0
 			k++
 		}
@@ -711,7 +763,6 @@ class LandMap{
 		this.piecesPlaced = []
 	}
 	addPiecePlaced(dam,x,y,w,h){
-	
 		var lx = this.gameView.screen.x + this.gameView.rw * x
 		var ly = this.gameView.screen.y + this.gameView.rh * y
 		var height = dam ? 6 : 0
@@ -745,11 +796,19 @@ class GameController{
     addView(gameview){
         this.gameview = gameview
     }
+    showPanel(show){
+        this.gameview.showPanel(show)
+    }
     init(){
         this.model = new BoardModel()
         this.model.initBoard(this.initialSetting.lands)
-        this.model.initPlayers(this.initialSetting.players.length)
+        this.model.initPlayers(this.initialSetting)
         this.initView()
+    }
+    reload(initialSetting){
+        this.initialSetting = initialSetting
+        this.init()
+        this.updateView()
     }
     initView(){
         if(this.gameview !== null){
@@ -761,7 +820,9 @@ class GameController{
             this.gameview.draw()
         }
     }
-    
+    menuPopUp(){
+        
+    }
     
     getMock(){
             var th = this
@@ -866,11 +927,15 @@ class GameController{
     }
 }
 class GameView{
-	constructor(canvas){
+	constructor(canvas,menuPopUp){
 		this.canvas = canvas
 		this.ctx = canvas.getContext("2d")
 		this.width = canvas.width
 		this.height = canvas.height
+		
+		this.menuPopUp = menuPopUp
+		
+		this.showedPanel = false
 		
 		this.gamecontroller = null
 		
@@ -894,47 +959,56 @@ class GameView{
 			h: this.canvas.height-20-this.panelTop,
 		}
 		
-		var th = this
+		let th = this
 		this.buttons = [
-			new Button(this,"Dalej",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
+			new Button(this,"Dalej",this.panelSize.x+this.panelSize.w-180+70,this.panelSize.y+10,90,this.panelSize.h-20,
 				function(){
 					th.gamecontroller.pass()
 				}
 			),
-			new Button(this,() => th.model.priority == 0 ? "Pionki" : "Damki",this.panelSize.x+this.panelSize.w-245,this.panelSize.y+30,80,this.panelSize.h-40,
+			new Button(this,() => th.model.priority == 0 ? "Pionki" : "Damki",this.panelSize.x+this.panelSize.w-285+70,this.panelSize.y+30,80,this.panelSize.h-40,
 				function(){
 					th.gamecontroller.changePriority()
 					th.draw()
 				}
 			),
-			new Button(this,"Na granicach",this.panelSize.x+this.panelSize.w-280,this.panelSize.y+20,140,this.panelSize.h-40,
+			new Button(this,"Na granicach",this.panelSize.x+this.panelSize.w-330+70,this.panelSize.y+20,140,this.panelSize.h-40,
 				function(){
 					th.gamecontroller.onBorders()
 					th.draw()
 				}
 			),
-			new Button(this,"Gotów",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
+			new Button(this,"Gotów",this.panelSize.x+this.panelSize.w-180+70,this.panelSize.y+10,90,this.panelSize.h-20,
 				function(){
 					th.gamecontroller.pass()
 				}
 			),
-			new Button(this,"Losuj",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
+			new Button(this,"Losuj",this.panelSize.x+this.panelSize.w-180+70,this.panelSize.y+10,90,this.panelSize.h-20,
 				function(){
 					th.gamecontroller.pass()
 				}
 			),
-			new Button(this,"Zrezygnuj",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
+			new Button(this,"Rezygnuj",this.panelSize.x+this.panelSize.w-180+70,this.panelSize.y+10,90,this.panelSize.h-20,
 				function(){
 					th.gamecontroller.pass()
 				}
 			),
-			new Button(this,"Poddaj się",this.panelSize.x+this.panelSize.w-120,this.panelSize.y+10,100,this.panelSize.h-20,
+			new Button(this,"Poddaj się",this.panelSize.x+this.panelSize.w-180+70,this.panelSize.y+10,90,this.panelSize.h-20,
 				function(){
 					th.gamecontroller.pass()
+				}
+			),
+			new Button(this,"Menu",20,this.panelSize.y+10,70,this.panelSize.h-20,
+				function(){
+					th.menuPopUp.show()
 				}
 			),
 		]
 		
+	}
+	showPanel(show){
+            this.showedPanel = show
+            this.draw()
 	}
 	loadGame(boardwidth,boardheight,publicMethods,model){
 		this.rw = this.screen.width/boardwidth
@@ -977,7 +1051,9 @@ class GameView{
 			this.drawCheckerBoard()
 		}
 		
-		this.drawPanel()
+		if(this.showedPanel){
+                    this.drawPanel()
+                }
 	}
 	drawLand(land){
 		var alpha = undefined
@@ -1096,8 +1172,6 @@ class GameView{
 		this.ctx.strokeRect(this.panelSize.x,this.panelSize.y,this.panelSize.w,this.panelSize.h)
 		
 		this.ctx.fillStyle = "#fff"
-		this.ctx.font = "16px Courier"
-		this.ctx.textAlign = "left"
 		
 		for(var i in this.buttons){
 			var button = this.buttons[i]
@@ -1105,29 +1179,34 @@ class GameView{
 		}
 		this.ctx.lineWidth = 1
 		
+                this.buttons[7].show()
+                this.buttons[7].draw()
+                
+		this.ctx.font = "16px Courier"
+		this.ctx.textAlign = "left"
 		if(!this.gamecontroller.isAiMove()){
                     switch(this.model.phase){
                             case 0:
-                                    this.ctx.fillText("Zaznacz swój obszar, by",this.panelSize.x+15,this.panelSize.y+25)
-                                    this.ctx.fillText("zaatakować/przemieścić",this.panelSize.x+15,this.panelSize.y+40)
-                                    this.ctx.fillText("z niego sąsiednie tereny.",this.panelSize.x+15,this.panelSize.y+55)
+                                    this.ctx.fillText("Zaznacz swój obszar, by",this.panelSize.x+15+70,this.panelSize.y+25)
+                                    this.ctx.fillText("zaatakować/przemieścić",this.panelSize.x+15+70,this.panelSize.y+40)
+                                    this.ctx.fillText("z niego sąsiednie tereny.",this.panelSize.x+15+70,this.panelSize.y+55)
                                     
                                     this.buttons[0].show()
                                     this.buttons[0].draw()
                                     
                                     this.ctx.font = "14px Courier"
                                     this.ctx.textAlign = "center"
-                                    this.ctx.fillText("Przenoś:",this.panelSize.x+this.panelSize.w-205,this.panelSize.y+20)
+                                    this.ctx.fillText("Przenoś:",this.panelSize.x+this.panelSize.w-245+70,this.panelSize.y+20)
                                     
                                     this.buttons[1].show()
                                     this.buttons[1].draw()
                                     
                             break
                             case 1:
-                                    this.ctx.fillText("Zaznacz obszary, by umieścić ",this.panelSize.x+15,this.panelSize.y+25)
-                                    this.ctx.fillText("nowe oddziały.",this.panelSize.x+15,this.panelSize.y+40)
+                                    this.ctx.fillText("Zaznacz obszary, by ",this.panelSize.x+15+70,this.panelSize.y+25)
+                                    this.ctx.fillText("umieścić nowe oddziały.",this.panelSize.x+15+70,this.panelSize.y+40)
                                     
-                                    this.ctx.fillText(`Pozostało ${this.model.remainingTroops()} oddziałów.`,this.panelSize.x+15,this.panelSize.y+55)
+                                    this.ctx.fillText(`Zostało ${this.model.remainingTroops()} oddziałów.`,this.panelSize.x+15,this.panelSize.y+55)
                                     
                                     this.buttons[0].show()
                                     this.buttons[0].draw()
@@ -1136,14 +1215,14 @@ class GameView{
                                     this.buttons[2].draw()
                             break
                             case 2:
-                                    this.ctx.fillText("Kliknij na pola, by",this.panelSize.x+15,this.panelSize.y+25)
-                                    this.ctx.fillText("umieścić pionki "+(this.model.checkersGame.team == 1?"(musi zostać 1)":0),this.panelSize.x+15,this.panelSize.y+40)
-                                    this.ctx.fillText(`Pozostało ${this.model.checkersGame.remainingPawns} pionków i ${this.model.checkersGame.remainingDams} damek.`,this.panelSize.x+15,this.panelSize.y+55)
+                                    this.ctx.fillText("Kliknij na pola, by",this.panelSize.x+15+70,this.panelSize.y+25)
+                                    this.ctx.fillText("umieścić pionki ",this.panelSize.x+15+70,this.panelSize.y+40)
+                                    this.ctx.fillText(`Zostało ${this.model.checkersGame.remainingPawns} pionków i ${this.model.checkersGame.remainingDams} damek.`,this.panelSize.x+15+70,this.panelSize.y+55)
                                     
                                     if(this.model.checkersGame.remainingPawns > 0 && this.model.checkersGame.remainingDams > 0){
                                             this.ctx.font = "14px Courier"
                                             this.ctx.textAlign = "center"
-                                            this.ctx.fillText("Umieszczaj:",this.panelSize.x+this.panelSize.w-205,this.panelSize.y+20)
+                                            this.ctx.fillText("Umieszczaj:",this.panelSize.x+this.panelSize.w-245+70,this.panelSize.y+20)
                                             this.buttons[1].show()
                                             this.buttons[1].draw()
                                     }
@@ -1175,15 +1254,15 @@ class GameView{
                     this.ctx.font = "16px Courier"
                     this.ctx.textAlign = "left"
                     
-                    this.ctx.fillText("BIP! BIP!",this.panelSize.x+15,this.panelSize.y+30)
+                    this.ctx.fillText("BIP! BIP!",this.panelSize.x+15+70,this.panelSize.y+30)
                     
                     switch(this.model.phase){
                         case 0:
                         case 1:
-                            this.ctx.fillText("KOMPUTER MYŚLI!",this.panelSize.x+15,this.panelSize.y+45)
+                            this.ctx.fillText("KOMPUTER MYŚLI!",this.panelSize.x+15+70,this.panelSize.y+45)
                         break
                         case 2:
-                            this.ctx.fillText("KOMPUTER GRA W WARCABY!",this.panelSize.x+15,this.panelSize.y+45)
+                            this.ctx.fillText("KOMPUTER GRA W WARCABY!",this.panelSize.x+15+70,this.panelSize.y+45)
                         break
                     }
                     
@@ -1797,6 +1876,9 @@ class Ai{
 		this.statesInPast = {}
 		this.checkedStates = {}
 		
+		this.lastTurnAttacks = null
+		this.turnRepeated = 20
+		
                 this.pawnValue = 1
                 this.damValue = 3
                 this.cornerDamValue = 2;
@@ -1813,15 +1895,20 @@ class Ai{
 		this.attacking = []
 		this.run()
 	}
+	shut(){
+            this.alive = false
+	}
 	run(){
-		this.think()
-		var th = this
-		var timeout = this.gamecontroller.framerate()
-		setTimeout(()=>{ 
-			if(this.alive) { 
-				th.run() 
-			} 
-		}, timeout)
+            if(!this.alive)
+                return
+            this.think()
+            var th = this
+            var timeout = this.gamecontroller.framerate()
+            setTimeout(()=>{ 
+                    if(th.alive) { 
+                            th.run() 
+                    } 
+            }, timeout)
 	}
 	think(){
 		if(this.gamecontroller.isAiMove()){
@@ -1847,6 +1934,8 @@ class Ai{
 						this.playRegrouping()
 						//this.gamecontroller.draw()
 					} else if(this.gamecontroller.model.phase == 1){
+                                                this.lastTurnAttacks = null
+                                                this.turnRepeated = 20
                                                 this.gamecontroller.act({type:"pass", move:"pass"})
                                                 //this.gamecontroller.draw()
 					} else if(this.attacking.length>0) {
@@ -1876,8 +1965,12 @@ class Ai{
                                                 this.attacking = this.attacking.slice(1)
                                             }
                                             
-                                            if(this.attacking.length === 0 && attacked>0){
+                                            if(this.attacking.length === 0 && attacked>0 && this.turnRepeated > 0){
                                                 this.attacking = this.planAttacking()
+                                                if(this.codeAttacking(this.attacking) == this.lastTurnAttacks)
+                                                    this.attacking = []
+                                                this.lastTurnAttacks = this.codeAttacking(this.attacking)
+                                                this.turnRepeated--
                                             }
                                             
                                             if(Array.from(new Set(this.gamecontroller.model.lands.map(x=>x.color).filter(x=>x!=null))).length == 1){
@@ -1904,32 +1997,11 @@ class Ai{
                                                     }
                                                 } else {
                                                     this.gamecontroller.act({type:"pass", move:"pass"})
-                                                    //this.gamecontroller.draw()
                                                 }
-                                                /* else {
-							if(this.regrouping.length == 0){
-								this.regrouping = []
-								this.planRegrouping()
-							}
-                                                }*/
-                                                /*
-						var legals = legal.filter(x=>x.move!="pass" && x.type != "move" && x.type != "deselect" && (this.gamecontroller.model.phase == 2 || x.move.neighbours.filter(y=>y.color != x.move.color).length>0 || x.type == "attack" && this.worthAttacking(x)) &&
-								(this.gamecontroller.model.phase != 0 || ( x.type == "select" && x.move.notOnlyOne() && x.move.availableNumber()>1) || x.type == "attack" && this.worthAttacking(x)) && 
-									(this.gamecontroller.model.phase != 2 || x.move != this.gamecontroller.model.checkersGame.selected))
-						if(legals.length > 0){
-							var rand = legals[Math.floor(Math.random()*legals.length)]
-							this.gamecontroller.act(rand.move)
-							this.gamecontroller.draw()
-						} else if(legal.length > 0 && this.gamecontroller.model.lands.filter(x=>x.color != this.gamecontroller.model.currentColor()).length > 0){
-							if(this.regrouping.length == 0){
-								this.regrouping = []
-								this.planRegrouping()
-							}
-						}*/
 					}
 				}
 			}
-			this.say(`Playing for player ${this.gamecontroller.model.currentPlayer+1}. ;/`)
+			this.say(`Playing for player ${this.gamecontroller.model.currentPlayer+1}. ;/ Phase: ${this.gamecontroller.model.phase}`)
 		} else {
 			this.say("It's not my turn yet. ;/")
 		}
@@ -2069,7 +2141,6 @@ class Ai{
                 }
                 areas.push(stack)
             }
-            console.log(areas)
 	}
 	ifLandRemoved(lands,land){
             var conlands = []
@@ -2086,6 +2157,9 @@ class Ai{
             var color = land.color
             
             this.getColorValue(conlands,color)
+	}
+	codeAttacking(attacking){
+            return JSON.stringify(attacking.map(x=>new Object({land1:x.land1.id,land2:x.land2.id,plannedPawns:x.plannedPawns,plannedDams:x.plannedDams})))
 	}
 	planAttacking(canhalt){
             var curcolor = this.gamecontroller.model.currentColor()
@@ -2294,11 +2368,11 @@ class Ai{
 			//depth = depth > 2 ? 2 : 0
 			//depth = 0
                     //}
-                    console.log(minmax.score)
                 }
 		if(legal.indexOf("pass")>-1 && (minmax.move == null || this.statesInPast[code] > 1/* || this.gamecontroller.model.checkersGame.phase == 0 && this.gamecontroller.model.checkersGame.opponentValue() < this.gamecontroller.model.checkersGame.placedValues()-2*/ || (this.noSenseInLongerPlay(simulated) && simulated.turn === 0))){
 			this.gamecontroller.checkersGameMove("pass")
 			this.attacking = this.attacking.slice(1)
+			return true
 		} else {
 			this.gamecontroller.checkersGameMove(minmax.move)
 			if(code in this.statesInPast){
@@ -2306,6 +2380,7 @@ class Ai{
 			} else {
 				this.statesInPast[code] = 1
 			}
+			return minmax.move == "pass"
 		}
 		//this.gamecontroller.draw()
 	}
@@ -2320,6 +2395,9 @@ class Ai{
 			var penultimal2 = ["22","24","26"].map(x=>simulated.board[x]).filter(x=>x==1).length
 			var penpenultimal2 = ["31","33","35","37"].map(x=>simulated.board[x]).filter(x=>x==1).length
 			*/
+			if(this.noSenseInLongerPlay(simulated))
+                            return -this.max_possible * this.max_possible
+                            
 			var onCorners = []
 			var diagonal1 = ["11","22","33","44","55","66","77"]
 			var diagonal2 = ["17","26","35","44","53","62","71"]
@@ -2514,8 +2592,6 @@ class Ai{
                 var beating = simulated.phase == 1 && (simulated.therewasabeating || simulated.selected == null)
                 
                 var legals = simulated.legal().filter(x=>x!="pass" && x!=simulated.selected)
-                console.log(this.evaluate(simulated))
-                console.log(simulated.selected)
                 
                 var codez = firstState.sequence.map(x=>x.code)
                 for(var i in legals){
@@ -2767,6 +2843,105 @@ class Ai{
             
 	}
 }
+class Menu {
+    constructor(controller,ai){
+        this.controller = controller
+        this.ai = ai
+        
+        this.customInitialSetting = {lands:20,placementland:0,placementpawns:'8',players:['player','ai','ai','ai',undefined,undefined,undefined,undefined,undefined,undefined]}
+        
+        this.prepareElements()
+        
+        this.teams = []
+        for(var i = 0;i<10;i++){
+            this.teams.push(undefined)
+        }
+        this.buttons = {}
+    }
+    addButton(id,button){
+        this.buttons[id] = button
+        let th = this
+        this.buttons[id].onclick = (e)=>{th.action(id)}
+    }
+    action(id){
+        var button = this.buttons[id]
+        if(id == 'lands'){
+            var varmap = {"10":20, "20":30, "30":40, "40":60, "60":10}
+            this.customInitialSetting.lands = varmap[this.customInitialSetting.lands]
+            button.innerHTML = this.customInitialSetting.lands
+        } else if(id == 'placementland'){
+            this.customInitialSetting.placementland = 1-this.customInitialSetting.placementland
+            button.innerHTML = this.customInitialSetting.placementland ? 'Wszystko' : 'Po lądzie'
+        } else if(id == 'placementpawns'){
+            var varmap = {"3":"8", "8":"8+2", "8+2":"+4", "+4":"3"}
+            this.customInitialSetting.placementpawns = varmap[this.customInitialSetting.placementpawns]
+            button.innerHTML = this.customInitialSetting.placementpawns+' pionków'
+        } else {
+            switch(this.customInitialSetting.players[id]){
+                case 'player':
+                    this.customInitialSetting.players[id] = 'ai'
+                    button.innerHTML = 'Ai'
+                    break
+                case 'ai':
+                    this.customInitialSetting.players[id] = undefined
+                    button.innerHTML = '-'
+                    break
+                default:
+                    this.customInitialSetting.players[id] = 'player'
+                    button.innerHTML = 'Gracz'
+            }
+        }
+    }
+    prepareElements(){
+        this.menu = document.getElementById("menu")
+        let th = this
+	document.getElementById("start").onclick = (e)=>{th.reload()}
+    }
+    reload(initialSetting){
+        if(initialSetting == undefined){
+            initialSetting = this.customInitialSetting
+        }
+        this.menuDisplay(false)
+        this.controller.reload(initialSetting)
+        this.reloadAi()
+    }
+    goToMenu(){
+        this.reload(this.customInitialSetting)
+        this.menuDisplay(true)
+    }
+    reloadAi(){
+        this.ai.shut()
+        this.ai = new Ai(this.controller)
+    }
+    menuDisplay(show){
+        this.menu.style.display = show ? "inline-block" : "none"
+        this.controller.showPanel(!show)
+    }
+    publicMethods(){
+        let th = this
+        return {
+            goToMenu:(show)=>{th.goToMenu(show)}
+        }
+    }
+}
+class MenuPopUp {
+    constructor(element,yesbutton,nobutton){
+        this.shown = false
+        this.element = element
+        this.yesbutton = yesbutton
+        this.nobutton = nobutton
+    }
+    addMenu(menu){
+        this.menu = menu
+        let th = this
+        this.yesbutton.onclick = (e) => {th.show();th.menu.goToMenu()}
+        this.nobutton.onclick = (e) => {th.show()}
+    }
+    show(){
+        this.shown = !this.shown
+        this.element.style.display = this.shown ? "inline-block" : "none"
+    }
+}
 function shuffle(a) {
     for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -2776,20 +2951,29 @@ function shuffle(a) {
 }
 function init(){
 	var PLAYERS_NO = 8
-	var human = 1//Math.floor(Math.random()*PLAYERS_NO)
+	var human = 11//Math.floor(Math.random()*PLAYERS_NO)
 	var players = []
 	for(var i = 0;i<PLAYERS_NO;i++){
 		players.push(i == human ? "player" : "ai")
 	}
 	var initialSetting = {
-		lands: 30,
-		players: players
+		lands:20,placementland:0,placementpawns:'8',players:['ai','ai','ai','ai',undefined,undefined,undefined,undefined,undefined,undefined]
 	}
+
 	var gamecontroller = new GameController(initialSetting)
-	var gameview = new GameView(document.getElementById("canv"))
+	var menuPopUp = new MenuPopUp(document.getElementById("popupinside"),document.getElementById("menuyesbutton"),document.getElementById("menunobutton"))
+	var gameview = new GameView(document.getElementById("canv"),menuPopUp)
 	gamecontroller.addView(gameview)
 	gamecontroller.init()
 	var ai = new Ai(gamecontroller)
+	var menu = new Menu(gamecontroller,ai)
+	for(var i = 0;i<=9;i++){
+            menu.addButton(i,document.getElementById('team'+i))
+	}
+        menu.addButton('lands',document.getElementById('lands0'))
+        menu.addButton('placementland',document.getElementById('placement0'))
+        menu.addButton('placementpawns',document.getElementById('placement1'))
+	menuPopUp.addMenu(menu.publicMethods())
 	gameview.draw()
 }
 
@@ -2797,7 +2981,46 @@ function init(){
 </head>
 <body>
 <div id="whole">
-<canvas id="canv" width="600" height="600"></canvas>
+<div class="switch" id="popupinside">
+Czy na pewno chcesz wyjść?
+<br/>
+<div class="switch" id="menuyesbutton">TAK</div>
+<div class="switch" id="menunobutton">Nie</div>
+</div>
+
+<div id="menu">
+<div id="title">
+WARcaby
+</div>
+
+<div class="switch" id="teams">Drużyny</div>
+
+<div class="switch" id="lands">Lądy</div>
+<div class="switch fontsmall" id="lands0">20</div>
+
+<div class="switch" id="placement">Stawianie</div>
+<div class="switch fontsmall" id="placement0">Po lądzie</div>
+<div class="switch fontsmall" id="placement1">8 pionków</div>
+
+<div class="switch" id="team0" style="background-color:#a00">Gracz</div>
+<div class="switch" id="team1" style="background-color:#00a">AI</div>
+<div class="switch" id="team2" style="background-color:#0a0">AI</div>
+<div class="switch" id="team3" style="background-color:#aa0">AI</div>
+<div class="switch" id="team4" style="background-color:#0aa">-</div>
+<div class="switch" id="team5" style="background-color:#444">-</div>
+<div class="switch" id="team6" style="background-color:#a60">-</div>
+<div class="switch" id="team7" style="background-color:#a0a">-</div>
+<div class="switch" id="team8" style="background-color:#06a">-</div>
+<div class="switch" id="team9" style="background-color:#6a0">-</div>
+
+
+<div id="start">
+GRAJ!
+</div>
+</div>
+<canvas id="canv" width="600" height="600">
+
+</canvas>
 </div>
 <script>
 	init();
