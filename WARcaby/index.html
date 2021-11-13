@@ -832,12 +832,12 @@ class GameController{
             return {endGame:function(){},updateCheckersCount:function(){},playerFromColor:function(){return 0}}
     }
     
-    isAiColor(color){
-        if(color == null)
-            return true
+    aiLevel(color){
+        if(color == null || color == '#aaa')
+            return 1
             
         var player = this.model.playerFromColor(color)
-        return this.initialSetting.players[player] == "ai"
+        return this.initialSetting.players[player].slice(0,2) == "ai" ? this.initialSetting.players[player].slice(2) : 0
     }
     
     automove(){
@@ -905,7 +905,7 @@ class GameController{
             return moved
     }
     isAiMove(){
-            return this.initialSetting.players[this.model.currentPlayer] == "ai" || this.model.currentPlayer == null || this.model.checkersGame != null && this.model.checkersGame.simulated && this.model.checkersGame.turn == 1
+            return String(this.initialSetting.players[this.model.currentPlayer]).slice(0,2) == "ai" || this.model.currentPlayer == null || this.model.checkersGame != null && this.model.checkersGame.simulated && this.model.checkersGame.turn == 1
     }
     onBorders(){
         return this.model.onBorders()
@@ -1915,7 +1915,7 @@ class Ai{
 			var legal = this.gamecontroller.model.legal()
 			if(legal.length > 0){
 				if(this.gamecontroller.model.phase == 2){
-					this.playCheckersGame()
+					this.playCheckersGame(this.gamecontroller.aiLevel(this.gamecontroller.model.currentColor()))
 					if(Object.keys(this.checkedStates).length > 10000){
 						var newStates = {}
 						var i = 0
@@ -1952,7 +1952,7 @@ class Ai{
                                             } else {
                                                 var leg = legal.filter(x=>x.type==="attack" && x.move===moveToPlay.land2)
                                                 if(leg.length>0){
-                                                    if(this.gamecontroller.isAiColor(moveToPlay.land2.color))
+                                                    if(this.gamecontroller.aiLevel(moveToPlay.land2.color))
                                                         leg[0].hidden = true
                                                     this.gamecontroller.act(leg[0])
                                                     attacked++
@@ -2347,13 +2347,19 @@ class Ai{
             
             return false
 	}
-	playCheckersGame(pawns, dams){
+	playCheckersGame(aiLevel){
 		var legal = this.gamecontroller.model.checkersGame.legal()
 		var state = this.gamecontroller.model.checkersGame.getCurrentState()
 		var simulated = new CheckersGame(this.gamecontroller.getTotalMock())
 		simulated.setCurrentState(state)
 		var evaluated = this.evaluate(this.gamecontroller.model.checkersGame)
 		var code = this.gamecontroller.model.checkersGame.getStateCode(0,0)
+		
+		var statesAiStrength = {
+                    '1':[1000,150,125,12],
+                    '2':[4000,600,500,50],
+                    '3':[10000,1500,1250,125]
+		}
 		
 		this.bestValuesAtDepth1 = {}
 		this.bestValuesAtDepth2 = {}
@@ -2362,9 +2368,13 @@ class Ai{
 		if(legal.filter(x=>x!="pass").length == 1)
 			minmax = {move: legal.filter(x=>x!="pass")[0], score: null}
 		else {
-                    var isai = this.gamecontroller.isAiColor(this.gamecontroller.model.checkersGame.land2.color)
+                    var isai2 = this.gamecontroller.aiLevel(this.gamecontroller.model.checkersGame.land2.color)
                     //while(minmax.score * turnfactor <= -this.max_possible && depth > 0){
-			minmax = isai ? this.beginminmax(simulated,500,50) : this.beginminmax(simulated,4000,600)
+			if(isai2){
+                            minmax = this.beginminmax(simulated,statesAiStrength[aiLevel][2],statesAiStrength[aiLevel][3])
+			} else {
+                            minmax = this.beginminmax(simulated,statesAiStrength[aiLevel][0],statesAiStrength[aiLevel][1])
+			}
 			//depth = depth > 2 ? 2 : 0
 			//depth = 0
                     //}
@@ -2848,7 +2858,7 @@ class Menu {
         this.controller = controller
         this.ai = ai
         
-        this.customInitialSetting = {lands:20,placementland:0,placementpawns:'8',players:['player','ai','ai','ai',undefined,undefined,undefined,undefined,undefined,undefined]}
+        this.customInitialSetting = {lands:20,placementland:0,placementpawns:'8',players:['player','ai2','ai2','ai2',undefined,undefined,undefined,undefined,undefined,undefined]}
         
         this.prepareElements()
         
@@ -2879,16 +2889,24 @@ class Menu {
         } else {
             switch(this.customInitialSetting.players[id]){
                 case 'player':
-                    this.customInitialSetting.players[id] = 'ai'
-                    button.innerHTML = 'Ai'
+                    this.customInitialSetting.players[id] = 'ai1'
+                    button.innerHTML = 'AI1'
                     break
-                case 'ai':
+                case 'ai1':
+                    this.customInitialSetting.players[id] = 'ai2'
+                    button.innerHTML = 'AI2'
+                    break
+                case 'ai2':
+                    this.customInitialSetting.players[id] = 'ai3'
+                    button.innerHTML = 'AI3'
+                    break
+                case 'ai3':
                     this.customInitialSetting.players[id] = undefined
                     button.innerHTML = '-'
                     break
                 default:
                     this.customInitialSetting.players[id] = 'player'
-                    button.innerHTML = 'Gracz'
+                    button.innerHTML = 'GRACZ'
             }
         }
     }
@@ -2957,7 +2975,7 @@ function init(){
 		players.push(i == human ? "player" : "ai")
 	}
 	var initialSetting = {
-		lands:20,placementland:0,placementpawns:'8',players:['ai','ai','ai','ai',undefined,undefined,undefined,undefined,undefined,undefined]
+		lands:20,placementland:0,placementpawns:'8',players:['ai1','ai1','ai1','ai1',undefined,undefined,undefined,undefined,undefined,undefined]
 	}
 
 	var gamecontroller = new GameController(initialSetting)
@@ -3003,9 +3021,9 @@ WARcaby
 <div class="switch fontsmall" id="placement1">8 pionków</div>
 
 <div class="switch" id="team0" style="background-color:#a00">Gracz</div>
-<div class="switch" id="team1" style="background-color:#00a">AI</div>
-<div class="switch" id="team2" style="background-color:#0a0">AI</div>
-<div class="switch" id="team3" style="background-color:#aa0">AI</div>
+<div class="switch" id="team1" style="background-color:#00a">AI2</div>
+<div class="switch" id="team2" style="background-color:#0a0">AI2</div>
+<div class="switch" id="team3" style="background-color:#aa0">AI2</div>
 <div class="switch" id="team4" style="background-color:#0aa">-</div>
 <div class="switch" id="team5" style="background-color:#444">-</div>
 <div class="switch" id="team6" style="background-color:#a60">-</div>
