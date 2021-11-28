@@ -27,8 +27,15 @@
                     <img id="intersect-other-polygon-to-feature" class="toolbar-button" src="static/img/intersect-other-polygon-to-feature.png" alt="intersect other polygon to feature" title="intersect other polygon to feature" />
                     <img id="remove-other-polygon-from-feature" class="toolbar-button" src="static/img/remove-other-polygon-from-feature.png" alt="remove other polygon from feature" title="remove other polygon from feature" />
                     <img id="operate-feature-to-layer" class="toolbar-button" src="static/img/operate-feature-to-layer.png" alt="intersect or differ feature with layer" title="intersect or differ feature with layer" />
-                    
                 </span>
+                <span id="edit-feature-time-buttons">
+                    <span class="separator"></span>
+                    <img id="add-time-version" class="toolbar-button" src="static/img/add-time-version.png" alt="add time version of feature" title="add time version of feature" />
+
+                </span>
+                <div class="right-toolbar">
+                    <div id="global-time" class="time-input"></div>
+                </div>
             </div>
             <div id="middle">
                 <div id="leftpanel">
@@ -81,6 +88,7 @@
                     File type:
                     <select id="layer-import-datatype">
                         <option value="null" name="null">-- choose --</option>
+                        <option value="tempgeojson" name="tempgeojson">geotempjson</option>
                         <option value="geojson" name="geojson">geojson</option>
                         <option value="json" name="geojson">json</option>
                         <option value="text" name="text">text</option>
@@ -109,7 +117,7 @@
                 Layer type:
                 <select id="layer-add-datatype">
                     <option value="null" name="null">-- choose --</option>
-                    <option value="geotempjson" name="geotempjson">spatiotemporal</option>
+                    <option value="tempgeojson" name="tempgeojson">spatiotemporal</option>
                     <option value="geojson" name="geojson">spatial</option>
                     <option value="text" name="text">table</option>
                 </select>
@@ -125,8 +133,84 @@
         <div class="dialog-window" id="feature-properties">
             <div class="window-closer">X</div>
             <h4>Feature properties</h4>
+            
+                <table class="feature-table" id="coords-table">
+                <tr>
+                <td>
+                    Coords
+                </td>
+                <td>
+                :
+                </td>
+                <td>
+                    <input type="text" class="table-input" id="coords-table-input" />
+                </td>
+                </tr>
+                </table>
+                
+                <table class="feature-table" id="feature-temp-table">
+                <tr>
+                <td>
+                    <b>ID</b>
+                </td>
+                <td>
+                :
+                </td>
+                <td>
+                    <input type="text" class="table-input" id="feature-id-input" />
+                </td>
+                </tr>
+                
+                <tr>
+                <td>
+                    date from
+                </td>
+                <td>
+                :
+                </td>
+                <td>
+                    <div id="from-time"></div>
+                </td>
+                </tr>
+                <tr>
+                <td>
+                    date to
+                </td>
+                <td>
+                :
+                </td>
+                <td>
+                    <div id="to-time"></div>
+                </td>
+                </tr>
+                
+                <tr>
+                <td>
+                    Operation
+                </td>
+                <td>
+                :
+                </td>
+                <td>
+                <select id="feature-temp-operation-type">
+                    <option value="new" name="new">NEW</option>
+                    <option value="union_all" name="union_all">UNION_ALL_FEATURES</option>
+                    <option value="diff_all" name="diff_all">DIFF_ALL_FEATURES</option>
+                    <option value="intersect_all" name="intersect_all">INTERSECT_ALL_FEATURES</option>
+                    <option value="union" name="union">UNION</option>
+                    <option value="diff" name="diff">DIFF</option>
+                    <option value="intersect" name="intersect">INTERSECT</option>
+                </select>
+                </td>
+                </tr>
+                
+                </table>
+                
+                
             <div class="dialog-window-title">Properties:</div>
             <div class="dialog-window-row scrollable-y">
+                
+                
                 <table class="feature-table" id="feature-table">
                 <tr>
                 <td>

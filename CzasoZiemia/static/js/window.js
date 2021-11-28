@@ -73,7 +73,7 @@ class LayerDialogWindow extends DialogWindow {
         extension = extension == undefined || extension.length == 0 ? '' : extension[0]
         
         var predicted = extension in datatypes ? datatypes[extension] : null
-        var types = ['geojson','json','none'].sort((x,y)=>y===predicted)
+        var types = ['tempgeojson','geojson','json','none'].sort((x,y)=>y===predicted)
         
         for(var i in types){
             var type = types[i]
@@ -89,6 +89,9 @@ class LayerDialogWindow extends DialogWindow {
             return type === "null"
             
         switch(type){
+            case 'tempgeojson':
+                if(this.typeSelect.value != 'tempgeojson')
+                    return false
             case 'geojson':
                 if(this.predictGeoJson(data))
                     return true
@@ -209,7 +212,7 @@ class AddLayerDialogWindow extends LayerDialogWindow {
             switch(option){
                 case "layertype":
                     this.typeSelect = document.getElementById(configs[option])
-                    this.typeSelect.addEventListener("change", (e)=>{th.changeType(e.target.value, false)})
+                    this.typeSelect.addEventListener("change", (e)=>{/*th.changeType(e.target.value, false)*/})
                     break;
                 case "layer-add-hint":
                     this.typeHint = document.getElementById(configs[option])
@@ -235,7 +238,7 @@ class AddLayerDialogWindow extends LayerDialogWindow {
     }
     prepareDataAccordingToType(name){
         switch(this.typeSelect.value){
-            case "geotempjson":
+            case "tempgeojson":
             case "geojson":
                 var data = `{"type": "FeatureCollection","name": "`+this.layername()+`","features": []}`
                 this.setData(data, name)
@@ -303,8 +306,13 @@ class PropertyDialogWindow extends DialogWindow {
         this.table = null
         
         this.feature = null
+        this.coordsTable = null
         this.scheme = null
         this.updateButton = null
+        
+        this.tempTable = null
+        this.fromTime = null
+        this.toTime = null
         
         this.setOwnConfig(configs)
     }
@@ -316,11 +324,19 @@ class PropertyDialogWindow extends DialogWindow {
                     this.updateButton = document.getElementById(configs[option])
                     this.updateButton.onclick = (e)=>{
                         this.updateFeature(this.feature,this.scheme)
-                        th.action(null, false)
                     }
                     break
-                case "table":
+                case "table":   
                     this.table = document.getElementById(configs[option])
+                    break
+                case "coordsTable":
+                    this.coordsTable = document.getElementById(configs[option])
+                    break
+                case "tempTable":
+                    this.tempTable = document.getElementById(configs[option])
+                    
+                    this.fromTime = new TimeControl("from-time",false,true)
+                    this.toTime = new TimeControl("to-time",false,true)
                     break
                 case "layerpanel":
                     this.layerPanel = configs[option]
@@ -329,6 +345,43 @@ class PropertyDialogWindow extends DialogWindow {
         }
     }
     updateFeature(feature,scheme){
+        if(feature.geometry.type == "Point"){
+            var coordsInput = document.getElementById("coords-table-input")
+            var crs = coordsInput.value.split(",")
+            if(crs.length != 2 || isNaN(Number(crs[0])) || isNaN(Number(crs[1]))){
+                alert('Wrong format od coordinates')
+                coordsInput.value = this.feature.geometry.coordinates[0]+','+this.feature.geometry.coordinates[1]
+                return
+            } else {
+                feature.geometry.coordinates[0] = Number(crs[1])    //N/S (vertical) is usually first
+                feature.geometry.coordinates[1] = Number(crs[0])
+            }
+        }
+        if(this.layerPanel.isSpatiotemporal(this.layerPanel.editing)){
+            var selectedLayer = this.layerPanel.editing.originaldata
+            var newid = document.getElementById('feature-id-input').value
+            if(newid == ""){
+                alert("All features in tempgeojson must have ids.")
+                return
+            }
+            for(var i in selectedLayer.features){
+                if(selectedLayer.features[i].id == newid && selectedLayer.features[i] != feature){
+                    alert("A feature with id '"+newid+"' already exists.")
+                    return
+                }
+            }
+            this.feature.id = newid
+            var opt = document.getElementById('feature-temp-operation-type')
+            this.feature.option = opt.options[opt.selectedIndex].value
+            
+            var lastFrom = this.feature.from, lastTo = this.feature.to
+            
+            this.feature.from = this.fromTime.getDate()
+            this.feature.to = this.toTime.getDate()
+            
+            if(lastFrom != this.feature.from || lastTo != this.feature.to)
+                this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme)
+        }
         var i = 1
         for(var ix in scheme){
             var key = scheme[ix]
@@ -339,6 +392,7 @@ class PropertyDialogWindow extends DialogWindow {
             }
             i++
         }
+        this.action(null, false)
     }
     addColumn(){
         var columnName = document.getElementById('property-column-add').value
@@ -369,7 +423,26 @@ class PropertyDialogWindow extends DialogWindow {
             this.scheme = null
         }
         let t = this
+        this.coordsTable.style.display = (feature && feature.geometry.type == "Point") ? "block" : "none"
+        var coordsInput = document.getElementById("coords-table-input")
+        
         if(feature){
+            if(this.layerPanel.isSpatiotemporal(this.layerPanel.editing)){
+                this.tempTable.style.display = "block"
+                document.getElementById('feature-id-input').value = this.feature.id
+                var opt = document.getElementById('feature-temp-operation-type')
+                for (var i = 0; i < opt.options.length; ++i) {
+                    if (opt.options[i].text === this.feature.operation)
+                        opt.options[i].selected = true
+                }
+                this.fromTime.setDate(this.feature.from)
+                this.toTime.setDate(this.feature.to)
+            } else {
+                this.tempTable.style.display = "none"
+            }
+            if(feature.geometry.type == "Point"){
+                coordsInput.value = this.feature.geometry.coordinates[0]+','+this.feature.geometry.coordinates[1]
+            }
             var innerHtml = "<tr><td></td><td>Names:</td><td></td><td>Values:</td></tr>"
             var i = 1
             for(var j in scheme){
@@ -638,6 +711,10 @@ class LayerOperationDialogWindow extends DialogWindow {
         if(sumOfAllShapes != null && this.feature != null){
             var newFeature
             
+            var temp = this.feature.type == "TempFeature"
+            if(temp){
+                this.feature.type = "Feature"
+            }
             switch(typeSelect.value){
                 case "intersect":
                     newFeature = turf.intersect(this.feature,sumOfAllShapes)
@@ -645,6 +722,9 @@ class LayerOperationDialogWindow extends DialogWindow {
                 case "difference":
                     newFeature = turf.difference(this.feature,sumOfAllShapes)
                     break
+            }
+            if(temp){
+                this.feature.type = "TempFeature"
             }
             this.feature.geometry = newFeature.geometry
         } else {
@@ -675,3 +755,350 @@ class LayerOperationDialogWindow extends DialogWindow {
         }
     }
 }
+class CzDate{
+    constructor(year,month,day,prevDate){
+        if(String(year).slice(1).indexOf('-') > -1){
+            this.parse(year,month)
+        } else {
+            this.setDatePart(year,month,day,prevDate)
+        }
+    }
+    setDatePart(year,month,day,prevDate){
+        if(!String(year).match(/^-?[0-9]{1,7}$/gi))
+            year = prevDate ? prevDate.year : 1
+        if(!String(month).match(/^[0-9]{1,2}$/gi))
+            month = prevDate ? prevDate.month : 1
+        if(!String(day).match(/^[0-9]{1,2}$/gi))
+            day = prevDate ? prevDate.day : null
+            
+        if(year == 0)
+            year = prevDate ? prevDate.year : null
+        if(month > 12 || month == 0)
+            month = prevDate ? prevDate.month : null
+        if(this.dayOffLimit(year,month,day))
+            day = prevDate ? prevDate.day : null
+            
+        this.year = Number(year)
+        this.month = Number(month)
+        this.day = Number(day)
+    }
+    parse(string,prevDate){
+        var split = string.split('-')
+        if(string[0] == '-'){
+            this.setDatePart('-'+split[1],split[2],split[3],prevDate)
+        } else {
+            this.setDatePart(split[0],split[1],split[2],prevDate)
+        }
+    }
+    inzero(int){
+        int = Number(int)
+        if(int < 10)
+            return '0'+int
+        return int
+    }
+    code(){
+        return this.year+'-'+this.inzero(this.month)+'-'+this.inzero(this.day)
+    }
+    lastDay(year,month){
+        if([4,6,9,11].indexOf(Number(month)) > -1)
+            return 30
+        if(Number(month) == 2)
+            return 29
+        if(Number(month) == 2 && (year % 4 != 0 || (year % 100 == 0 && year % 400 != 0)))
+            return 28
+        return 31
+    }
+    dayOffLimit(year,month,day){
+        if(day > 31 || day == 0)
+            return true
+        if(day > this.lastDay(year,month))
+            return true
+        return false
+    }
+    addYear(count){
+        this.year -= -count
+        if(this.year == 0){
+            this.year = count > 0 ? 1 : -1
+        }
+    }
+    addMonth(count){
+        this.month -= -count
+        if(this.month > 12){
+            this.month = 1
+            this.addYear(1)
+        }
+        if(this.month < 1){
+            this.month = 12
+            this.addYear(-1)
+        }
+    }
+    addDay(count){
+        this.day -= -count
+        if(this.day > this.lastDay(this.year,this.month)){
+            this.day = 1
+            this.addMonth(1)
+        }
+        if(this.day < 1){
+            this.addMonth(-1)
+            this.day = this.lastDay(this.year,this.month)
+        }
+        
+    }
+}
+class TimeControl {
+    constructor(divId,exclusive,allowNull){
+        this.div = document.getElementById(divId)
+        this.ndiv = null
+        
+        this.buttons = {}
+        this.inputs = {}
+        this.nullDate = true
+        this.listener = null
+        this.listenerTimeout = null
+        
+        this.allowNull = allowNull
+        
+        this.createInput(exclusive,allowNull)
+        
+        this.date = new CzDate(2020,1,1)
+        this.setDate(this.date)
+    }
+    setListener(listener){
+        this.listener = listener
+    }
+    setDate(czdate){
+        if(typeof czdate == "string"){
+            if(czdate == ""){
+                this.setNull(false)
+                czdate = this.date
+            } else {
+                this.setNull(true)
+                czdate = new CzDate(czdate,this.date)
+            }
+        } else {
+            this.setNull(true)
+        }
+        this.inputs['years'].value = czdate.year
+        this.inputs['months'].value = czdate.month
+        this.inputs['days'].value = czdate.day
+    }
+    getDate(){
+        return this.nullDate ? this.date.code() : ""
+    }
+    action(e,action){
+        switch(action){
+            case 'years':
+            case 'months':
+            case 'days':
+                var years = this.inputs['years'].value
+                var months = this.inputs['months'].value
+                var days = this.inputs['days'].value
+                this.date = new CzDate(years,months,days,this.date)
+                this.setDate(this.date)
+                break
+            case 'dback':
+                this.date.addDay(-1)
+                this.setDate(this.date)
+                break
+            case 'dfor':
+                this.date.addDay(1)
+                this.setDate(this.date)
+                break
+                
+            case 'mback':
+                this.date.addMonth(-1)
+                this.setDate(this.date)
+                break
+            case 'mfor':
+                this.date.addMonth(1)
+                this.setDate(this.date)
+                break
+                
+            case '1yback':
+                this.date.addYear(-1)
+                this.setDate(this.date)
+                break
+            case '1yfor':
+                this.date.addYear(1)
+                this.setDate(this.date)
+                break
+                
+            case '10yback':
+                this.date.addYear(-10)
+                this.setDate(this.date)
+                break
+            case '10yfor':
+                this.date.addYear(10)
+                this.setDate(this.date)
+                break
+                
+            case '100yback':
+                this.date.addYear(-100)
+                this.setDate(this.date)
+                break
+            case '100yfor':
+                this.date.addYear(100)
+                this.setDate(this.date)
+                break
+        }
+        
+        if(this.listener != null){
+            if(this.listenerTimeout != null){
+                clearTimeout(this.listenerTimeout)
+            }
+            var th = this
+            this.listenerTimeout = setTimeout(() => {th.listener(this.getDate())},1000)
+        }
+    }
+    setNull(state){
+        if(!this.allowNull)
+            return
+            
+        this.nullDate = state
+        this.buttons['nullbutton'].checked = state
+        this.ndiv.style.display = this.nullDate ? "inline" : "none"
+    }
+    createInput(exclusive,allowNull){
+        this.div.innerHTML = ""
+        let th = this
+        if(allowNull){
+            this.buttons['nullbutton'] = document.createElement('input')
+            this.buttons['nullbutton'].setAttribute('type','checkbox')
+            this.buttons['nullbutton'].setAttribute('name','nullbutton')
+            this.buttons['nullbutton'].onclick = (e) => {th.setNull(e.target.checked)}
+            this.div.appendChild(this.buttons['nullbutton'])
+        }
+        
+        this.ndiv = document.createElement('span')
+        
+        if(allowNull)
+            this.setNull(this.nullDate)
+            
+        this.ndiv.innerHTML = ""
+        this.div.appendChild(this.ndiv)
+        
+        var buttonDefinitions1 = [
+            {
+                name:'100yback',
+                src:'static/img/time-controls/century-back.png',
+                exclusive:true
+            },
+            {
+                name:'10yback',
+                src:'static/img/time-controls/ten-year-back.png',
+                exclusive:true
+            },
+            {
+                name:'1yback',
+                src:'static/img/time-controls/year-back.png',
+            },
+            {
+                name:'mback',
+                src:'static/img/time-controls/month-back.png',
+            },
+            {
+                name:'dback',
+                src:'static/img/time-controls/day-back.png',
+            },
+        ]
+        
+        var inputDefinitions = [
+            {
+                name:'years',
+                class:'yearsize',
+            },
+            {
+                name:'months',
+                class:'daysize',
+            },
+            {
+                name:'days',
+                class:'daysize',
+            },
+        ]
+        
+        var buttonDefinitions2 = [
+            {
+                name:'dfor',
+                src:'static/img/time-controls/day-forward.png',
+            },
+            {
+                name:'mfor',
+                src:'static/img/time-controls/month-forward.png',
+            },
+            {
+                name:'1yfor',
+                src:'static/img/time-controls/year-forward.png',
+            },
+            {
+                name:'10yfor',
+                src:'static/img/time-controls/ten-year-forward.png',
+                exclusive:true
+            },
+            {
+                name:'100yfor',
+                src:'static/img/time-controls/century-forward.png',
+                exclusive:true
+            },
+        ]
+        for(var i in buttonDefinitions1){
+            let elem = buttonDefinitions1[i]
+            
+            if(elem.exclusive && !exclusive)
+                continue
+            
+            this.buttons[elem.name] = document.createElement('img')
+            this.buttons[elem.name].setAttribute('src',elem.src)
+            this.buttons[elem.name].setAttribute('class','time-button')
+            this.ndiv.appendChild(this.buttons[elem.name])
+            
+            this.buttons[elem.name].onclick = (e) => {th.action(e,elem.name)}
+        }
+        
+        for(var i in inputDefinitions){
+            let elem = inputDefinitions[i]
+            
+            this.inputs[elem.name] = document.createElement('input')
+            this.inputs[elem.name].setAttribute('type','text')
+            this.inputs[elem.name].setAttribute('class','table-input '+elem.class)
+            this.ndiv.appendChild(this.inputs[elem.name])
+            
+            this.inputs[elem.name].onchange = (e) => {th.action(e,elem.name)}
+        }
+        for(var i in buttonDefinitions2){
+            let elem = buttonDefinitions2[i]
+            
+            if(elem.exclusive && !exclusive)
+                continue
+            
+            this.buttons[elem.name] = document.createElement('img')
+            this.buttons[elem.name].setAttribute('src',elem.src)
+            this.buttons[elem.name].setAttribute('class','time-button')
+            this.ndiv.appendChild(this.buttons[elem.name])
+            
+            this.buttons[elem.name].onclick = (e) => {th.action(e,elem.name)}
+        }
+        
+        
+        
+        /*
+        <img src="static/img/time-controls/century-back.png" class="time-button" />
+        <img src="static/img/time-controls/ten-year-back.png" class="time-button" />
+        <img src="static/img/time-controls/year-back.png" class="time-button" />
+        <img src="static/img/time-controls/month-back.png" class="time-button" />
+        <img src="static/img/time-controls/day-back.png" class="time-button" />
+        
+        <input type="text" width="20" class="table-input yearsize" />
+        <input type="text" width="20" class="table-input daysize" />
+        <input type="text" width="20" class="table-input daysize" />
+        
+        <img src="static/img/time-controls/day-forward.png" class="time-button" />
+        <img src="static/img/time-controls/month-forward.png" class="time-button" />
+        <img src="static/img/time-controls/year-forward.png" class="time-button" />
+        <img src="static/img/time-controls/ten-year-forward.png" class="time-button" />
+        <img src="static/img/time-controls/century-forward.png" class="time-button" />
+        */
+    }
+}
+
+

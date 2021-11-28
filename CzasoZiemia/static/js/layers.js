@@ -33,13 +33,17 @@ class LayerPanel {
         
         this.deletingShapes = false
         
+        this.globalDate = '2020-01-01'
+        
         let t = this
         this.propertiesDialogWindow = new PropertyDialogWindow({
             element: "feature-properties",
             canvas: t.canvas,
             layerpanel: t,
             table: "feature-table",
-            updateButton: "feature-properties-update"
+            coordsTable: "coords-table",
+            updateButton: "feature-properties-update",
+            tempTable: "feature-temp-table",
         })
         this.layerPropertiesDialogWindow = new LayerPropertyDialogWindow({
             element: "layer-properties",
@@ -61,6 +65,10 @@ class LayerPanel {
         this.updateLayerView(this.layers,null)
         
     }
+    setGlobalDate(date){
+        this.globalDate = date
+    }
+    
     setConfig(configs){
         for(var option in configs){
             switch(option){
@@ -73,9 +81,17 @@ class LayerPanel {
                 case "editFeatureToolbar":
                     this.editFeatureToolbar = document.getElementById(configs[option])
                     break;
+                case "editFeatureTimeToolbar":
+                    this.editFeatureTimeToolbar = document.getElementById(configs[option])
+                    break
                 case "canvas":
                     this.canvas = document.getElementById(configs[option])
-                    break;
+                    break;/*
+                case "timeControl":
+                    this.timeControl = configs[option]
+                    let th = this
+                    this.timeControl.setListener(() => {th.renderLayers()})
+                    break;*/
             }
         }
     }
@@ -164,6 +180,7 @@ class LayerPanel {
             transformed = this.validateAndTransformToGeoJson(newData, layer.type, true)
         } else {
             switch(layer.type){
+                case "tempgeojson":
                 case "geojson":
                 case "json":
                     newData = JSON.stringify(layer.originaldata)
@@ -199,6 +216,7 @@ class LayerPanel {
             this.lastresolution = resolution
         else
             resolution = this.lastresolution
+            
         this.mapLayerToRendered(layer.data,layer.rendered,bounds,resolution)
     }
     
@@ -211,6 +229,41 @@ class LayerPanel {
         if(value<right)
             return 0
         return 1
+    }
+    
+    padDate(date){
+        if(date[0] == '-')
+            return date.slice(1).padStart(16,'0')
+        return date.padStart(16,'0')
+    }
+    compareDates(date1,date2){/*
+        if(date1[0] == '-'){
+            if(date2[0] == '-'){
+                return -this.padDate(date1).localeCompare(this.padDate(date2))
+            } else {
+                return -1
+            }
+        } else {
+            if(date2[0] == '-'){
+                return 1
+            } else {
+                return this.padDate(date1).localeCompare(this.padDate(date2))
+            }
+        }*/
+        var czdate1 = new CzDate(date1), czdate2 = new CzDate(date2)
+                
+        console.log(date1,date2)
+        if(czdate1.year == czdate2.year && czdate1.month == czdate2.month && czdate1.day == czdate2.day)
+            return 0
+            
+        if(czdate1.year < czdate2.year || czdate1.year == czdate2.year && czdate1.month < czdate2.month || czdate1.year == czdate2.year && czdate1.month == czdate2.month && czdate1.day < czdate2.day)
+            return -1
+            
+        if(czdate1.year > czdate2.year || czdate1.year == czdate2.year && czdate1.month > czdate2.month || czdate1.year == czdate2.year && czdate1.month == czdate2.month && czdate1.day > czdate2.day)
+            return 1
+    }
+    checkIfFeatureInTime(feature){
+        return (!('timebox_to' in feature) || feature.timebox_to == '' || this.compareDates(feature.timebox_to,this.globalDate) > -1) && (!('timebox_from' in feature) || feature.timebox_from == '' || this.compareDates(feature.timebox_from,this.globalDate) < 1)
     }
     
     mapLayerToRendered(layer,rendered,bounds,resolution){
@@ -229,6 +282,10 @@ class LayerPanel {
                     (Math.abs(bounds.right-bounds.left) < resolution && Math.abs(bounds.bottom-bounds.top) < resolution)
                 )
                     continue
+                
+                if('timebox_to' in value && !this.checkIfFeatureInTime(value))
+                    continue
+                    
                 var newObject = {}
                 rendered[property] = newObject
                 this.mapLayerToRendered(value,newObject,bounds,resolution)
@@ -276,7 +333,7 @@ class LayerPanel {
             } else {
                 rendered[property] = value
                 
-                if(property == "type" && value == "Feature"){
+                if(property == "type" && (value == "Feature" || value == "TempFeature")){
                     rendered["originaldata"] = layer
                 }
             }
@@ -361,6 +418,10 @@ class LayerPanel {
         this.updateLayerView(this.layers)
     }
     
+    isSpatiotemporal(layer){
+        return layer && layer.type == 'tempgeojson'
+    }
+    
     updateLayerView(path){
         var element = this.element
         var layers = this.layers
@@ -383,7 +444,7 @@ class LayerPanel {
             var newNode = document.createElement("div")
             var i = layer.number
             
-            newNode.innerHTML = "<div>"+layer.name
+            newNode.innerHTML = "<div>"+layer.name+' '+(this.isSpatiotemporal(layer) ? '<img src="static/img/clock.png" alt="spatiotemporal" title="spatiotemporal" />' : '')
             
             newNode.innerHTML += '<a href="#"><img id="button-show-'+i+'" src="static/img/eye-open.png" alt="show/hide layer" title="show/hide later" /></a>'
             newNode.innerHTML += '<a href="#"><img id="button-remove-'+i+'" src="static/img/remove-layer.png" alt="remove layer" title="remove layer" /></a>'
@@ -393,7 +454,7 @@ class LayerPanel {
                 newNode.innerHTML += '<a href="#"><img id="edit-layer-'+i+'" src="static/img/edit-layer.png" alt="edit layer" title="edit layer" /></a>'
             } else {
                 newNode.innerHTML += '<a href="#"><img id="save-layer-'+i+'" src="static/img/save-layer.png" alt="save layer" title="save layer" /></a>'
-                newNode.innerHTML += '<a href="#"><img id="dont-save-layer-'+i+'" src="static/img/dont-save-layer.png" alt="don\'t save layer" title="don\'t save layer" /></a>'
+                newNode.innerHTML += '<a href="#"><img id="dont-edit-layer-'+i+'" src="static/img/dont-edit-layer.png" alt="don\'t save layer" title="don\'t save layer" /></a>'
             }
             newNode.innerHTML += '<a href="#"><img id="button-layer-properties-'+i+'" src="static/img/layer-properties.png" alt="layer properties" title="layer properties" /></a>'
             
@@ -412,7 +473,7 @@ class LayerPanel {
                 if(this.editing == null)
                     document.getElementById('edit-layer-'+i).onclick = (e)=>{th.startEditingLayer(e,name,newNode)}
             } else {
-                document.getElementById('dont-save-layer-'+i).onclick = (e)=>{th.stopEditingLayer(e,name,newNode)}
+                document.getElementById('dont-edit-layer-'+i).onclick = (e)=>{th.stopEditingLayer(e,name,newNode)}
                 document.getElementById('save-layer-'+i).onclick = (e)=>{th.saveEditingLayer(e,name,newNode)}                
             }
             document.getElementById('button-layer-properties-'+i).onclick = (e)=>{th.layerProperties(e,name,newNode,layer)}
@@ -425,8 +486,9 @@ class LayerPanel {
     updateEditToolbar(){
         this.editToolbar.style.display = 'none'
         this.editFeatureToolbar.style.display = 'none'
+        this.editFeatureTimeToolbar.style.display = 'none'
         var th = this
-        if(this.editing != null && (this.editing.type == 'geojson' || this.editing.type == 'geotempjson')){
+        if(this.editing != null && (this.editing.type == 'geojson' || this.editing.type == 'tempgeojson')){
             this.editToolbar.style.display = 'inline-block'
             
             var addPolygonButton = document.getElementById('add-polygon')
@@ -451,6 +513,9 @@ class LayerPanel {
             
             if(this.editing.selectedFeature != null){
                 this.editFeatureToolbar.style.display = 'inline-block'
+                if(this.editing.type == "tempgeojson")
+                    this.editFeatureTimeToolbar.style.display = 'inline-block'
+
                 
                 var addPolygonToFeatureButton = document.getElementById('add-polygon-to-feature')
                 addPolygonToFeatureButton.onclick = (e)=>{th.startAddingShape("Polygon","add");e.preventDefault()}
@@ -541,7 +606,13 @@ class LayerPanel {
                         var coords = []
                         break
                 }
-                var newFeature = {type:"Feature",geometry:{type:shape,coordinates:coords},properties:{},adding:true}
+                var newFeature
+                
+                if(this.isSpatiotemporal(this.editing)){
+                    newFeature = {type:"TempFeature",id:null,operation:"NEW",from:"",to:"",geometry:{type:shape,coordinates:coords},properties:{},adding:true}
+                } else {
+                    newFeature = {type:"Feature",geometry:{type:shape,coordinates:coords},properties:{},adding:true}
+                }
                 this.editing.selectedFeature = newFeature
             //}
             switch(shape){
@@ -584,6 +655,7 @@ class LayerPanel {
 
     deleteShape(selectedFeature){
         switch(selectedFeature.type){
+            case "TempFeature":
             case "Feature":
                 let index = this.editing.originaldata.features.indexOf(selectedFeature);
                 if(index !== -1) {
@@ -610,6 +682,11 @@ class LayerPanel {
                     break
             }
             
+            var temp = this.editing.selectedFeature.type == "TempFeature"
+            if(temp && this.addingAction != null){
+                this.editing.selectedFeature.type = "Feature"
+                this.editing.previouslySelectedFeature.type = "Feature"
+            }
             switch(this.addingAction){
                 case null:
                     this.editing.originaldata.features.push(newFeature)
@@ -628,6 +705,9 @@ class LayerPanel {
                     this.editing.selectedFeature = this.editing.previouslySelectedFeature
                     this.editing.previouslySelectedFeature = null
                     break
+            }
+            if(temp && this.addingAction != null){
+                this.editing.selectedFeature.type = "TempFeature"
             }
         }
         this.addingAction = null
@@ -650,6 +730,10 @@ class LayerPanel {
             alert("Something has gone wrong!")
             return
         }
+        var temp = this.editing.selectedFeature.type == "TempFeature"
+        if(temp){
+            this.editing.selectedFeature.type = "Feature"
+        }
         var newGeom
         switch(operationType){
             case "add":
@@ -661,6 +745,9 @@ class LayerPanel {
             case "intersect":
                 newGeom = turf.intersect(this.editing.selectedFeature,newFeature)
                 break
+        }
+        if(temp){
+            this.editing.selectedFeature.type = "TempFeature"
         }
         this.editing.selectedFeature.geometry = newGeom.geometry
         this.stopAddingShape()
@@ -694,8 +781,12 @@ class LayerPanel {
             for(var i in collection){
                 var feature = collection[i]
                 var newNode = document.createElement("div")
-                var fname = feature['name'] == null ? "<i>child-"+i+"</i>" : feature['name']
-                newNode.innerHTML = `<div><span id="edit-feature-${layerId}-${i}">${feature["type"]} : ${fname}</span></div>`
+                var fname = feature['id'] != null ? feature['id'] : feature['properties']['name'] == null ? "<i>child-"+i+"</i>" : feature['properties']['name']
+                var ftime = ""
+                if(feature.type == "TempFeature" && (feature.from != '' && feature.to != '')){
+                    ftime = `<div class="time-span">(${feature.from} - ${feature.to})</div>`
+                }
+                newNode.innerHTML = `<div><span id="edit-feature-${layerId}-${i}">${feature["type"]} : ${fname}</span>${ftime}</div>`
                 if(feature == this.editing.selectedFeature){
                     newNode.style.color = "#dd0000"
                     var description = document.createElement("div")
@@ -725,7 +816,6 @@ class LayerPanel {
                 if(feature == this.editing.selectedFeature){
                     document.getElementById("edit-properties-"+layerId+"-"+i).onclick = (e)=>{
                         t.propertiesDialogWindow.action(e,true,this.editing.selectedFeature,this.editing.scheme)
-                        //new PropertyDialogWindow()
                     }
                     this.element.scrollTop = newNode.offsetTop + this.element.getBoundingClientRect().height/2
                 }
@@ -757,11 +847,14 @@ class LayerPanel {
     validateAndTransformToGeoJson(data, type, dontparse){
         var newdata, copied, drawable = false, scheme = null
         switch(type){
+            case "tempgeojson":
             case "geojson":
                     newdata = dontparse ? data : JSON.parse(data)
                     scheme = this.tryGetScheme(newdata)
                     copied = this.copyGeoJSON(newdata)
-                    var b = this.addBboxes(newdata)
+                    this.addBboxes(newdata)
+                    if(type == "tempgeojson")
+                        this.addTimeboxes(newdata)
                     drawable = true
                 break
             case "json":
@@ -796,6 +889,7 @@ class LayerPanel {
                 }
                 return Object.keys(scheme)
                 break
+            case "TempFeature":
             case "Feature":
                 var scheme = {}
                 if('properties' in data){
@@ -868,6 +962,46 @@ class LayerPanel {
         }
         return null
     }
+    addTimeboxes(data){
+        switch(data.type){
+            case "FeatureCollection":
+            case "Interval":
+                var collected = []
+                for(var i in data.features){
+                    collected = collected.concat(this.addTimeboxes(data.features[i]))
+                }
+                if(data.type == "FeatureCollection"){
+                    var dividedByIds = {}
+                    for(var i in collected){
+                        var feature = collected[i]
+                        
+                        if(!(feature.id in dividedByIds)){
+                            dividedByIds[feature.id] = []
+                        }
+                        dividedByIds[feature.id].push(feature)
+                    }
+                    for(var id in dividedByIds){
+                        var features = dividedByIds[id]
+                        
+                        features = features.sort((a,b)=>(a.from-b.from))
+                        for(var i in features){
+                            var feature = features[i]
+                            switch(feature.operation){
+                                case "NEW":
+                                    feature.timebox_from = feature.from
+                                    feature.timebox_to = feature.to
+                                    break
+                            }
+                        }
+                    }
+                }
+                return collected
+                break
+            case "TempFeature":
+                return [data]
+                break
+        }
+    }
     addBboxes(data){
         var bbox = null
         if(data instanceof Array){
@@ -901,6 +1035,7 @@ class LayerPanel {
                     bbox = this.mergeBoxes(bbox,newbbox)
                 }
                 break
+            case "TempFeature":
             case "Feature":
                 bbox = this.addBboxes(data.geometry)
                 break
@@ -1072,6 +1207,7 @@ class LayerPanel {
                     if(result != null)
                         return result
                 }
+            case "TempFeature":
             case "Feature":
                 var result = this.checkPointsOfShape(feature.geometry,lon,lat,degreeBounds,pixelDifference,magnification)
                 if(result != null)
@@ -1197,6 +1333,10 @@ class LayerPanel {
             layer.bbox[3] < lat)
         )
             return null
+        
+        if('timebox_to' in layer && !this.checkIfFeatureInTime(layer))
+            return null
+            
         switch(layer.type){
             case "FeatureCollection":
                 for(var i = layer.features.length-1;i>=0;i--){
@@ -1205,6 +1345,7 @@ class LayerPanel {
                         return result
                 }
                 break
+            case "TempFeature":
             case "Feature":
                 if(this.hitTest(layer.geometry,lon,lat,degreeBounds,pixelDifference,magnification,availableShapes) != null && (availableShapes == undefined || availableShapes.filter(x=>x == layer.geometry.type).length > 0))
                     return layer
@@ -1277,8 +1418,13 @@ class LayerPanel {
                     case "Polygon":
                     case "LineString":
                         var newPoint = [lon,lat]
+                        
                         if(this.lastPointDrawing != null && this.checkPointsOfCoords(this.lastPointDrawing,lon,lat,pixelDifference,magnification)){
+                            var feature = this.editing.selectedFeature
+                            var adding = this.addingAction != null
                             this.stopAddingShape()
+                            if(!adding)
+                                this.propertiesDialogWindow.action(null,true,feature,this.editing.scheme)
                             return true
                         }
                         

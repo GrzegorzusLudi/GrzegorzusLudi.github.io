@@ -78,7 +78,7 @@ p {
     
     left: 25vw;
     width: 50vw;
-    top: 15vh;
+    top: 10vh;
 }
 .shown-debug{
     display:block;
@@ -149,11 +149,45 @@ a {
     border:1px solid gray;
 }
 .feature-table {
-    text-align:left
+    text-align:left;
+    padding-bottom:5px;
+    width:100%;
+}
+tr {
+    margin-top:2px;
+    margin-bottom:2px;
+}
+.right-toolbar {
+    display:inline-block;
+    position:absolute;
+    right:5px;
+}
+.time-input {
+    display:inline-block;
 }
 .scrollable-y {
     overflow-y: scroll;
-    height:calc( 100vh - 300px );
+    height:calc( 100vh - 400px );
+}
+.time-button{
+    margin-left:0px;
+    margin-right:0px;
+    margin-top:4px;
+    padding:0;
+}
+.yearsize {
+    width:60px;
+    top:0px;
+    box-sizing: border-box;
+}
+.daysize {
+    width:20px;
+    top:0px;
+    box-sizing: border-box;
+}
+.time-span {
+    font-size:10pt;
+    color:#008
 }
 div {
     /*border: 1px solid red; /*TEMPORARY

@@ -108,13 +108,21 @@ class Camera {
     
 }
 class AbstractCanvas {
-    constructor(canvasElement,parentDiv,layerPanel,additionalCanvas){
+    constructor(canvasElement,parentDiv,layerPanel,additionalCanvas,timeControl){
         this.canvasElement = canvasElement
         this.canvasElement2 = additionalCanvas
         this.parentDiv = parentDiv
         this.layerPanel = layerPanel
         this.bounds = null
         this.layerdata = null
+        this.timeControl = timeControl
+        
+        var th = this
+        this.timeControl.setListener((date)=>{
+            th.layerPanel.setGlobalDate(date)
+            th.layerPanel.renderLayers()
+            th.draw()
+        })
         
         this.styles = {
             lineWidth: 1,
@@ -221,11 +229,11 @@ class AbstractCanvas {
         
     }
     wheel(e){
-        var delta = event.deltaY
+        var delta = event.deltaY > 0 ? 1 : -1
 
         var magnification = this.camera.getMagnification()
         
-        this.camera.setMagnification(magnification / (1 + delta * 0.01 ))
+        this.camera.setMagnification(magnification * Math.pow(0.5,delta))
         
         actualizeBottomWithCoords(this.camera, this.bounds)
         this.draw()
@@ -387,6 +395,7 @@ class AbstractCanvas {
                     this.drawLayerData(topLayer, data.features[i], points, degreeBounds)
                 }
                 break
+            case "TempFeature":
             case "Feature":
                 this.setStyleToFeature(topLayer,data)
                 if(data.originaldata === topLayer.selectedFeature)
@@ -799,16 +808,18 @@ function init(){
     let canvasElement = document.getElementById("canv")
     let canvasElement2 = document.getElementById("canv2")
     let canvas
+    let timeControl = new TimeControl("global-time",true)
     let layerpanel = new LayerPanel({
         element: "leftpanelcontent",
         editToolbar: "edit-layer-buttons",
         editFeatureToolbar: "edit-feature-buttons",
-        canvas: canvas,
+        editFeatureTimeToolbar: "edit-feature-time-buttons",
+        canvas: canvas
     })
     if(false && detectWebGL()){
-        canvas = new WebGLCanvas(canvasElement,stageDiv,layerpanel,canvasElement2)
+        canvas = new WebGLCanvas(canvasElement,stageDiv,layerpanel,canvasElement2,timeControl)
     } else {
-        canvas = new TwoDCanvas(canvasElement,stageDiv,layerpanel,canvasElement2)
+        canvas = new TwoDCanvas(canvasElement,stageDiv,layerpanel,canvasElement2,timeControl)
     }
     let movlist = new Controller(canvas);
     
