@@ -20,6 +20,8 @@ html,body {color:white;background-color:black;font-family:Courier;width:100%; he
     #canv {border:1px solid white;width:100vh;height:100vh;display:inline-block;float:left}
     #panel {border:1px solid white;width:20vh;height:100vh;display:inline-block;float:left}
 }
+#averagediv{font-size:10pt}
+hr {border:0px, background-color:white;margin:2px;height:2px}
 </style>
 <script>
 	
@@ -38,6 +40,8 @@ class Human{
         this.travel = 3
         this.seatravel = 0
         
+        this.willToProcreate = 4
+        
         this.red = 150
         this.green = 150
         this.blue = 150
@@ -46,7 +50,6 @@ class Human{
         this.dead = 0
         this.owned = true   //potentially
         
-        this.willToProcreate = 0.25
     }
     mutate(a,b,max,min,mutationRate,disadvantage){
         if(min == undefined)
@@ -62,14 +65,15 @@ class Human{
     replicate(another){
         var newHuman = new Human(this.x,this.y,this.parent)
         
-        newHuman.attack = this.mutate(this.attack,another.attack,15,1,1,1.1)
-        newHuman.defence = this.mutate(this.defence,another.defence,8,0,1,1.1)
-        newHuman.aggression = this.mutate(this.aggression,another.aggression,15,1,2,0.9)
-        newHuman.tribalism = this.mutate(this.tribalism,another.tribalism,15,1,2,0.9)
+        newHuman.attack = this.mutate(this.attack,another.attack,150,1,2,1.1)
+        newHuman.defence = this.mutate(this.defence,another.defence,80,0,1,1.1)
+        newHuman.aggression = this.mutate(this.aggression,another.aggression,15,1,2,1)
+        newHuman.tribalism = this.mutate(this.tribalism,another.tribalism,15,1,2,1)
         
-        newHuman.willToTravel = this.mutate(this.willToTravel,another.willToTravel,10,1,1,1.2)
-        newHuman.travel = this.mutate(this.travel,another.travel,10,3,1,1.1)
-        newHuman.seatravel = this.mutate(this.seatravel,another.seatravel,10,0,2,1.1)
+        newHuman.willToTravel = this.mutate(this.willToTravel,another.willToTravel,10,1,1,1.1)
+        newHuman.travel = this.mutate(this.travel,another.travel,12,3,1,1.1)
+        newHuman.seatravel = this.mutate(this.seatravel,another.seatravel,12,0,2,1.1)
+        newHuman.willToProcreate = this.mutate(this.willToTravel,another.willToTravel,8,1,1,1.1)
         
         newHuman.red = this.mutate(this.red,another.red,230,50,10)
         newHuman.green = this.mutate(this.green,another.green,230,50,10)
@@ -85,7 +89,7 @@ class Human{
             this.owned = false
         } else {
            if(Math.random() < this.aggression/15){
-                var ne = this.parent.getLandNeighbors(this.x,this.y,5)
+                var ne = this.parent.getLandNeighbors(this.x,this.y,3)
                 var part = ne.map(x=>x.people).reduce((a,b)=>a.concat(b),[]).filter(x=>!this.good(x) && x != this)
                 
                 if(part.length > 0){
@@ -96,7 +100,7 @@ class Human{
                 }
             }
             if(Math.random() < this.willToTravel/15){
-                var ne = this.parent.getLandNeighbors(this.x,this.y,this.travel)
+                var ne = this.parent.getLandNeighbors(this.x,this.y,this.travel,true)
                 var nea = this.parent.getNeighbors(this.x,this.y,this.seatravel).filter(x=>x.land)
                 var nen = ne.concat(nea).filter(x=>x.people.length <= 1)
                 nen = Array.from(new Set(nen))
@@ -105,9 +109,9 @@ class Human{
                 var choosenLand = nen[Math.floor(nen.length*Math.random())]
                 this.moveToSquare(choosenLand.x,choosenLand.y)
 
-            } else if(Math.random() < this.willToProcreate){
+            } else if(this.age > 5 && Math.random() < this.willToProcreate/16){
                 var ne = this.parent.getLandNeighbors(this.x,this.y,5)
-                var part = ne.map(x=>x.people).reduce((a,b)=>a.concat(b),[]).filter(x=>x!=this)
+                var part = ne.map(x=>x.people).reduce((a,b)=>a.concat(b),[]).filter(x=>x!=this && x.age > 5)
                 if(part.length > 0 && part.length <= 5){
                     part = part.filter(x => !x.dead && this.good(x))
                     if(part.length > 0){
@@ -119,7 +123,13 @@ class Human{
                         }
                     }
                 }
-            }
+            }/*
+            var ne = this.parent.getLandNeighbors(this.x,this.y,3)
+            for(var i in ne){
+                if(ne[i].people.length == 0){
+                    ne[i].color = RGB2HTML(this.red,this.green,this.blue)
+                }
+            }*/
         }
     }
     moveToSquare(x,y){
@@ -150,7 +160,7 @@ class Human{
         
         this.parent.ctx.font = '10px sans-serif'
         this.parent.ctx.fillStyle = '#fff'
-       // this.parent.ctx.fillText(this.attack+','+this.defence,(this.x-0.3)*sqWidth,(this.y+1)*sqWidth)
+        //this.parent.ctx.fillText(this.attack+','+this.defence,(this.x-0.3)*sqWidth,(this.y+1)*sqWidth)
         
 
     }
@@ -160,8 +170,9 @@ class Human{
         var sqWidth = 1000/this.parent.boardSize
         var sqWidth2 = sqWidth*1.8
         this.parent.ctx.strokeStyle = '#f00'
-        this.parent.ctx.strokeWidth = 4
+        this.parent.ctx.lineWidth = 4
         this.parent.ctx.strokeRect(this.x*sqWidth+(sqWidth-sqWidth2)/2,this.y*sqWidth+(sqWidth-sqWidth2)/2,sqWidth2,sqWidth2)
+        this.parent.ctx.lineWidth = 1
         
     }
 }
@@ -176,6 +187,8 @@ class Square{
         this.y = y
         this.parent = parent
         
+        this.color = null
+        
         this.land = false
         
         this.people = []
@@ -185,7 +198,7 @@ class Square{
         if(this.land){
             //this.parent.ctx.strokeStyle = '#aaa'
             //this.parent.ctx.strokeRect(this.x*sqWidth,this.y*sqWidth,sqWidth,sqWidth)
-            this.parent.ctx.fillStyle = '#888'
+            this.parent.ctx.fillStyle = this.color == null ? '#aaa' : this.color
             this.parent.ctx.fillRect(this.x*sqWidth,this.y*sqWidth,sqWidth+1,sqWidth+1)
         }
     }
@@ -200,6 +213,8 @@ class Controller {
         this.canvas = document.getElementById("canv")
         this.gobutton = document.getElementById("gobutton")
         this.nextbutton = document.getElementById("nextbutton")
+        this.restartbutton = document.getElementById("restartbutton")
+        this.averagediv = document.getElementById("averagediv")
         this.generation = 0
         this.going = false
         
@@ -207,13 +222,22 @@ class Controller {
         
         this.gobutton.onclick = () => {th.setGoing()}
         this.nextbutton.onclick = () => {th.move()}
+        this.restartbutton.onclick = () => {th.restart()}
+        
+        this.boardSize = 150
+        this.landWaterRatio = 0.56
+        this.sizeOfLands = 7
+        this.smoothingOfLand = 2
         
         this.prepareBoard()
-        
         this.prepareHumans()
         
         this.loop()
         this.draw()
+    }
+    restart(){
+        this.prepareBoard()
+        this.prepareHumans()
     }
     setGoing(){
         this.going = !this.going
@@ -231,10 +255,21 @@ class Controller {
         
         this.draw()
         this.people = this.people.filter(x => x.dead == 0)
+        this.fillAverageDiv()
+    }
+    fillAverageDiv(){
+        this.averagediv.innerHTML = ''
+            +'population: '+this.people.length+'<br/>'
+            +'average att: '+Math.round(this.people.map(x=>x.attack).reduce((a,b)=>a+b,0)/this.people.length)+'<br/>'
+            +'average def: '+Math.round(this.people.map(x=>x.defence).reduce((a,b)=>a+b,0)/this.people.length)+'<br/>'
+            +'average aggr: '+Math.round(this.people.map(x=>x.aggression).reduce((a,b)=>a+b,0)/this.people.length)+'<br/>'
+            +'average trib: '+Math.round(this.people.map(x=>x.tribalism).reduce((a,b)=>a+b,0)/this.people.length)+'<br/>'
+            +'average trav: '+Math.round(this.people.map(x=>x.willToTravel).reduce((a,b)=>a+b,0)/this.people.length)+'<br/>'
+            +'average speed: '+Math.round(this.people.map(x=>x.travel).reduce((a,b)=>a+b,0)/this.people.length)+'<br/>'
+            +'average sea: '+Math.round(this.people.map(x=>x.seatravel).reduce((a,b)=>a+b,0)/this.people.length)+'<br/>'
+            +'average procr: '+Math.round(this.people.map(x=>x.willToProcreate).reduce((a,b)=>a+b,0)/this.people.length)+'<br/>'
     }
     prepareBoard(){
-        this.boardSize = 150
-        this.landWaterRatio = 0.55
         
         this.board = []
         for(var i = 0;i<this.boardSize;i++){
@@ -246,8 +281,8 @@ class Controller {
             }
         }
         
-        this.smoothBoard(6)
-        this.smoothBoard(3)
+        this.smoothBoard(this.sizeOfLands)
+        this.smoothBoard(this.smoothingOfLand)
     }
     smoothBoard(neighbors){
         var tempBoard = []
@@ -275,14 +310,14 @@ class Controller {
         }
         return neighbors
     }
-    getLandNeighbors(x,y,d){
+    getLandNeighbors(x,y,d,checkIfSomeoneHere){
         var search = [this.board[x][y]]
         var newsearch = []
         var found = search.slice()  //copy
         for(var i = 0;i<d;i++){
             for(var j in search){
                 var b = search[j]
-                var ne = this.getNeighbors(b.x,b.y,1).filter(z=>z.land && found.indexOf(z) == -1)
+                var ne = this.getNeighbors(b.x,b.y,1).filter(z=>z.land && found.indexOf(z) == -1 && (checkIfSomeoneHere != true || z.people.length == 0))
                 newsearch = newsearch.concat(ne)
                 found = found.concat(ne)
             }
@@ -329,6 +364,7 @@ class Controller {
         for(var i = 0;i<this.boardSize;i++){
             for(var j = 0;j<this.boardSize;j++){
                 this.board[i][j].people = []
+                this.board[i][j].color = null
             }
         }
         for(var i in this.people){
@@ -354,10 +390,14 @@ function init(){
 <canvas id="canv" width="1000" height="1000">
 </canvas>
 <div id="panel">
-aaaaaaaaaaa
+MULTIKULTI/RACISM SIMULATOR
 <br/>
 <input type="button" id="gobutton" value="GO">
 <input type="button" id="nextbutton" value="NEXT STEP">
+<br/>
+<input type="button" id="restartbutton" value="RESTART">
+<hr/>
+<div id="averagediv"></div>
 </div>
 </div>
 <script>
