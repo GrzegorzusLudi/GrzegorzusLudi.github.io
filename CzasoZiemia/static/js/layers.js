@@ -217,7 +217,83 @@ class LayerPanel {
         else
             resolution = this.lastresolution
             
-        this.mapLayerToRendered(layer.data,layer.rendered,bounds,resolution)
+        var featuresGroupedByIds = {}
+        var ungroupedFeatures = []
+        this.mapLayerToRendered(layer.data,layer.rendered,bounds,resolution,featuresGroupedByIds,ungroupedFeatures)
+        if(this.isSpatiotemporal(layer)){
+            layer.rendered.features = this.aggregateFeatures(featuresGroupedByIds,ungroupedFeatures)
+        }
+    }
+    aggregateFeatures(featuresGroupedByIds,ungroupedFeatures){
+        var newRendered = []
+        for(var id in featuresGroupedByIds){
+            if(this.editing != null && this.editing.selectedFeature != null && id == this.editing.selectedFeature.id){
+                newRendered = newRendered.concat(featuresGroupedByIds[id])
+                continue
+            }
+            var features = featuresGroupedByIds[id].concat(ungroupedFeatures)
+
+            var newF = features.filter(x => x.operation == 'NEW')
+            var firstFeature
+            if(newF.length == 0){
+                features.sort((a,b) => a.timebox_from-b.timebox_from)
+                firstFeature = features[0]
+                features = features.slice(1)
+            } else {
+                firstFeature = newF[0]
+                features = features.filter(x=>x.operation != 'NEW')
+                features.sort((a,b) => a.timebox_from-b.timebox_from)
+            }
+            firstFeature.type = "Feature"
+            for(var i=0;i<features.length;i++){
+                var feature = features[i]
+                feature.type = "Feature"
+                var newGeom = null
+                if(!this.validPolygon(feature))
+                    continue
+                switch(feature.operation){
+                    case 'UNION':
+                        newGeom = turf.union(firstFeature,feature)
+                        break
+                    case 'DIFF':
+                        newGeom = turf.difference(firstFeature,feature)
+                        break
+                    case 'INTERSECT':
+                        newGeom = turf.intersect(firstFeature,feature)
+                        break
+                    case 'UNION_ALL_FEATURES':
+                        if(feature.id == firstFeature.id){
+                            newGeom = turf.union(firstFeature,feature)
+                        } else {
+                            newGeom = turf.difference(firstFeature,feature)
+                        }
+                        break
+                }
+                feature.type = "TempFeature"
+                if(newGeom == null)
+                    continue
+                firstFeature.geometry = newGeom.geometry
+            }
+            firstFeature.type = "TempFeature"
+            newRendered.push(firstFeature)
+        }
+        return newRendered
+    }
+    validPolygon(feature){
+        if(feature == null)
+            return false
+        if(feature.geometry.type == 'Polygon'){
+            if(feature.geometry.coordinates[0].length < 3)
+                return false
+        } else if(feature.geometry.type == 'MultiPolygon'){
+            for(var i in feature.geometry.coordinates){
+                var poly = feature.geometry.coordinates[i][0]
+                if(poly != undefined && poly.length >= 3)
+                    return true
+            }
+            return false
+        }
+        return true
     }
     
     checkBounds(coordsx, coordsy, bounds){
@@ -250,9 +326,13 @@ class LayerPanel {
                 return this.padDate(date1).localeCompare(this.padDate(date2))
             }
         }*/
+        if(date1 == "")
+            return -1
+            
+        if(date2 == "")
+            return -1
         var czdate1 = new CzDate(date1), czdate2 = new CzDate(date2)
                 
-        console.log(date1,date2)
         if(czdate1.year == czdate2.year && czdate1.month == czdate2.month && czdate1.day == czdate2.day)
             return 0
             
@@ -266,7 +346,7 @@ class LayerPanel {
         return (!('timebox_to' in feature) || feature.timebox_to == '' || this.compareDates(feature.timebox_to,this.globalDate) > -1) && (!('timebox_from' in feature) || feature.timebox_from == '' || this.compareDates(feature.timebox_from,this.globalDate) < 1)
     }
     
-    mapLayerToRendered(layer,rendered,bounds,resolution){
+    mapLayerToRendered(layer,rendered,bounds,resolution,featuresGroupedByIds,ungroupedFeatures){
         var lastPositionx = null, lastPositiony = null, penultimalPositionx = null, penultimalPositiony = null, notinbounds = null
         for(var property in layer){
             var value = layer[property]
@@ -274,7 +354,7 @@ class LayerPanel {
                 if(layer instanceof Array && "resolution" in value && value.resolution<resolution*4){
                     break
                 }
-                if("bbox" in value && (
+                if((!("operation" in value) || (value.operation != 'INTERSECT' || value.operation != 'NEW')) && "bbox" in value && (
                     value.bbox[0] > bounds.right || 
                     value.bbox[1] > bounds.bottom || 
                     value.bbox[2] < bounds.left || 
@@ -288,7 +368,24 @@ class LayerPanel {
                     
                 var newObject = {}
                 rendered[property] = newObject
-                this.mapLayerToRendered(value,newObject,bounds,resolution)
+                if(value.type == "TempFeature"){
+                    switch(value.operation){
+                        case "NEW":
+                        case "DIFF":
+                        case "INTERSECT":
+                        case "UNION":
+                            if(featuresGroupedByIds[value.id] == undefined)
+                                featuresGroupedByIds[value.id] = []
+                            featuresGroupedByIds[value.id].push(newObject)
+                            break
+                        case "UNION_ALL_FEATURES":
+                            if(featuresGroupedByIds[value.id] == undefined)
+                                featuresGroupedByIds[value.id] = []
+                            ungroupedFeatures.push(newObject)
+                            break
+                    }
+                }
+                this.mapLayerToRendered(value,newObject,bounds,resolution,featuresGroupedByIds,ungroupedFeatures)
             } else if(layer instanceof Array && value instanceof Array && value.length > 0 && typeof value[0] == "number"){
                 
                 var posx = Math.min(Math.max(value[0], bounds.left), bounds.right)
@@ -329,7 +426,7 @@ class LayerPanel {
                 }
                 var newObject = []
                 rendered[property] = newObject
-                this.mapLayerToRendered(value,newObject,bounds,resolution)
+                this.mapLayerToRendered(value,newObject,bounds,resolution,featuresGroupedByIds,ungroupedFeatures)
             } else {
                 rendered[property] = value
                 
@@ -409,8 +506,20 @@ class LayerPanel {
         this.updateLayerView(this.layers)
     }
     
-    saveEditingLayer(e,layerName,layerTreeElement){
-        
+    determineExtension(layer){
+        var layerName = layer.name
+        if(layerName.split('.').pop() == layer.type)
+            return layerName
+        return layerName + '.' + layer.type
+    }
+    saveEditingLayer(e,layer){
+        var content = JSON.stringify(layer.originaldata)
+        var fileName = this.determineExtension(layer)
+        var a = document.createElement("a");
+        var file = new Blob([content], {type: 'text/plain'});
+        a.href = URL.createObjectURL(file);
+        a.download = fileName;
+        a.click();
     }
     
     addWholeLinesChange(){
@@ -474,7 +583,7 @@ class LayerPanel {
                     document.getElementById('edit-layer-'+i).onclick = (e)=>{th.startEditingLayer(e,name,newNode)}
             } else {
                 document.getElementById('dont-edit-layer-'+i).onclick = (e)=>{th.stopEditingLayer(e,name,newNode)}
-                document.getElementById('save-layer-'+i).onclick = (e)=>{th.saveEditingLayer(e,name,newNode)}                
+                document.getElementById('save-layer-'+i).onclick = (e)=>{th.saveEditingLayer(e,layer)}                
             }
             document.getElementById('button-layer-properties-'+i).onclick = (e)=>{th.layerProperties(e,name,newNode,layer)}
             
@@ -542,6 +651,11 @@ class LayerPanel {
                 operateFeatureToLayerButton.onclick = (e)=>{th.operationOnLayer(e);e.preventDefault()}
                 
                 
+                var addTimeVersionButton = document.getElementById('add-time-version')
+                addTimeVersionButton.onclick = (e)=>{th.startAddingShape("Polygon","time");e.preventDefault()}
+                addTimeVersionButton.style.border = this.addingAction == "time" ? "2px solid yellow" : ""
+                
+                
             } else {
                 this.layerOperationDialogWindow.action(null,false,null)
             }
@@ -581,9 +695,16 @@ class LayerPanel {
         
     }
     
+    actionResultingInOperation(action){
+        return action != null && action != "time"
+    }
     startAddingShape(shape,action){
         this.addingAction = action ? action : null
-        if(action != null){
+        if(action == 'time'){
+            this.addingFeatureId = this.editing.selectedFeature.id
+        }
+            
+        if(this.actionResultingInOperation(action)){
             this.editing.previouslySelectedFeature = this.editing.selectedFeature
         } else {
             this.editing.previouslySelectedFeature = null
@@ -596,24 +717,25 @@ class LayerPanel {
             this.reverseAddingDrawing = false
             this.addingDrawingType = shape
             //if(this.editing.selectedFeature == null){newCoords
-                var coords
-                switch(shape){
-                    case "Polygon":
-                        var coords = [[]]
-                        break
-                    case "LineString":
-                    case "Point":
-                        var coords = []
-                        break
-                }
-                var newFeature
-                
-                if(this.isSpatiotemporal(this.editing)){
-                    newFeature = {type:"TempFeature",id:null,operation:"NEW",from:"",to:"",geometry:{type:shape,coordinates:coords},properties:{},adding:true}
-                } else {
-                    newFeature = {type:"Feature",geometry:{type:shape,coordinates:coords},properties:{},adding:true}
-                }
-                this.editing.selectedFeature = newFeature
+            var coords
+            switch(shape){
+                case "Polygon":
+                    var coords = [[]]
+                    break
+                case "LineString":
+                case "Point":
+                    var coords = []
+                    break
+            }
+            var newFeature
+            
+            if(this.isSpatiotemporal(this.editing)){
+                var id = action == 'time' ? this.addingFeatureId : null
+                newFeature = {type:"TempFeature",id:id,operation:"NEW",from:"",to:"",geometry:{type:shape,coordinates:coords},properties:{},adding:true}
+            } else {
+                newFeature = {type:"Feature",geometry:{type:shape,coordinates:coords},properties:{},adding:true}
+            }
+            this.editing.selectedFeature = newFeature
             //}
             switch(shape){
                 case "Polygon":
@@ -625,7 +747,7 @@ class LayerPanel {
                     break
             }
         } else {
-            this.stopAddingShape()
+            //this.stopAddingShape()
         }
         this.updateLayerView(this.layers)
     }
@@ -670,8 +792,11 @@ class LayerPanel {
         this.updateLayer(this.editing,this.editing.originaldata,true)
     }
     
+    detectUpdate(){
+        return this.editing.selectedFeature != null && (this.lastShapeDrawing == null || this.lastShapeDrawing.length > 0)
+    }
     stopAddingShape(){
-        var update = this.editing.selectedFeature != null && (this.lastShapeDrawing == null || this.lastShapeDrawing.length > 0)
+        var update = this.detectUpdate()
         if(update && (this.editing.selectedFeature == null || this.editing.selectedFeature.adding)){
             var newFeature
             switch(this.addingDrawingType){
@@ -683,12 +808,13 @@ class LayerPanel {
             }
             
             var temp = this.editing.selectedFeature.type == "TempFeature"
-            if(temp && this.addingAction != null){
+            if(temp && this.actionResultingInOperation(this.addingAction)){
                 this.editing.selectedFeature.type = "Feature"
                 this.editing.previouslySelectedFeature.type = "Feature"
             }
             switch(this.addingAction){
                 case null:
+                case "time":
                     this.editing.originaldata.features.push(newFeature)
                     delete this.editing.selectedFeature['adding']
                     this.editing.selectedFeature = null
@@ -706,7 +832,7 @@ class LayerPanel {
                     this.editing.previouslySelectedFeature = null
                     break
             }
-            if(temp && this.addingAction != null){
+            if(temp && this.actionResultingInOperation(this.addingAction)){
                 this.editing.selectedFeature.type = "TempFeature"
             }
         }
@@ -734,6 +860,10 @@ class LayerPanel {
         if(temp){
             this.editing.selectedFeature.type = "Feature"
         }
+        var temp2 = newFeature.type == "TempFeature"
+        if(temp2){
+            newFeature.type = "Feature"
+        }
         var newGeom
         switch(operationType){
             case "add":
@@ -749,6 +879,9 @@ class LayerPanel {
         if(temp){
             this.editing.selectedFeature.type = "TempFeature"
         }
+        if(temp2){
+            newFeature.type = "TempFeature"
+        }
         this.editing.selectedFeature.geometry = newGeom.geometry
         this.stopAddingShape()
         this.updateLayer(this.editing,this.editing.scheme)
@@ -759,6 +892,30 @@ class LayerPanel {
         point[1] = lat
         
         this.updateLayer(this.editing,this.editing.originaldata,true)
+    }
+    
+    groupFeaturesByIds(collection){
+        var grouped = {}
+        var ungrouped = []
+
+        var collection = collection.slice().sort((a,b)=>(a.id-b.id))
+        
+        for(var i in collection){
+            var feature = collection[i]
+            
+            var id = feature.id
+            if(id == undefined){
+                ungrouped.push(feature)
+            } else {
+                if(grouped[id] == undefined)
+                    grouped[id] = []
+                grouped[id].push(feature)
+            }
+        }
+        for(var i in grouped){
+            grouped[i].sort((a,b)=>this.compareDates(a.from,b.from))
+        }
+        return {grouped: grouped, ungrouped: ungrouped}
     }
     
     showLayerFeatures(layer, layerNode, layerId){
@@ -778,47 +935,73 @@ class LayerPanel {
             subnodes.style.borderLeft = "1px solid gray"
             subnodes.style.paddingLeft = "3px"
             
-            for(var i in collection){
-                var feature = collection[i]
-                var newNode = document.createElement("div")
-                var fname = feature['id'] != null ? feature['id'] : feature['properties']['name'] == null ? "<i>child-"+i+"</i>" : feature['properties']['name']
-                var ftime = ""
-                if(feature.type == "TempFeature" && (feature.from != '' && feature.to != '')){
-                    ftime = `<div class="time-span">(${feature.from} - ${feature.to})</div>`
+            collection = this.groupFeaturesByIds(collection)
+            
+            for(var i in collection.grouped){
+                var tempFeatures = collection.grouped[i]
+                this.renderItemVersions(tempFeatures,subnodes,layerId,i,t)
+            }
+            for(var i in collection.ungrouped){
+                var feature = collection.ungrouped[i]
+                this.renderItemVersions([feature],subnodes,layerId,i,t)
+            }
+        }
+    }
+    
+    renderItemVersions(features,subnodes,layerId,i,t){
+        var firstFeature = features[0]
+        var newNode = document.createElement("div")
+        var fname = firstFeature['id'] != null ? firstFeature['id'] : firstFeature['properties']['name'] == null ? "<i>child-"+id+"</i>" : firstFeature['properties']['name']
+
+        newNode.innerHTML = `<div>${firstFeature["type"]} : ${fname}</div>`
+
+        subnodes.append(newNode)
+
+        for(var j in features){
+            var feature = features[j]
+            var id = i+'-'+j
+            
+            var newNode = document.createElement("div")
+            var fname = feature['id'] != null ? feature['id'] : feature['properties']['name'] == null ? "<i>child-"+id+"</i>" : feature['properties']['name']
+            var ftime = ""
+            if(feature.type == "TempFeature"){
+                var t_from = feature.from == null ? "-∞" : feature.from
+                var t_to = feature.to == null ? "∞" : feature.to
+                ftime = `<div class="time-span">(${feature.from} - ${feature.to})</div>`
+            }
+            var version_name = feature.type == "TempFeature" ? '[version-'+j+'] : ' + feature.operation : '[select]'
+            newNode.innerHTML = `<div><span id="edit-feature-${layerId}-${id}" class="edit-version-text">${version_name}</span>${ftime}</div>`
+            if(feature == this.editing.selectedFeature){
+                newNode.style.color = "#dd0000"
+                var description = document.createElement("div")
+                newNode.appendChild(description)
+                description.style.marginLeft = "3px"
+                description.style.borderLeft = "1px solid gray"
+                description.style.paddingLeft = "3px"
+                description.innerHTML = ""
+                if("geometry" in feature){
+                    description.innerHTML += `Type : ${feature['geometry']['type']}<br/>`
                 }
-                newNode.innerHTML = `<div><span id="edit-feature-${layerId}-${i}">${feature["type"]} : ${fname}</span>${ftime}</div>`
-                if(feature == this.editing.selectedFeature){
-                    newNode.style.color = "#dd0000"
-                    var description = document.createElement("div")
-                    newNode.appendChild(description)
-                    description.style.marginLeft = "3px"
-                    description.style.borderLeft = "1px solid gray"
-                    description.style.paddingLeft = "3px"
-                    description.innerHTML = ""
-                    if("geometry" in feature){
-                        description.innerHTML += `Type : ${feature['geometry']['type']}<br/>`
-                    }
-                    description.innerHTML += `Properties:<a href="#"><img src="static/img/feature-properties.png" id="edit-properties-${layerId}-${i}" /></a>`
-                    for(var prop in feature["properties"]){
-                        description.innerHTML += `<div>${prop} : ${feature["properties"][prop]}</div>`
-                    }
+                description.innerHTML += `Properties:<a href="#"><img src="static/img/feature-properties.png" id="edit-properties-${layerId}-${id}" /></a>`
+                for(var prop in feature["properties"]){
+                    description.innerHTML += `<div>${prop} : ${feature["properties"][prop]}</div>`
                 }
-                this.showLayerFeatures(feature, newNode)
-                subnodes.append(newNode)
-                let ff = feature
-                document.getElementById("edit-feature-"+layerId+"-"+i).onclick = (e)=>{
-                    t.editing.selectedFeature = ff
-                    t.lastPointDrawing = null
-                    t.addingDrawing = false
-                    t.updateLayer(t.editing,t.editing.originaldata,true)
-                    t.updateLayerView(t.layers)
+            }
+            this.showLayerFeatures(feature, newNode)
+            subnodes.append(newNode)
+            let ff = feature
+            document.getElementById("edit-feature-"+layerId+"-"+id).onclick = (e)=>{
+                t.editing.selectedFeature = ff
+                t.lastPointDrawing = null
+                t.addingDrawing = false
+                t.updateLayer(t.editing,t.editing.originaldata,true)
+                t.updateLayerView(t.layers)
+            }
+            if(feature == this.editing.selectedFeature){
+                document.getElementById("edit-properties-"+layerId+"-"+id).onclick = (e)=>{
+                    t.propertiesDialogWindow.action(e,true,this.editing.selectedFeature,this.editing.scheme)
                 }
-                if(feature == this.editing.selectedFeature){
-                    document.getElementById("edit-properties-"+layerId+"-"+i).onclick = (e)=>{
-                        t.propertiesDialogWindow.action(e,true,this.editing.selectedFeature,this.editing.scheme)
-                    }
-                    this.element.scrollTop = newNode.offsetTop + this.element.getBoundingClientRect().height/2
-                }
+                this.element.scrollTop = newNode.offsetTop + this.element.getBoundingClientRect().height/2
             }
         }
     }
@@ -984,13 +1167,67 @@ class LayerPanel {
                         var features = dividedByIds[id]
                         
                         features = features.sort((a,b)=>(a.from-b.from))
+                        var newDates = []
                         for(var i in features){
                             var feature = features[i]
                             switch(feature.operation){
                                 case "NEW":
+                                    if(feature.from != "")
+                                        newDates.push(feature.from)
+
+                                case "UNION":
+                                case "UNION_ALL_FEATURES":
+                                case "DIFF":
+                                case "INTERSECT":
                                     feature.timebox_from = feature.from
                                     feature.timebox_to = feature.to
                                     break
+                            }
+                        }
+                        newDates = Array.from(new Set(newDates)).sort((a,b)=>this.compareDates(a.from,b.from))
+                        
+                        newDates = [""].concat(newDates)
+                        for(var i in features){
+                            var feature = features[i]
+                            switch(feature.operation){
+                                case "NEW":
+                                case "UNION":
+                                case "UNION_ALL_FEATURES":
+                                case "DIFF":
+                                case "INTERSECT":
+                                    var ndi = 0
+                                    for(var j = newDates.length-1;j>=0;j--){
+                                        if(this.compareDates(newDates[j],feature.from) <= 0){
+                                            ndi = j
+                                            break
+                                        }
+                                    }
+                                    var fromBox = newDates[ndi]
+                                    var toBox = ndi < newDates.length-1 ? newDates[ndi+1] : ""
+                                    if(toBox != ""){
+                                        var ncd = (new CzDate(toBox))
+                                        ncd.addDay(-1)
+                                        toBox = ncd.code()
+                                    }
+
+                                    if(this.compareDates(feature.timebox_from,fromBox) == -1 && fromBox != "")
+                                        feature.timebox_from = fromBox
+                                    if(this.compareDates(toBox,feature.timebox_to) == -1 && toBox != "")
+                                        feature.timebox_to = toBox
+                                        
+                                    break
+                            }
+                        }
+                        if(features.length > 0){
+                            var firstProperties = features[0].properties
+                            for(var i = 1;i<features.length;i++){
+                                var props = features[i].properties
+                                for(var j in props){
+                                    firstProperties[j] = props[j]
+                                }
+                            }
+                            for(var i = 1;i<features.length;i++){
+                                features[i].properties = firstProperties
                             }
                         }
                     }
@@ -1421,9 +1658,9 @@ class LayerPanel {
                         
                         if(this.lastPointDrawing != null && this.checkPointsOfCoords(this.lastPointDrawing,lon,lat,pixelDifference,magnification)){
                             var feature = this.editing.selectedFeature
-                            var adding = this.addingAction != null
+                            var adding = this.actionResultingInOperation(this.addingAction)
                             this.stopAddingShape()
-                            if(!adding)
+                            if(!adding && !this.detectUpdate())
                                 this.propertiesDialogWindow.action(null,true,feature,this.editing.scheme)
                             return true
                         }
@@ -1484,7 +1721,7 @@ class LayerPanel {
             } else if(this.operationOnShapes){
                 
                 var selectedFeature = this.allLayersHitTest(lon,lat,degreeBounds,pixelDifference,magnification)
-                if(selectedFeature != null)
+                if(selectedFeature != null && ['Polygon','MultiPolygon'].indexOf(selectedFeature.geometry.type) > -1)
                     this.operateShapeToSelect(this.operationOnShapesType,selectedFeature)
                 /*
                 var previousEditing = this.editing.selectedFeature

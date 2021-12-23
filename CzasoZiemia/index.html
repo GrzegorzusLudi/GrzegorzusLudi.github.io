@@ -194,14 +194,18 @@
                 </td>
                 <td>
                 <select id="feature-temp-operation-type">
-                    <option value="new" name="new">NEW</option>
-                    <option value="union_all" name="union_all">UNION_ALL_FEATURES</option>
-                    <option value="diff_all" name="diff_all">DIFF_ALL_FEATURES</option>
-                    <option value="intersect_all" name="intersect_all">INTERSECT_ALL_FEATURES</option>
-                    <option value="union" name="union">UNION</option>
-                    <option value="diff" name="diff">DIFF</option>
-                    <option value="intersect" name="intersect">INTERSECT</option>
+                    <option value="NEW" name="NEW">NEW</option>
+                    <option value="UNION_ALL_FEATURES" name="UNION_ALL_FEATURES">UNION_ALL_FEATURES</option>
+                    <option value="UNION" name="UNION">UNION</option>
+                    <option value="DIFF" name="DIFF">DIFF</option>
+                    <option value="INTERSECT" name="INTERSECT">INTERSECT</option>
                 </select>
+                <!--
+                algorithm(date):
+                1. sort everything by from date
+                2. get first NEW feature before date
+                3. add to this feature all operations with from after NEW and to before date
+                -->
                 </td>
                 </tr>
                 
@@ -224,8 +228,13 @@
                 <td>
                     Values:
                 </td>
+                <td>
+                    NULL?:
+                </td>
                 </tr>
                 <tr>
+                <td>
+                </td>
                 <td>
                     [-]
                 </td>
@@ -237,6 +246,8 @@
                 </td>
                 <td>
                     <textarea class="table-input" id="property-value-1" cols="40" rows="1"></textarea>
+                </td>
+                <td>
                 </td>
                 </tr>
                 <tr>
@@ -252,6 +263,8 @@
                 <td>
                     <textarea class="table-input" id="property-value-2" cols="40" rows="1"></textarea>
                 </td>
+                <td>
+                </td>
                 </tr>
                 <tr>
                 <td>
@@ -259,6 +272,8 @@
                 </td>
                 <td>
                     <input type="text" class="table-input" id="property-column-add" />
+                </td>
+                <td>
                 </td>
                 <td>
                 </td>

@@ -66,6 +66,7 @@ class LayerDialogWindow extends DialogWindow {
     }
     determineType(data, filename){
         var datatypes = {
+            '.tempgeojson': 'tempgeojson',
             '.geojson': 'geojson',
             '.json': 'geojson',
         }
@@ -364,34 +365,43 @@ class PropertyDialogWindow extends DialogWindow {
                 alert("All features in tempgeojson must have ids.")
                 return
             }
-            for(var i in selectedLayer.features){
-                if(selectedLayer.features[i].id == newid && selectedLayer.features[i] != feature){
-                    alert("A feature with id '"+newid+"' already exists.")
-                    return
+            if(this.lastFeatureId == null){
+                for(var i in selectedLayer.features){
+                    if(selectedLayer.features[i].id == newid && selectedLayer.features[i] != feature){
+                        alert("A feature with id '"+newid+"' already exists.")
+                        return
+                    }
                 }
+            } else {
+                //TODO: lock ID field
             }
             this.feature.id = newid
             var opt = document.getElementById('feature-temp-operation-type')
-            this.feature.option = opt.options[opt.selectedIndex].value
+            this.feature.operation = opt.options[opt.selectedIndex].value
             
             var lastFrom = this.feature.from, lastTo = this.feature.to
             
             this.feature.from = this.fromTime.getDate()
             this.feature.to = this.toTime.getDate()
             
-            if(lastFrom != this.feature.from || lastTo != this.feature.to)
-                this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme)
+            //if(lastFrom != this.feature.from || lastTo != this.feature.to)
+            //    this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme)
         }
         var i = 1
         for(var ix in scheme){
             var key = scheme[ix]
             var value = document.getElementById('property-value-'+i).value
             
-            if(value != '' || key in feature.properties){
+            if(document.getElementById('property-column-empty-checkbox-'+i).checked){
+                delete feature.properties[key]
+            } else if(value != '' || key in feature.properties){
                 feature.properties[key] = value
             }
             i++
         }
+        
+        if(this.layerPanel.isSpatiotemporal(this.layerPanel.editing))
+            this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme)
         this.action(null, false)
     }
     addColumn(){
@@ -418,9 +428,11 @@ class PropertyDialogWindow extends DialogWindow {
         if(display){
             this.feature = feature
             this.scheme = scheme
+            this.lastFeatureId = feature.id != undefined ? feature.id : null
         } else {
             this.feature = null
             this.scheme = null
+            this.lastFeatureId = null
         }
         let t = this
         this.coordsTable.style.display = (feature && feature.geometry.type == "Point") ? "block" : "none"
@@ -443,24 +455,27 @@ class PropertyDialogWindow extends DialogWindow {
             if(feature.geometry.type == "Point"){
                 coordsInput.value = this.feature.geometry.coordinates[0]+','+this.feature.geometry.coordinates[1]
             }
-            var innerHtml = "<tr><td></td><td>Names:</td><td></td><td>Values:</td></tr>"
+            var innerHtml = "<tr><td></td><td>Names:</td><td></td><td>Values:</td><td>empty?</td></tr>"
             var i = 1
             for(var j in scheme){
                 var prop = scheme[j]
                 if(prop in feature.properties){
                     var value = feature.properties[prop]
-                    innerHtml += "<tr><td><a href='#' id='property-column-remove-button-"+i+"'>[-]</a></td><td>"+prop+'</td><td> : </td><td><textarea class="table-input" id="property-value-'+i+'" cols="40" rows="1">'+value+'</textarea></td></tr>'
+                    innerHtml += "<tr><td><a href='#' id='property-column-remove-button-"+i+"'>[-]</a></td><td>"+prop+'</td><td> : </td><td><textarea class="table-input" id="property-value-'+i+'" cols="40" rows="1">'+value+'</textarea></td><td><input type="checkbox" id="property-column-empty-checkbox-'+i+'" /></td></tr>'
                 } else {
-                    innerHtml += "<tr><td><a href='#' id='property-column-remove-button-"+i+"'>[-]</a></td><td>"+prop+'</td><td> : </td><td><textarea class="table-input gray-border" id="property-value-'+i+'" cols="40" rows="1"></textarea></td></tr>'
+                    innerHtml += "<tr><td><a href='#' id='property-column-remove-button-"+i+"'>[-]</a></td><td>"+prop+'</td><td> : </td><td><textarea class="table-input gray-border" id="property-value-'+i+'" cols="40" rows="1"></textarea></td><td><input type="checkbox" id="property-column-empty-checkbox-'+i+'" /></td></tr>'
                 }
                 i+=1
             }
-            innerHtml += "<tr><td><a href='#' id='property-column-add-button'>[+]</a></td><td><input type='text' class='table-input' id='property-column-add' /></td><td></td><td></td></tr>"
+            innerHtml += "<tr><td><a href='#' id='property-column-add-button'>[+]</a></td><td><input type='text' class='table-input' id='property-column-add' /></td><td></td><td></td><td></td></tr>"
             this.table.innerHTML = innerHtml
             document.getElementById('property-column-add-button').onclick = (e) => {t.addColumn()}
             var i = 1
             for(var j in scheme){
                 document.getElementById('property-column-remove-button-'+i).onclick = (e) => {t.removeColumn(scheme[j])}
+                var cb = document.getElementById('property-column-empty-checkbox-'+i)
+                
+                cb.checked = !(scheme[j] in feature.properties)
                 i+=1
             }
         }
@@ -559,6 +574,8 @@ class LayerPropertyDialogWindow extends DialogWindow {
             this.layer.styleProperties[prop].value = this.value
             this.layer.styleProperties[prop].column = this.column
         }
+        if(this.layerPanel.editing != undefined)
+            this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme)
     }
     /*
     removeColumn(columnName){
@@ -947,7 +964,7 @@ class TimeControl {
                 clearTimeout(this.listenerTimeout)
             }
             var th = this
-            this.listenerTimeout = setTimeout(() => {th.listener(this.getDate())},1000)
+            this.listenerTimeout = setTimeout(() => {th.listener(this.getDate())},300)
         }
     }
     setNull(state){

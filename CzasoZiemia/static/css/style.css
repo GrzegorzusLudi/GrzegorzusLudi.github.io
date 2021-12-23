@@ -189,6 +189,11 @@ tr {
     font-size:10pt;
     color:#008
 }
+.edit-version-text {
+    font-size:12pt;
+    color:#080
+    
+}
 div {
     /*border: 1px solid red; /*TEMPORARY
     */box-sizing: border-box;
