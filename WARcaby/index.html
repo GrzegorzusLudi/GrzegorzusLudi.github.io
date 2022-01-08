@@ -2194,7 +2194,7 @@ class Ai{
                 .filter(x=>x.color === curcolor )
                     .map(x=>evalDefence(x.pawns,x.dams) + x.additional).reduce((x,y)=>x+y,0)
                 
-                if(mystrength*1.5+1<enemiesStrength){
+                if(mystrength*2+1<enemiesStrength){
                     console.log("HALT")
                     return []
                 }
