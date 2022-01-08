@@ -2384,7 +2384,7 @@ class Ai{
 			this.attacking = this.attacking.slice(1)
 			return true
 		} else {
-			this.gamecontroller.checkersGameMove(minmax.move)
+			var trythis = this.gamecontroller.checkersGameMove(minmax.move)
 			if(code in this.statesInPast){
 				this.statesInPast[code]++
 			} else {
@@ -2405,8 +2405,6 @@ class Ai{
 			var penultimal2 = ["22","24","26"].map(x=>simulated.board[x]).filter(x=>x==1).length
 			var penpenultimal2 = ["31","33","35","37"].map(x=>simulated.board[x]).filter(x=>x==1).length
 			*/
-			if(this.noSenseInLongerPlay(simulated))
-                            return -this.max_possible * this.max_possible
                             
 			var onCorners = []
 			var diagonal1 = ["11","22","33","44","55","66","77"]
@@ -2430,20 +2428,25 @@ class Ai{
 				
 				return result
 				*/
-				return this.max_possible * this.max_possible * (simulated.turn*2-1) /* * (
+				
+				
+				return this.max_possible * this.max_possible * (countedBoard.filter(x=>x==2 || x==0).length > countedBoard.filter(x=>x==3 || x==1).length ? 1 : -1) /* * (
 				(countedBoard.filter(x=>x==0).length
 				+countedBoard.filter(x=>x==2).length*this.damValue) +
 				(countedBoard.filter(x=>x==1).length
 				+countedBoard.filter(x=>x==3).length*this.damValue)
 				)*/
 			}
+            if(this.noSenseInLongerPlay(simulated) && simulated.turn == 0)
+                return -this.max_possible * this.max_possible
+
 			result = (
 				(
                                 countedBoard.filter(x=>x==0).length
 				+countedBoard.filter(x=>x==2).length * this.damValue
 				//-(countedBoard.filter(x=>x==3).length > 0 ? 1 : 0) * this.damValue*0.05
 				//+onSides.filter(x=>x==2).length * this.sideDamValue
-				+(onCorners.filter(x=>x==2).length > 0 ? 1 : 0) * this.cornerDamValue
+				+(onCorners.filter(x=>x==2).length > 0 ? 1 : 0) * this.max_possible + 1
 				//+onSides.filter(x=>x==0).length * 0.1
 				//+onCorners.filter(x=>x==0).length * 0.7
 				//+penultimal1*0.05
@@ -2542,7 +2545,7 @@ class Ai{
             
             var legals = simulated.legal().sort(x=>Math.random()>0.5).filter(x=>x!="pass" && x!=simulated.selected)
             
-            var nos = simulated.turn === 0 && evaluated < -this.max_possible*0.8 || simulated.turn === 1 && evaluated > this.max_possible*0.8 || (this.noSenseInLongerPlay(simulated) && simulated.turn == 0)
+            var nos = simulated.turn === 0 && (evaluated < -this.max_possible*0.8 || simulated.turn === 1 && evaluated > this.max_possible*0.8 || (this.noSenseInLongerPlay(simulated) && simulated.turn == 0))
             if(nos){
                     return {move:"pass", score:evaluated,depth:0,truedepth:0}
             } else if(legals.length == 0){
@@ -2554,6 +2557,7 @@ class Ai{
             */
             if(simulated.phase == 0 && /*simulated.turn == 1 && */legals.length >= 1){
                 if(simulated.remainingPawns + simulated.remainingDams>=4 && mypieces >= 4){
+                    console.log('AAA')
                     var sequence
                     switch(simulated.turn){
                         case 0:
@@ -2580,6 +2584,8 @@ class Ai{
                         }
                     }
                 } else {
+                    console.log('CALM')
+
                     legals = Array.from(new Set(legals))
                 }
             }
@@ -2588,6 +2594,7 @@ class Ai{
                     return {move:legals[0], score:evaluated,depth:0,truedepth:0}
             }
             var maxdepth = 0
+            console.log('a')
             while(totalCheckedStates < maxCheckedStates){
                 var firstState = checkedStatesStack[0]
                 if(firstState == null){
@@ -2599,7 +2606,7 @@ class Ai{
                 
                 var turnfactor3 = simulated.turn == 0 ? 1 : -1
                 
-                var beating = simulated.phase == 1 && (simulated.therewasabeating || simulated.selected == null)
+                //var beating = simulated.phase == 1 && (simulated.therewasabeating || simulated.selected == null)
                 
                 var legals = simulated.legal().filter(x=>x!="pass" && x!=simulated.selected)
                 
@@ -2642,10 +2649,10 @@ class Ai{
                 if(/*!beating && */checkedStatesStack.length>maxStates){
                     checkedStatesStack.sort((x,y)=>(x.value-y.value)*turnfactor3)
                     var checkedStatesStack2 = checkedStatesStack
-                    checkedStatesStack = checkedStatesStack.filter(x=>simulated.turn !== firstTurn || x.depth>=maxdepth-5 || 
-                    (x.score-tree.score)*turnfactor+5>=0).slice(maxStates)
+                    checkedStatesStack = checkedStatesStack.filter(x=>(x.turn === firstTurn || x.depth>=maxdepth-5 || 
+                    (x.score-tree.score)*turnfactor+5>=0)).slice(maxStates)
                     if(checkedStatesStack.length < 3){
-                        checkedStatesStack = checkedStatesStack2.filter(x=>simulated.turn !== firstTurn)
+                        checkedStatesStack = checkedStatesStack2.filter(x=>x.turn === firstTurn)
                     }
                 }
                 if(simulated.selected == null)
@@ -2718,6 +2725,7 @@ class Ai{
 		*/
 		
 	}
+	/*
 	minmax(simulated,depth,initialDepth){
 	
                 var truedepth = true
@@ -2736,7 +2744,7 @@ class Ai{
                     legals = ["pass"]
                     
 		if(simulated.phase == 0 && legals.length >= 1){
-                    if(simulated.remainingPawns + simulated.remainingDams>=2/* || simulated.land1Dams === 0 && simulated.land2Dams === 0*/){
+                    if(simulated.remainingPawns + simulated.remainingDams>=2/* || simulated.land1Dams === 0 && simulated.land2Dams === 0*//*){
                         var sequence
                         switch(simulated.turn){
                             case 0:
@@ -2847,7 +2855,7 @@ class Ai{
                 }
                     
                 return {move: bestmove, score: bestscore, depth:bestDepth, truedepth:truedepth}
-	}
+	}*/
 	
 	landSignificance(land){
             
