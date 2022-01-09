@@ -2649,7 +2649,7 @@ class Ai{
                 if(/*!beating && */checkedStatesStack.length>maxStates){
                     checkedStatesStack.sort((x,y)=>(x.value-y.value)*turnfactor3)
                     var checkedStatesStack2 = checkedStatesStack
-                    checkedStatesStack = checkedStatesStack.filter(x=>(x.turn === firstTurn || x.depth>=maxdepth-5 || 
+                    checkedStatesStack = checkedStatesStack.filter(x=>(/*x.turn === firstTurn || */x.depth>=maxdepth-5 || 
                     (x.score-tree.score)*turnfactor+5>=0)).slice(maxStates)
                     if(checkedStatesStack.length < 3){
                         checkedStatesStack = checkedStatesStack2.filter(x=>x.turn === firstTurn)
