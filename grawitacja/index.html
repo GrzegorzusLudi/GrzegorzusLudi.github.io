@@ -21,6 +21,9 @@ html,body {color:white;background-color:black;font-family:Courier;width:100%; he
     #panel {border:1px solid white;width:20vh;height:100vh;display:inline-block;float:left}
 }
 #averagediv{font-size:10pt}
+input[type=range] {
+    width:100%
+}
 hr {border:0px, background-color:white;margin:2px;height:2px}
 </style>
 <script>
@@ -29,7 +32,7 @@ function RGB2HTML(red, green, blue)
     var decColor =0x1000000+ blue + 0x100 * green + 0x10000 *red ;
     return '#'+decColor.toString(16).substr(1);
 }
-class Camera {
+class Camera {  //unused
     constructor(x,y,rotation,magnification){
         this.x = x
         this.y = y
@@ -38,35 +41,67 @@ class Camera {
     }
 }
 class CelestialBody {
-    constructor(x,y,radius,mass,vx,vy){
+    constructor(x,y,radius,mass,vx,vy,bounce){
         this.x = x
         this.y = y
         this.vx = vx ? vx : 0
         this.vy = vy ? vy : 0
-        this.bounce = Math.sqrt(0.9)
+        this.bounce = Math.sqrt(bounce != undefined ? bounce : 0)
         this.color = '#fff'
         
         this.radius = radius
         this.mass = mass
     }
-    draw(ctx){
+    draw(ctx,translate_x,translate_y,zoom){
+        if(translate_x == undefined)
+            translate_x = 0
+        if(translate_y == undefined)
+            translate_y = 0
+        if(zoom == undefined)
+            zoom = 1
+            
         ctx.strokeStyle = this.color
         ctx.beginPath()
-        ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI);
+        ctx.arc((this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500, this.radius*zoom, 0, 2*Math.PI);
         ctx.stroke()
+    }
+}
+class RangeController{
+    constructor(id,func){
+        this.control = document.getElementById(id)
+        this.valueDiv = document.getElementById(id+'-num')
+        this.func = func
+        let th = this
+        this.control.onchange = ()=>{th.updateDiv()}
+        this.updateDiv()
+    }
+    updateDiv(){
+        this.valueDiv.innerHTML = this.getValue()
+    }
+    getValue(){
+        var val = this.func(this.control.value)
+        return val
     }
 }
 class Controller {
     constructor(){
         let th = this
         
-        this.GRAVITATIONAL_CONSTANT = 0.1
+        this.GRAVITATIONAL_CONSTANT = 0.05
         
         this.canvas = document.getElementById("canv")
         this.restartbutton = document.getElementById("restartbutton")
         this.going = true
         this.ctx = this.canvas.getContext('2d')
+        this.rc_kulek = new RangeController('kulek', x=>Math.pow(Number(x)*3,2))
+        this.rc_graw = new RangeController('graw', x=>(x % 2 ? 5 : 1)*Math.pow(10,Math.floor(x/2)-4))
+        this.rc_velo = new RangeController('velo', x=>x*5)
         
+        this.rc_masa = new RangeController('masa', x=>x == 0 ? 1 : x*5)
+        this.rc_radi = new RangeController('radi', x=>x == 0 ? 1 : x*2)
+        this.rc_spr = new RangeController('spr', x=>[0,0.1,0.2,0.4,0.5,0.7,0.9,0.95,0.99,0.995,1][x])
+        this.rc_zoom = new RangeController('zoom', x=>Math.pow(2,x-4))
+
         this.restartbutton.onclick = () => {th.restart()}
         
         this.initialize()
@@ -76,28 +111,36 @@ class Controller {
     initialize(){
         var poidv = -6
         
+        this.GRAVITATIONAL_CONSTANT = this.rc_graw.getValue()
+        
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //  TUTAJ SIĘ DODAJE OBIEKTY
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        this.celestialBodies = [
+        /*this.celestialBodies = [
             new CelestialBody(501,500,30,100,0,-2),
             new CelestialBody(601,500,10,10,0,8),
             new CelestialBody(801,500,10,10,0,12),
-        ]
+        ]*/
         
         this.celestialBodies = []
-        for(var i = 0;i<25;i++){
-            for(var j = 0;j<25;j++){
-                var mass = 10//Math.pow(Math.random(),10)*10
-                var nc = new CelestialBody(100+20*i,100+20*j,Math.sqrt(mass),mass,20-Math.random()*40,20-Math.random()*40)
-                nc.color = '#888'
+        
+        var num = Math.sqrt(this.rc_kulek.getValue())
+        var velo = this.rc_velo.getValue()
+        var masa = this.rc_masa.getValue()
+        var radi = this.rc_radi.getValue()
+        var spr = this.rc_spr.getValue()
+
+        for(var i = 0;i<num;i++){
+            for(var j = 0;j<num;j++){
+                var mass = 25//Math.pow(Math.random(),10)*20
+                var nc = new CelestialBody(100+20*i,100+20*j,radi,masa,(Math.random()*2-1)*velo,(Math.random()*2-1)*velo,spr)
                 this.celestialBodies.push(nc)
             }
         }
-        //this.celestialBodies.push(new CelestialBody(501,501,30,10000,0,0))
+        //this.celestialBodies.push(new CelestialBody(501,501,30,1000,0,0))
 
     }
     restart(){
@@ -110,11 +153,12 @@ class Controller {
         setTimeout(()=>{th.loop()},40)
     }
     move(){
+        var bodies = this.iterator()
+        this.collide(bodies)
         this.gravitate()
-        this.collide()
         this.moveSpeed()
-        for(var i = 0;i<4;i++){
-            this.expand()
+        for(var i = 0;i<3;i++){
+            this.expand(bodies)
         }
         this.draw()
     }
@@ -140,8 +184,7 @@ class Controller {
         }
         this.celestialBodies[0].color = '#f00'
     }
-    collide(){
-        var bodies = this.iterator()
+    collide(bodies){
         for(var i in bodies){
             var b1 = bodies[i].b1
             var b2 = bodies[i].b2
@@ -171,8 +214,7 @@ class Controller {
             }
         }
     }
-    expand(){
-        var bodies = this.iterator()
+    expand(bodies){
         for(var i in bodies){
             var b1 = bodies[i].b1
             var b2 = bodies[i].b2
@@ -182,11 +224,11 @@ class Controller {
             var angle = Math.atan2( b1.y-b2.y, b1.x-b2.x )
             
             if(r < b1.radius + b2.radius){
-                b1.x += Math.cos(angle) * (b1.radius+b2.radius - r) * 0.2 * 2*b2.mass / (b1.mass + b2.mass)
-                b1.y += Math.sin(angle) * (b1.radius+b2.radius - r) * 0.2 * 2*b2.mass / (b1.mass + b2.mass)
+                b1.x += Math.cos(angle) * (b1.radius+b2.radius - r) * 0.5 * 2*b2.mass / (b1.mass + b2.mass)
+                b1.y += Math.sin(angle) * (b1.radius+b2.radius - r) * 0.5 * 2*b2.mass / (b1.mass + b2.mass)
                 
-                b2.x -= Math.cos(angle) * (b1.radius+b2.radius - r) * 0.2 * 2*b1.mass / (b1.mass + b2.mass)
-                b2.y -= Math.sin(angle) * (b1.radius+b2.radius - r) * 0.2 * 2*b1.mass / (b1.mass + b2.mass)
+                b2.x -= Math.cos(angle) * (b1.radius+b2.radius - r) * 0.5 * 2*b1.mass / (b1.mass + b2.mass)
+                b2.y -= Math.sin(angle) * (b1.radius+b2.radius - r) * 0.5 * 2*b1.mass / (b1.mass + b2.mass)
             }
         }
     }
@@ -201,22 +243,33 @@ class Controller {
                     pairs.push({b1:b1,b2:cb[ix]})
                 }
                 ix++
-            }
+            }/*
+            var ix = i-1
+            while(ix >= 0 && cb[ix].x + cb[ix].radius >= b1.x - b1.radius){
+                if(b1.y + b1.radius >= cb[ix].y - cb[ix].radius && cb[ix].y + cb[ix].radius >= b1.y - b1.radius){
+                    pairs.push({b1:b1,b2:cb[ix]})
+                }
+                ix--
+            }*/
         }
         return pairs
     }
     moveSpeed(){
         for(var i = 0;i<this.celestialBodies.length;i++){
             var b = this.celestialBodies[i]
-            b.x += b.vx*this.GRAVITATIONAL_CONSTANT
-            b.y += b.vy*this.GRAVITATIONAL_CONSTANT
+            b.x += b.vx//*this.GRAVITATIONAL_CONSTANT
+            b.y += b.vy//*this.GRAVITATIONAL_CONSTANT
         }
     }
     draw(){
         this.ctx.clearRect(0,0,1000,1000)
+        var zoom = this.rc_zoom.getValue()
+        
+        var average_x = this.celestialBodies.map(x=>x.x-500).reduce((a,b)=>a+b,0)/this.celestialBodies.length
+        var average_y = this.celestialBodies.map(x=>x.y-500).reduce((a,b)=>a+b,0)/this.celestialBodies.length
         for(var i in this.celestialBodies){
             var body = this.celestialBodies[i]
-            body.draw(this.ctx)
+            body.draw(this.ctx,average_x,average_y,zoom)
         }
     }
 }
@@ -231,14 +284,38 @@ function init(){
 <canvas id="canv" width="1000" height="1000">
 </canvas>
 <div id="panel">
-RACISM SIMULATOR 😳
-<br/>
-<input type="button" id="gobutton" value="GO">
-<input type="button" id="nextbutton" value="NEXT STEP">
+SYMULATOR GRAWITACJI
 <br/>
 <input type="button" id="restartbutton" value="RESTART">
 <hr/>
-<div id="averagediv"></div>
+Liczba kulek:
+<input type="range" min="0" max="10" id="kulek" width="150" />
+<div id="kulek-num"></div>
+<hr/>
+Stała grawitacji:
+<input type="range" min="0" max="10" id="graw" width="150" />
+<div id="graw-num"></div>
+<hr/>
+Prędkość początkowa:
+<input type="range" min="0" max="10" id="velo" width="150" />
+<div id="velo-num"></div>
+<hr/>
+Masa kulek:
+<input type="range" min="0" max="10" id="masa" width="150" />
+<div id="masa-num"></div>
+<hr/>
+Promień kulek:
+<input type="range" min="0" max="10" id="radi" width="150" />
+<div id="radi-num"></div>
+<hr/>
+Sprężystość kulek:
+<input type="range" min="0" max="10" id="spr" width="150" />
+<div id="spr-num"></div>
+<hr/>
+Zoom:
+<input type="range" min="0" max="10" id="zoom" width="150" />
+<div id="zoom-num"></div>
+<hr/>
 </div>
 </div>
 <script>
