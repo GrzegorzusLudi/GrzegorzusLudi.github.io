@@ -51,19 +51,52 @@ class CelestialBody {
         
         this.radius = radius
         this.mass = mass
+        this.history = []
+        this.pora = 0
     }
-    draw(ctx,translate_x,translate_y,zoom){
+    draw(ctx,translate_x,translate_y,zoom,slad){
+        if(this.pora == 5){
+            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,100)
+            this.pora = 0
+        } else {
+            this.pora++
+        }
+        
         if(translate_x == undefined)
             translate_x = 0
         if(translate_y == undefined)
             translate_y = 0
         if(zoom == undefined)
             zoom = 1
+        if(slad == undefined)
+            zoom = 0
             
         ctx.strokeStyle = this.color
+        ctx.fillColor = '#000'
         ctx.beginPath()
-        ctx.arc((this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500, this.radius*zoom, 0, 2*Math.PI);
+        ctx.arc((this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500, Math.max(0.5,this.radius*zoom), 0, 2*Math.PI)
+        
         ctx.stroke()
+    
+    }
+    draw_slad(ctx,translate_x,translate_y,zoom,slad){
+        ctx.strokeStyle = '#888'
+
+        var former_x = (this.x-translate_x-500)*zoom+500, former_y = (this.y-translate_y-500)*zoom+500
+        for(var i in this.history.slice(0,slad)){
+            var p = this.history[i]
+            var this_x = (p.x-translate_x-500)*zoom+500, this_y = (p.y-translate_y-500)*zoom+500
+
+            ctx.beginPath()
+            ctx.moveTo(former_x,former_y)
+            ctx.lineTo(this_x,this_y)
+            ctx.globalAlpha = i/slad < 0.5 ? 1 : 2-i/slad*2
+            ctx.stroke()
+            ctx.globalAlpha = 1
+            
+            former_x = this_x
+            former_y = this_y
+        }
     }
 }
 class RangeController{
@@ -82,15 +115,27 @@ class RangeController{
         var val = this.func(this.control.value)
         return val
     }
+    wheel(value){
+        if(value > 0 && this.control.value < 10){
+            this.control.value -= -1
+        }
+        if(value < 0 && this.control.value > 0){
+            this.control.value -= 1
+        }
+    }
 }
 class Controller {
     constructor(){
         let th = this
         
+        this.x = 0
+        this.y = 0
+        
         this.GRAVITATIONAL_CONSTANT = 0.05
         
         this.canvas = document.getElementById("canv")
         this.restartbutton = document.getElementById("restartbutton")
+        this.centerbutton = document.getElementById("centerbutton")
         this.going = true
         this.ctx = this.canvas.getContext('2d')
         this.rc_kulek = new RangeController('kulek', x=>Math.pow(Number(x)*3,2))
@@ -100,16 +145,27 @@ class Controller {
         this.rc_masa = new RangeController('masa', x=>x == 0 ? 1 : x*5)
         this.rc_radi = new RangeController('radi', x=>x == 0 ? 1 : x*2)
         this.rc_spr = new RangeController('spr', x=>[0,0.1,0.2,0.4,0.5,0.7,0.9,0.95,0.99,0.995,1][x])
-        this.rc_zoom = new RangeController('zoom', x=>Math.pow(2,x-4))
+        this.rc_zoom = new RangeController('zoom', x=>Math.pow(2,x-8))
+        this.rc_slad = new RangeController('slad', x=>x*5)
 
         this.restartbutton.onclick = () => {th.restart()}
+        this.centerbutton.onclick = () => {th.center()}
+        
+        this.canvas.onclick = (e)=>{th.click(e)}
+        this.canvas.onwheel = (e)=>{th.wheel(e)}
         
         this.initialize()
         this.loop()
         this.draw()
     }
+    center(){
+        this.x = 0
+        this.y = 0
+    }
     initialize(){
         var poidv = -6
+        this.x = 0
+        this.y = 0
         
         this.GRAVITATIONAL_CONSTANT = this.rc_graw.getValue()
         
@@ -139,6 +195,13 @@ class Controller {
                 var nc = new CelestialBody(100+20*i,100+20*j,radi,masa,(Math.random()*2-1)*velo,(Math.random()*2-1)*velo,spr)
                 this.celestialBodies.push(nc)
             }
+        }
+        var average_x = this.celestialBodies.map(x=>x.vx).reduce((a,b)=>a+b,0)/this.celestialBodies.length
+        var average_y = this.celestialBodies.map(x=>x.vy).reduce((a,b)=>a+b,0)/this.celestialBodies.length
+
+        for(var i in this.celestialBodies){
+            this.celestialBodies[i].vx -= average_x
+            this.celestialBodies[i].vy -= average_x
         }
         //this.celestialBodies.push(new CelestialBody(501,501,30,1000,0,0))
     }
@@ -263,13 +326,34 @@ class Controller {
     draw(){
         this.ctx.clearRect(0,0,1000,1000)
         var zoom = this.rc_zoom.getValue()
+        var slad = this.rc_slad.getValue()
         
         var average_x = this.celestialBodies.map(x=>x.x-500).reduce((a,b)=>a+b,0)/this.celestialBodies.length
         var average_y = this.celestialBodies.map(x=>x.y-500).reduce((a,b)=>a+b,0)/this.celestialBodies.length
         for(var i in this.celestialBodies){
             var body = this.celestialBodies[i]
-            body.draw(this.ctx,average_x,average_y,zoom)
+            body.draw_slad(this.ctx,average_x+this.x,average_y+this.y,zoom,slad)
         }
+
+        for(var i in this.celestialBodies){
+            var body = this.celestialBodies[i]
+            body.draw(this.ctx,average_x+this.x,average_y+this.y,zoom,slad)
+        }
+    }
+    click(e){
+        var zoom = this.rc_zoom.getValue()
+
+        var elemLeft = this.canvas.offsetLeft + this.canvas.clientLeft
+        var elemTop = this.canvas.offsetTop + this.canvas.clientTop
+        
+        var x = (e.pageX - elemLeft)/this.canvas.offsetWidth*1000
+        var y = (e.pageY - elemTop)/this.canvas.offsetHeight*1000
+        
+        this.x += (x-500)/zoom
+        this.y += (y-500)/zoom
+    }
+    wheel(e){
+        this.rc_zoom.wheel(e.wheelDeltaY)
     }
 }
 function init(){
@@ -286,6 +370,7 @@ function init(){
 SYMULATOR GRAWITACJI
 <br/>
 <input type="button" id="restartbutton" value="RESTART">
+<input type="button" id="centerbutton" value="ŚRODEK">
 <hr/>
 Liczba kulek:
 <input type="range" min="0" max="10" id="kulek" width="150" />
@@ -310,6 +395,10 @@ Promień kulek:
 Sprężystość kulek:
 <input type="range" min="0" max="10" id="spr" width="150" />
 <div id="spr-num"></div>
+<hr/>
+Ślad:
+<input type="range" min="0" max="10" id="slad" width="150" />
+<div id="slad-num"></div>
 <hr/>
 Zoom:
 <input type="range" min="0" max="10" id="zoom" width="150" />
