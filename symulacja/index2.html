@@ -1,0 +1,421 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf8">
+<style type="text/css">
+* {border-collapse:collapse;border-collapse:collapse;
+-moz-box-sizing:border-box;
+-webkit-box-sizing:border-box;
+box-sizing:border-box;margin:0px;padding:0px}
+html,body {color:white;background-color:black;font-family:Courier;width:100%; height:100%;}
+#whole {margin:auto}
+
+@media (max-aspect-ratio: 100/120) {
+    #whole {width:120vw;height:100vw}
+    #canv {border:1px solid white;width:100vw;height:100vw;display:inline-block;float:left}
+    #panel {border:1px solid white;width:20vw;height:100vw;display:inline-block;float:left}
+}
+@media (min-aspect-ratio: 100/120) {
+    #whole {width:120vh;height:100vh}
+    #canv {border:1px solid white;width:100vh;height:100vh;display:inline-block;float:left}
+    #panel {border:1px solid white;width:20vh;height:100vh;display:inline-block;float:left}
+}
+#averagediv{font-size:10pt}
+hr {border:0px, background-color:white;margin:2px;height:2px}
+</style>
+<script>
+	
+class Human{
+    constructor(x,y,parent){
+        this.x = x
+        this.y = y
+        this.parent = parent
+        
+        this.attack = 1
+        this.defence = 0
+        this.aggression = 0
+        this.tribalism = 0
+        
+        this.willToTravel = 1
+        this.travel = 3
+        this.seatravel = 0
+        
+        this.willToProcreate = 4
+        
+        this.red = 150
+        this.green = 150
+        this.blue = 150
+        
+        this.age = 1
+        this.dead = 0
+        this.owned = true   //potentially
+        
+        
+    }
+    mutate(a,b,max,min,mutationRate,disadvantage){
+        if(min == undefined)
+            min = 0
+        if(mutationRate == undefined)
+            mutationRate = 1
+        if(disadvantage == undefined)
+            disadvantage = 1
+        return Math.random() > 0.5
+            ? Math.max(min,Math.min(max,Math.round(a + (Math.random()*2-disadvantage)*mutationRate)))
+            : Math.max(min,Math.min(max,Math.round(b + (Math.random()*2-disadvantage)*mutationRate)))
+    }
+    replicate(another){
+        var newHuman = new Human(this.x,this.y,this.parent)
+        
+        newHuman.attack = this.mutate(this.attack,another.attack,150,1,2,1.1)
+        newHuman.defence = this.mutate(this.defence,another.defence,80,0,1,1.2)
+        newHuman.aggression = this.mutate(this.aggression,another.aggression,15,1,2,1)
+        newHuman.tribalism = this.mutate(this.tribalism,another.tribalism,15,1,2,1)
+        
+        newHuman.willToTravel = this.mutate(this.willToTravel,another.willToTravel,10,1,1,1.1)
+        newHuman.travel = this.mutate(this.travel,another.travel,12,3,1,1.1)
+        newHuman.seatravel = this.mutate(this.seatravel,another.seatravel,12,0,2,1.1)
+        newHuman.willToProcreate = this.mutate(this.willToTravel,another.willToTravel,8,1,1,1.1)
+        
+        newHuman.red = this.mutate(this.red,another.red,230,50,10)
+        newHuman.green = this.mutate(this.green,another.green,230,50,10)
+        newHuman.blue = this.mutate(this.blue,another.blue,230,50,10)
+        return newHuman
+    }
+    doSomething(){
+        this.age++
+        if(this.dead > 0){
+            this.dead++
+        } else if(this.age>=60){
+            this.dead = 1
+            this.owned = false
+        } else {
+           if(Math.random() < this.aggression/15){
+                var ne = this.parent.getLandNeighbors(this.x,this.y,3)
+                var part = ne.map(x=>x.people).reduce((a,b)=>a.concat(b),[]).filter(x=>!this.good(x) && x != this)
+                
+                if(part.length > 0){
+                    var choosen = part[Math.floor(part.length * Math.random())]
+                    this.moveToSquare(choosen.x,choosen.y)
+
+                    this.fight(choosen)
+                }
+            }
+            if(Math.random() < this.willToTravel/15){
+                var ne = this.parent.getLandNeighbors(this.x,this.y,this.travel,true)
+                var nea = this.parent.getNeighbors(this.x,this.y,this.seatravel).filter(x=>x.land)
+                var nen = ne.concat(nea).filter(x=>x.people.length <= 1)
+                nen = Array.from(new Set(nen))
+                if(nen.length == 0)
+                    nen = ne
+                var choosenLand = nen[Math.floor(nen.length*Math.random())]
+                this.moveToSquare(choosenLand.x,choosenLand.y)
+
+            } else if(this.age > 5 && Math.random() < this.willToProcreate/16){
+                var ne = this.parent.getLandNeighbors(this.x,this.y,5)
+                var part = ne.map(x=>x.people).reduce((a,b)=>a.concat(b),[]).filter(x=>x!=this && x.age > 5)
+                if(part.length > 0 && part.length <= 5){
+                    part = part.filter(x => !x.dead && this.good(x))
+                    if(part.length > 0){
+                        var partner = part[Math.floor(part.length * Math.random())]
+                        this.moveToSquare(partner.x,partner.y)
+                        if(partner.good(this)){
+                            var newHuman = this.replicate(partner)
+                            this.parent.people.push(newHuman)
+                        }
+                    }
+                }
+            }/*
+            var ne = this.parent.getLandNeighbors(this.x,this.y,3)
+            for(var i in ne){
+                if(ne[i].people.length == 0){
+                    ne[i].color = RGB2HTML(this.red,this.green,this.blue)
+                }
+            }*/
+        }
+    }
+    moveToSquare(x,y){
+        this.parent.board[this.x][this.y].people = this.parent.board[this.x][this.y].people.filter(x=>x!=this)
+        this.x = x
+        this.y = y
+        this.parent.board[this.x][this.y].people.push(this)
+    }
+    fight(opponent){
+        if(this.attack * Math.random() > opponent.defence * Math.random()){
+            opponent.dead = 1
+        }/* else if(opponent.attack * Math.random() > this.defence * Math.random()) {
+            this.dead = 1
+        }*/
+    }
+    good(x){
+        return (Math.abs(this.red-x.red)+Math.abs(this.green-x.green)+Math.abs(this.blue-x.blue)) / 180 / 3 < 1 - this.tribalism / 15
+    }
+    draw(){
+        var sqWidth = 1000/this.parent.boardSize
+        var color = RGB2HTML(this.red,this.green,this.blue)
+        var sqWidth2 = sqWidth*1.8
+        this.parent.ctx.strokeStyle = '#000'
+        this.parent.ctx.strokeWidth = 4
+        this.parent.ctx.strokeRect(this.x*sqWidth+(sqWidth-sqWidth2)/2,this.y*sqWidth+(sqWidth-sqWidth2)/2,sqWidth2,sqWidth2)
+        this.parent.ctx.fillStyle = color
+        this.parent.ctx.fillRect(this.x*sqWidth+(sqWidth-sqWidth2)/2,this.y*sqWidth+(sqWidth-sqWidth2)/2,sqWidth2,sqWidth2)
+        
+        this.parent.ctx.font = '11px sans-serif'
+        this.parent.ctx.fillStyle = '#000'
+        this.parent.ctx.fillText(this[this.parent.typeOfNumber],(this.x-0.3)*sqWidth,(this.y+1)*sqWidth)
+        
+
+    }
+    drawDead(){
+        if(!this.owned)
+            return
+        var sqWidth = 1000/this.parent.boardSize
+        var sqWidth2 = sqWidth*1.8
+        this.parent.ctx.strokeStyle = '#f00'
+        this.parent.ctx.lineWidth = 4
+        this.parent.ctx.strokeRect(this.x*sqWidth+(sqWidth-sqWidth2)/2,this.y*sqWidth+(sqWidth-sqWidth2)/2,sqWidth2,sqWidth2)
+        this.parent.ctx.lineWidth = 1
+        
+    }
+}
+function RGB2HTML(red, green, blue)
+{
+    var decColor =0x1000000+ blue + 0x100 * green + 0x10000 *red ;
+    return '#'+decColor.toString(16).substr(1);
+}
+class Square{
+    constructor(x,y,parent){
+        this.x = x
+        this.y = y
+        this.parent = parent
+        
+        this.color = null
+        
+        this.land = false
+        
+        this.people = []
+    }
+    draw(){
+        var sqWidth = 1000/this.parent.boardSize
+        if(this.land){
+            //this.parent.ctx.strokeStyle = '#aaa'
+            //this.parent.ctx.strokeRect(this.x*sqWidth,this.y*sqWidth,sqWidth,sqWidth)
+            this.parent.ctx.fillStyle = this.color == null ? '#aaa' : this.color
+            this.parent.ctx.fillRect(this.x*sqWidth,this.y*sqWidth,sqWidth+1,sqWidth+1)
+        }
+    }
+    randomLand(ratio){
+        this.land = Math.random() < ratio * (1 - 0.05*Math.random())
+    }
+}
+class Controller {
+    constructor(){
+        let th = this
+        
+        this.canvas = document.getElementById("canv")
+        this.gobutton = document.getElementById("gobutton")
+        this.nextbutton = document.getElementById("nextbutton")
+        this.restartbutton = document.getElementById("restartbutton")
+        this.averagediv = document.getElementById("averagediv")
+        this.generation = 0
+        this.going = false
+        
+        this.ctx = this.canvas.getContext('2d')
+        
+        this.gobutton.onclick = () => {th.setGoing()}
+        this.nextbutton.onclick = () => {th.move()}
+        this.restartbutton.onclick = () => {th.restart()}
+        
+        this.boardSize = 150
+        this.landWaterRatio = 0.56
+        this.sizeOfLands = 7
+        this.smoothingOfLand = 2
+        
+        this.typeOfNumber = 'attack'
+        
+        this.prepareBoard()
+        this.prepareHumans()
+        
+        this.loop(0)
+        this.draw()
+    }
+    restart(){
+        this.prepareBoard()
+        this.prepareHumans()
+    }
+    setGoing(){
+        this.going = !this.going
+    }
+    loop(n){
+        if(this.going)
+            this.move(n)
+        let th = this
+        setTimeout(()=>{th.loop(n+1)},40)
+    }
+    move(n){
+        this.generation++
+        
+        this.movepeople()
+        
+        this.draw()
+        this.people = this.people.filter(x => x.dead == 0)
+        if(n % 40 == 0)
+            this.fillAverageDiv()
+    }
+    fillAverageDiv(){
+        this.averagediv.innerHTML = ''
+            +'population: '+this.people.length+'<br/>'
+            +'<div id="att-div">average att: '+Math.round(this.people.map(x=>x.attack).reduce((a,b)=>a+b,0)/this.people.length)+'</div><br/>'
+            +'<div id="def-div">average def: '+Math.round(this.people.map(x=>x.defence).reduce((a,b)=>a+b,0)/this.people.length)+'</div><br/>'
+            +'<div id="aggr-div">average aggr: '+Math.round(this.people.map(x=>x.aggression).reduce((a,b)=>a+b,0)/this.people.length)+'</div><br/>'
+            +'<div id="trib-div">average trib: '+Math.round(this.people.map(x=>x.tribalism).reduce((a,b)=>a+b,0)/this.people.length)+'</div><br/>'
+            +'<div id="trav-div">average trav: '+Math.round(this.people.map(x=>x.willToTravel).reduce((a,b)=>a+b,0)/this.people.length)+'</div><br/>'
+            +'<div id="speed-div">average speed: '+Math.round(this.people.map(x=>x.travel).reduce((a,b)=>a+b,0)/this.people.length)+'</div><br/>'
+            +'<div id="sea-div">average sea: '+Math.round(this.people.map(x=>x.seatravel).reduce((a,b)=>a+b,0)/this.people.length)+'</div><br/>'
+            +'<div id="procr-div">average procr: '+Math.round(this.people.map(x=>x.willToProcreate).reduce((a,b)=>a+b,0)/this.people.length)+'</div><br/>'
+            
+        let th = this
+        document.getElementById('att-div').onclick = function(e){th.typeOfNumber = 'attack'}
+        document.getElementById('def-div').onclick = function(e){th.typeOfNumber = 'defence'}
+        document.getElementById('aggr-div').onclick = function(e){th.typeOfNumber = 'aggression'}
+        document.getElementById('trib-div').onclick = function(e){th.typeOfNumber = 'tribalism'}
+        document.getElementById('trav-div').onclick = function(e){th.typeOfNumber = 'willToTravel'}
+        document.getElementById('speed-div').onclick = function(e){th.typeOfNumber = 'travel'}
+        document.getElementById('sea-div').onclick = function(e){th.typeOfNumber = 'seatravel'}
+        document.getElementById('procr-div').onclick = function(e){th.typeOfNumber = 'willToProcreate'}
+    }
+    prepareBoard(){
+        
+        this.board = []
+        for(var i = 0;i<this.boardSize;i++){
+            this.board[i] = []
+            for(var j = 0;j<this.boardSize;j++){
+                this.board[i][j] = new Square(i,j,this)
+                var ratio = this.landWaterRatio-Math.max(Math.abs(1/2-i/this.boardSize),Math.abs(1/2-j/this.boardSize)*2)/10
+                this.board[i][j].randomLand(ratio)
+            }
+        }
+        
+        this.smoothBoard(this.sizeOfLands)
+        this.smoothBoard(this.smoothingOfLand)
+    }
+    smoothBoard(neighbors){
+        var tempBoard = []
+        for(var i = 0;i<this.boardSize;i++){
+            tempBoard[i] = []
+            for(var j = 0;j<this.boardSize;j++){
+                var nei = this.getNeighbors(i,j,neighbors)
+                tempBoard[i][j] = nei.filter(x=>x.land).length*2 >= nei.length
+            }
+        }
+        for(var i = 0;i<this.boardSize;i++){
+            for(var j = 0;j<this.boardSize;j++){
+                this.board[i][j].land = tempBoard[i][j]
+            }
+        }
+    }
+    getNeighbors(x,y,d){
+        var neighbors = []
+        for(var i = x-d;i<=x+d;i++){
+            for(var j = y-d;j<=y+d;j++){
+                if((i!=x || j!=y) && i>=0 && i<this.boardSize && j>=0 && j<this.boardSize && Math.pow(i-x,2)+Math.pow(j-y,2) <= d*d){
+                    neighbors.push(this.board[i][j])
+                }
+            }
+        }
+        return neighbors
+    }
+    getLandNeighbors(x,y,d,checkIfSomeoneHere){
+        var search = [this.board[x][y]]
+        var newsearch = []
+        var found = search.slice()  //copy
+        for(var i = 0;i<d;i++){
+            for(var j in search){
+                var b = search[j]
+                var ne = this.getNeighbors(b.x,b.y,1).filter(z=>z.land && found.indexOf(z) == -1 && (checkIfSomeoneHere != true || z.people.length == 0))
+                newsearch = newsearch.concat(ne)
+                found = found.concat(ne)
+            }
+            search = newsearch
+            newsearch = []
+        }
+        return found
+    }
+    draw(){
+        this.ctx.clearRect(0,0,1000,1000)
+        for(var i = 0;i<this.boardSize;i++){
+            for(var j = 0;j<this.boardSize;j++){
+                this.board[i][j].draw()
+            }
+        }
+        for(var i in this.people){
+            this.people[i].draw()
+        }
+        for(var i in this.people){
+            var h = this.people[i]
+            if(h.dead > 0)
+                h.drawDead()
+        }
+    }
+    prepareHumans(){
+        this.people = []
+        
+        var potentialLands = []
+        
+        for(var i = 0;i<this.boardSize;i++){
+            for(var j = 0;j<this.boardSize;j++){
+                if(this.board[i][j].land)
+                    potentialLands.push(this.board[i][j])
+            }
+        }
+        var choosenLand = potentialLands[Math.floor(potentialLands.length*Math.random())]
+        var firstHumans = 4
+        for(var i = 0;i<firstHumans;i++){
+            var human = new Human(choosenLand.x,choosenLand.y,this)
+            this.people.push(human)
+        }
+    }
+    movepeople(){
+        for(var i = 0;i<this.boardSize;i++){
+            for(var j = 0;j<this.boardSize;j++){
+                this.board[i][j].people = []
+                this.board[i][j].color = null
+            }
+        }
+        for(var i in this.people){
+            var h = this.people[i]
+            this.board[h.x][h.y].people.push(h)
+        }
+        for(var i in this.people){
+            var h = this.people[i]
+            h.doSomething()
+        }
+        //console.log(this.people.length)
+    }
+}
+const MAX_PIECES = 11
+function init(){
+    var controller = new Controller()
+}
+
+</script> 
+</head>
+<body>
+<div id="whole">
+<canvas id="canv" width="1000" height="1000">
+</canvas>
+<div id="panel">
+RACISM SIMULATOR 😳
+<br/>
+<input type="button" id="gobutton" value="GO">
+<input type="button" id="nextbutton" value="NEXT STEP">
+<br/>
+<input type="button" id="restartbutton" value="RESTART">
+<hr/>
+<div id="averagediv"></div>
+</div>
+</div>
+<script>
+	init();
+</script>
+</body>
+</html>
