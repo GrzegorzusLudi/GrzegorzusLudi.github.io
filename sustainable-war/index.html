@@ -220,6 +220,7 @@ class Square{
         
         this.leaveArea = false
         this.area = null
+        this.landWaterArea = null
         
         this.hillColorTranslate = {
             0:'#aaa',
@@ -229,6 +230,8 @@ class Square{
             4:'#d8d8d8',
             5:'#eee',
         }
+        
+        this.debug = null
     }
     currentPlayerStrokeColor(){
         return this.color != null && this.color == this.parent.currentPlayer ? '#cc4' : '#444'
@@ -370,6 +373,12 @@ class Square{
             prepareLine(ctx,this.x*sqWidth,(this.y)*sqWidth,(this.x+1)*sqWidth,(this.y)*sqWidth)
             ctx.stroke()
         }
+        if(this.debug != null){
+            ctx.strokeStyle = '#f00'
+            prepareNumber(ctx,(this.x+0.4)*sqWidth,(this.y+0.1)*sqWidth,sqWidth*0.15+1,sqWidth*0.4+1,this.debug % 10)
+            ctx.stroke()
+
+        }
         /*
         if(this.area != null && this.area.number != undefined){
             ctx.strokeStyle = '#f00'
@@ -452,7 +461,7 @@ class Unit{
         }
     }
     moneyDemand(){
-        return 5 + this.size * (this.level + 1)
+        return 5 + this.size * 2 * (this.level + 1)
     }
     foodDemand(){
         return this.size
@@ -576,10 +585,40 @@ class Unit{
         return false
     }
 }
+class LandWater {
+    constructor(lands,parent,number){
+        this.lands = lands
+        this.parent = parent
+        this.number = number
+        this.land = null
+        this.neighboringAreas = new Set()
+        this.borderLands = []
+    }
+    prepare(){
+        this.land = this.lands[0].land
+        for(var i in this.lands){
+            var land = this.lands[i]
+            land.landWaterArea = this
+            var neighbors = Object.values(this.parent.getDirectNeighborsWithDiagonals(land.x,land.y)).filter(x=>x != null)
+            var isBorderland = false
+            for(var i in neighbors){
+                var neighbor = neighbors[i]
+                if(neighbor.landWaterArea != null && neighbor.landWaterArea != this){
+                    this.neighboringAreas.add(neighbor.landWaterArea)
+                    neighbor.landWaterArea.neighboringAreas.add(this)
+                }
+                if(neighbor.landWaterArea != this && !isBorderland){
+                    isBorderland = true
+                    this.borderLands.push(land)
+                }
+                    
+            }
+        }
+    }
+}
 class Model {
     constructor(){
-        
-        this.boardSize = 30
+        this.boardSize = 25
         this.landWaterRatio = 0.48
         this.landDistanceRatio = -0.05
         this.sizeOfLands = 3
@@ -607,8 +646,16 @@ class Model {
         this.selectedUnitLegalMoves = []
         
         this.areas = []
+        this.landWaterAreas = []
         this.addingSize = 0
         this.updowngradeWay = null
+        
+    }
+    
+    encodeModel(){
+        
+    }
+    decodeModel(){
         
     }
     
@@ -705,6 +752,7 @@ class Model {
         }
     }
     prepareTowns(){
+    
         for(var i = 0;i<this.boardSize;i++){
             for(var j = 0;j<this.boardSize;j++){
                 var shore = this.getNeighbors(i,j,1).filter(x=>!x.land).length > 0
@@ -720,6 +768,34 @@ class Model {
                 } else {
                     if(Math.random() < this.cityRatio * (7-this.board[i][j].hill) / 7)
                         this.board[i][j].cityVillage = 3
+                }
+            }
+        }
+        
+        var n = 0
+        for(var i = 0;i<this.boardSize;i++){
+            for(var j = 0;j<this.boardSize;j++){
+                var land = this.board[i][j]
+                if(land.landWaterArea == null){
+                    var newLands = this.getAreaPartsWithTheSameLandWater(i,j)
+                    var newLandwater = new LandWater(newLands,this,n)
+                    newLandwater.prepare()
+                    this.landWaterAreas.push(newLandwater)
+                    n++
+                }
+            }
+        }
+        for(var i in this.landWaterAreas){
+            var landWaterArea = this.landWaterAreas[i]
+            console.log(landWaterArea.land)
+            if(landWaterArea.land){
+                var seas = Array.from(landWaterArea.neighboringAreas)
+                for(var j in seas){
+                    var sea = seas[j]
+                    var possibleLocationsOfPort = landWaterArea.borderLands.filter(a=>Object.values(this.getDirectNeighborsWithDiagonals(a.x,a.y)).filter(b=>b != null && b.landWaterArea == sea).length > 0)
+                    var randomLand = possibleLocationsOfPort[Math.floor(Math.random()*possibleLocationsOfPort.length)]
+
+                    randomLand.cityVillage = 3
                 }
             }
         }
@@ -940,7 +1016,7 @@ class Model {
         var MAX = unit.originalRange //makes unit stop
         var unitLand = unit.field
         var diagonalFafctor = Math.abs(landFrom.x - landTo.x) + Math.abs(landFrom.y - landTo.y) >= 2 ? 1.5 : 1
-        if(landTo.unit != null)
+        if(landTo.unit != null && landTo.unit.color != unit.color)
             return MAX
         if(landTo.cityVillage == 3){
             return MAX
@@ -972,8 +1048,8 @@ class Model {
                 var neighbors = Object.values(this.getDirectNeighborsWithDiagonals(move.x, move.y)).filter(a=>a != null)
                 
                 var stopHere = false
-                if(/*landFrom != land && */Object.values(this.getDirectNeighbors(move.x, move.y)).filter(x=>x != null && x.unit && x.unit.color != land.unit.color).length > 0)
-                    stopHere = true
+                //if(/*landFrom != land && */Object.values(this.getDirectNeighbors(move.x, move.y)).filter(x=>x != null && x.unit && x.unit.color != land.unit.color).length > 0)
+                //    stopHere = true
                 
                 for(var k in neighbors){
                     var neighbor = neighbors[k]
@@ -1161,6 +1237,35 @@ class Model {
                 var landFrom = this.board[lookedUpLand.x][lookedUpLand.y]
 
                 var neighbors = Object.values(this.getDirectNeighborsWithDiagonals(lookedUpLand.x, lookedUpLand.y)).filter(a=>a != null && a.area == null && (a.color == color || (!a.land && (!a.unit || a.unit.color == color))))
+                
+                for(var k in neighbors){
+                    var neighbor = neighbors[k]
+                        
+                    if(lands.filter(a=>a.x == neighbor.x && a.y == neighbor.y).length == 0){
+                        var newLand = this.board[neighbor.x][neighbor.y]
+                        lands.push(newLand)
+                        nextLands.push(newLand)
+                    }
+                }
+            }
+            searchedLands = nextLands
+            nextLands = []
+        }
+        return lands
+    }
+    
+    getAreaPartsWithTheSameLandWater(x,y){
+        var land = this.board[x][y]
+        var lands = [land]
+        var landWater = land.land
+        var searchedLands = lands.slice()
+        var nextLands = []
+        for(var i = 0;i<this.boardSize*this.boardSize && searchedLands.length > 0;i++){
+            for(var j in searchedLands){
+                var lookedUpLand = searchedLands[j]
+                var landFrom = this.board[lookedUpLand.x][lookedUpLand.y]
+
+                var neighbors = Object.values(this.getDirectNeighborsWithDiagonals(lookedUpLand.x, lookedUpLand.y)).filter(a=>a != null && a.land == landWater)
                 
                 for(var k in neighbors){
                     var neighbor = neighbors[k]
