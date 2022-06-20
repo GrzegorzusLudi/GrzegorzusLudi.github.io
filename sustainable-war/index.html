@@ -1766,13 +1766,14 @@ class Controller {
             
             panel.style.display = this.model.phase == i ? 'block' : 'none'
         }
+        var myAreas = this.model.areas.filter(x=>x.color == this.model.currentPlayer).sort((a,b)=>b.fields.length - a.fields.length)
+
         switch(this.model.phase){
             case 1:
                 document.getElementById('colordisplay').style.backgroundColor = this.model.currentPlayer
                 var areasDiv = document.getElementById('areas')
                 
                 var html = ""
-                var myAreas = this.model.areas.filter(x=>x.color == this.model.currentPlayer).sort((a,b)=>b.fields.length - a.fields.length)
                 for(var i in myAreas){
                     var area = myAreas[i]
                     html += this.makeAreaDiv(area)
@@ -1781,7 +1782,6 @@ class Controller {
                 areasDiv.innerHTML = html
             break
             case 2:
-                var myAreas = this.model.areas.filter(x=>x.color == this.model.currentPlayer).sort((a,b)=>b.fields.length - a.fields.length)
 
                 document.getElementById('adding-amount').innerHTML = this.model.addingSize
                 var astats = document.getElementById('adding-stats')
@@ -1795,6 +1795,13 @@ class Controller {
             case 3:
                 var updowngrading = document.getElementById('updowngrading')
                 var updowngradingnotice = document.getElementById('updowngradingnotice')
+                var udstats = document.getElementById('updowngrading-stats')
+                var stats = ""
+                for(var i in myAreas){
+                    var area = myAreas[i]
+                    stats += this.makeAreaDiv(area)
+                }
+                udstats.innerHTML = stats
                 switch(this.model.updowngradeWay){
                     case -1:
                         updowngrading.innerHTML = "DOWNGRADE UNIT"
@@ -1893,7 +1900,8 @@ function init(){
         <input type="button" id="nextturnbutton3" value="NEXT TURN">
         <hr/>
         <div id="updowngradingnotice"></div>
-        
+        AREAS:
+        <div id="updowngrading-stats"></div>
     </div>
 </div>
 <script>
