@@ -22,7 +22,8 @@ html,body {color:white;background-color:black;font-family:Courier;width:100%; he
 }
 #updowngradingnotice{font-size:10pt}
 #averagediv{font-size:10pt}
-#colordisplay{border:1px solid white;width:80px;height:20px}
+.colordisplay{border:1px solid white;width:80px;height:20px}
+.colordisplay2{border:1px solid white;width:80px;height:20px}
 .borderedDiv {border:1px solid white;font-size:14px}
 .redspan {color:red}
 hr {border:0px, background-color:white;margin:2px;height:2px}
@@ -222,6 +223,9 @@ class Square{
         this.area = null
         this.landWaterArea = null
         
+        this.fortification = false
+        this.fortificationColor = null
+        
         this.hillColorTranslate = {
             0:'#aaa',
             1:'#bbb',
@@ -233,8 +237,29 @@ class Square{
         
         this.debug = null
     }
+    truceColor(x,y){
+        if(x == undefined)
+            x = this.x
+        if(y == undefined)
+            y = this.y
+        
+        if(this.parent.truces[this.parent.currentPlayer] && this.parent.truces[this.parent.currentPlayer][this.parent.board[x][y].color] >= 0)
+            return '#4c4'
+            
+        if(this.parent.truces[this.parent.currentPlayer] && this.parent.truces[this.parent.currentPlayer][this.parent.board[x][y].color] == -1)
+            return '#c44'
+        
+        return null
+    }
     currentPlayerStrokeColor(){
-        return this.color != null && this.color == this.parent.currentPlayer ? '#cc4' : '#444'
+        if(this.color != null && this.color == this.parent.currentPlayer) 
+            return '#cc4' 
+        
+        var tc = this.truceColor()
+        if(tc != null)
+            return tc
+            
+        return '#444'
     }
     draw(ctx){
         var sqWidth = 1000/this.parent.boardSize
@@ -353,25 +378,72 @@ class Square{
                 ctx.stroke()
             }
         }
+        
+        ctx.lineWidth = 2
+        ctx.strokeStyle = '#444'
+        
+        if(this.fortification && this.fortificationColor == this.color){
+            var places = [
+                [0,0],
+                [0.2,0],
+                [0.4,0],
+                [0.6,0],
+                [0.8,0],
+                
+                [0,0.2],
+                [0,0.4],
+                [0,0.6],
+                
+                [0,0],
+                [0.2,0.8],
+                [0.4,0.8],
+                [0.6,0.8],
+                [0.8,0.8],
+                
+                [0.8,0.2],
+                [0.8,0.4],
+                [0.8,0.6],
+            ]
+            for(var i in places){
+                var place = places[i]
+                prepareLine(ctx,(this.x+place[0])*sqWidth,(this.y+place[1])*sqWidth,(this.x+place[0]+0.2)*sqWidth,(this.y+place[1]+0.2)*sqWidth)
+                ctx.stroke()
+                prepareLine(ctx,(this.x+place[0]+0.2)*sqWidth,(this.y+place[1])*sqWidth,(this.x+place[0])*sqWidth,(this.y+place[1]+0.2)*sqWidth)
+                ctx.stroke()
+                
+            }
+            
+        }
         ctx.lineWidth = 2
         ctx.strokeStyle = '#fff'
+        
+        var tc = this.truceColor()
+        var borderWidth = 4
+        var borderColor = '#777'
+        
         var neighbors = this.parent.getDirectNeighbors(this.x,this.y)
         if(neighbors.left != null && neighbors.left.land != this.land){
             prepareLine(ctx,(this.x)*sqWidth,this.y*sqWidth,(this.x)*sqWidth,(this.y+1)*sqWidth)
             ctx.stroke()
         } else if(neighbors.left != null && neighbors.left.color != this.color && neighbors.left.land == this.land && this.land == true){
-            ctx.strokeStyle = '#888'
+            var nc = this.truceColor(neighbors.left.x,neighbors.left.y)
+            ctx.strokeStyle = tc ? tc : nc ? nc : borderColor
+            ctx.lineWidth = borderWidth
             prepareLine(ctx,(this.x)*sqWidth,this.y*sqWidth,(this.x)*sqWidth,(this.y+1)*sqWidth)
             ctx.stroke()
+            ctx.lineWidth = 1
             
         }
         if(neighbors.top != null && neighbors.top.land != this.land){
             prepareLine(ctx,this.x*sqWidth,(this.y)*sqWidth,(this.x+1)*sqWidth,(this.y)*sqWidth)
             ctx.stroke()
         } else if(neighbors.top != null && neighbors.top.color != this.color && neighbors.top.land == this.land && this.land == true){
-            ctx.strokeStyle = '#888'
+            var nc = this.truceColor(neighbors.top.x,neighbors.top.y)
+            ctx.strokeStyle = tc ? tc : nc ? nc : borderColor
+            ctx.lineWidth = borderWidth
             prepareLine(ctx,this.x*sqWidth,(this.y)*sqWidth,(this.x+1)*sqWidth,(this.y)*sqWidth)
             ctx.stroke()
+            ctx.lineWidth = 1
         }
         if(this.debug != null){
             ctx.strokeStyle = '#f00'
@@ -453,9 +525,11 @@ class Unit{
                 }
             break
             case 1:
-                if(this.level < 3){
+                var upgradeCost = this.size * 2
+                if(this.level < 3/* && this.field.area.money >= upgradeCost*/){
                     this.level++
                     this.changeMorale(4)
+                    //this.field.area.money -= upgradeCost
                 }
             break
         }
@@ -483,6 +557,8 @@ class Unit{
                 factor *= 1.5
             }
             if(this.field.cityVillage == 3)
+                factor *= 1.4
+            if(this.field.fortification)
                 factor *= 1.4
             
             factor *= 1 + (this.field.hill - landFrom.hill) * 0.2
@@ -521,7 +597,16 @@ class Unit{
         var sqWidth = 1000/this.field.parent.boardSize
         
         ctx.fillStyle = this.color
-        ctx.strokeStyle = this.food == 0 ? "#666" : "#222"
+        ctx.strokeStyle = /*this.food == 0 ? "#666" : */"#222"
+        /*
+        if(this.field.parent.truces[this.field.parent.currentPlayer] && this.field.parent.truces[this.field.parent.currentPlayer][this.color] >= 0){
+            ctx.strokeStyle = '#4c4'
+        }
+            
+        if(this.field.parent.truces[this.field.parent.currentPlayer] && this.field.parent.truces[this.field.parent.currentPlayer][this.color] == -1){
+            ctx.strokeStyle = '#c44'
+        }*/
+            
         if(glow){
             ctx.strokeStyle = "#ff0"
             ctx.fillStyle = '#00000000'
@@ -570,6 +655,18 @@ class Unit{
         }
         if(this.level >= 3){
             prepareStar(ctx,(this.field.x+0.7)*sqWidth,(this.field.y-0.3)*sqWidth,sqWidth*0.4,sqWidth*0.4)
+        }
+        if(this.field.parent.truces[this.field.parent.currentPlayer] && this.color in this.field.parent.truces[this.field.parent.currentPlayer] && this.field.parent.truces[this.field.parent.currentPlayer][this.color] >= 0){
+            
+            ctx.strokeStyle = "#000"
+            ctx.fillStyle = "#0f0"
+            
+            ctx.fillRect((this.field.x-0.1)*sqWidth,(this.field.y+0.6)*sqWidth,sqWidth*0.5+1,sqWidth*0.4+1)
+            ctx.strokeRect((this.field.x-0.1)*sqWidth,(this.field.y+0.6)*sqWidth,sqWidth*0.5+1,sqWidth*0.4+1)
+
+            var truce = this.field.parent.truces[this.field.parent.currentPlayer][this.color]
+            prepareNumber(ctx,(this.field.x+0.05)*sqWidth,(this.field.y+0.7)*sqWidth,sqWidth*0.2+1,sqWidth*0.2+1,truce)
+            ctx.stroke()
         }
         
         
@@ -636,7 +733,10 @@ class Model {
         this.moneyForSoldier = 5
         this.startMoneyForArea = 50
         
+        this.board = []
+        this.allLands = []
         this.units = []
+        this.colors = []
         
         this.phase = 0
         
@@ -650,13 +750,177 @@ class Model {
         this.addingSize = 0
         this.updowngradeWay = null
         
+        
+        this.truces = {}
+        this.proposerTruceLength = 1
+    }
+    copyModel(){
+        var state = this.saveState()
+        
+        var newModel = new Model()
+        var boardData = this.copyPlainBoard(newModel)
+        newModel.board = boardData.board
+        newModel.allLands = boardData.fieldSet
+        
+        newModel.restoreState(state,newModel)
+        return newModel
+    }
+    copyPlainBoard(model){
+        var newBoard = []
+        var newFieldSet = []
+        for(var i = 0;i<this.boardSize;i++){
+            newBoard.push([])
+            for(var j = 0;j<this.boardSize;j++){
+                var field = this.board[i][j]
+                var newField = new Square(i,j,model)
+                newBoard[i].push(newField)
+                newFieldSet.push(newField)
+                
+                newField.land = field.land
+                newField.hill = field.hill
+                newField.cityVillage = field.cityVillage
+                newField.unit = null
+            }
+        }
+        return {board: newBoard, fieldSet: newFieldSet}
     }
     
-    encodeModel(){
+    saveState(){
+        return {
+            phase:this.phase,
+            currentPlayer:this.currentPlayer,
+            temporaryPlayer:this.temporaryPlayer,
+            selectedUnit: this.selectedUnit ? {x: this.selectedUnit.field.x, y: this.selectedUnit.field.y } : null,
+            selectedUnitMoveCount:this.selectedUnitMoveCount,
+            selectedUnitLegalMoves:this.selectedUnitLegalMoves.map(a=>new Object( {x:a.x, y:a.y, distance: a.distance, lastMove: a.lastMove, stopHere:a.stopHere})),
+            addingSize:this.addingSize,
+            updowngradeWay:this.updowngradeWay,
+            board: this.saveBoard(),
+            areas: this.saveAreas(),
+            colors: this.colors.slice(),
+            truces: Object.assign(this.truces)
+        }
+    }
+    saveBoard(){
+        var newBoard = []
+        for(var i = 0;i<this.boardSize;i++){
+            newBoard[i] = []
+            for(var j = 0;j<this.boardSize;j++){
+                var field = this.board[i][j]
+                newBoard[i][j] = {
+                    x:i,
+                    y:j,
+                    color:field.color,
+                    unit:this.saveUnit(field.unit)
+                }
+            }
+        }
+        return newBoard
+    }
+    saveUnit(unit){
+        if(unit == null)
+            return null
+        return {
+            color:unit.color,
+            size:unit.size,
+            morale:unit.morale,
+            food:unit.food,
+            range:unit.range,
+            paid:unit.paid,
+            moved:unit.moved,
+            level:unit.level
+        }
+    }
+    restoreBoard(board){
+        for(var i = 0;i<this.boardSize;i++){
+            for(var j = 0;j<this.boardSize;j++){
+                if(this.board[i][j].unit)
+                    this.board[i][j].removeUnit(this.board[i][j].unit)
+                this.board[i][j].color = board[i][j].color
+                this.board[i][j].area = null
+                var unit = board[i][j].unit
+                if(unit != null){
+                    this.restoreUnit(i,j,unit)
+                }
+            }
+        }
+    }
+    restoreUnit(x,y,unitData){
+        var newUnit = new Unit(unitData.color,unitData.size,unitData.morale,unitData.food)
+        
+        newUnit.range = unitData.range
+        newUnit.paid = unitData.paid
+        newUnit.moved = unitData.moved
+        newUnit.level = unitData.level
+        
+        this.board[x][y].addUnit(newUnit)
         
     }
-    decodeModel(){
+    saveAreas(){
+        var newAreas = []
+        for(var i in this.areas){
+            var area = this.areas[i]
+            newAreas.push({
+                color:area.color,
+                money:area.money,
+                people:area.people,
+                food:area.food,
+                
+                villages:area.villages,
+                cities:area.cities,
+                mines:area.mines,
+                crosses:area.crosses,
+                
+                fields:area.fields.map( a=>new Object({ x:a.x, y:a.y })),
+                
+                number:area.number
+            })
+        }
+        return newAreas
+    }
+    restoreState(state,model){
+        this.phase = state.phase
+        this.currentPlayer = state.currentPlayer
+        this.temporaryPlayer = state.temporaryPlayer
         
+            this.restoreBoard(state.board)
+            this.restoreAreas(state.areas,model)
+            
+        this.selectedUnit = state.selectedUnit ? this.board[state.selectedUnit.x][state.selectedUnit.y].unit : null
+        this.selectedUnitMoveCount = state.selectedUnitMoveCount
+        this.selectedUnitLegalMoves = state.selectedUnitLegalMoves.map(a=>new Object( {x:a.x, y:a.y, distance: a.distance, lastMove: a.lastMove, stopHere:a.stopHere}))
+        this.addingSize = state.addingSize
+        this.updowngradeWay = state.updowngradeWay
+        this.colors = state.colors.slice()
+        this.truces = Object.assign(state.truces)
+    }
+    restoreAreas(areas,model){
+        this.areas = []
+        
+        for(var i in areas){
+            var area = areas[i]
+
+            var newArea = new Area(area.color,model)
+            
+            newArea.money = area.money
+            newArea.people = area.people
+            
+            newArea.food = area.food
+            
+            newArea.villages = area.villages
+            newArea.cities = area.cities
+            newArea.mines = area.mines
+            newArea.crosses = area.crosses
+            
+            newArea.fields = area.fields.map(a=>this.board[a.x][a.y])
+            for(var i in newArea.fields){
+                newArea.fields[i].area = newArea
+            }
+            
+            newArea.number = area.number
+            
+            this.areas.push(newArea)
+        }
     }
     
     prepareBoard(){
@@ -865,6 +1129,7 @@ class Model {
     }
     prepareUnits(){
         this.colors = []
+        this.truces = {}
     
         var cities = this.allLands.filter(x => x.land == true && x.cityVillage == 3)
         cities = cities.sort((a,b)=>(a.x+a.y) % 3 - (b.x+b.y) % 3)
@@ -874,9 +1139,14 @@ class Model {
             var city = cities[i]
             var color = randomColor()
             var newUnit = new Unit(color,50,5,2)
-            if(this.colors.indexOf(color) == -1)
+            if(this.colors.indexOf(color) == -1){
                 this.colors.push(color)
+                this.truces[color] = {}
+            }
             this.placeUnit(city.x,city.y,newUnit)
+        }
+        for(var i in this.areas){
+            this.areas[i].money += 50
         }
     }
     announceCapture(field, unit, previousColor, color){
@@ -910,8 +1180,15 @@ class Model {
         var neighbors = Object.values(this.getDirectNeighborsWithDiagonals(x,y))
         
         for(var i in neighbors){
-            if(neighbors[i] != null)
+
+            if(neighbors[i] != null){
+                if(unit.color != null && neighbors[i].color in this.truces[unit.color] && this.truces[unit.color][neighbors[i].color] >= 0)
+                    continue
+                if(neighbors[i].fortification && neighbors[i].fortificationColor != unit.color)
+                    continue
+                
                 this.tryColor(neighbors[i],unit.color)
+            }
         }
     }
     placeUnit(x,y,unit,colorTrack,addMorale){
@@ -946,6 +1223,7 @@ class Model {
     nextTurn(dontOrganize){
         var crossCount = this.allLands.filter(x=>x.color == this.currentPlayer && x.land && x.cityVillage == 4).length
         this.allLands.filter(x=>x.unit != null && x.color == this.currentPlayer).map(x=>x.unit).forEach(x=>x.restoreRange(crossCount))
+        this.allLands.filter(x=>x.unit != null && x.fortification && x.fortificationColor != x.color).forEach(x => x.fortification = false)
         
         if(!dontOrganize){
             this.organizeAreas()
@@ -956,6 +1234,7 @@ class Model {
                     area.redistribute()
                 }
             }
+            
         }
         var newColors = []
         for(var i in this.colors){
@@ -969,6 +1248,8 @@ class Model {
                 for(var i in units){
                     var unit = units[i]
                     if(unit.rebelIfTired(rebelColor)){
+                        this.truces[rebelColor] = {}
+
                         var field = unit.field
                         field.removeUnit(unit)
                         this.placeUnit(field.x,field.y,unit)
@@ -977,6 +1258,14 @@ class Model {
                 }
                 if(added && this.colors.indexOf(rebelColor) == -1 && newColors.indexOf(rebelColor) == -1){
                     newColors.push(rebelColor)
+                    this.organizeAreas()
+                    for(var i in this.areas){
+                        var area = this.areas[i]
+                        if(area.color == rebelColor){
+                            area.redistribute()
+                        }
+                    }
+
                 }
             }
         }
@@ -991,6 +1280,14 @@ class Model {
         
         if(this.allLands.filter(x=>x.color == this.currentPlayer && x.land).length == 0){
             this.nextTurn(true)
+        } else {
+            for(var player in this.truces[this.currentPlayer]){
+                if(this.truces[this.currentPlayer][player] > 0){
+                    this.truces[this.currentPlayer][player]--
+                } else {
+                    delete this.truces[this.currentPlayer][player]
+                }
+            }
         }
     }
     
@@ -1000,6 +1297,7 @@ class Model {
             this.phase = 1
             this.color = color
             this.currentPlayer = this.colors[0]
+            this.temporaryPlayer = null
             
             this.organizeAreas()
             for(var i in this.areas){
@@ -1045,6 +1343,10 @@ class Model {
                     continue
                 if(move.stopHere)
                     continue
+
+                if(landFrom.fortification && landFrom.fortificationColor != land.color)
+                    continue
+                    
                 var neighbors = Object.values(this.getDirectNeighborsWithDiagonals(move.x, move.y)).filter(a=>a != null)
                 
                 var stopHere = false
@@ -1055,6 +1357,8 @@ class Model {
                     var neighbor = neighbors[k]
                     var lateness = this.lateness(landFrom,neighbor,land.unit)
                     if(lateness == null)
+                        continue
+                    if(land.land && land.color != null && neighbor.color in this.truces[land.color] && this.truces[land.color][neighbor.color] >= 0)
                         continue
                     //if(stopHere && !neighbor.unit)
                     //    continue
@@ -1080,7 +1384,7 @@ class Model {
     selectUnit(x,y,part){
         if(this.phase == 1 && this.board[x][y].unit){
             var unit = this.board[x][y].unit
-            if(unit.color == this.currentPlayer && unit.food > 0){
+            if(unit.color == this.currentPlayer/* && unit.food > 0*/){
                 this.selectedUnit = unit
                 this.selectedUnitMoveCount = part
                 this.selectedUnitLegalMoves = this.getUnitLegalMoves(x,y)
@@ -1142,6 +1446,8 @@ class Model {
                 if(toLeave > 0){
                     unitLeft = unit1.divide(toLeave)
                 }
+                
+                unit1.removeRange(distance)
                 if(unit2){
                     if(unit2.color != unit1.color){
                         this.battle(unit1,unit2,this.board[x1][y1])
@@ -1162,7 +1468,6 @@ class Model {
                 }
                 
                 if(unit1.size > 0){
-                    unit1.removeRange(distance)
                     this.placeUnit(x2,y2,unit1,true,true)
                 }
                 this.deselectUnit()
@@ -1291,12 +1596,31 @@ class Model {
         this.organizeAreas()
     }
     backToPlaying(){
+        this.temporaryPlayer = null
         this.phase = 1
     }
     updowngrade(way){
         this.deselectUnit()
         this.phase = 3
         this.updowngradeWay = way
+    }
+    startTrucing(){
+        this.phase = 4
+    }
+    changeProposerTruceLength(n){
+        this.proposerTruceLength = n
+    }
+    startFortifying(){
+        this.phase = 6
+    }
+    acceptTruce(){
+        this.phase = 1
+        this.truces[this.currentPlayer][this.temporaryPlayer] = this.proposerTruceLength
+        this.truces[this.temporaryPlayer][this.currentPlayer] = this.proposerTruceLength
+    }
+    rejectTruce(){
+        this.phase = 1
+        this.truces[this.currentPlayer][this.temporaryPlayer] = -1
     }
     tryPlaceUnit(x,y,addingSize){
         var land = this.board[x][y]
@@ -1327,6 +1651,26 @@ class Model {
         var land = this.board[x][y]
         if(land.land && land.color == this.currentPlayer && land.unit && land.unit.color == this.currentPlayer){
             land.unit.tryFund(updowngradeWay)
+        }
+    }
+    tryTruce(x,y,proposerTruceLength){
+        var land = this.board[x][y]
+        
+        if(land.land && land.color != this.currentPlayer && land.color != undefined && !(land.color in this.truces[this.currentPlayer])){
+            this.proposerTruceLength = proposerTruceLength
+            this.phase = 5
+            this.temporaryPlayer = land.color
+        }
+    }
+    tryFortify(x,y){
+        var land = this.board[x][y]
+        var fortificationPrice = 50
+        if(land.land && land.cityVillage != 3 && land.color == this.currentPlayer && !land.fortification){
+            if(land.area.money >= fortificationPrice){
+                land.area.money -= fortificationPrice
+                land.fortification = true
+                land.fortificationColor = this.currentPlayer
+            }
         }
     }
 }
@@ -1522,13 +1866,25 @@ class Controller {
         this.nextturnbutton2 = document.getElementById("nextturnbutton2")
         this.nextturnbutton3 = document.getElementById("nextturnbutton3")
         
-        this.add1 = document.getElementById("add1")
+        this.trucebutton = document.getElementById("trucebutton")
+        this.numbertrucebuttons = {}
+        for(var i=1;i<=9;i++){
+            this.numbertrucebuttons[i] = document.getElementById("truce"+i)
+        }
+        this.stoptrucing = document.getElementById("stoptrucing")
+        this.accepttruce = document.getElementById("accepttruce")
+        this.rejecttruce = document.getElementById("rejecttruce")
+        
+        this.fortifybutton = document.getElementById("fortify")
+        this.stopfortifyingbutton = document.getElementById("stopfortifying")
+        
+        //this.add1 = document.getElementById("add1")
         this.add5 = document.getElementById("add5")
         this.add10 = document.getElementById("add10")
         this.add50 = document.getElementById("add50")
         this.add99 = document.getElementById("add99")
         
-        this.changeadd1 = document.getElementById("changeadd1")
+        //this.changeadd1 = document.getElementById("changeadd1")
         this.changeadd5 = document.getElementById("changeadd5")
         this.changeadd10 = document.getElementById("changeadd10")
         this.changeadd50 = document.getElementById("changeadd50")
@@ -1543,6 +1899,9 @@ class Controller {
         this.stopupgrading = document.getElementById("stopupgrading")
         
         this.stopadding = document.getElementById("stopadding")
+        
+        //this.ssbutton = document.getElementById("ssbutton")
+        //this.rsbutton = document.getElementById("rsbutton")
 
         this.generation = 0
         this.going = false
@@ -1554,14 +1913,13 @@ class Controller {
         this.nextturnbutton2.onclick = () => {th.nextTurn()}
         this.nextturnbutton3.onclick = () => {th.nextTurn()}
         
-        
-        this.add1.onclick = () => {th.startAdding(1)}
+        //this.add1.onclick = () => {th.startAdding(1)}
         this.add5.onclick = () => {th.startAdding(5)}
         this.add10.onclick = () => {th.startAdding(10)}
         this.add50.onclick = () => {th.startAdding(50)}
         this.add99.onclick = () => {th.startAdding(99)}
         
-        this.changeadd1.onclick = () => {th.startAdding(1)}
+        //this.changeadd1.onclick = () => {th.startAdding(1)}
         this.changeadd5.onclick = () => {th.startAdding(5)}
         this.changeadd10.onclick = () => {th.startAdding(10)}
         this.changeadd50.onclick = () => {th.startAdding(50)}
@@ -1572,10 +1930,36 @@ class Controller {
         this.upgradeunitbutton2.onclick = () => {th.updowngrade(1)}
         this.downgradeunitbutton2.onclick = () => {th.updowngrade(-1)}
         
+        this.trucebutton.onclick = () => {th.startTrucing()}
+        for(var i=1;i<=9;i++){
+            let j = i
+            this.numbertrucebuttons[i].onclick = () => {th.changeProposerTruceLength(j)}
+        }
+        
         
         
         this.stopadding.onclick = () => {th.backToPlaying()}
         this.stopupgrading.onclick = () => {th.backToPlaying()}
+        this.stoptrucing.onclick = () => {th.backToPlaying()}
+        
+        this.accepttruce.onclick = () => {th.acceptTruce()}
+        this.rejecttruce.onclick = () => {th.rejectTruce()}
+        
+        this.fortifybutton.onclick = () => {th.startFortifying()}
+        this.stopfortifyingbutton.onclick = () => {th.backToPlaying()}
+        
+        this.savedState = null
+        //this.ssbutton.onclick = () => {
+        //    //this.savedState = th.model.saveState()
+        //    this.savedState = th.model.copyModel()
+        //}
+        //this.rsbutton.onclick = () => {
+        //    if(this.savedState != null){
+        //        //th.model.restoreState(this.savedState,th.model)
+        //        th.model = this.savedState.copyModel()
+        //        th.draw()
+        //    }
+        //}
         
         this.prepareEvents()
         
@@ -1591,6 +1975,30 @@ class Controller {
     }
     startAdding(size){
         this.model.startAdding(size)
+        this.draw()
+    }
+    startTrucing(){
+        this.model.startTrucing()
+        this.draw()
+    }
+    acceptTruce(){
+        this.model.acceptTruce()
+        this.draw()
+    }
+    rejectTruce(){
+        this.model.rejectTruce()
+        this.draw()
+    }
+    changeProposerTruceLength(i){
+        this.model.changeProposerTruceLength(i)
+        this.draw()
+    }
+    startFortifying(){
+        this.model.startFortifying()
+        this.draw()
+    }
+    backToPlaying(){
+        this.model.acceptTruce()
         this.draw()
     }
     backToPlaying(){
@@ -1689,6 +2097,12 @@ class Controller {
                 case 3:
                     this.tryUpDowngradeUnit(cu.x,cu.y)
                 break
+                case 4:
+                    this.tryTruce(cu.x,cu.y)
+                break
+                case 6:
+                    this.tryFortify(cu.x,cu.y)
+                break
             }
 	}
 	mousedown(e){
@@ -1754,6 +2168,14 @@ class Controller {
         this.model.tryUpDowngradeUnit(x,y,this.model.updowngradeWay)
         this.draw()
 	}
+	tryTruce(x,y){
+        this.model.tryTruce(x,y,this.model.proposerTruceLength)
+        this.draw()
+	}
+	tryFortify(x,y){
+        this.model.tryFortify(x,y)
+        this.draw()
+	}
 	nextTurn(){
         if(this.model.phase == 2 || this.model.phase == 3)
             this.model.backToPlaying()
@@ -1761,16 +2183,20 @@ class Controller {
         this.draw()
 	}
 	updatePanel(){
-        for(var i = 0;i<=3;i++){
+        for(var i = 0;i<=6;i++){
             var panel = document.getElementById('phase'+i)
             
             panel.style.display = this.model.phase == i ? 'block' : 'none'
         }
         var myAreas = this.model.areas.filter(x=>x.color == this.model.currentPlayer).sort((a,b)=>b.fields.length - a.fields.length)
+        let th = this
+
+        Array.from(document.getElementsByClassName('colordisplay')).forEach(x => x.style.backgroundColor = th.model.currentPlayer)
+        Array.from(document.getElementsByClassName('colordisplay2')).forEach(x => x.style.backgroundColor = th.model.temporaryPlayer)
+
 
         switch(this.model.phase){
             case 1:
-                document.getElementById('colordisplay').style.backgroundColor = this.model.currentPlayer
                 var areasDiv = document.getElementById('areas')
                 
                 var html = ""
@@ -1813,6 +2239,24 @@ class Controller {
                     break
                 }
             break
+            case 4:
+                var trucelengthElement = document.getElementById('trucelength')
+                trucelengthElement.innerHTML = this.model.proposerTruceLength + ' turn' + (this.model.proposerTruceLength == 1 ? '' : 's')
+            break
+            case 5:
+                var element = document.getElementById('proposal')
+                proposal.innerHTML = "Player offered truce for "+this.model.proposerTruceLength+" turns."
+            break
+            case 6:
+                var udstats = document.getElementById('fortyfying-stats')
+                var stats = ""
+                for(var i in myAreas){
+                    var area = myAreas[i]
+                    stats += this.makeAreaDiv(area)
+                }
+                udstats.innerHTML = stats
+                
+            break
         }
 	}
 	makeAreaDiv(area){
@@ -1851,12 +2295,17 @@ function init(){
     <div id="phase1">
         <!--input type="button" id="restartbutton" value="SHUFFLE"-->
         PLAYER:
-        <div id="colordisplay"></div>
+        <div class="colordisplay"></div>
         <br/>
         <input type="button" id="nextturnbutton" value="NEXT TURN">
+        <input type="button" id="trucebutton" value="OFFER TRUCE">
+        
+        
+        <!--input type="button" id="ssbutton" value="SAVE STATE">
+        <input type="button" id="rsbutton" value="RESTORE STATE"-->
         <hr/>
         ADD UNITS:
-        <input type="button" id="add1" value="+1">
+        <!--input type="button" id="add1" value="+1"-->
         <input type="button" id="add5" value="+5">
         <input type="button" id="add10" value="+10">
         <input type="button" id="add50" value="+50">
@@ -1867,18 +2316,24 @@ function init(){
 
         <input type="button" id="upgradeunitbutton" value="FUND UNIT">
         <input type="button" id="downgradeunitbutton" value="DEFUND UNIT">
-        (temporary morale boost)
+        (morale boost and keep)
+        <hr/>
+        FORTIFICATIONS:<br/>
+        <input type="button" id="fortify" value="FORTIFY">
         <hr/>
         AREAS:
         <div id="areas"></div>
 
     </div>
     <div id="phase2">
+        PLAYER:
+        <div class="colordisplay"></div>
+        <br/>
         ADDING <span id="adding-amount"></span> TROOPS
         <br/>
         
         CHANGE QUANTITY:
-        <input type="button" id="changeadd1" value="+1">
+        <!--input type="button" id="changeadd1" value="+1"-->
         <input type="button" id="changeadd5" value="+5">
         <input type="button" id="changeadd10" value="+10">
         <input type="button" id="changeadd50" value="+50">
@@ -1892,6 +2347,9 @@ function init(){
         <div id="adding-stats"></div>
     </div>
     <div id="phase3">
+        PLAYER:
+        <div class="colordisplay"></div>
+        <br/>
         <div id="updowngrading"></div>
         <input type="button" id="upgradeunitbutton2" value="FUND UNIT">
         <input type="button" id="downgradeunitbutton2" value="DEFUND UNIT">
@@ -1902,6 +2360,59 @@ function init(){
         <div id="updowngradingnotice"></div>
         AREAS:
         <div id="updowngrading-stats"></div>
+    </div>
+    <div id="phase4">
+        PLAYER:
+        <div class="colordisplay"></div>
+        <br/>
+        CHOOSE PLAYER ON TO TRUCE WITH
+        <br/>
+        <input type="button" id="stoptrucing" value="RESIGN">
+        <hr/>
+        NUMBER OF TURNS WITH TRUCE:
+        <br/>
+        <input type="button" id="truce1" value="&nbsp;1&nbsp;" />
+        <input type="button" id="truce2" value="&nbsp;2&nbsp;" />
+        <input type="button" id="truce3" value="&nbsp;3&nbsp;" />
+        <br/>
+        <input type="button" id="truce4" value="&nbsp;4&nbsp;" />
+        <input type="button" id="truce5" value="&nbsp;5&nbsp;" />
+        <input type="button" id="truce6" value="&nbsp;6&nbsp;" />
+        <br/>
+        <input type="button" id="truce7" value="&nbsp;7&nbsp;" />
+        <input type="button" id="truce8" value="&nbsp;8&nbsp;" />
+        <input type="button" id="truce9" value="&nbsp;9&nbsp;" />
+        <br/>
+        Propose <span id="trucelength"></span>
+        <br/>
+
+    </div>
+    <div id="phase5">
+        PLAYER:
+        <div class="colordisplay"></div>
+        <br/>
+        PLAYER WHO PROPOSED TRUCE:
+        <div class="colordisplay2"></div>
+        <br/>
+        <span id="proposal"></span>
+        <br/>
+        Do you accept?<br/>
+        <input type="button" id="accepttruce" value="ACCEPT"><br/>
+        <input type="button" id="rejecttruce" value="REJECT">
+    </div>
+    <div id="phase6">
+        PLAYER:
+        <div class="colordisplay"></div>
+        <br/>
+        Choose places outside towns to fortify.<br/>
+        Cost: 50$ for area.<br/>
+        Stops 
+        <br/>
+        <input type="button" id="stopfortifying" value="STOP FORTIFYING">
+        <br/>
+        AREAS:
+        <div id="fortyfying-stats"></div>
+        
     </div>
 </div>
 <script>
