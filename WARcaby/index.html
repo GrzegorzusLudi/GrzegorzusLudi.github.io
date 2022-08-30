@@ -228,7 +228,7 @@ function evalAttack(pawns, dams){
     return Math.min(value, MAX_PIECES)
 }
 function evalDefence(pawns, dams){
-	return Math.min((dams > 0 && dams + pawns<6?3:0) + dams*3 + pawns + 1, MAX_PIECES-1)
+	return Math.min((dams > 0 && dams + pawns<6?3:0) + dams*3 + pawns + 2, MAX_PIECES-1)
 }
 class DummyLand{
 	constructor(){
@@ -1877,7 +1877,7 @@ class Ai{
 		this.checkedStates = {}
 		
 		this.lastTurnAttacks = null
-		this.turnRepeated = 20
+		this.turnRepeated = 3
 		
                 this.pawnValue = 1
                 this.damValue = 3
@@ -1935,7 +1935,7 @@ class Ai{
 						//this.gamecontroller.draw()
 					} else if(this.gamecontroller.model.phase == 1){
                                                 this.lastTurnAttacks = null
-                                                this.turnRepeated = 20
+                                                this.turnRepeated = 3
                                                 this.gamecontroller.act({type:"pass", move:"pass"})
                                                 //this.gamecontroller.draw()
 					} else if(this.attacking.length>0) {
@@ -1954,7 +1954,9 @@ class Ai{
                                                 if(leg.length>0){
                                                     if(this.gamecontroller.aiLevel(moveToPlay.land2.color))
                                                         leg[0].hidden = true
-                                                    this.gamecontroller.act(leg[0])
+                                                    var dontAttack = this.gamecontroller.model.selectedLand.pawns - this.gamecontroller.model.selectedLand.movedPawns <= 1 && this.gamecontroller.model.selectedLand.dams - this.gamecontroller.model.selectedLand.movedDams <= 0
+                                                    if(!dontAttack)
+                                                        this.gamecontroller.act(leg[0])
                                                     attacked++
                                                 }
                                                 //this.gamecontroller.draw()
@@ -1965,11 +1967,11 @@ class Ai{
                                                 this.attacking = this.attacking.slice(1)
                                             }
                                             
-                                            if(this.attacking.length === 0 && attacked>0 && this.turnRepeated > 0){
+                                            if(this.attacking.length === 0 && attacked>=0 && this.turnRepeated > 0){
                                                 this.attacking = this.planAttacking()
-                                                if(this.codeAttacking(this.attacking) == this.lastTurnAttacks)
-                                                    this.attacking = []
-                                                this.lastTurnAttacks = this.codeAttacking(this.attacking)
+                                                //if(this.codeAttacking(this.attacking) == this.lastTurnAttacks)
+                                                //    this.attacking = []
+                                                //this.lastTurnAttacks = this.codeAttacking(this.attacking)
                                                 this.turnRepeated--
                                             }
                                             
@@ -2194,7 +2196,7 @@ class Ai{
                 .filter(x=>x.color === curcolor )
                     .map(x=>evalDefence(x.pawns,x.dams) + x.additional).reduce((x,y)=>x+y,0)
                 
-                if(mystrength*2+1<enemiesStrength){
+                if(mystrength*3+1<enemiesStrength){
                     console.log("HALT")
                     return []
                 }
@@ -2228,57 +2230,58 @@ class Ai{
             
             var defendingPlan = {}
             
-            for(var z = 0;z<3;z++){
-            for(var i in edgesByLand){
-                var ebl = edgesByLand[i]
-                var ap = attackingPlan[ebl.land.id]
-                var enms = ebl.enemies.map(x=>x).sort(
-                    (x,y)=>(
-                        -Math.min(4,x.potential) + 
-                        Math.min(4,y.potential)
-                    )
-                ).filter(x=>x.potential>=-1)
-                var len = enms.length
-                for(var j in enms){
-                    var e = enms[j]
-                    if(!(e.land2.id in defendingPlan))
-                        defendingPlan[e.land2.id] = {land:e.land2, power: evalDefence(e.land2.pawns, e.land2.dams)}
-                    
-                }
-                var remaining = null
-                for(var j in enms){
-                    var e = enms[j]
-                    /*
-                    if(j==enms.length-1 || evalAttack(ap.plannedPawns,ap.plannedDams)-2<=defendingPlan[enms[j].land2.id].power){
-                        break
-                    }*/
-                    
-                    while((defendingPlan[e.land2.id].power>-2) && ap.plannedPawns+ap.plannedDams > 0){
-                        if(ap.plannedPawns>0){
-                            e.plannedPawns++
-                            ap.plannedPawns--
-                            defendingPlan[e.land2.id].power-=this.pawnValue
-                            e.potential-=this.pawnValue
-                        }
-                        if(ap.plannedDams>0 && (ap.plannedPawns == 0 || e.plannedDams == 0)){
-                            e.plannedDams++
-                            ap.plannedDams--
-                            defendingPlan[e.land2.id].power-=this.damValue
-                            e.potential-=this.damValue
-                        }
+            for(var z = 0;z<1;z++){
+                for(var i in edgesByLand){
+                    var ebl = edgesByLand[i]
+                    var ap = attackingPlan[ebl.land.id]
+                    var enms = ebl.enemies.map(x=>x).sort(
+                        (x,y)=>(
+                            -Math.min(4,x.potential) + 
+                            Math.min(4,y.potential)
+                        )
+                    ).filter(x=>x.potential>=-1)
+                    var len = enms.length
+                    for(var j in enms){
+                        var e = enms[j]
+                        if(!(e.land2.id in defendingPlan))
+                            defendingPlan[e.land2.id] = {land:e.land2, power: evalDefence(e.land2.pawns, e.land2.dams)}
+                        
                     }
-                    remaining = e
+                    var remaining = null
+                    for(var j in enms){
+                        var e = enms[j]
+                        /*
+                        if(j==enms.length-1 || evalAttack(ap.plannedPawns,ap.plannedDams)-2<=defendingPlan[enms[j].land2.id].power){
+                            break
+                        }*/
+                        
+                        while((defendingPlan[e.land2.id].power>-2 || j==enms.length-1) && ap.plannedPawns+ap.plannedDams > 0){
+                        console.log(defendingPlan[e.land2.id].power)
+                            if(ap.plannedPawns>0){
+                                e.plannedPawns++
+                                ap.plannedPawns--
+                                defendingPlan[e.land2.id].power-=this.pawnValue
+                                e.potential-=this.pawnValue
+                            }
+                            if(ap.plannedDams>0 && (ap.plannedPawns == 0 || e.plannedDams == 0)){
+                                e.plannedDams++
+                                ap.plannedDams--
+                                defendingPlan[e.land2.id].power-=this.damValue
+                                e.potential-=this.damValue
+                            }
+                        }
+                        remaining = e
+                    }
+                    if(remaining !== null){
+                        var e = remaining
+                        defendingPlan[e.land2.id].power-=ap.plannedPawns * this.pawnValue + ap.plannedDams * ap.damValue
+                        e.potential-=ap.plannedPawns * this.pawnValue + ap.plannedDams * ap.damValue
+                        e.plannedPawns+=ap.plannedPawns
+                        ap.plannedPawns=0
+                        e.plannedDams+=ap.plannedDams
+                        ap.plannedDams=0
+                    }
                 }
-                if(remaining !== null){
-                    var e = remaining
-                    defendingPlan[e.land2.id].power-=ap.plannedPawns * this.pawnValue + ap.plannedDams * ap.damValue
-                    e.potential-=ap.plannedPawns * this.pawnValue + ap.plannedDams * ap.damValue
-                    e.plannedPawns+=ap.plannedPawns
-                    ap.plannedPawns=0
-                    e.plannedDams+=ap.plannedDams
-                    ap.plannedDams=0
-                }
-            }
             }
             
             for(var i in edgesByLand){
@@ -2288,8 +2291,8 @@ class Ai{
             }
             
             
-            return edgesByLand.map(x=>x.enemies).reduce((x,y)=>x.concat(y),[]).filter(x=>x.plannedPawns+x.plannedDams>0 && evalAttack(x.plannedPawns,x.plannedDams)+5 >= evalDefence(x.land2.pawns,x.land2.dams) &&
-                (x.land1.pawns-x.land1.movedPawns+(x.land1.dams-x.land1.movedDams)*3 > 1))
+            return edgesByLand.map(x=>x.enemies).reduce((x,y)=>x.concat(y),[]).filter(x=>x.plannedPawns+x.plannedDams>0/* && evalAttack(x.plannedPawns,x.plannedDams)+2 >= evalDefence(x.land2.pawns,x.land2.dams) &&
+                (x.land1.pawns-x.land1.movedPawns+(x.land1.dams-x.land1.movedDams)*3 > 1)*/)
 	}
 	//works if turn is 0
 	noSenseInLongerPlay(state){
@@ -2316,8 +2319,8 @@ class Ai{
                         onCorners = onCorners.concat(diagonal2.map(x=>state.board[x]).filter(x=>x==3))
                 return 
                 onCorners.length == 1 && corners1.indexOf(onCorners[0])>-1 && overdiagonal1.map(x=>state.board[x]).filter(x=>x===0).length > 0 || 
-                onCorners.length == 1 && corners2.indexOf(onCorners[0])>-1 && overdiagonal2.map(x=>state.board[x]).filter(x=>x===0).length > 0 ||
-                onCorners.length == 2 && overdiagonal2.map(x=>state.board[x]).filter(x=>x===0).length > 0
+                onCorners.length == 1 && corners2.indexOf(onCorners[0])>-1 && overdiagonal2.map(x=>state.board[x]).filter(x=>x===0).length > 0// ||
+                //onCorners.length == 2 && overdiagonal2.map(x=>state.board[x]).filter(x=>x===0).length > 0
 			
         }
         noSenseInLongerPlayCheckConfiguration(myPawns,opponentPawns,myDams,opponentDams){
@@ -2356,9 +2359,9 @@ class Ai{
 		var code = this.gamecontroller.model.checkersGame.getStateCode(0,0)
 		
 		var statesAiStrength = {
-                    '1':[1000,150,125,12],
-                    '2':[4000,600,500,50],
-                    '3':[10000,1500,1250,125]
+                    '1':[1000,300,250,50],
+                    '2':[4000,1200,1000,200],
+                    '3':[10000,3000,2500,500]
 		}
 		
 		this.bestValuesAtDepth1 = {}
@@ -2379,7 +2382,7 @@ class Ai{
 			//depth = 0
                     //}
                 }
-                console.log(minmax.move)
+                //console.log(minmax.move)
 		if(legal.indexOf("pass")>-1 && (minmax.move == null || this.statesInPast[code] > 1/* || this.gamecontroller.model.checkersGame.phase == 0 && this.gamecontroller.model.checkersGame.opponentValue() < this.gamecontroller.model.checkersGame.placedValues()-2*/ || (this.noSenseInLongerPlay(simulated) && simulated.turn === 0))){
 			this.gamecontroller.checkersGameMove("pass")
 			this.attacking = this.attacking.slice(1)
@@ -2408,19 +2411,22 @@ class Ai{
 			*/
                             
 			var onCorners = []
-			var diagonal1 = ["11",/*"22","33","44","55","66",*/"77"]
-			var diagonal2 = ["17",/*"26","35","44","53","62",*/"71"]
-			if(diagonal1.map(x=>simulated.board[x]).filter(x=>x==2).length > 0 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==1 || x==3).length == 0)
-				onCorners = onCorners.concat(diagonal1.map(x=>simulated.board[x]).filter(x=>x==2))
-			if(diagonal1.map(x=>simulated.board[x]).filter(x=>x==3).length > 0 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==0 || x==2).length == 0)
-				onCorners = onCorners.concat(diagonal1.map(x=>simulated.board[x]).filter(x=>x==3))
-			if(diagonal2.map(x=>simulated.board[x]).filter(x=>x==2).length > 0 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==1 || x==3).length == 0)
-				onCorners = onCorners.concat(diagonal2.map(x=>simulated.board[x]).filter(x=>x==2))
-			if(diagonal2.map(x=>simulated.board[x]).filter(x=>x==3).length > 0 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==0 || x==2).length == 0)
-				onCorners = onCorners.concat(diagonal2.map(x=>simulated.board[x]).filter(x=>x==3))
+			var diagonal1 = ["11","22","33","44","55","66","77"]
+			var diagonal2 = ["17","26","35","44","53","62","71"]
+			var corners1 = ["11",/*"22","33","44","55","66",*/"77"]
+			var corners2 = ["17",/*"26","35","44","53","62",*/"71"]
+			if(corners1.map(x=>simulated.board[x]).filter(x=>x==2).length == 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==2).length == 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==1 || x==3 || x==0).length == 0)
+				onCorners = onCorners.concat(corners1.map(x=>simulated.board[x]).filter(x=>x==2))
+			if(corners1.map(x=>simulated.board[x]).filter(x=>x==3).length == 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==3).length == 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==0 || x==2 || x==1).length == 0)
+				onCorners = onCorners.concat(corners1.map(x=>simulated.board[x]).filter(x=>x==3))
+			if(corners2.map(x=>simulated.board[x]).filter(x=>x==2).length == 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==2).length == 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==1 || x==3 || x==0).length == 0)
+				onCorners = onCorners.concat(corners2.map(x=>simulated.board[x]).filter(x=>x==2))
+			if(corners2.map(x=>simulated.board[x]).filter(x=>x==3).length == 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==3).length == 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==0 || x==2 || x==1).length == 0)
+				onCorners = onCorners.concat(corners2.map(x=>simulated.board[x]).filter(x=>x==3))
 			
 			//var corners1 = ["11","77"]
 			//var corners2 = ["17","71"]
+			var turnfactor = simulated.turn == 0 ? 1 : -1
 			
 			var legals = simulated.legal().filter(x=>x!="pass")
 			if(legals.length==0){/*
@@ -2433,7 +2439,9 @@ class Ai{
 				*/
 				
 				
-				return (this.max_possible * this.max_possible + 10 ) * ((countedBoard.filter(x=>x==2 || x==0).length > countedBoard.filter(x=>x==3 || x==1).length) ? 1 : -1) /* * (
+				return -(this.max_possible * this.max_possible + 10 ) * turnfactor //((countedBoard.filter(x=>x==2 || x==0).length > countedBoard.filter(x=>x==3 || x==1).length) ? 1 : -1 ) 
+				
+				/* * (
 				(countedBoard.filter(x=>x==0).length
 				+countedBoard.filter(x=>x==2).length*this.damValue) +
 				(countedBoard.filter(x=>x==1).length
@@ -2443,10 +2451,10 @@ class Ai{
 
             //if(onCorners.filter(x=>x==2).length > 0 && onCorners.filter(x=>x==3).length == 0)
             //    return this.max_possible * this.max_possible
-           // if(onCorners.filter(x=>x==3).length > 0)
-           //     return -this.max_possible * this.max_possible
+            //if(onCorners.filter(x=>x==3).length > 0)
+            //    return -this.max_possible * this.max_possible
                 
-            if(this.noSenseInLongerPlay(simulated)/* && simulated.turn == 0*/)
+            if(this.noSenseInLongerPlay(simulated) && simulated.phase != 0)// && simulated.turn == 0 && simulated.phase != 0)
                 return -this.max_possible * this.max_possible
 			result = (
 				(
@@ -2454,7 +2462,7 @@ class Ai{
 				+countedBoard.filter(x=>x==2).length * this.damValue
 				//-(countedBoard.filter(x=>x==3).length > 0 ? 1 : 0) * this.damValue*0.05
 				//+onSides.filter(x=>x==2).length * this.sideDamValue
-				+(onCorners.filter(x=>x==2).length > 0 ? 1 : 0) * (this.max_possible)
+				+(onCorners.filter(x=>x==2).length > 0 && onCorners.filter(x=>x==3).length == 0 ? 1 : 0) * (this.max_possible/2)
 				//+onSides.filter(x=>x==0).length * 0.1
 				//+onCorners.filter(x=>x==0).length * 0.7
 				//+penultimal1*0.05
@@ -2469,7 +2477,7 @@ class Ai{
 				//+onSides.filter(x=>x==1).length * 0.1
 				//+onCorners.filter(x=>x==1).length * 0.7
 				//+penultimal2*0.05
-				)
+				) 
 			)// + this.coverage(simulated)/100
         
 		return result
@@ -2553,18 +2561,18 @@ class Ai{
             
             var legals = simulated.legal().sort(x=>Math.random()>0.5).filter(x=>x!="pass" && x!=simulated.selected)
             
-            var nos = simulated.turn === 0 && (evaluated < -this.max_possible*0.8 || this.noSenseInLongerPlay(simulated) && simulated.turn == 0)
+            var nos = simulated.turn === 0 && (evaluated < -this.max_possible*0.8 || this.noSenseInLongerPlay(simulated) && simulated.turn == 0 && evaluated < -2)
             if(nos){
                     return {move:"pass", score:evaluated,depth:0,truedepth:0}
             } else if(legals.length == 0){
                     return {move:"pass", score:evaluated,depth:0,truedepth:0}
             }
             
-            /*if(simulated.turn === 0 && simulated.phase == 0 && this.placedDams(simulated,0) >= this.checkerGamePlannedDams && this.placedPawns(simulated,0) >= this.checkerGamePlannedPawns)
-                legals = ["pass"]
-            */
+            if(simulated.turn === 0 && simulated.phase == 0 && this.placedDams(simulated,0) >= this.checkerGamePlannedDams && this.placedPawns(simulated,0) >= this.checkerGamePlannedPawns)
+                return {move:"pass", score:evaluated,depth:0,truedepth:0}
+            
             if(simulated.phase == 0 && /*simulated.turn == 1 && */legals.length >= 1){
-                if(simulated.remainingPawns + simulated.remainingDams>=3/* && mypieces >= 4*/){
+                if(simulated.remainingPawns + simulated.remainingDams>=3 && simulated.remainingDams>=0/* && mypieces >= 4*/){
                     var sequence
                     switch(simulated.turn){
                         case 0:
@@ -2601,7 +2609,7 @@ class Ai{
                     return {move:legals[0], score:evaluated,depth:0,truedepth:0}
             }
             var maxdepth = 0
-            console.log('a')
+            //console.log('a')
             while(totalCheckedStates < maxCheckedStates){
                 var firstState = checkedStatesStack[0]
                 if(firstState == null){
@@ -2634,9 +2642,9 @@ class Ai{
                             code:code,
                             value:value,
                             depth:firstState.depth+1,
-                            turnfactor:turnfactor2
+                            turnfactor:turnfactor2,
                         })
-                        maxdepth = firstState.state.turn == state.turn ? firstState.depth : Math.max(maxdepth, firstState.depth+1)
+                        maxdepth = firstState.state.turn == state.turn || simulated.phase == 0 ? firstState.depth : Math.max(maxdepth, firstState.depth+1)
                         var turnfactor2 = simulated.turn == 0 ? 1 : -1
                         var tr = tree
                         for(var j in firstState.sequence){
@@ -2654,10 +2662,10 @@ class Ai{
                     simulated.setCurrentState(firstState.state)
                 }
                 if(/*!beating && */checkedStatesStack.length>maxStates){
-                    checkedStatesStack.sort((x,y)=>(x.value-y.value)*turnfactor3)
+                    checkedStatesStack.sort((x,y)=>(y.value-x.value)*turnfactor3)
                     var checkedStatesStack2 = checkedStatesStack
-                    checkedStatesStack = checkedStatesStack.filter(x=>(/*x.turn === firstTurn || */x.depth>=maxdepth-5 || 
-                    (x.score-tree.score)*turnfactor+5>=0 || x.phase == 0 && x.remainingPawns + x.remainingDams <= 4)).slice(maxStates)
+                    checkedStatesStack = checkedStatesStack.filter(x=>(/*x.turn === firstTurn || */x.depth>=maxdepth-3 && (x.score - tree.score) * turnfactor >= -this.max_possible/2/* || 
+                    /*(x.score-tree.score)*turnfactor+5>=0) && !(x.phase == 0 && x.remainingPawns + x.remainingDams <= 4)*/)).slice(maxStates)
                     if(checkedStatesStack.length < 3){
                         checkedStatesStack = checkedStatesStack2.filter(x=>x.turn === firstTurn)
                     }
@@ -2680,6 +2688,7 @@ class Ai{
                     break
                 }
             }
+            console.log('score: '+bestscore)
             if(bestmove == undefined){
                 bestmove = simulated.legal().sort((x,y)=>x=="pass")[0]
             }
