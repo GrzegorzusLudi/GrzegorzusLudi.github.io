@@ -2438,7 +2438,7 @@ class Ai{
 				return result
 				*/
 				
-				return -(this.max_possible * this.max_possible + 10 ) * turnfactor //((countedBoard.filter(x=>x==2 || x==0).length > countedBoard.filter(x=>x==3 || x==1).length) ? 1 : -1 ) 
+				return -(this.max_possible * this.max_possible  ) * turnfactor //((countedBoard.filter(x=>x==2 || x==0).length > countedBoard.filter(x=>x==3 || x==1).length) ? 1 : -1 ) 
 				
 				/* * (
 				(countedBoard.filter(x=>x==0).length
@@ -2461,7 +2461,7 @@ class Ai{
 				+countedBoard.filter(x=>x==2).length * this.damValue
 				//-(countedBoard.filter(x=>x==3).length > 0 ? 1 : 0) * this.damValue*0.05
 				//+onSides.filter(x=>x==2).length * this.sideDamValue
-				+(onCorners.filter(x=>x==2).length > 0 ? 1 : 0) * (this.max_possible/2)
+				+(onCorners.filter(x=>x==2).length > 0 && onCorners.filter(x=>x==3).length == 0 ? 1 : 0) * (this.max_possible)
 				//+onSides.filter(x=>x==0).length * 0.1
 				//+onCorners.filter(x=>x==0).length * 0.7
 				//+penultimal1*0.05
