@@ -2415,13 +2415,13 @@ class Ai{
 			var diagonal2 = ["17","26","35","44","53","62","71"]
 			var corners1 = ["11",/*"22","33","44","55","66",*/"77"]
 			var corners2 = ["17",/*"26","35","44","53","62",*/"71"]
-			if(corners1.map(x=>simulated.board[x]).filter(x=>x==2).length == 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==2).length == 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==1 || x==3 || x==0).length == 0)
+			if(corners1.map(x=>simulated.board[x]).filter(x=>x==2).length == 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==2).length >= 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==1 || x==3).length == 0)
 				onCorners = onCorners.concat(corners1.map(x=>simulated.board[x]).filter(x=>x==2))
-			if(corners1.map(x=>simulated.board[x]).filter(x=>x==3).length == 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==3).length == 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==0 || x==2 || x==1).length == 0)
+			if(corners1.map(x=>simulated.board[x]).filter(x=>x==3).length == 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==3).length >= 1 && diagonal1.map(x=>simulated.board[x]).filter(x=>x==0 || x==2).length == 0)
 				onCorners = onCorners.concat(corners1.map(x=>simulated.board[x]).filter(x=>x==3))
-			if(corners2.map(x=>simulated.board[x]).filter(x=>x==2).length == 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==2).length == 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==1 || x==3 || x==0).length == 0)
+			if(corners2.map(x=>simulated.board[x]).filter(x=>x==2).length == 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==2).length >= 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==1 || x==3).length == 0)
 				onCorners = onCorners.concat(corners2.map(x=>simulated.board[x]).filter(x=>x==2))
-			if(corners2.map(x=>simulated.board[x]).filter(x=>x==3).length == 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==3).length == 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==0 || x==2 || x==1).length == 0)
+			if(corners2.map(x=>simulated.board[x]).filter(x=>x==3).length == 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==3).length >= 1 && diagonal2.map(x=>simulated.board[x]).filter(x=>x==0 || x==2).length == 0)
 				onCorners = onCorners.concat(corners2.map(x=>simulated.board[x]).filter(x=>x==3))
 			
 			//var corners1 = ["11","77"]
@@ -2462,7 +2462,7 @@ class Ai{
 				+countedBoard.filter(x=>x==2).length * this.damValue
 				//-(countedBoard.filter(x=>x==3).length > 0 ? 1 : 0) * this.damValue*0.05
 				//+onSides.filter(x=>x==2).length * this.sideDamValue
-				+(onCorners.filter(x=>x==2).length > 0 && onCorners.filter(x=>x==3).length == 0 ? 1 : 0) * (this.max_possible/2)
+				+(onCorners.filter(x=>x==2).length > 0 ? 1 : 0) * (this.max_possible/2)
 				//+onSides.filter(x=>x==0).length * 0.1
 				//+onCorners.filter(x=>x==0).length * 0.7
 				//+penultimal1*0.05
