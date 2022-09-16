@@ -1881,11 +1881,11 @@ class Ai{
 		this.lastTurnAttacks = null
 		this.turnRepeated = 3
 		
-                this.pawnValue = 1
-                this.damValue = 1.45//3
-                this.cornerDamValue = 2;
-                this.sideDamValue = 1;
-                this.max_possible = (25*25*3+1)*(this.damValue+this.sideDamValue+this.cornerDamValue)*2
+        this.pawnValue = 1
+        this.damValue = 1.45//3
+        this.cornerDamValue = 2;
+        this.sideDamValue = 1;
+        this.max_possible = (25*25*3+1)*(this.damValue+this.sideDamValue+this.cornerDamValue)*2
 	}
 	say(message){
 		var iSpeakFor = this.gamecontroller.isAiMove() ? "BOT for player "+(this.gamecontroller.model.currentPlayer + 1) + ": " : "BOT: "
