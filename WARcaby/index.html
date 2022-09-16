@@ -1757,11 +1757,13 @@ class CheckersGame{
 			break
 		}
 	}
-	legal(){
+	legal(turn){
+        if(turn == undefined)
+            turn = this.turn
 		switch(this.phase){
 			case 0:
 				var available
-				switch(this.turn){
+				switch(turn){
 					case 0:
 						available = ["11","31","51","71","22","42","62","13","33","53","73"]
 					break
@@ -1771,8 +1773,8 @@ class CheckersGame{
 				}
 				available = available.filter(x => Object.keys(this.board).indexOf(x) == -1)
 				
-				var ret = this.turn == 0 || this.remainingPawns+this.remainingDams==0 ? ["pass"] : []
-				if(this.remainingPawns+this.remainingDams>1 || this.turn == 1 || this.land1movedPawns + this.land1movedDams > 0){
+				var ret = turn == 0 || this.remainingPawns+this.remainingDams==0 ? ["pass"] : []
+				if(this.remainingPawns+this.remainingDams>1 || turn == 1 || this.land1movedPawns + this.land1movedDams > 0){
 					if(this.remainingPawns > 0)
 						ret = ret.concat(available.map(x=>"p"+x))
 					if(this.remainingDams > 0)
@@ -1781,7 +1783,7 @@ class CheckersGame{
 				return ret
 			break
 			case 1:
-				var pass = this.turn == 0 || Object.values(this.board).filter(x=>x==0 || x==2).length == 0 ? ["pass"] : []
+				var pass = turn == 0 || Object.values(this.board).filter(x=>x==0 || x==2).length == 0 ? ["pass"] : []
 				if(this.selected == null){
 					var possibleMoves = this.getMoves().map(x=>x.from)
 					return Array.from(new Set(possibleMoves)).concat(pass)
@@ -1880,7 +1882,7 @@ class Ai{
 		this.turnRepeated = 3
 		
                 this.pawnValue = 1
-                this.damValue = 3
+                this.damValue = 1.45//3
                 this.cornerDamValue = 2;
                 this.sideDamValue = 1;
                 this.max_possible = (25*25*3+1)*(this.damValue+this.sideDamValue+this.cornerDamValue)*2
@@ -2291,7 +2293,7 @@ class Ai{
             }
             
             
-            return edgesByLand.map(x=>x.enemies).reduce((x,y)=>x.concat(y),[]).filter(x=>x.plannedPawns+x.plannedDams>0/* && evalAttack(x.plannedPawns,x.plannedDams)+2 >= evalDefence(x.land2.pawns,x.land2.dams) &&
+            return edgesByLand.map(x=>x.enemies).reduce((x,y)=>x.concat(y),[]).filter(x=>x.plannedPawns+x.plannedDams>0 && evalAttack(x.plannedPawns,x.plannedDams)+2 >= evalDefence(x.land2.pawns,x.land2.dams)/* &&
                 (x.land1.pawns-x.land1.movedPawns+(x.land1.dams-x.land1.movedDams)*3 > 1)*/)
 	}
 	//works if turn is 0
@@ -2427,8 +2429,10 @@ class Ai{
 			//var corners1 = ["11","77"]
 			//var corners2 = ["17","71"]
 			var turnfactor = simulated.turn == 0 ? 1 : -1
+			var enemy = 1 - simulated.turn
 			
 			var legals = simulated.legal().filter(x=>x!="pass")
+			//var legals_enemy = simulated.legal(enemy).filter(x=>x!="pass")
 			if(legals.length==0){/*
 				result = this.max_possible*this.max_possible*((countedBoard.filter(x=>x==0).length
 				+countedBoard.filter(x=>x==2).length * this.damValue)
