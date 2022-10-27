@@ -1,0 +1,383 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+	font-family: Trebuchet MS;
+	background-color: black;
+	color: white;
+	font-size: 10pt
+}
+#pole {
+	border: 1px solid white;
+	position: absolute
+}
+#napole {
+	float: left;
+	width: 800px;
+	height: 800px
+}
+#prawo {
+	border: 1px solid white;
+	float: left;
+	height: 790px;
+	width: 250px;
+	padding: 5px
+}
+#atrybuty {
+	float: left;
+	clear: left
+}
+#gora {
+	float: left
+}
+h3 {
+	margin: 10px 10px 0px 10px
+}
+#pola {
+	margin-top: 0px;
+	margin-bottom: 10px
+}
+#wpola {
+	border: 1px solid white;
+	padding: 5px;
+	margin-top: 15px
+}
+#stawka {
+	position: relative;
+	top: 20px;
+	left: 10px;
+	background-color: black;
+	display: inline-block
+}
+p {
+	margin-left: 15px
+}
+#kody {
+	position: absolute;
+	margin: 50px;
+	padding: 5px;
+	background-color: #CCC;
+	border: 1px solid #666;
+	display: none
+}
+#kott {
+}
+#poka1 {
+	float: left;
+	margin: 5px
+}
+#poka {
+	float: left;
+	margin: 5px
+}
+#skal {
+	width: 70px;
+	height: 30px;
+	border: 1px solid white;
+	background-color: #999;
+	float: left;
+	text-align: center;
+	padding: 10px;
+	margin: 3px
+}
+#skal:hover {
+	background-color: #CCC
+}
+#stal {
+	margin-top: 0px;
+	margin-bottom: 0px
+}
+table, tr, td {
+	border: 1px solid white;
+	border-collapse:collapse;
+	text-align:center;
+	padding-left:2px;
+	padding-right:2px;
+}
+</style>
+</head>
+<body>
+<h2>Instrukcja do gry</h2>
+<hr/>
+<h3>1. Ekran "nowa gra" (możesz pominąć, jeśli grasz pierwszy raz)</h3>
+<p>
+Jest to ekran początkowy. Możesz zostawić mapę jaka jest, bądź zedytować.
+<h4>Sekcja "Mapa"</h4>
+<p>
+Ilość hexów na boku - liczba sześciokótów na boku planszy
+</p>
+<p>
+Scal lądy - jeśli wokół sześciokątu jest więcej sześciokątów innego typu (mowa tu o morzu lub nie-morzu), przyjmuje on ich typ.
+</p>
+<p>
+W podsekcji "Edycja" można wybrać typ, którym chce się "rysować" po planszy.
+</p>
+<p>
+"Generuj nowe" - sześciokąty przyjmą losowy typ, zgodnie z ustawionymi parametrami.
+"Kod" - zapisanie lub wczytanie planszy z kodu.
+</p>
+<h4>Sekcja "Drużyny"</h4>
+<p>
+Kliknij na dowolną drużynę, by ją uaktywnić.
+</p>
+<p><b><u>
+Kliknij na  przycisk "USTAW ODDZIAŁY", by przejść dalej.</u></b>
+</p>
+</p>
+<hr/>
+<h3>2. Ekran "Stawianie oddziałów"</h3>
+<p>
+By ustawić oddziały, kliknij na wybrany znak wojskowy w sekcji "Bataliony", a potem na wybrane sześciokąty na planszy.<br/>
+Możesz ustawić maksymalnie 4 oddziały na jednym sześciokącie (taki jest limit).
+</p>
+<p>
+Możesz zmienić rozmiar oddziału za pomocą suwaka "Wielkość oddziału".
+</p>
+<p>
+By usunąć oddział, kliknik na prostokąt "USUWANIE", a potem na wybrany oddział na planszy.
+</p>
+<p>
+Możesz nazwać drużynę inaczej, niż kolor. Po to jest pole tekstowe przy znaczku drużyny.
+</p>
+<p><b><u>
+Kliknij na przycisk "NASTĘPNA DRUŻYNA", by powtórzyć to dla innych, wybranych drużyn.</u></b>
+</p>
+<p>
+Zaznacz pole "wszystkim po równo", by następne drużyny miały limit oddziałów ustawiony pod obecną drużynę.
+</p>
+<p><b><u>
+Kliknij "GRAJ", by grać. xd</u></b>
+</p>
+<hr/>
+<h3>3. Ekran gry (nic nie jest zaznaczone)</h3>
+<p>
+<b><u>By ukończyć turę, kliknij na przycisk. </u></b> Jednak pewnie nie chcesz tego robić od razu, więc jest kilka innych możliwości.
+</p>
+<h4>Zaznaczanie</h4>
+<img src="zaznaczanie.png" width="400" height="250" />
+<p>
+Zaznaczać można <u>oddziały</u> oraz <u>miasta</u> przez nie kontrolowane.<br/>
+Ma znaczenie, czy kliknie się na <span style="color:yellow">oddział</span>, czy na <span style="color:cyan">pozostałą część prostokąta</span>.
+</p>
+<p>
+<b>Gdy oddziałów "na kupce" jest więcej, niż 1, można je "tasować", klikając na nie po kolei.</b>
+</p>
+<hr/>
+<h3>4. Ekran gry (zaznaczony oddział)</h3>
+<p>
+<h4>Operacje z menu</h4>
+<p>
+W menu gry znajduje się suwak. Klikając w odpowiednim miejscu możesz wyznaczyć proporcje podziału lub rozbudowy.<br/>
+Możesz też zostawić oddział o wielkości 10 <u>(tyle potrzeba, by efektywnie kontrolować każde miasto).</u> <br/>
+Można też połączyć jednostkę z inną (tego samego typu) lub załadować na transport powietrzny.
+</p>
+<h4>Operacje na planszy</h4>
+<p>
+Każdy oddział zachowuje się nieco inaczej, zależnie od jego typu. <br/>
+Pod względem poruszania się można wyróżnić: oddziały lekkie, ciężkie, górskie (jeden typ), morskie oraz lotnicze. <br/>
+Pod względem zachowania można wyróżnić: oddziały zwykłe, artylerię przeciwlotniczą, oddziały transportujące oraz saperów.<br/><br/>
+Każdy oddział ma możliwość poruszania się oraz łączenia się z innym, tego samego typu. Ścieżkę można wyznaczać, klikając na podświetlony teren (oczywiście ścieżka może się zaginać). <u><b>By zakończyć ścieżkę, kliknij na sześciokąt dwa razy.</b></u>  Oddział wykona ilość ruchów odpowiednią do jego zasięgu. <br/>
+Oddziały lądowe mogą poruszać się tylko po lądzie. <u>Ciężkie oddziały nie mogą przechodzić przez góry, ani atakować oddziałów tam umieszczonych.</u> Oddział lądowy po wejściu na górę zatrzymuje się (nie dotyczy to oddziałów górskich).<br/>
+Oddziały wodne mogą poruszać się po wodzie i w miastach <u>(także śródlądowych, jeśli istnieje połączenie :D )</u>.<br/>
+Oddziały lotnicze mogą poruszać się wszędzie. <u>Mogą być atakowane w miastach, bądź gdy jakiś oddział przesumie się na prostokąt, w którym się znajdują.</u><br/>
+Tratwy i transportowce mogą przemieszczać oddziały lądowe poza ląd (transportowce nie biorą ciężkich). <br/>
+Oddziały lądowe mogą poruszać się też po mostach, budowanych przez saperów (by zbudować most, poprowadź oddział saperów przez wodę).
+<br/><br/>
+Oddziały mogą atakować przeciwników. By zaznaczyć atak, doprowadź ścieżkę blisko celu i kliknij na ten oddział (musi być zaznaczony na czerwono). Można atakować też mosty.
+</p>
+<img src="przemieszczaniesie.png"/>
+</p>
+<h2>Tabela oddziałów:</h2>
+<table>
+<tr>
+<td></td>
+<td>Nazwa</td>
+<td>Koszt w pieniądzach</td>
+<td>Koszt w stali</td>
+<td>Szybkość</td>
+<td>Atak</td>
+<td>Obrona</td>
+<td>Zasięg ataku</td>
+<td>Rodzaj poruszania</td>
+<td>Zachowanie</td>
+<td>Uwagi</td>
+</tr>
+<tr>
+<td><img src="o1.png"/></td>
+<td>Piechota</td>
+<td>8$</td>
+<td>-</td>
+<td>2</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>oddział lekki</td>
+<td>oddział zwykły</td>
+<td></td>
+</tr>
+<tr>
+<td><img src="o2.png"/></td>
+<td>Czołgi</td>
+<td>16$</td>
+<td>2t</td>
+<td>3</td>
+<td>2</td>
+<td>2</td>
+<td>1</td>
+<td>oddział ciężki</td>
+<td>oddział zwykły</td>
+<td>Dobre do ofensywy lądowej</td>
+</tr>
+<tr>
+<td><img src="o3.png"/></td>
+<td>Artyleria</td>
+<td>16$</td>
+<td>2t</td>
+<td>1</td>
+<td>1,6</td>
+<td>0</td>
+<td>3</td>
+<td>oddział ciężki</td>
+<td>oddział zwykły</td>
+<td>Dobre do obrony, łatwo niszczy cele wroga</td>
+</tr>
+<tr>
+<td><img src="o4.png"/></td>
+<td>Piechota zmotoryzowana</td>
+<td>12$</td>
+<td>1t</td>
+<td>5</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>oddział lekki</td>
+<td>oddział zwykły</td>
+<td></td>
+</tr>
+<tr>
+<td><img src="o5.png"/></td>
+<td>Piechota górska</td>
+<td>12$</td>
+<td>-</td>
+<td>2</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>oddział lekki (górski)</td>
+<td>oddział zwykły</td>
+<td></td>
+</tr>
+<tr>
+<td><img src="o6.png"/></td>
+<td>Artyleria przeciwlotnicza</td>
+<td>16$</td>
+<td>1t</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td>oddział ciężki</td>
+<td>oddział przeciwlotniczy</td>
+<td>Razi lotnictwo ze 2x silniej</td>
+</tr>
+<tr>
+<td><img src="o7.png"/></td>
+<td>Okręty lekkie</td>
+<td>12$</td>
+<td>-</td>
+<td>3</td>
+<td>1</td>
+<td>1</td>
+<td>2</td>
+<td>oddział morski</td>
+<td>oddział zwykły</td>
+<td></td>
+</tr>
+<tr>
+<td><img src="o8.png"/></td>
+<td>Pancerniki</td>
+<td>20$</td>
+<td>2t</td>
+<td>3</td>
+<td>2</td>
+<td>2</td>
+<td>2</td>
+<td>oddział morski</td>
+<td>oddział zwykły</td>
+<td>Praktycznie najlepszy oddział do zdobywania miast portowych</td>
+</tr>
+<tr>
+<td><img src="o9.png"/></td>
+<td>Łodzie desantowe</td>
+<td>4$</td>
+<td>-</td>
+<td>3</td>
+<td>-</td>
+<td>0</td>
+<td>-</td>
+<td>oddział morski</td>
+<td>oddział transportowy</td>
+<td>Tanie, ale podatnie na atak. Łatwo nimi zajmować portowe miasta.</td>
+</tr>
+<tr>
+<td><img src="o10.png"/></td>
+<td>Lotnictwo bojowe</td>
+<td>20$</td>
+<td>2t</td>
+<td>8</td>
+<td>1</td>
+<td>0</td>
+<td>2</td>
+<td>oddział lotniczy</td>
+<td>oddział lotniczy</td>
+<td>Łatwo niszczy zwykłą artylerię i razi słabiej bronione miasta.</td>
+</tr>
+<tr>
+<td><img src="o11.png"/></td>
+<td>Lotnictwo transportowe</td>
+<td>12$</td>
+<td>1t</td>
+<td>8</td>
+<td>-</td>
+<td>0</td>
+<td>-</td>
+<td>oddział lotniczy</td>
+<td>oddział transportowy</td>
+<td>Najlepszy sposób zajmowania odległych miast.</td>
+</tr>
+<tr>
+<td><img src="o12.png"/></td>
+<td>Oddziały saperskie</td>
+<td>12$</td>
+<td>-</td>
+<td>2</td>
+<td>-</td>
+<td>0</td>
+<td>1</td>
+<td>oddział lekki</td>
+<td>oddział saperski</td>
+<td>Mogą budować mosty i zakładać miasteczka.</td>
+</tr>
+</table>
+<hr/>
+<h3>5. Ekran gry (zaznaczone miasto)</h3>
+<p>
+<p>
+W sekcji "Górna sekcja" możesz zmienić nazwę miasta, bądź sprzedać nagromadzoną stal. 
+</p>
+<p>
+W sekcji "Załoga" możesz wybrać któryś oddział umieszczony na sześciokącie. 
+</p>
+<h4>Sekcja "Zadania"</h4>
+<p>
+W części "Podatek" możesz zatwierdzić przesyłanie części zarobków do innego miasta. Po kliknięciu przycisku "Zatwierdź", utwórz drogę do tego miasta. Im dłuższa droga, tym wyższe koszty. Jedno pole zwykłego terenu/miasta zabiera 2$, morze 8$, a góra 5$.<br/>
+W następnej częsci możesz zlecać formowanie nowych oddziałów. Ich wielkość można zmieniać suwakiem "Rozmiar". <b><u>Każdy oddział wymagający stali, potrzebuje określony poziom produkcji. By obsłużyć jedną stal potrzeba jednej produkcji.</u></b><br/>
+W części "Inwestycje" możesz zlecać rozbudowę kolejno: populacji (właśc. przychodów), produkcji stali oraz przemysłu.
+</p>
+
+</p>
+<hr/>
+<center>GrzegorzusLudi 2013-2016</center>
+</body>
+</html>
