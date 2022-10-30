@@ -26,11 +26,13 @@ async function anim(){
     if(!blokada){
         blokada = true
 	szpak = 0.34; //xD
+
 	if(stan == 4){
 		if(oddid[kolej]>0 && uniwy == -1){
 			uniwy = 0;
 			nastepnyoddzial();
 		}
+        console.log(uniwy,ruchwkolejcen)
 		if(uniwy<ruchwkolejcen && ruchwkolejcen!=0){
 			if(jesio>=0){
 				unix[kolej][ruchwkolejce[uniwy]].przes += szpak;
@@ -62,7 +64,8 @@ async function anim(){
 				unix[kolej][ruchwkolejce[uniwy]].ruchy--;
 
 			}
-			if(unix[kolej][ruchwkolejce[uniwy]].przes>=1 && jesio>=0){
+			if(unix[kolej][ruchwkolejce[uniwy]].przes>=1 && jesio>=0 || unix[kolej][ruchwkolejce[uniwy]].celd>-1 && unix[kolej][ruchwkolejce[uniwy]].ruchy <= 0){
+                if(unix[kolej][ruchwkolejce[uniwy]].przes>=1)
 					unix[kolej][ruchwkolejce[uniwy]].przes -= 2;
 					//if(jesio>0)
 					jesio--;
@@ -89,8 +92,7 @@ async function anim(){
 							}
 
 						} else if(unix[kolej][ruchwkolejce[uniwy]].celd>-1 && szyt[unix[kolej][ruchwkolejce[uniwy]].rodz]==unix[kolej][ruchwkolejce[uniwy]].szyt) {
-
-							atakuj(ruchwkolejce[uniwy],heks[unix[unix[kolej][ruchwkolejce[uniwy]].celd][unix[kolej][ruchwkolejce[uniwy]].celu].x][unix[unix[kolej][ruchwkolejce[uniwy]].celd][unix[kolej][ruchwkolejce[uniwy]].celu].y],unix[kolej][ruchwkolejce[uniwy]].celd);
+                            atakuj(ruchwkolejce[uniwy],heks[unix[unix[kolej][ruchwkolejce[uniwy]].celd][unix[kolej][ruchwkolejce[uniwy]].celu].x][unix[unix[kolej][ruchwkolejce[uniwy]].celd][unix[kolej][ruchwkolejce[uniwy]].celu].y],unix[kolej][ruchwkolejce[uniwy]].celd);
 						}
 					} else if(unix[kolej][ruchwkolejce[uniwy]].celd==-2){
 						atakujmost(ruchwkolejce[uniwy],heks[unix[unix[kolej][ruchwkolejce[uniwy]].celd][unix[kolej][ruchwkolejce[uniwy]].celu].x][unix[unix[kolej][ruchwkolejce[uniwy]].celd][unix[kolej][ruchwkolejce[uniwy]].celu].y]);
@@ -222,7 +224,7 @@ async function anim(){
 }
 function nastepnyoddzial(){
     while(uniwy<ruchwkolejcen && (unix[kolej][ruchwkolejce[uniwy]]==null || unix[kolej][ruchwkolejce[uniwy]].kosz || (unix[kolej][ruchwkolejce[uniwy]].ruchy<=0 && unix[kolej][ruchwkolejce[uniwy]].celd==-1))){
-            uniwy++;
+        uniwy++;
     }
     if(uniwy<ruchwkolejcen){
             unix[kolej][ruchwkolejce[uniwy]].kiero = unix[kolej][ruchwkolejce[uniwy]].ruchk[0];

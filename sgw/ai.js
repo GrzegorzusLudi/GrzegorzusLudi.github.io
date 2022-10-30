@@ -238,6 +238,7 @@ async function ai1(){
     //console.log(aistan)
 	switch(aistan){
 		case 0:
+            var exists = false
 			params = loadStats();
 			mist = [];
 			mistdefval = [];
@@ -249,13 +250,21 @@ async function ai1(){
 						mist[mista] = heks[a][b];
 						mistdefval[a][b] = {la:0,ld:0,wa:0,wd:0,aa:0,ad:0,blisk:0};
 						mista++;
+                        if(heks[a][b].undr == kolej)
+                            exists = true
 					}
+					if(heks[a][b].unp > 0 && heks[a][b].undr == kolej){
+                        exists = true
+                    }
 				}
 			}
 			aistan=1;
 			miastkol = 0;
             spojx = 0;
             spojy = 0;
+            
+            if(!exists)
+                aistan = 9001
 		break;
         case 1:
             //console.log(spojx,spojy)
@@ -275,7 +284,7 @@ async function ai1(){
                 for(var j = 0;j<i;j++){
                     var unit1 = unix[kolej][hex.unt[i]]
                     var unit2 = unix[kolej][hex.unt[j]]
-                    if(unit1 == undefined || unit2 == undefined || !(unix[kolej][uni].x in heks) || !(unix[kolej][uni].y in heks))
+                    if(unit1 == undefined || unit2 == undefined)
                         continue
                         
                     if(unit1.rodz == unit2.rodz && (unit1.rozb == 0 || unit2.il > 60) && (unit2.rozb == 0 || unit2.il > 60) && unit1.il < 99 && unit2.il < 99){
@@ -316,7 +325,7 @@ async function ai1(){
             possible_targets = []
             for(var key in dfrou.distmaps){
                 var distmap = dfrou.distmaps[key]
-                if(distmap.hex.undr != kolej && distmap.frontline){
+                if(distmap.hex.undr != kolej && (distmap.hex.units.length > 0 || distmap.hex.z > 0) && distmap.frontline){
                     possible_targets.push([distmap.hex.x, distmap.hex.y])
                 }
             }
@@ -336,21 +345,25 @@ async function ai1(){
                     aistan = 4
                 }
             } else {
-                var tested_target = possible_targets[possible_targets_ix]
-                
-                var checkedTurn = 2
-                var checkedTurn2 = 5
-                var newDistmap = copyDistmaps(dfrou)
-                evaluate(newDistmap,2)
-                //legalActions(newDistmap)
-                tryPutUnderAttack(newDistmap,tested_target[0],tested_target[1],kolej)
+                for(var i = 0;i<6;i++){
+                    var tested_target = possible_targets[possible_targets_ix]
+                    
+                    var checkedTurn = 2
+                    var checkedTurn2 = 5
+                    var newDistmap = copyDistmaps(dfrou)
+                    evaluate(newDistmap,2)
+                    //legalActions(newDistmap)
+                    tryPutUnderAttack(newDistmap,tested_target[0],tested_target[1],kolej)
 
-                evaluate(newDistmap)
-                
-                if(dbetter == null || newDistmap.score[checkedTurn][kolej] > dbetter.score[checkedTurn][kolej] || newDistmap.score[checkedTurn][kolej] >= dbetter.score[checkedTurn][kolej] && newDistmap.score[checkedTurn2][kolej] > dbetter.score[checkedTurn2][kolej])
-                    dbetter = newDistmap
-                
-                possible_targets_ix++
+                    evaluate(newDistmap)
+                    
+                    if(dbetter == null || newDistmap.score[checkedTurn][kolej] > dbetter.score[checkedTurn][kolej] || newDistmap.score[checkedTurn][kolej] >= dbetter.score[checkedTurn][kolej] && newDistmap.score[checkedTurn2][kolej] > dbetter.score[checkedTurn2][kolej])
+                        dbetter = newDistmap
+                    
+                    possible_targets_ix++
+                    if(possible_targets_ix >= possible_targets.length)
+                        break
+                }
             }
         break
 		case 2:
@@ -652,6 +665,10 @@ function distance(x1,y1,x2,y2){
     }
 }
 
+function copyHexdistmap(hexdistmap,hekstable){
+    //{ hex: tocheck[i].border[j], dist: dist, water : waterdist, from: hexfrom  }
+    return hexdistmap.map( x => new Object({ hex: hekstable[x.hex.x][x.hex.y], dist: x.dist, water : x.waterdist, from: x.from == null ? null : hekstable[x.from.x][x.from.y] }))
+}
 function hexdistmap(x,y,water,mountain,air,heavy,hekstable){
     if(hekstable == undefined)
         hekstable = heks
@@ -1127,7 +1144,7 @@ function copyDistmaps(dm){
             var unit = bhex.units[j]
             var szybt = unit.szyt
             if(!(szybt in newDistmaps[code])){
-                newDistmaps[code].maps[szybt] = {hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board)}
+                newDistmaps[code].maps[szybt] = {hexmap:copyHexdistmap(distmaps[code].maps[szybt].hexmap,board)}//{hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board)}
             }
             
         }
@@ -1359,7 +1376,7 @@ function evaluate(dm,time,potentialMoves){
             var fromally = Math.min(distmap.fromally['n'],Math.min(distmap.fromally['c'],distmap.fromally['g']))
             var frontline = fromenemy <= 2 || fromally >= fromenemy
             distmap.frontline = frontline
-            //heks[distmap.hex.x][distmap.hex.y].test = frontline ? 'X' : ''//
+            heks[distmap.hex.x][distmap.hex.y].test = frontline ? 'X' : ''//
 
             /*if(t == time){
                 if(biggestpower > secondbiggestpower){
@@ -1547,8 +1564,11 @@ function tryPutUnderAttack(dm, x, y, color){
         
         for(var j in distmap.hex.units){
             var unit = distmap.hex.units[j]
-            if(unit.d != color || unit.actions.length > 0 && unit.actions[0].type != 'build')
+            if(unit.d != color || unit.actions.length > 0 && unit.actions[0].type != 'build' && !(unit.actions[0].type == 'move' && !distmap.frontline))
                 continue
+                /*
+            if(unit.actions.length > 0 && unit.actions[0].type == 'move' && distmap.hex.units[0] == unit && unit.actions[0].il > unit.il-10)
+                continue*/
                 
             //console.log(unit.legalActions.length)
             for(var i in unit.legalActions){

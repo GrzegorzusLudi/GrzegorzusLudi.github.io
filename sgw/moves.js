@@ -119,7 +119,10 @@ function zaznaj(uni){
 	unitDivisionValue = unix[kolej][uni].il;
 	unitDivisionHighlight = unix[kolej][uni].il;
 	var i = 0;
+            console.log('a')
+            console.log(unix[kolej][uni].x)
         while(heks[unix[kolej][uni].x][unix[kolej][uni].y].unt[heks[unix[kolej][uni].x][unix[kolej][uni].y].unp-1]!=uni){
+            console.log(unix[kolej][uni].x)
 		heks[unix[kolej][uni].x][unix[kolej][uni].y].tasuj();
                 i++
         }
@@ -333,7 +336,8 @@ function miaruj(atki,obri,pole){
 	if(szyt[atki.rodz]=="w" && pole.z==-2){
 		werd = false;
 	}
-	if((szyt[atki.rodz] != "l" && zast[atki.rodz]!="p") && obri.szyt=="l" && heks[obri.x][obri.y].z<=0){
+	
+	if((szyt[atki.rodz] != "l" && zast[atki.rodz]!="p") && obri.szyt=="l" && obri.x != undefined && heks[obri.x][obri.y].z<=0){
 		werd = false;
 	}
 	if(szyt[atki.rodz] == "l" && obri.szyt != "l" && pole.z == -2){
@@ -638,6 +642,7 @@ function uniw(kolq,uni){
 	return wat;
 }
 function celuj(xhh,yhh,dru,uni){
+    var zaznu_original = zaznu
 	if(unix[kolej][zaznu].celd!=-1 || (unix[kolej][zaznu].sebix==unix[kolej][zaznu].x && unix[kolej][zaznu].sebiy==unix[kolej][zaznu].y)){
 		oddroguj(zaznu,kolej,false);
 	}
@@ -814,6 +819,7 @@ function celuj(xhh,yhh,dru,uni){
 			unix[kolej][zaznu].celd = dru;
 			unix[kolej][zaznu].celu = uni;
 			unix[kolej][zaznu].celk = kiera;
+            console.log(dru,uni)
 
 			unix[kolej][zaznu].ruchk[unix[kolej][zaznu].ruchy] = kiera;
 			unix[kolej][zaznu].rucho[unix[kolej][zaznu].ruchy] = 0;
@@ -829,7 +835,7 @@ function celuj(xhh,yhh,dru,uni){
 			}
 	}
 
-	dokolejki(zaznu);
+	dokolejki(zaznu_original);
 }
 function droguj(xhh,yhh,uni){
 	var kier;
@@ -2022,6 +2028,7 @@ function atakujmost(uni,hek){
 	}
 }
 function zespoj(uni,unic){
+    var unichex = heks[unix[kolej][unic].x][unix[kolej][unic].y]
 	if(unix[kolej][uni].il-(-unix[kolej][unic].il)>99){
 		unix[kolej][uni].il = unix[kolej][uni].il-(-unix[kolej][unic].il)-99;
 		unix[kolej][unic].il = 99;
@@ -2040,13 +2047,14 @@ function zespoj(uni,unic){
 			ata++;
 		}
 		zaznu = unic;
-		zaznaj(zaznu);
+        if(unix[kolej][unic].x != -1)
+            zaznaj(zaznu);
 		zaznu = unic;
-		while(heks[unix[kolej][unic].x][unix[kolej][unic].y].unt[heks[unix[kolej][unic].x][unix[kolej][unic].y].unp-1] != zaznu){
-			heks[unix[kolej][unic].x][unix[kolej][unic].y].tasuj();
+		while(unichex.unt[unichex.unp-1] != zaznu){
+			unichex.tasuj();
 		}
 	}
-	heks[unix[kolej][unic].x][unix[kolej][unic].y].zmiana++;
+	unichex.zmiana++;
 	unix[kolej][uni].celd = -1;
 	unix[kolej][uni].celu = -1;
 	unix[kolej][uni].celk = -1;

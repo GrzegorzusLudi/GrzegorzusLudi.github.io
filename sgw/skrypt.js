@@ -411,7 +411,7 @@ function buchuj(wielt){
 	while(f<6 && this.buchy[f].stan<20){
 		f++;
 	}
-	if(this.buchy[f].stan==20){
+	if(f < this.buchy.length && this.buchy[f].stan==20){
 		this.buchy[f].stan = 0;
 		this.buchy[f].wielk = wielt;
 	}
