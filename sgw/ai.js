@@ -166,7 +166,6 @@ class Land{
         for(var i in thex){
             this.hexes.push(thex[i])
         }
-
     }
 }
 function not_outside_board(hex){
