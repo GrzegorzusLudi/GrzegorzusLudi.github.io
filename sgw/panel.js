@@ -2441,6 +2441,14 @@ function makeTaxPath(){
 		}
 	}
 }
+function sellSteelXY(val,x,y){
+		var agq = 0;
+		while(heks[x][y].stali>0 && agq<val){
+			heks[x][y].stali--;
+			heks[x][y].kasy+=2;
+			agq++;
+		}	
+}
 function sellSteel(val){
 	if(zaznx>-1){
 		var agq = 0;

@@ -32,7 +32,7 @@ async function anim(){
 			uniwy = 0;
 			nastepnyoddzial();
 		}
-        console.log(uniwy,ruchwkolejcen)
+        //console.log(uniwy,ruchwkolejcen)
 		if(uniwy<ruchwkolejcen && ruchwkolejcen!=0){
 			if(jesio>=0){
 				unix[kolej][ruchwkolejce[uniwy]].przes += szpak;

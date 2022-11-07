@@ -166,6 +166,7 @@ class Land{
         for(var i in thex){
             this.hexes.push(thex[i])
         }
+
     }
 }
 function not_outside_board(hex){
@@ -246,6 +247,7 @@ async function ai1(){
 				mistdefval[a] = [];
 				for(var b = 0;b<scian;b++){
 					if(heks[a][b].z>0){
+                        heks[a][b].test = ''
 						mist[mista] = heks[a][b];
 						mistdefval[a][b] = {la:0,ld:0,wa:0,wd:0,aa:0,ad:0,blisk:0};
 						mista++;
@@ -279,23 +281,48 @@ async function ai1(){
                 return
             }
             var hex = heks[spojx][spojy]
-            for(var i = 0;i<hex.unp;i++){
-                for(var j = 0;j<i;j++){
+            var nodziel = true
+            var uht = 10
+            while(nodziel && uht > 0){
+                var rozboj = -1
+                nodziel = false
+                for(var i = 0;i<hex.unp && !nodziel;i++){
                     var unit1 = unix[kolej][hex.unt[i]]
-                    var unit2 = unix[kolej][hex.unt[j]]
-                    if(unit1 == undefined || unit2 == undefined)
-                        continue
-                        
-                    if(unit1.rodz == unit2.rodz && (unit1.rozb == 0 || unit2.il > 60) && (unit2.rozb == 0 || unit2.il > 60) && unit1.il < 99 && unit2.il < 99){
-                        zespoj(unit2.id,unit1.id)
-                        if(unit2.rozb + unit2.il > 99)
-                            unit2.rozb = 99-unit2.il
-                        if(unit1.rozb + unit1.il > 99)
-                            unit1.rozb = 99-unit1.il
-                        if(zaznu > -1)
-                            odzaznaj()
-                        return
+                    if(unit1 != undefined && unix[kolej][unit1.id].x != -1 && unit1.rodz == 8 && unit1.rozb > 0)
+                        unit1.rozb = 0
+                    if(unit1 != undefined && unix[kolej][unit1.id].x != -1 && unit1.rozb > 0){
+                        if(rozboj == -1)
+                            rozboj = unit1.id
+                        else
+                            unit1.rozb = 0
                     }
+                        
+                    for(var j = 0;j<i;j++){
+                        var unit2 = unix[kolej][hex.unt[j]]
+                        if(unit1 == undefined || unit2 == undefined || hex.unt[i] == -1 || hex.unt[j] == -1 || unix[kolej][unit1.id].x == -1 || unix[kolej][unit2.id].x== -1)
+                            continue
+                            
+                        if(unit1.rodz == unit2.rodz && (unit1.rozb == 0 || unit2.il > 60) && (unit2.rozb == 0 || unit2.il > 60) && unit1.il < 99 && unit2.il < 99){
+                            zespoj(unit2.id,unit1.id)
+                            if(unit2.rozb + unit2.il > 99)
+                                unit2.rozb = 99-unit2.il
+                            if(unit1.rozb + unit1.il > 99)
+                                unit1.rozb = 99-unit1.il
+                            if(zaznu > -1)
+                                odzaznaj()
+                            nodziel = true
+                            break
+                        }
+                    }
+                }
+                uht--
+            }
+            for(var i = 0;i<hex.unp;i++){
+                if(hex.unt[i] == -1)
+                    continue
+                var unit = unix[kolej][hex.unt[i]]
+                if(unit != undefined && pathIsThroughCrowdedCity(null,hex.x,hex.y,unit.ruchk,unit.rucho)){
+                    oddroguj(hex.unt[i],kolej,false);
                 }
             }
             spojy++
@@ -309,7 +336,7 @@ async function ai1(){
             dfrou=distmapsFromUnit()
             evaluate(dfrou,2)
             legalActions(dfrou)
-            ulepszyns = 4
+            ulepszyns = 8
             aistan = 1.2
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -324,24 +351,38 @@ async function ai1(){
             possible_targets = []
             for(var key in dfrou.distmaps){
                 var distmap = dfrou.distmaps[key]
-                if(distmap.hex.undr != kolej && (distmap.hex.units.length > 0 || distmap.hex.z > 0) && distmap.frontline){
-                    possible_targets.push([distmap.hex.x, distmap.hex.y])
+                if(distmap.hex.undr != kolej && (distmap.hex.units.length > 0 || distmap.hex.z > 0)/* && distmap.frontline*/){
+                    possible_targets.push(distmap.hex)
                 }
+                /*
+                if(distmap.hex.undr == kolej && distmap.hex.units.length > 0){
+                    for(var i in distmap.hex.units){
+                        var unit = distmap.hex.units[i]
+                        if(pathIsThroughCrowdedCity(dbetter,distmap.hex.x,distmap.hex.y,unit.ruchk,unit.rucho) && unit.actions.length > 0 && unit.actions[0].type == 'move'
+                            || 
+                            unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].destination == null && heks[unit.actions[0].destination[0]][unit.actions[0].destination[1]].z > -1 && heks[unit.actions[0].destination[0]][unit.actions[0].destination[1]].undr == kolej
+                        )
+                            unit.actions = []
+                            
+                    }
+                }*/
             }
-            
+            possible_targets.sort((x,y)=>x.units.reduce((a,b)=>a+evalUnitDefense(b),0) -x.il - y.units.reduce((a,b)=>a+evalUnitDefense(b),0) + y.il)
+            possible_targets = possible_targets.slice(10)
             aistan = 1.3
         break
         case 1.3:
             if(possible_targets_ix >= possible_targets.length){
                 if(ulepszyns > 0){
                     ulepszyns--
-                    dfrou = dbetter
+                    dfrou = copyDistmaps(dbetter)
                     evaluate(dfrou,2)
                     //legalActions(dfrou)
                     aistan = 1.2
                 } else {
-                    actionsToReal(dbetter,kolej)
-                    aistan = 4
+                    dfrou = dbetter
+                    
+                    aistan = 1.4
                 }
             } else {
                 for(var i = 0;i<6;i++){
@@ -352,7 +393,7 @@ async function ai1(){
                     var newDistmap = copyDistmaps(dfrou)
                     evaluate(newDistmap,2)
                     //legalActions(newDistmap)
-                    tryPutUnderAttack(newDistmap,tested_target[0],tested_target[1],kolej)
+                    tryPutUnderAttack(newDistmap,tested_target.x,tested_target.y,kolej)
 
                     evaluate(newDistmap)
                     
@@ -364,6 +405,10 @@ async function ai1(){
                         break
                 }
             }
+        break
+        case 1.4:
+            actionsToReal(dfrou,kolej)
+            aistan = 4
         break
 		case 2:
                     //aistan = 3
@@ -533,6 +578,7 @@ async function ai1(){
 			while(miastkol<mista && mist[miastkol].undr==-1)
 				miastkol++;
 			if(miastkol<mista && mist[miastkol].undr==kolej){
+                sellSteelXY(100,mist[miastkol].x,mist[miastkol].y)
 				var v = mist[miastkol].z*(100-mist[miastkol].podatpr);
 				var p = Math.min(mist[miastkol].prod,mist[miastkol].hutn);
 				for(var i = 0;i<mist[miastkol].trybutariuszy;i++){
@@ -545,7 +591,7 @@ async function ai1(){
                         break
                     }
                 }
-                console.log(okej)
+                //console.log(okej)
                 if(okej == -1){
                     miastkol++
                     return
@@ -558,12 +604,14 @@ async function ai1(){
 					for(var i = 0;i<mist[miastkol].unp;i++){
 						if(unix[kolej][mist[miastkol].unt[i]].rodz==needed && unix[kolej][mist[miastkol].unt[i]].il<80)
 							creat = i;
+                        if(unix[kolej][mist[miastkol].unt[i]].rozb > 0)
+                            creat = i
 					}
 					if(creat>-1){
 						unix[kolej][mist[miastkol].unt[creat]].rozb=99-unix[kolej][mist[miastkol].unt[creat]].il;
 					}
 					if(mist[miastkol].unp>=4){
-					} else if(creat==-1) {
+					} else if(creat==-1 && mist[miastkol].unp > 0) {
 						dodai(mist[miastkol].x,mist[miastkol].y,0,0,99);
                         odzaz();
 					}
@@ -707,6 +755,8 @@ function hexdistmap(x,y,water,mountain,air,heavy,hekstable){
                             step = 2
                         if((hexfrom.z > 0 || hexfrom.z == -1) && hexto.z == -1){
                             pluswater = 1
+                        if(hexto.unp > 3 && hexfrom.unp <= 3 && hexto.undr == checkedGrid[x][y].undr && checkedGrid[x][y] != -1)
+                            step *= 10
                         } else if(hexfrom.z != -1 && hexto.z == -1){
                             continue
                         }
@@ -899,12 +949,14 @@ function putPath(uni, hex_x, hex_y){
         return
         
     var unit = unix[kolej][uni]
-        
+    unit.rozb = 0
+    
     var unitDistMap = hexdistmap(unit.x,unit.y,unit.szyt == 'w',unit.szyt == 'g',unit.szyt == 'l',unit.szyt == 'c')
     
     var heksk = unitDistMap.filter(a => a.hex.x == hex_x && a.hex.y == hex_y)
     if(heksk.length == 0)
         return
+        
         
     var unitDistDict = {}
     for(var i in unitDistMap){
@@ -987,7 +1039,7 @@ class UnitAction extends Copyable {
     constructor(unit,hex){
         super(['d','il','id','rodz','ata','atakt','celd','celu','ruchk','ruchy','rucho','zalad','rozb','kolor','szyt','atakt'])
         
-        this.unit = unit
+        //this.unit = unit
         this.setFields(this.getFields(unit))
         this.actions = []   //np. {type:'przenies',size:'10',x:4,y:6}
         this.legalActions = []
@@ -998,14 +1050,14 @@ class UnitAction extends Copyable {
             var rucho = this.rucho.slice(0,this.ruchy)
             var ruchk = this.ruchk.slice(0,this.ruchy)
             if(this.ruchy > 0){
-                this.actions.push({type:'move',rucho:rucho,ruchk:ruchk,il:unit.il,destination:leadPath(hex.x,hex.y,ruchk,rucho)})
+                this.actions.push({type:'move',by:'real',rucho:rucho,ruchk:ruchk,il:unit.il,destination:leadPath(hex.x,hex.y,ruchk,rucho)})
             }
             if(this.celu != -1 && this.celd in unix){
                 var aimedunit = unix[this.celd][this.celu]
-                this.actions.push({type:'aim',celu:this.celu,celd:this.celd,hex_x:aimedunit.x,hex_y:aimedunit.y,kolor:this.kolor})
+                this.actions.push({type:'aim',by:'real',celu:this.celu,celd:this.celd,hex_x:aimedunit.x,hex_y:aimedunit.y,kolor:this.kolor})
             }
             if(this.rozb > 0){
-                this.actions.push({type:'build',size:this.rozb})
+                this.actions.push({type:'build',by:'real',size:this.rozb})
             }
             
         }
@@ -1032,7 +1084,7 @@ function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho){
         }
         if(he == undefined)
             break
-        if(he.x+'#'+he.y in dm.distmaps && dm.distmaps[he.x+'#'+he.y].hex.units.length == 4)
+        if(i > 0 && i < ruchk.length-1 && (dm != undefined && he.x+'#'+he.y in dm.distmaps && dm.distmaps[he.x+'#'+he.y].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp == 4))
             return true
     }
     
@@ -1052,6 +1104,8 @@ class BoardHex extends Copyable {
             this.setFields(oldheks.getFields())
             for(var i = 0;i<oldheks.units.length;i++){
                 var unit = oldheks.units[i]
+                if(unit.x == -1)
+                    continue
                 this.units.push(new UnitAction(unit,oldheks))
             }
             //this.border = oldheks.border.slice().map(x=>x == null ? null : x.slice())
@@ -1059,6 +1113,8 @@ class BoardHex extends Copyable {
             this.setFields(this.getFields(this.heks))
             for(var i = 0;i<this.heks.unp;i++){
                 var unit = unix[this.heks.undr][this.heks.unt[i]]
+                if(unit.x == -1)
+                    continue
                 this.units.push(new UnitAction(unit,this.heks))
             }
             //this.border = this.heks.border.map(x=>x == null ? null : [x.x,x.y])
@@ -1215,18 +1271,45 @@ function allTurns(){
 function evaluate(dm,time,potentialMoves){
     var distmaps = dm.distmaps
     for(var key in distmaps){
-        distmaps[key].potentialtocome = []
-        distmaps[key].realtocome = []
-        distmaps[key].defence = []
-        for(var t = 0;t<MAX_TURNS;t++){
-            distmaps[key].potentialtocome.push(allColors())
-            distmaps[key].realtocome.push(allColors())
-            distmaps[key].defence.push(allColors())
+        if(distmaps[key].potentialtocome == null || distmaps[key].potentialtocome.length == 0){
+            distmaps[key].potentialtocome = []
+            distmaps[key].realtocome = []
+            distmaps[key].defence = []
+            for(var t = 0;t<MAX_TURNS;t++){
+                distmaps[key].potentialtocome.push(allColors())
+                distmaps[key].realtocome.push(allColors())
+                distmaps[key].defence.push(allColors())
+            }
+            distmaps[key].alliegance = allTurns()
+            distmaps[key].fromenemy = allMoves()
+            distmaps[key].fromally = allMoves()
+            distmaps[key].frontline = false
+        } else {
+            for(var t = 0;t<MAX_TURNS;t++){
+                for(var i = 0;i<12;i++){
+
+                    distmaps[key].potentialtocome[t][i] = 0
+                    distmaps[key].realtocome[t][i] = 0
+                    distmaps[key].defence[t][i] = 0
+                }
+                
+                distmaps[key].alliegance[t] = -1
+            }
+            
+            var max = scian*scian
+            distmaps[key].fromenemy['n'] = max
+            distmaps[key].fromally['n'] = max
+            distmaps[key].fromenemy['c'] = max
+            distmaps[key].fromally['c'] = max
+            distmaps[key].fromenemy['g'] = max
+            distmaps[key].fromally['g'] = max
+            distmaps[key].fromenemy['w'] = max
+            distmaps[key].fromally['w'] = max
+            distmaps[key].fromenemy['l'] = max
+            distmaps[key].fromally['l'] = max
+            distmaps[key].frontline = false
+            
         }
-        distmaps[key].alliegance = allTurns()
-        distmaps[key].fromenemy = allMoves()
-        distmaps[key].fromally = allMoves()
-        distmaps[key].frontline = false
     }
     for(var key in distmaps){
         var distmap = distmaps[key]
@@ -1246,17 +1329,17 @@ function evaluate(dm,time,potentialMoves){
                 if(unit.actions.length > 0){
                     for(var j in unit.actions){
                         var action = unit.actions[j]
-                        if(action.type == 'move'){
+                        if(action.type == 'move' && action.destination != undefined){
                             var code = action.destination[0]+'#'+action.destination[1]
                             var dist = action.rucho.reduce((a,b)=>a+b,0)
                             var unitAttackStrength = evalUnitAttack(unit)
 
-
-                            if(code in distmaps && szy[unit.rodz] * t + (zas[unit.rodz] <= 1 || t == 0 ? 0 : zas[unit.rodz]) >= dist){
-                                //console.log(szy[unit.rodz] * t + zas[unit.rodz], dist, unitAttackStrength)
-                                var unitAttackStrength2 = evalUnitAttack(unit, action.il)
-                                distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength2)
-                            }
+                            if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho))
+                                if(code in distmaps && szy[unit.rodz] * t + (zas[unit.rodz] <= 1 || t == 0 ? 0 : zas[unit.rodz]) >= dist){
+                                    //console.log(szy[unit.rodz] * t + zas[unit.rodz], dist, unitAttackStrength)
+                                    var unitAttackStrength2 = evalUnitAttack(unit, action.il)
+                                    distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength2)
+                                }
                         }
                         if(action.type == 'aim'){
                             var code = action.hex_x + '#'+ action.hex_y
@@ -1276,7 +1359,7 @@ function evaluate(dm,time,potentialMoves){
         for(var movement_type in distmap.maps){
             var map_of_movement_type = distmap.maps[movement_type].hexmap
 
-            var hexesToCheck = map_of_movement_type.filter(x => x.hex.z > 0 || x.hex.units.length > 0)
+            //var hexesToCheck = map_of_movement_type.filter(x => x.hex.z > 0 || x.hex.units.length > 0)
             /*
             var unitDistDict = {}
             for(var i in map_of_movement_type){
@@ -1309,24 +1392,26 @@ function evaluate(dm,time,potentialMoves){
                     
                 }*/
                 //console.log(hexesCheckedInTurn)
-                for(var i in hexesToCheck){
-                    var hex = hexesToCheck[i]
-                    var hexkey = hex.hex.x + '#' + hex.hex.y
-                    
-                    var unitAttackStrength = evalUnitAttack(unit)
-                    
-                    var potential = 0
-                    for(var t = 0;t<MAX_TURNS;t++){
-                        if(szy[unit.rodz] * t + (zas[unit.rodz] <= 1 || t == 0 ? 0 : zas[unit.rodz]) >= hex.dist){
-                            if(potentialMoves && unit.actions.length == 0)
-                                distmaps[hexkey].potentialtocome[t][unit.d] -= (-Number(unitAttackStrength) - potential * maxdef) // hexesCheckedInTurn[t]
-                            //console.log(hex.hex.dru, unit.d, hexkey in distmaps, distmaps[hexkey].fromenemy)
-                            if(hex.hex.dru != unit.d && hexkey in distmaps && distmaps[hexkey].fromenemy[movement_type] > t)
-                                distmaps[hexkey].fromenemy[movement_type] = t
-                            if(hex.dist > 0 && hex.hex.dru == unit.d && hexkey in distmaps && distmaps[hexkey].fromally[movement_type] > t)
-                                distmaps[hexkey].fromally[movement_type] = t
-                                
-                            potential++
+                for(var i in map_of_movement_type){
+                    var hex = map_of_movement_type[i]
+                    if(hex.hex.z > 0 || hex.hex.units.length > 0){
+                        var hexkey = hex.hex.x + '#' + hex.hex.y
+                        
+                        var unitAttackStrength = evalUnitAttack(unit)
+                        
+                        var potential = 0
+                        for(var t = 0;t<MAX_TURNS;t++){
+                            if(szy[unit.rodz] * t + (zas[unit.rodz] <= 1 || t == 0 ? 0 : zas[unit.rodz]) >= hex.dist){
+                                if(potentialMoves && unit.actions.length == 0)
+                                    distmaps[hexkey].potentialtocome[t][unit.d] -= (-Number(unitAttackStrength) - potential * maxdef) // hexesCheckedInTurn[t]
+                                //console.log(hex.hex.dru, unit.d, hexkey in distmaps, distmaps[hexkey].fromenemy)
+                                if(hex.hex.dru != unit.d && hex.hex.dru != -1 && hexkey in distmaps && distmaps[hexkey].fromenemy[movement_type] > t)
+                                    distmaps[hexkey].fromenemy[movement_type] = t
+                                if(hex.dist > 0 && hex.hex.dru == unit.d && hexkey in distmaps && distmaps[hexkey].fromally[movement_type] > t)
+                                    distmaps[hexkey].fromally[movement_type] = t
+                                    
+                                potential++
+                            }
                         }
                     }
                 }
@@ -1348,10 +1433,20 @@ function evaluate(dm,time,potentialMoves){
     if(time == undefined)
         time = 1
         
-    var score = {}
+    if(dm.score == undefined || dm.score[0] == undefined){
+        dm.score = {}
+        for(var t = 0;t<MAX_TURNS;t++){
+            dm.score[t] = allColors()
+        }
+    } else {
+        for(var t = 0;t<MAX_TURNS;t++){
+            for(var i = 0;i<12;i++){
+                dm.score[t][i] = 0
+            }
+        }
+    }
         
     for(var t = 0;t<MAX_TURNS;t++){
-        score[t] = allColors()
         for(var key in distmaps){
             var distmap = distmaps[key]
             
@@ -1368,12 +1463,12 @@ function evaluate(dm,time,potentialMoves){
                     secondbiggestpower = biggestpower
                     secondbiggestpowercolor = biggestpowercolor
                     biggestpower = powers[d]
-                    biggestpowercolor = d
+                    biggestpowercolor = d   
                 }
             }
             var fromenemy = Math.min(distmap.fromenemy['n'],Math.min(distmap.fromenemy['c'],distmap.fromenemy['g']))
             var fromally = Math.min(distmap.fromally['n'],Math.min(distmap.fromally['c'],distmap.fromally['g']))
-            var frontline = fromenemy <= 2 || fromally >= fromenemy
+            var frontline = fromenemy <= 1 || fromally >= fromenemy
             distmap.frontline = frontline
             heks[distmap.hex.x][distmap.hex.y].test = frontline ? 'X' : ''//
 
@@ -1390,8 +1485,10 @@ function evaluate(dm,time,potentialMoves){
             //if(distmap.hex.undr > -1){
             //    score[distmap.hex.undr] += evaluateDefenseStreng()
             //}
-            if(biggestpowercolor > -1)
-                score[t][biggestpowercolor] += distmap.hex.z + (distmap.hex.stali + Math.min(distmap.hex.prod,distmap.hex.stali)) * 2
+            if(biggestpowercolor > -1){
+                var factor = distmap.frontline ? 1 : 1.5
+                dm.score[t][biggestpowercolor] += distmap.hex.z + (distmap.hex.stali + Math.min(distmap.hex.prod,distmap.hex.stali)) * 2 * factor
+            }
             
             //heks[area.x][area.y].test = level+'#'+(maxeval * 2 - allAreaValues)
             //heks[area.x][area.y].testColor = evalcolor
@@ -1399,7 +1496,7 @@ function evaluate(dm,time,potentialMoves){
         }
     }
     
-    dm.score = score
+    //dm.score = score
     //console.log(distmaps)
 }
 function distmappower(distmap,t,d){
@@ -1407,14 +1504,17 @@ function distmappower(distmap,t,d){
 }
 
 function exponentiel(number){
-    return Math.pow(number,1.3)
+    return Math.pow(number,1.2)
 }
 
 function legalActions(dm){
     var distmaps = dm.distmaps
     for(var key in distmaps){
         var distmap = distmaps[key]
-        for(var movement_type in distmap.maps){
+        //if(distmap.hex.z <= 0 && distmap.hex.units.map(x=>evalUnitAttack(x)).reduce((a,b) => a+b,0) < 20)
+        //    continue
+       
+       for(var movement_type in distmap.maps){
             var map_of_movement_type = distmap.maps[movement_type].hexmap
 
             var hexesToCheck = map_of_movement_type.filter(x => x.hex.z > 0 || x.hex.units.length > 0)
@@ -1466,11 +1566,11 @@ function legalActions(dm){
                     //console.log([hex.hex.x,hex.hex.y,ruchk,rucho])
                     
                     if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,ruchk,rucho)){
-                        unit.legalActions.push([{type:'move',rucho:rucho,ruchk:ruchk,il:unit.il,destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
+                        unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
                         if(unit.il > 10 && distmap.hex.units.length <= 3)
-                            unit.legalActions.push([{type:'move',rucho:rucho,ruchk:ruchk,il:unit.il-10,destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
+                            unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il-10,destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
                         if(unit.il > 20 && distmap.hex.units.length <= 2 && distmap.frontline)
-                            unit.legalActions.push([{type:'move',rucho:rucho,ruchk:ruchk,il:unit.il/2,destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
+                            unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:Math.floor(unit.il/2),destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
                         
                         if(hex.hex.units.length > 0 && distmap.frontline){
                             for(var u in hex.hex.units){
@@ -1480,8 +1580,8 @@ function legalActions(dm){
                                     rucho2 = rucho.slice(0,rucho.length - zas[unit.rodz])
                                     ruchk2 = ruchk.slice(0,ruchk.length - zas[unit.rodz])
                                     unit.legalActions.push([
-                                        {type:'move',rucho:rucho,ruchk:ruchk,il:unit.il,destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)},
-                                        {type:'aim',celu:aimedunit.id,celd:aimedunit.d,destination:[distmap.hex.x,distmap.hex.y]},
+                                        {type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)},
+                                        {type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,destination:[distmap.hex.x,distmap.hex.y]},
                                     ])
                                 }
                                 //this.actions.push({type:'aim',celu:this.celu,celd:this.celd,hex_x:aimedunit.x,hex_y:aimedunit.y,kolor:this.kolor})
@@ -1535,6 +1635,7 @@ function removeAttack(dm, x, y, color){
 function tryPutUnderAttack(dm, x, y, color){
     var distmaps = dm.distmaps
     
+    var hexUnderAttack = distmaps[x+'#'+y].hex
     //var interestingUnits = {'c':[],'n':[],'l':[],'g':[],'w':[]}
     var interestingUnits = []
     for(var key in distmaps){
@@ -1560,52 +1661,83 @@ function tryPutUnderAttack(dm, x, y, color){
                 
             }
         }*/
-        
+        var smallestUnit = -1
         for(var j in distmap.hex.units){
             var unit = distmap.hex.units[j]
-            if(unit.d != color || unit.actions.length > 0 && unit.actions[0].type != 'build' && !(unit.actions[0].type == 'move' && !distmap.frontline))
+            if(smallestUnit == -1 || unit.il < distmap.hex.units[smallestUnit].il){
+                smallestUnit = j
+            }
+        }
+        for(var j in distmap.hex.units){
+            var unit = distmap.hex.units[j]
+            if(unit.d != color || unit.rozb > 20 && unit.il < 60 || unit.actions.filter(x => x.type == 'move').length > 0 && !distmap.frontline || unit.actions.filter(x => x.type == 'move' && x.by == 'speculation').length > 0)
                 continue
+                
                 /*
             if(unit.actions.length > 0 && unit.actions[0].type == 'move' && distmap.hex.units[0] == unit && unit.actions[0].il > unit.il-10)
                 continue*/
                 
+            
             //console.log(unit.legalActions.length)
+            var bestAction = null
+            var populateAction = null
             for(var i in unit.legalActions){
                 var legalAction = unit.legalActions[i]
                 
-                if(legalAction.length == 1 && legalAction[0].type == 'move'){
+                if(legalAction.length == 1 && legalAction[0].type == 'move' && legalAction[0].destination != undefined && legalAction[0].destination[0] == x && legalAction[0].destination[1] == y){
                     var properAction = legalAction[0]
-                    if(distmap.alliegance[2] == unit.d && distmap.hex.z > 0 && properAction.il > unit.il-10){
+                    if(/*distmap.alliegance[2] == unit.d && */distmap.hex.z > 0 && properAction.il > unit.il-10 && (j == distmap.hex.units.length-1 || distmap.hex.units.length == 1)){
                         continue
                     }
-                    if(distmap.alliegance[2] == unit.d && distmap.hex.z <= 0 && properAction.il < unit.il-10){
+                    if(/*distmap.alliegance[2] == unit.d && */distmap.hex.z > 0 && properAction.il < unit.il-10 && distmap.hex.units.length == 4){
                         continue
                     }
-                        
-                    if(properAction.destination != undefined && properAction.destination[0] == x && properAction.destination[1] == y){
-                        interestingUnits.push({unit:unit, action:legalAction, hex:distmap.hex})
+                    if(/*distmap.alliegance[2] == unit.d && */distmap.hex.z <= 0 && properAction.il < unit.il-10){
+                        continue
                     }
+                    if(/*distmap.alliegance[2] == unit.d && */distmap.alliegance[0] != -1 && distmap.hex.z <= 0 && unit.il <= 10){
+                        continue
+                    }
+                    if(bestAction == null || evalUnitAttack(unit,legalAction[0].il) > evalUnitAttack(unit,bestAction[0].il))
+                        bestAction = legalAction
                 }
+            }
+            if(bestAction != null && bestAction.length == 1){
+                interestingUnits.push({unit:unit, action:bestAction, hex:distmap.hex})
             }
         }
     }
-    interestingUnits.sort((a,b) => a.hex.dist - b.hex.dist)
+    interestingUnits.sort((a,b) => (a.hex.dist/(a.unit.il+100) - b.hex.dist/(b.unit.il+100)))
     //console.log(interestingUnits)
     
     evaluate(dm)
     var postęp = 0
-    var value = dm.distmaps[x+'#'+y].alliegance.map(a => a == color ? 1 : 0).reduce((a,b) => a+b, 0)
+    var valuesByTime = dm.distmaps[x+'#'+y].alliegance
+    for(var t in valuesByTime){
+        valuesByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
+    }
+    var value = valuesByTime.reduce((a,b) => a+b, 0)
     
+    var value2
     for(var i in interestingUnits){
         var unitaction = interestingUnits[i]
         
         unitaction.unit.actions = unitaction.action
         evaluate(dm)
-        var value2 = dm.distmaps[x+'#'+y].alliegance.map(a => a == color ? 1 : 0).reduce((a,b) => a+b, 0)
+        var values2ByTime = dm.distmaps[x+'#'+y].alliegance
+        
+        for(var t in values2ByTime){
+            values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
+        }
+        value2 = values2ByTime.reduce((a,b) => a+b, 0)
 
+        //console.log('a',value2,value)
         if(value2 > value)
             break
     }
+    if(value2 == undefined || value2 <= value)
+        return []
+        
     return interestingUnits
     
 }
@@ -1638,7 +1770,7 @@ function actionsToReal(dm,color){
                             continue
                     }
                     var dodajTratwe = putPath(unid,properAction.destination[0],properAction.destination[1])
-                    if(dodajTratwe && unit.rodz != 8)
+                    if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l')
                         tratwa += properAction.il
 
                 }
@@ -1647,7 +1779,7 @@ function actionsToReal(dm,color){
                 }
             }
             if(tratwa > 0){
-                dodai(distmap.hex.x,distmap.hex.y,0,8,Math.min(tratwa,99))
+                dodai(distmap.hex.x,distmap.hex.y,0,8,Math.min(Math.floor(tratwa),99))
             }
         }
         

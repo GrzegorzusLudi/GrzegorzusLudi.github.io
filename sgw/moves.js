@@ -119,10 +119,7 @@ function zaznaj(uni){
 	unitDivisionValue = unix[kolej][uni].il;
 	unitDivisionHighlight = unix[kolej][uni].il;
 	var i = 0;
-            console.log('a')
-            console.log(unix[kolej][uni].x)
         while(heks[unix[kolej][uni].x][unix[kolej][uni].y].unt[heks[unix[kolej][uni].x][unix[kolej][uni].y].unp-1]!=uni){
-            console.log(unix[kolej][uni].x)
 		heks[unix[kolej][uni].x][unix[kolej][uni].y].tasuj();
                 i++
         }
@@ -819,7 +816,6 @@ function celuj(xhh,yhh,dru,uni){
 			unix[kolej][zaznu].celd = dru;
 			unix[kolej][zaznu].celu = uni;
 			unix[kolej][zaznu].celk = kiera;
-            console.log(dru,uni)
 
 			unix[kolej][zaznu].ruchk[unix[kolej][zaznu].ruchy] = kiera;
 			unix[kolej][zaznu].rucho[unix[kolej][zaznu].ruchy] = 0;
