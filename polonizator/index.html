@@ -1,0 +1,535 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf8">
+<style type="text/css">
+* {border-collapse:collapse;border-collapse:collapse;
+-moz-box-sizing:border-box;
+-webkit-box-sizing:border-box;
+box-sizing:border-box;margin:0px;padding:0px}
+html,body {color:white;background-color:black;font-family:Helvetica;width:100%; height:100%;}
+.ta {color:white;background-color:black;border:2px solid white;width:500px;height:250px;margin-top:10px;margin-bottom:6px}
+.disable {background-color:#222222}
+.btn {padding:8px;width:200px;font-weight:bold;font-size:20px}
+</style>
+<script>
+function polonize(){
+    var text = document.getElementById('niepolski').value.slice()
+    text = text.toLowerCase()
+    
+    var pairs = {
+        "x":"ks",
+        "v":"w",
+        "qu":"kł",
+        "q":"k",
+        "^yri":"jęrzy",
+        "yri":"ierzy",
+        "re":"rze",
+        "wha":"ła",
+        "whe":"łe",
+        "who":"hu",
+        "whi":"ły",
+        "cip":"czyp",
+        "ńa":"nia",
+        "ńe":"nie",
+        "ńi":"ni",
+        "ńo":"nio",
+        "ńu":"niu",
+        "ńy":"ni",
+        "as$":"asz",
+        "es$":"esz",
+        "is$":"isz",
+        "ys$":"ysz",
+        "^is":"jis",
+        "my":"maj",
+        "ou":"u",
+        "ough":"ułg",
+        "use$":"usz",
+        "ar$":"arz",
+        "er$":"erz",
+        "or$":"orz",
+        "ur$":"urz",
+        "yr$":"yrz",
+        "de":"dzie",
+        "ss":"sz",
+        "ca":"ka",
+        "cb":"kb",
+        "cc":"kk",
+        "cd":"kd",
+        "ce^":"cież",
+        "ce":"cie",
+        "age$":"adzież",
+        "cf":"kf",
+        "kk":'k',
+        "ck":"k",
+        "cl":"kl",
+        "cm":"km",
+        "cn":"kn",
+        "co":"ko",
+        "cp":"kp",
+        "cr":"kr",
+        "cs":"ks",
+        "ct":"kt",
+        "cu":"ku",
+        "cw":"kł",
+        "ing":"ięk",
+        "yng":"ęk",
+        
+        "^to$":"tu",
+        
+        "dib":"dzieb",
+        "did":"dziad",
+        "dif":"dyf",
+        "dic":"dzic",
+        "dig":"dzig",
+        "dih":"dzieh",
+        "dij":"dziej",
+        "dik":"dzik",
+        "dil":"dziel",
+        "dim":"dziem",
+        "din":"dzień",
+        "dip":"dziep",
+        "dir":"dzier",
+        "dis":"dziesz",
+        "dit":"dziet",
+        "diw":"dziew",
+        "diz":"dyż",
+        
+        
+        "^ia":"ja",
+        "^ią":"ją",
+        "^ie":"je",
+        "^ię":"ję",
+        "^io":"jo",
+        "^iu":"ju",
+        
+        "ai":"aj",
+        "ei":"ej",
+        "oi":"oj",
+        "ui":"uj",
+        
+        "ke":"kie",
+        "ge":"gie",
+        
+        "pib":"pieb",
+        "pid":"piedd",
+        "pif":"pieff",
+        "pig":"pieg",
+        "pih":"piech",
+        "pik":"piek",
+        "pil":"piel",
+        "pim":"piem",
+        "pin":"pień",
+        "pip":"piep",
+        "pir":"pierz",
+        "pis":"pisz",
+        "pit":"pyt",
+        
+        "bte":"bcie",
+        "dte":"docie",
+        "fte":"fcie",
+        "gte":"gcie",
+        "hte":"hcie",
+        "jte":"jcie",
+        "kte":"kcie",
+        "lte":"lcie",
+        "mte":"mcie",
+        "nte":"ńcie",
+        "pte":"pcie",
+        "rte":"pcie",
+        "ste":"ście",
+        "wte":"wcie",
+        "zte":"zcie",
+        
+        "żi":"ży",
+        "ee":"i",
+        "oo":"u",
+        "ii":"i",
+        "bb":"b",
+        "dd":"d",
+        "ff":"f",
+        "gg":"g",
+        "ll":"l",
+        "mm":"m",
+        "nn":"n",
+        "pp":"p",
+        "rr":"r",
+        "ss":"s",
+        "tt":"t",
+        "ww":"w",
+        "zz":"z",
+        "ay":"aj",
+        "ey":"ej",
+        "oy":"oj",
+        "uy":"uj",
+        "iy":"ij",
+        
+        "^ya":"ja",
+        "^ye":"je",
+        "^yi":"ji",
+        "^yo":"jo",
+        "^yu":"ju",
+        
+        "bya":"bia",
+        "bye":"bie",
+        "byi":"bi",
+        "byo":"bio",
+        "byu":"biu",
+        
+        "cya":"cia",
+        "cye":"cie",
+        "cyi":"ci",
+        "cyo":"cio",
+        "cyu":"ciu",
+        
+        "dya":"dia",
+        "dye":"die",
+        "dyi":"di",
+        "dyo":"dio",
+        "dyu":"diu",
+        
+        "fya":"fia",
+        "fye":"fie",
+        "fyi":"fi",
+        "fyo":"fio",
+        "fyu":"fiu",
+        
+        "gya":"gia",
+        "gye":"gie",
+        "gyi":"gi",
+        "gyo":"gio",
+        "gyu":"giu",
+        
+        "hya":"hia",
+        "hye":"hie",
+        "hyi":"hi",
+        "hyo":"hio",
+        "hyu":"hiu",
+        
+        "jya":"ja",
+        "jye":"je",
+        "jyi":"ji",
+        "jyo":"jo",
+        "jyu":"ju",
+        
+        "kya":"kia",
+        "kye":"kie",
+        "kyi":"ki",
+        "kyo":"kio",
+        "kyu":"kiu",
+        
+        "lya":"lia",
+        "lye":"lie",
+        "lyi":"li",
+        "lyo":"lio",
+        "lyu":"liu",
+        
+        "mya":"mia",
+        "mye":"mie",
+        "myi":"mi",
+        "myo":"mio",
+        "myu":"miu",
+        
+        "nya":"nia",
+        "nye":"nie",
+        "nyi":"ni",
+        "nyo":"nio",
+        "nyu":"niu",
+        
+        "pya":"pia",
+        "pye":"pie",
+        "pyi":"pi",
+        "pyo":"pio",
+        "pyu":"piu",
+        
+        "rya":"ria",
+        "rye":"rie",
+        "ryi":"ri",
+        "ryo":"rio",
+        "ryu":"riu",
+        
+        "sya":"sia",
+        "sye":"sie",
+        "syi":"si",
+        "syo":"sio",
+        "syu":"siu",
+        
+        "tya":"tyja",
+        "tye":"tyje",
+        "tyo":"tyjo",
+        "tyu":"tyju",
+        
+        "tia":"cia",
+        "tie":"cie",
+        "tio":"cyjo",
+        "tiu":"cyju",
+        
+        "ria":"ryja",
+        "rie":"ryje",
+        "rio":"ryjo",
+        "riu":"ryju",
+        
+        "wya":"wia",
+        "wye":"wie",
+        "wyi":"wi",
+        "wyo":"wio",
+        "wyu":"wiu",
+        
+        "zya":"zia",
+        "zye":"zie",
+        "zyi":"zi",
+        "zyo":"zio",
+        "zyu":"ziu",
+        
+        "ćb":"cieb",
+        "ćd":"cied",
+        "ćf":"cief",
+        "ćg":"cieg",
+        "ćc":"ciec",
+        "ćh":"cieh",
+        "ćk":"ciek",
+        "ćl":"ciek",
+        "ćn":"cien",
+        "ćp":"ciep",
+        "ćr":"cier",
+        "ćs":"cies",
+        "ćt":"ciet",
+        "ćz":"ciez",
+        
+        "nib":"nieb",
+        "nid":"nied",
+        "nig":"nyg",
+        "nik":"nik",
+        "nil":"niel",
+        "nim":"niem",
+        "nin":"nien",
+        "nip":"nyp",
+        "nir":"nier",
+        "niz":"nyrz",
+        
+        "two":"tu",
+        
+        "bow$":"bał",
+        "dow$":"dał",
+        "fow$":"fał",
+        "gow$":"gał",
+        "how$":"hał",
+        "jow$":"jał",
+        "kow$":"kał",
+        "low$":"lał",
+        "mow$":"mał",
+        "now$":"nał",
+        "pow$":"pał",
+        "row$":"rał",
+        "sow$":"sał",
+        "tow$":"tał",
+        "wow$":"wał",
+        "zow$":"zał",
+        
+        "bj":"bi",
+        "cj":"ci",
+        "dj":"di",
+        "fj":"fi",
+        "gj":"gi",
+        "hj":"hi",
+        "kj":"ki",
+        "lj":"li",
+        "mj":"bi",
+        "nj":"ni",
+        "pj":"pi",
+        "rj":"ri",
+        "sj":"si",
+        "tj":"ci",
+        "wj":"wi",
+        "zj":"zi",
+        "jj":"j",
+        "yy":"yji",
+        "ate":"ejć",
+        "yc$":"ycz",
+        
+        "by$":"baj",
+
+        "uth":"ut",
+        "ath":"at",
+        "the":"de",
+        "thi":"dy",
+        "th":"d",
+        
+        "ura":"urza",
+        "il":"iel",
+        
+        "^in":"jęń",
+        "^im":"jem",
+        
+        "ic$":"ik",
+        
+        "ne":"nie",
+        "ti":"ty",
+        "msz":"musz",
+        
+        "ete":"ecie",
+        "ote":"ocie",
+        "ute":"ucie",
+        "^one$":"łan",
+        "cin":"czyn",
+        "din":"dzin",
+        "gin":"gięń",
+        "jin":"jęń",
+        "kin":"kięń",
+        "lin":"łyń",
+        "min":"mięń",
+        "nin":"nięń",
+        "pin":"pięń",
+        "rin":"rzyn",
+        "sin":"szyn",
+        "tin":"cięń",
+        "win":"więń",
+        "zin":"zięń",
+        "own$":"owyń",
+        "one$":"ołn",
+        "sh":"sz",
+        "tch":"cz",
+        "ch":"cz",
+        "gh":"g",
+        "^it":"jejt",
+        "gn":"n",
+        "cim":"czym",
+        "dim":"dzim",
+        "gim":"gię",
+        "jim":"jem",
+        "kim":"kię",
+        "lim":"łem",
+        "mim":"mię",
+        "nim":"niem",
+        "pim":"piem",
+        "rim":"rzym",
+        "sim":"szym",
+        "tim":"ciem",
+        "wim":"wiem",
+        "zim":"ziem",
+        "ea":"e",
+        "ose":"oż",
+        "le$":"el",
+        "zh$":"z",
+        "^kn":"n",
+        "ows":"ołs",
+        "ein":"ejn",
+        "us":"usz",
+        "ph":"f",
+        "rzr":"rz",
+        "ese":"erze",
+        "ase":"arze",
+        //"rze$":"rz",
+        "use":"uzie",
+        "yse":"ysze",
+        "se$":"sze",
+        "żs":"ż",
+        "ąń":"oń",
+        "ęń":"eń",
+        "ńg":"ńk",
+        "rzl":"rzyl",
+        "rzd":"rzed",
+        "rzf":"rzyf",
+        "rzg":"rzyg",
+        "rzh":"rzęch",
+        "rzk":"rzyk",
+        "rzp":"rzep",
+        "rzr":"rzer",
+        "rzs":"rzesz",
+        "rzt":"rzyt",
+        "rzz":"rzeż",
+        "ry":"rzy",
+        "rzerz":"rzer",
+        "rzj":"rzyj",
+        "ty$":"cierz",
+        "ike":"ajk",
+        "żl":"l",
+        "sis":"sys",
+        "ste":"ście",
+        "sti":"ści",
+        "we":"wie",
+        "sci":"ści",
+        "sć":"ść",
+        "rs$":"rsz",
+        
+        "ise":"yrze",
+        "ri":"rzy",
+        
+        "s$":"sz",
+        
+        "ent$":"ięć",
+        "ents":"ęcz",
+        
+        "of":"ów",
+        "ly$":"ły",
+        
+        "tsz":"cz",
+        "tcz":"cz",
+        
+        "al$":"ał",
+        
+        "szi":"szy",
+        "czi":"czy",
+        "ted$":"cied",
+    }
+    for(var k = 0;k<2;k++){
+        var j = 0
+        var i = 0
+        while(i<text.length && j<10000){
+            j++
+            console.log(text.slice(i,i+5))
+            for(var key in pairs){
+                var replacement = pairs[key]
+                if(key[0] == '^' && key[key.length-1] == '$' && (i > 0 && notLetter(text[i-1]) || i == 0) && (i < text.length-1 && notLetter(text[i+key.length-2]) || i+key.length-2 == text.length-1) && text.slice(i,i+key.length-2) == key.slice(1,key.length-1)){
+                    var newI = i - key.length -2 + replacement.length
+                    text = text.slice(0,i) + replacement + text.slice(i+key.length-2)
+                    i = newI-3
+                    break
+                } else if(key[0] == '^' && (i > 0 && notLetter(text[i-1]) || i == 0) && text.slice(i,i+key.length-1) == key.slice(1)){
+                    var newI = i - key.length -1 + replacement.length
+                    text = text.slice(0,i) + replacement + text.slice(i+key.length-1)
+                    i = newI-2
+                    break
+                } else if(key[key.length-1] == '$' && (i < text.length-1 && notLetter(text[i+key.length-1]) || i+key.length-2 == text.length-1) && text.slice(i,i+key.length-1) == key.slice(0,key.length-1)){
+                    var newI = i - key.length -1 + replacement.length
+                    text = text.slice(0,i) + replacement + text.slice(i+key.length-1)
+                    i = newI-2
+                    break
+                } else if(text.slice(i,i+key.length) == key){
+                    var newI = i - key.length + replacement.length
+                    text = text.slice(0,i) + replacement + text.slice(i+key.length)
+                    i = newI-1
+                    break
+                }
+            }
+            i++
+        }
+    }
+    document.getElementById('polski').value = text
+}
+function notLetter(c){
+    return " .,;()-:`\\|?><".includes(c)
+}
+function init(){
+    document.getElementById('polonizuj').onclick = polonize
+}
+</script>
+</head>
+<body>
+<div id="whole">
+<h1>Polonizator</h1>
+<hr />
+<textarea id="niepolski" class="ta">Robert II (2 March 1316 – 19 April 1390) was King of Scotland (King of Scots) from 1371 to his death in 1390. The son of Walter Stewart, 6th High Steward of Scotland and Marjorie, daughter of King Robert the Bruce, he was the first monarch of the House of Stewart. Upon the death of his uncle, King David II, Robert succeeded to the throne.
+
+Edward Bruce, younger brother of Robert the Bruce, was named heir presumptive but died childless on 3 December 1318. Marjorie Bruce had died probably in 1317 in a riding accident and Parliament decreed her infant son, Robert Stewart, as heir presumptive, but this lapsed on 5 March 1324 on the birth of a son, David, to King Robert and his second wife, Elizabeth de Burgh. Robert Stewart became High Steward of Scotland on his father's death on 9 April 1327, and in the same year Parliament confirmed the young Steward as heir should David die childless. In 1329 King Robert I died and the five-year-old David succeeded to the throne under the guardianship of Thomas Randolph, Earl of Moray. 
+</textarea>
+<br />
+<input type="button" class="btn" id="polonizuj" value="POLONIZUJ"/>
+<br />
+<textarea id="polski" class="ta disable" disabled></textarea>
+</div>
+<script>
+	init();
+</script>
+</body>
+</html>
