@@ -18,7 +18,12 @@ function polonize(){
     text = text.toLowerCase()
     
     var pairs = {
+        "'":"",
         "x":"ks",
+        "ave":"ejw",
+        "^any$":"eny",
+        "^here$":"hir",
+        "^is$":"jesz",
         "v":"w",
         "qu":"kł",
         "q":"k",
@@ -36,20 +41,40 @@ function polonize(){
         "ńo":"nio",
         "ńu":"niu",
         "ńy":"ni",
-        "as$":"asz",
-        "es$":"esz",
-        "is$":"isz",
-        "ys$":"ysz",
+        
+        "^are$":"ar",
+        
+        "be$":"bi",
+        "be":"bi",
+        
+        "all":"ol",
+        
         "^is":"jis",
         "my":"maj",
         "ou":"u",
         "ough":"ułg",
-        "use$":"usz",
-        "ar$":"arz",
+        "use$":"ius",
+        "bar$":"barz",
+        "car$":"carz",
+        "dar$":"darz",
+        "far$":"farz",
+        "gar$":"garz",
+        "har$":"harz",
+        "jar$":"jarz",
+        "kar$":"karz",
+        "lar$":"larz",
+        "mar$":"marz",
+        "nar$":"narz",
+        "par$":"parz",
+        "rar$":"rarz",
+        "sar$":"sarz",
+        "tar$":"tarz",
+        "war$":"warz",
+        "zar$":"zarz",
         "er$":"erz",
         "or$":"orz",
-        "ur$":"urz",
-        "yr$":"yrz",
+        //"ur$":"urz",
+        //"yr$":"yrz",
         "de":"dzie",
         "ss":"sz",
         "ca":"ka",
@@ -87,7 +112,7 @@ function polonize(){
         "dik":"dzik",
         "dil":"dziel",
         "dim":"dziem",
-        "din":"dzień",
+        "din":"dzię",
         "dip":"dziep",
         "dir":"dzier",
         "dis":"dziesz",
@@ -107,8 +132,8 @@ function polonize(){
         "oi":"oj",
         "ui":"uj",
         
-        "ke":"kie",
-        "ge":"gie",
+        "^ke":"kie",
+        "^ge":"gie",
         
         "pib":"pieb",
         "pid":"piedd",
@@ -118,7 +143,7 @@ function polonize(){
         "pik":"piek",
         "pil":"piel",
         "pim":"piem",
-        "pin":"pień",
+        "pin":"pię",
         "pip":"piep",
         "pir":"pierz",
         "pis":"pisz",
@@ -139,6 +164,8 @@ function polonize(){
         "ste":"ście",
         "wte":"wcie",
         "zte":"zcie",
+        
+        "serz":"sierz",
         
         "żi":"ży",
         "ee":"i",
@@ -168,6 +195,24 @@ function polonize(){
         "^yi":"ji",
         "^yo":"jo",
         "^yu":"ju",
+        
+        "bame":"bejm",
+        "came":"kejm",
+        "dame":"dejm",
+        "fame":"fejm",
+        "game":"gejm",
+        "hame":"hejm",
+        "jame":"dżejm",
+        "kame":"kejm",
+        "lame":"lejm",
+        "mame":"mejm",
+        "name":"nejm",
+        "pame":"pejm",
+        "rame":"rejm",
+        "same":"sejm",
+        "tame":"tejm",
+        "wame":"łejm",
+        "zame":"zejm",
         
         "bya":"bia",
         "bye":"bie",
@@ -295,6 +340,22 @@ function polonize(){
         "ćt":"ciet",
         "ćz":"ciez",
         
+        "onb":"ąb",
+        "ond":"ąd",
+        "onf":"ąf",
+        "ong":"ąg",
+        "onc":"ąc",
+        "onh":"ąh",
+        "onk":"ąk",
+        "onl":"ąl",
+        "onn":"on",
+        "onp":"ąp",
+        "onr":"ąr",
+        "ons":"ąs",
+        "ont":"ąt",
+        "onz":"ąz",
+        
+        
         "nib":"nieb",
         "nid":"nied",
         "nig":"nyg",
@@ -307,6 +368,8 @@ function polonize(){
         "niz":"nyrz",
         
         "two":"tu",
+        
+        "ist$":"iść",
         
         "bow$":"bał",
         "dow$":"dał",
@@ -324,6 +387,7 @@ function polonize(){
         "tow$":"tał",
         "wow$":"wał",
         "zow$":"zał",
+        
         
         "bj":"bi",
         "cj":"ci",
@@ -357,8 +421,8 @@ function polonize(){
         "ura":"urza",
         "il":"iel",
         
-        "^in":"jęń",
-        "^im":"jem",
+        "^in":"ję",
+        "^im":"ję",
         
         "ic$":"ik",
         
@@ -370,22 +434,23 @@ function polonize(){
         "ote":"ocie",
         "ute":"ucie",
         "^one$":"łan",
-        "cin":"czyn",
+        "cin":"cię",
         "din":"dzin",
-        "gin":"gięń",
-        "jin":"jęń",
-        "kin":"kięń",
+        "gin":"gię",
+        "jin":"ję",
+        "kin":"kię",
         "lin":"łyń",
-        "min":"mięń",
-        "nin":"nięń",
-        "pin":"pięń",
+        "min":"mię",
+        "nin":"nię",
+        "pin":"pię",
         "rin":"rzyn",
         "sin":"szyn",
-        "tin":"cięń",
-        "win":"więń",
-        "zin":"zięń",
-        "own$":"owyń",
+        "tin":"cię",
+        "win":"wię",
+        "zin":"zię",
+        "own":"ałn",
         "one$":"ołn",
+        "oa":"oł",
         "sh":"sz",
         "tch":"cz",
         "ch":"cz",
@@ -413,7 +478,6 @@ function polonize(){
         "^kn":"n",
         "ows":"ołs",
         "ein":"ejn",
-        "us":"usz",
         "ph":"f",
         "rzr":"rz",
         "ese":"erze",
@@ -424,7 +488,7 @@ function polonize(){
         "se$":"sze",
         "żs":"ż",
         "ąń":"oń",
-        "ęń":"eń",
+        "ęń":"ę",
         "ńg":"ńk",
         "rzl":"rzyl",
         "rzd":"rzed",
@@ -434,14 +498,14 @@ function polonize(){
         "rzk":"rzyk",
         "rzp":"rzep",
         "rzr":"rzer",
-        "rzs":"rzesz",
-        "rzt":"rzyt",
-        "rzz":"rzeż",
+        "rzs":"rz",
+        //"rzt":"rzyt",
+        "rzz":"rz",
         "ry":"rzy",
         "rzerz":"rzer",
         "rzj":"rzyj",
         "ty$":"cierz",
-        "ike":"ajk",
+        "ike$":"ajk",
         "żl":"l",
         "sis":"sys",
         "ste":"ście",
@@ -451,13 +515,44 @@ function polonize(){
         "sć":"ść",
         "rs$":"rsz",
         
+        "ęd$":"ędź",
+        "nd$":"ńdź",
+        "wier":"wierz",
+        "zz":"z",
+        
         "ise":"yrze",
         "ri":"rzy",
         
-        "s$":"sz",
+        "ął":"oł",
+        //"s$":"sz",
         
         "ent$":"ięć",
         "ents":"ęcz",
+        
+        "ue":"u",
+        "ae":"e",
+        "oe":"oł",
+        
+        "^e":"je",
+        "anb":"ąb",
+        "anc":"ąc",
+        "and":"ąd",
+        "anf":"ąf",
+        "ang":"ąg",
+        "anh":"ąh",
+        "anj":"ąj",
+        "ank":"ąk",
+        "anl":"ąl",
+        "anm":"ąm",
+        "anp":"ąp",
+        "anr":"ąr",
+        "ans":"ąs",
+        "ant":"ąt",
+        "anw":"ąw",
+        "anz":"ąz",
+        "ts":"c",
+        
+        "orn":"orzyn",
         
         "of":"ów",
         "ly$":"ły",
@@ -479,12 +574,12 @@ function polonize(){
             console.log(text.slice(i,i+5))
             for(var key in pairs){
                 var replacement = pairs[key]
-                if(key[0] == '^' && key[key.length-1] == '$' && (i > 0 && notLetter(text[i-1]) || i == 0) && (i < text.length-1 && notLetter(text[i+key.length-2]) || i+key.length-2 == text.length-1) && text.slice(i,i+key.length-2) == key.slice(1,key.length-1)){
+                if(key == '^' && key[key.length-1] == '$' && (i > 0 && notLetter(text[i-1]) || i == 0) && (i < text.length-1 && notLetter(text[i+key.length-2]) || i+key.length-2 == text.length-1) && text.slice(i,i+key.length-2) == key.slice(1,key.length-1)){
                     var newI = i - key.length -2 + replacement.length
                     text = text.slice(0,i) + replacement + text.slice(i+key.length-2)
                     i = newI-3
                     break
-                } else if(key[0] == '^' && (i > 0 && notLetter(text[i-1]) || i == 0) && text.slice(i,i+key.length-1) == key.slice(1)){
+                } else if(key == '^' && (i > 0 && notLetter(text[i-1]) || i == 0) && text.slice(i,i+key.length-1) == key.slice(1)){
                     var newI = i - key.length -1 + replacement.length
                     text = text.slice(0,i) + replacement + text.slice(i+key.length-1)
                     i = newI-2
@@ -518,9 +613,11 @@ function init(){
 <div id="whole">
 <h1>Polonizator</h1>
 <hr />
-<textarea id="niepolski" class="ta">Robert II (2 March 1316 – 19 April 1390) was King of Scotland (King of Scots) from 1371 to his death in 1390. The son of Walter Stewart, 6th High Steward of Scotland and Marjorie, daughter of King Robert the Bruce, he was the first monarch of the House of Stewart. Upon the death of his uncle, King David II, Robert succeeded to the throne.
+<textarea id="niepolski" class="ta">Geoffrey was born between about 1090 and 1100, in Wales or the Welsh Marches. He had reached the age of majority by 1129 when he is recorded as witnessing a charter.
 
-Edward Bruce, younger brother of Robert the Bruce, was named heir presumptive but died childless on 3 December 1318. Marjorie Bruce had died probably in 1317 in a riding accident and Parliament decreed her infant son, Robert Stewart, as heir presumptive, but this lapsed on 5 March 1324 on the birth of a son, David, to King Robert and his second wife, Elizabeth de Burgh. Robert Stewart became High Steward of Scotland on his father's death on 9 April 1327, and in the same year Parliament confirmed the young Steward as heir should David die childless. In 1329 King Robert I died and the five-year-old David succeeded to the throne under the guardianship of Thomas Randolph, Earl of Moray. 
+Geoffrey refers to himself in his Historia as Galfridus Monemutensis (Geoffrey of Monmouth), which indicates a significant connection to Monmouth, Wales, and may refer to his birthplace. His works attest to some acquaintance with the place-names of the region. Geoffrey was known to his contemporaries as Galfridus Arturus or variants thereof. The "Arthur" in these versions of his name may indicate the name of his father or a nickname based on his scholarly interests.
+
+Earlier scholars assumed that Geoffrey was Welsh or at least spoke Welsh. His knowledge of this language appears to have been slight, however, and there is no evidence that he was of either Welsh or Cambro-Norman descent. He may have come from the same French-speaking elite of the Welsh border country as Gerald of Wales, Walter Map, and Robert, Earl of Gloucester, to whom Geoffrey dedicated versions of his History. Frank Merry Stenton and others have suggested that Geoffrey's parents may have been among the many Bretons who took part in William I's conquest and settled in the southeast of Wales. Monmouth had been in the hands of Breton lords since 1075 or 1086, and the names Galfridus and Arthur were more common among the Bretons than the Welsh. 
 </textarea>
 <br />
 <input type="button" class="btn" id="polonizuj" value="POLONIZUJ"/>
