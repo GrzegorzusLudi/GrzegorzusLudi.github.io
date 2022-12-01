@@ -1,0 +1,742 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf8">
+<style type="text/css">
+* {border-collapse:collapse;border-collapse:collapse;
+-moz-box-sizing:border-box;
+-webkit-box-sizing:border-box;
+box-sizing:border-box;margin:0px;padding:0px}
+html,body {color:white;background-color:black;font-family:Courier;width:100%; height:100%;}
+#whole {margin:auto}
+
+@media (max-aspect-ratio: 100/120) {
+    #whole {width:120vw;height:100vw}
+    #canv {border:1px solid white;width:100vw;height:100vw;display:inline-block;float:left}
+    #panel {border:1px solid white;width:20vw;height:100vw;display:inline-block;float:left}
+}
+@media (min-aspect-ratio: 100/120) {
+    #whole {width:120vh;height:100vh}
+    #canv {border:1px solid white;width:100vh;height:100vh;display:inline-block;float:left}
+    #panel {border:1px solid white;width:20vh;height:100vh;display:inline-block;float:left}
+}
+#averagediv{font-size:10pt}
+input[type=range] {
+    width:100%
+}
+hr {border:0px, background-color:white;margin:2px;height:2px}
+</style>
+<script>
+function RGB2HTML(red, green, blue)
+{
+    var decColor =0x1000000+ blue + 0x100 * green + 0x10000 *red ;
+    return '#'+decColor.toString(16).substr(1);
+}
+class Camera {  //unused
+    constructor(x,y,rotation,magnification){
+        this.x = x
+        this.y = y
+        this.rotation = rotation
+        this.magnification = magnification
+    }
+}
+class Thing {
+    constructor(x,y,radius,mass,vx,vy,bounce){
+        this.x = x
+        this.y = y
+        this.vx = vx ? vx : 0
+        this.vy = vy ? vy : 0
+        this.bounce = Math.sqrt(bounce != undefined ? bounce : 0)
+        this.color = '#fff'
+        
+        this.radius = radius
+        this.mass = mass
+        this.history = []
+        this.pora = 0
+    }
+    draw(ctx,translate_x,translate_y,zoom,slad){
+        if(this.pora == 5){
+            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,100)
+            this.pora = 0
+        } else {
+            this.pora++
+        }
+        
+        if(translate_x == undefined)
+            translate_x = 0
+        if(translate_y == undefined)
+            translate_y = 0
+        if(zoom == undefined)
+            zoom = 1
+        if(slad == undefined)
+            zoom = 0
+            
+        ctx.lineWidth = 2
+        ctx.strokeStyle = this.color
+        ctx.fillColor = '#000'
+        ctx.beginPath()
+        ctx.arc((this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500, Math.max(0.5,this.radius*zoom), 0, 2*Math.PI)
+        ctx.stroke()
+        ctx.lineWidth = 1
+    
+    }
+    draw_slad(ctx,translate_x,translate_y,zoom,slad){
+        ctx.strokeStyle = '#888'
+
+        var former_x = (this.x-translate_x-500)*zoom+500, former_y = (this.y-translate_y-500)*zoom+500
+        for(var i in this.history.slice(0,slad)){
+            var p = this.history[i]
+            var this_x = (p.x-translate_x-500)*zoom+500, this_y = (p.y-translate_y-500)*zoom+500
+
+            ctx.beginPath()
+            ctx.moveTo(former_x,former_y)
+            ctx.lineTo(this_x,this_y)
+            ctx.globalAlpha = i/slad < 0.5 ? 1 : 2-i/slad*2
+            ctx.stroke()
+            ctx.globalAlpha = 1
+            
+            former_x = this_x
+            former_y = this_y
+        }
+    }
+    notifyCollision(x2,y2){
+        
+    }
+    move(){
+        
+    }
+    
+}
+class CelestialBody extends Thing {
+    constructor(x,y,radius,mass,vx,vy,bounce){
+        super(x,y,radius,mass,vx,vy,bounce)
+    }
+    draw(ctx,translate_x,translate_y,zoom,slad){
+        if(this.pora == 5){
+            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,100)
+            this.pora = 0
+        } else {
+            this.pora++
+        }
+        
+        if(translate_x == undefined)
+            translate_x = 0
+        if(translate_y == undefined)
+            translate_y = 0
+        if(zoom == undefined)
+            zoom = 1
+        if(slad == undefined)
+            zoom = 0
+            
+        ctx.lineWidth = 2
+        ctx.strokeStyle = this.color
+        ctx.fillColor = '#000'
+        ctx.beginPath()
+        ctx.arc((this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500, Math.max(0.5,this.radius*zoom), 0, 2*Math.PI)
+        ctx.stroke()
+        ctx.lineWidth = 1
+    
+    }
+}
+
+class Rocket extends Thing {
+    constructor(x,y,radius,vx,vy){
+        super(x,y,radius,0,vx,vy,0.4)
+        this.rotation = 0
+        this.propelling = 0
+        this.smallpropelling = 0
+        this.smallpropellingrotation = 0
+        
+        this.PROPEL_FORCE = 0.4
+        this.SMALL_PROPEL_FORCE = 0.1
+        this.ROT_FORCE = 0.6
+        this.MAX_ROT = 20
+        
+        this.rx = 0
+    }
+    draw(ctx,translate_x,translate_y,zoom,slad){
+        if(this.pora == 5){
+            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,2000)
+            this.pora = 0
+        } else {
+            this.pora++
+        }
+        
+        if(translate_x == undefined)
+            translate_x = 0
+        if(translate_y == undefined)
+            translate_y = 0
+        if(zoom == undefined)
+            zoom = 1
+        if(slad == undefined)
+            zoom = 0
+            
+        ctx.lineWidth = 2
+        
+        
+        if(this.propelling > 0){
+            ctx.strokeStyle = '#0ff'
+            //if(this.propelling > 2)
+                this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[-8,-20],[8,-20],[12,-20-5],[0,-20-25],[-12,-20-5]],zoom,this.rotation)    
+            //else
+            //    this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[-5,-20],[5,-20],[8,-20-5],[0,-20-15],[-8,-20-5]],zoom,this.rotation)   
+                
+            ctx.stroke()
+        }
+        if(this.smallpropellingrotation != 0){
+            ctx.strokeStyle = '#fff'
+            if(this.smallpropellingrotation >= 1){
+                this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[10,10],[15,5],[15,15]],zoom,this.rotation)    
+                ctx.stroke()
+                this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[-10,-15],[-15,-10],[-15,-20]],zoom,this.rotation)   
+                ctx.stroke()
+            } else if(this.smallpropellingrotation <= -1){
+                this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[-10,10],[-15,5],[-15,15]],zoom,this.rotation)    
+                ctx.stroke()
+                this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[10,-15],[15,-10],[15,-20]],zoom,this.rotation)   
+                ctx.stroke()
+            }
+        }
+        if(this.smallpropelling != 0){
+            ctx.strokeStyle = '#fff'
+            if(this.smallpropelling >= 1){
+                this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[10,-20],[5,-25],[15,-25]],zoom,this.rotation)    
+                ctx.stroke()
+                this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[-10,-20],[-5,-25],[-15,-25]],zoom,this.rotation)    
+                ctx.stroke()
+            } else if(this.smallpropelling <= -1){
+                this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[10,10],[5,15],[15,15]],zoom,this.rotation)    
+                ctx.stroke()
+                this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[-10,10],[-5,15],[-15,15]],zoom,this.rotation)    
+                ctx.stroke()
+            }
+        }
+        
+        ctx.strokeStyle = this.color
+        ctx.fillColor = '#000'
+        this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[-10,10],[10,10],[10,-15],[-10,-15]],zoom,this.rotation)
+        ctx.stroke()
+        this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[0,20],[10,10],[-10,10]],zoom,this.rotation)
+        ctx.stroke()
+        this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[-5,-15],[5,-15],[10,-20],[-10,-20]],zoom,this.rotation)
+        ctx.stroke()
+        ctx.lineWidth = 1
+        
+    }
+    drawPreview(ctx){
+        var translate_x = 100
+        var translate_y = 100
+        var zoom = 1
+        
+        
+        if(this.propelling > 0){
+            ctx.strokeStyle = '#0ff'
+            //if(this.propelling > 2)
+                this.drawPolygonRotated(ctx,(translate_x)*zoom, (translate_y)*zoom,[[-8,-20],[8,-20],[12,-20-5],[0,-20-25],[-12,-20-5]],zoom,this.rotation)    
+            //else
+            //    this.drawPolygonRotated(ctx,(this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500,[[-5,-20],[5,-20],[8,-20-5],[0,-20-15],[-8,-20-5]],zoom,this.rotation)   
+                
+            ctx.stroke()
+        }
+        if(this.smallpropellingrotation != 0){
+            ctx.strokeStyle = '#fff'
+            if(this.smallpropellingrotation >= 1){
+                this.drawPolygonRotated(ctx,(translate_x)*zoom+0, (translate_y)*zoom+0,[[10,10],[15,5],[15,15]],zoom,this.rotation)    
+                ctx.stroke()
+                this.drawPolygonRotated(ctx,(translate_x)*zoom+0, (translate_y)*zoom+0,[[-10,-15],[-15,-10],[-15,-20]],zoom,this.rotation)   
+                ctx.stroke()
+            } else if(this.smallpropellingrotation <= -1){
+                this.drawPolygonRotated(ctx,(translate_x)*zoom+0, (translate_y)*zoom+0,[[-10,10],[-15,5],[-15,15]],zoom,this.rotation)    
+                ctx.stroke()
+                this.drawPolygonRotated(ctx,(translate_x)*zoom+0, (translate_y)*zoom+0,[[10,-15],[15,-10],[15,-20]],zoom,this.rotation)   
+                ctx.stroke()
+            }
+        }
+        if(this.smallpropelling != 0){
+            ctx.strokeStyle = '#fff'
+            if(this.smallpropelling >= 1){
+                this.drawPolygonRotated(ctx,(translate_x)*zoom+0, (translate_y)*zoom+0,[[10,-20],[5,-25],[15,-25]],zoom,this.rotation)    
+                ctx.stroke()
+                this.drawPolygonRotated(ctx,(translate_x)*zoom+0, (translate_y)*zoom+0,[[-10,-20],[-5,-25],[-15,-25]],zoom,this.rotation)    
+                ctx.stroke()
+            } else if(this.smallpropelling <= -1){
+                this.drawPolygonRotated(ctx,(translate_x)*zoom+0, (translate_y)*zoom+0,[[10,10],[5,15],[15,15]],zoom,this.rotation)    
+                ctx.stroke()
+                this.drawPolygonRotated(ctx,(translate_x)*zoom+0, (translate_y)*zoom+0,[[-10,10],[-5,15],[-15,15]],zoom,this.rotation)    
+                ctx.stroke()
+            }
+        }
+        
+        
+        ctx.strokeStyle = this.color
+        ctx.fillColor = '#000'
+        this.drawPolygonRotated(ctx,(translate_x-0)*zoom+0, (translate_y-0)*zoom+0,[[-10,10],[10,10],[10,-15],[-10,-15]],zoom,this.rotation)
+        ctx.stroke()
+        this.drawPolygonRotated(ctx,(translate_x-0)*zoom+0, (translate_y-0)*zoom+0,[[0,20],[10,10],[-10,10]],zoom,this.rotation)
+        ctx.stroke()
+        this.drawPolygonRotated(ctx,(translate_x-0)*zoom+0, (translate_y-0)*zoom+0,[[-5,-15],[5,-15],[10,-20],[-10,-20]],zoom,this.rotation)
+        ctx.stroke()
+        
+    }
+    move(){
+        this.rotation += this.rx
+        if(this.propelling > 0){
+            this.propelling--
+            
+            this.vx += Math.sin(this.rotation*Math.PI/180) * this.PROPEL_FORCE
+            this.vy -= Math.cos(this.rotation*Math.PI/180) * this.PROPEL_FORCE
+
+        }
+        if(this.smallpropelling > 1){
+            this.smallpropelling--
+            this.vx += Math.sin(this.rotation*Math.PI/180) * this.SMALL_PROPEL_FORCE
+            this.vy -= Math.cos(this.rotation*Math.PI/180) * this.SMALL_PROPEL_FORCE
+        } else if(this.smallpropelling < -1) {
+            this.smallpropelling++
+            this.vx -= Math.sin(this.rotation*Math.PI/180) * this.SMALL_PROPEL_FORCE
+            this.vy += Math.cos(this.rotation*Math.PI/180) * this.SMALL_PROPEL_FORCE
+        } else {
+            this.smallpropelling = 0
+        }
+        if(this.smallpropellingrotation > 1){
+            this.smallpropellingrotation--
+            if(this.rx < this.MAX_ROT){
+                this.rx += this.ROT_FORCE
+                this.smallpropellingrotation = 0
+            }
+        } else if(this.smallpropellingrotation < -1) {
+            this.smallpropellingrotation++
+            if(this.rx > -this.MAX_ROT){
+                this.rx -= this.ROT_FORCE
+                this.smallpropellingrotation = 0
+            }
+        } else {
+            this.smallpropellingrotation = 0
+            this.stabiliseRotation()
+        }
+    }
+    propel(){
+        if(this.propelling < 2)
+            this.propelling = 2
+        else
+            this.propelling = 5
+    }
+    smallPropel(way){
+        this.smallpropelling = 2 * way
+    }
+    smallPropelRotate(way){
+        this.smallpropellingrotation = 3 * way
+    }
+    stabiliseRotation(){
+        if(this.rx > this.ROT_FORCE){
+            this.smallpropellingrotation = -3
+        } else if(this.rx < -this.ROT_FORCE){
+            this.smallpropellingrotation = 3
+        } else {
+            this.smallpropellingrotation = 0
+            this.rx = 0
+        }
+    }
+    drawPolygonRotated(ctx,x,y,polygon,zoom,rotation){
+        ctx.beginPath()
+        for(var i in polygon){
+            var point = polygon[i]
+            if(i == 0){
+                ctx.moveTo(x - (point[0] * Math.cos(rotation/180*Math.PI) - point[1] * Math.sin(rotation/180*Math.PI))*zoom, 
+                           y - (point[1] * Math.cos(rotation/180*Math.PI) + point[0] * Math.sin(rotation/180*Math.PI))*zoom)
+            } else {
+                ctx.lineTo(x - (point[0] * Math.cos(rotation/180*Math.PI) - point[1] * Math.sin(rotation/180*Math.PI))*zoom, 
+                           y - (point[1] * Math.cos(rotation/180*Math.PI) + point[0] * Math.sin(rotation/180*Math.PI))*zoom)
+                
+            }
+        }
+        ctx.closePath()
+    }
+    notifyCollision(x2,y2){
+        var rot = Math.atan2(-x2,y2)/Math.PI*180
+        
+        if(this.rx > 0.2)
+            this.rx-=0.2
+        else if(this.rx < -0.2)
+            this.rx+=0.2
+        else
+            this.rx = 0
+    }
+}
+class RangeController{
+    constructor(id,func){
+        this.control = document.getElementById(id)
+        this.valueDiv = document.getElementById(id+'-num')
+        this.func = func
+        let th = this
+        this.control.onchange = ()=>{th.updateDiv()}
+        this.updateDiv()
+    }
+    updateDiv(){
+        this.valueDiv.innerHTML = this.getValue()
+    }
+    getValue(){
+        var val = this.func(this.control.value)
+        return val
+    }
+    setValue(value){
+        this.control.value = value
+        this.updateDiv()
+
+    }
+    wheel(value){
+        if(value > 0 && this.control.value < 10){
+            this.control.value -= -1
+            this.updateDiv()
+        }
+        if(value < 0 && this.control.value > 0){
+            this.control.value -= 1
+            this.updateDiv()
+        }
+    }
+}
+class Controller {
+    constructor(){
+        let th = this
+        
+        this.x = 0
+        this.y = 0
+        
+        this.GRAVITATIONAL_CONSTANT = 0.05
+        
+        this.canvas = document.getElementById("canv")
+        this.restartbutton = document.getElementById("restartbutton")
+        this.centerbutton = document.getElementById("centerbutton")
+        this.going = true
+        this.ctx = this.canvas.getContext('2d')
+        
+        this.rc_zoom = new RangeController('zoom', x=>Math.pow(2,x-8))
+        this.rc_slad = new RangeController('slad', x=>x)
+        /*
+        this.rc_kulek = new RangeController('kulek', x=>Math.pow(Number(x)*3,2))
+        this.rc_graw = new RangeController('graw', x=>(x % 2 ? 5 : 1)*Math.pow(10,Math.floor(x/2)-4))
+        this.rc_velo = new RangeController('velo', x=>x*5)
+        
+        this.rc_masa = new RangeController('masa', x=>x == 0 ? 1 : x*5)
+        this.rc_radi = new RangeController('radi', x=>x == 0 ? 1 : x*2)
+        this.rc_spr = new RangeController('spr', x=>[0,0.1,0.2,0.4,0.5,0.7,0.9,0.95,0.99,0.995,1][x])
+        this.rc_rotation = new RangeController('rotation', x=>x)*/
+
+        this.restartbutton.onclick = () => {th.restart()}
+        this.centerbutton.onclick = () => {th.center()}
+        
+        this.canvas.onclick = (e)=>{th.click(e)}
+        this.canvas.onwheel = (e)=>{th.wheel(e)}
+        window.onkeydown = (e)=>{th.keydown(e)}
+        window.onkeyup = (e)=>{th.keyup(e)}
+        
+        this.actualKeysDown = {}
+        
+        this.initialize()
+        this.loop()
+        this.draw()
+    }
+    keydown(e){
+        var key = e.key
+        if(!(key in this.actualKeysDown))
+            this.actualKeysDown[key] = 20
+        else
+            this.actualKeysDown[key] = 19
+    }
+    keyup(e){
+        var key = e.key
+        if(key in this.actualKeysDown)
+            delete this.actualKeysDown[key]
+    }
+    center(){
+        this.x = 0
+        this.y = 0
+    }
+    initialize(){
+        var poidv = -6
+        this.x = 0
+        this.y = 0
+        
+        this.GRAVITATIONAL_CONSTANT = 1//this.rc_graw.getValue()
+        
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //  TUTAJ SIĘ DODAJE OBIEKTY
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        this.playerRocket = new Rocket(20230,-20,10,0,30)
+        this.celestialBodies = [
+            this.playerRocket,
+            new CelestialBody(0,0,200,1000,0,0),
+            new CelestialBody(8000,0,40,10,0,32),
+            new CelestialBody(8150,0,10,1,0,35),
+            new CelestialBody(20000,0,40,10,0,30),
+        ]
+        
+        //this.celestialBodies = []
+        /*
+        var num = Math.sqrt(this.rc_kulek.getValue())
+        var velo = this.rc_velo.getValue()
+        var masa = this.rc_masa.getValue()
+        var radi = this.rc_radi.getValue()
+        var spr = this.rc_spr.getValue()
+        var rotation = this.rc_rotation.getValue()
+
+        var center_x = 100 + 20 * num / 2
+        var center_y = 100 + 20 * num / 2
+        for(var i = 0;i<num;i++){
+            for(var j = 0;j<num;j++){
+                var x = 100+20*i
+                var y = 100+20*j
+                
+                var mass = 25//Math.pow(Math.random(),10)*20
+                var vx = (Math.random()*2-1)*velo + (y-center_y) * rotation / 1000
+                var vy = (Math.random()*2-1)*velo - (x-center_x) * rotation / 1000
+                
+                var nc = new CelestialBody(x,y,radi,masa,vx,vy,spr)
+                this.celestialBodies.push(nc)
+            }
+        }*/
+        
+        var average_x = this.celestialBodies.map(x=>x.vx).reduce((a,b)=>a+b,0)/this.celestialBodies.length
+        var average_y = this.celestialBodies.map(x=>x.vy).reduce((a,b)=>a+b,0)/this.celestialBodies.length
+
+        //for(var i in this.celestialBodies){
+        //    this.celestialBodies[i].vx -= average_x
+        //    this.celestialBodies[i].vy -= average_x
+        //}
+        //this.celestialBodies.push(new CelestialBody(501,501,30,1000,0,0))
+    }
+    restart(){
+        this.initialize()
+    }
+    loop(){
+        if(this.going)
+            this.move()
+        let th = this
+        setTimeout(()=>{th.loop()},40)
+    }
+    move(){
+        var bodies = this.iterator()
+        this.collide(bodies)
+        this.gravitate()
+        this.moveSpeed()
+        this.setCamera()
+        for(var i = 0;i<3;i++){
+            this.expand(bodies)
+        }
+        for(var key in this.actualKeysDown){
+            if(this.actualKeysDown[key] == 0)
+                delete this.actualKeysDown[key]
+            //else
+            //    this.actualKeysDown[key]--
+        }
+        this.actKeys()
+        for(var i in this.celestialBodies){
+            this.celestialBodies[i].move()
+        }
+        this.draw()
+        
+    }
+    gravitate(){
+        for(var i = 0;i<this.celestialBodies.length;i++){
+            var b1 = this.celestialBodies[i]
+            for(var j = 0;j<i;j++){
+                var b2 = this.celestialBodies[j]
+                
+                var r = Math.sqrt( Math.pow(b1.x-b2.x,2) + Math.pow(b1.y-b2.y,2) )
+                
+                var angle = Math.atan2( b1.y-b2.y, b1.x-b2.x )
+                
+                if(r > b1.radius + b2.radius){
+                    b1.vx -= Math.cos(angle) * r * this.GRAVITATIONAL_CONSTANT * b2.mass / Math.pow(r,2)
+                    b1.vy -= Math.sin(angle) * r * this.GRAVITATIONAL_CONSTANT * b2.mass / Math.pow(r,2)
+                    
+                    b2.vx += Math.cos(angle) * r * this.GRAVITATIONAL_CONSTANT * b1.mass / Math.pow(r,2)
+                    b2.vy += Math.sin(angle) * r * this.GRAVITATIONAL_CONSTANT * b1.mass / Math.pow(r,2)
+                }
+                
+            }
+        }
+        this.celestialBodies[0].color = '#f00'
+    }
+    collide(bodies){
+        for(var i in bodies){
+            var b1 = bodies[i].b1
+            var b2 = bodies[i].b2
+                
+            var r = Math.sqrt( Math.pow(b1.x-b2.x,2) + Math.pow(b1.y-b2.y,2) )
+            
+            b1.notifyCollision(b1.x-b2.x,b1.y-b2.y)
+            b2.notifyCollision(b2.x-b1.x,b2.y-b1.y)
+            
+            var angle = Math.atan2( b1.y-b2.y, b1.x-b2.x )
+            
+            if(r < b1.radius + b2.radius){
+                var b1_vx = b1.vx
+                var b1_vy = b1.vy
+                var b2_vx = b2.vx
+                var b2_vy = b2.vy
+                var bounce = b1.bounce * b2.bounce
+                var inelastic_x = ( b1.mass * b1_vx + b2.mass * b2_vx ) / ( b1.mass + b2.mass )
+                var inelastic_y = ( b1.mass * b1_vy + b2.mass * b2_vy ) / ( b1.mass + b2.mass )
+                
+                b1.vx = (b1_vx - 2*b2.mass / (b1.mass + b2.mass) * ( (b1_vx-b2_vx) * (b1.x-b2.x) + (b1_vy-b2_vy) * (b1.y-b2.y) ) / Math.pow(r,2) * (b1.x - b2.x)) * bounce
+                                + inelastic_x * (1-bounce)
+                b1.vy = (b1_vy - 2*b2.mass / (b1.mass + b2.mass) * ( (b1_vx-b2_vx) * (b1.x-b2.x) + (b1_vy-b2_vy) * (b1.y-b2.y) ) / Math.pow(r,2) * (b1.y - b2.y)) * bounce
+                                + inelastic_y * (1-bounce)
+                
+                b2.vx = (b2_vx - 2*b1.mass / (b1.mass + b2.mass) * ( (b1_vx-b2_vx) * (b1.x-b2.x) + (b1_vy-b2_vy) * (b1.y-b2.y) ) / Math.pow(r,2) * (b2.x - b1.x)) * bounce
+                                + inelastic_x * (1-bounce)
+                b2.vy = (b2_vy - 2*b1.mass / (b1.mass + b2.mass) * ( (b1_vx-b2_vx) * (b1.x-b2.x) + (b1_vy-b2_vy) * (b1.y-b2.y) ) / Math.pow(r,2) * (b2.y - b1.y)) * bounce
+                                + inelastic_y * (1-bounce)
+            }
+        }
+    }
+    expand(bodies){
+        for(var i in bodies){
+            var b1 = bodies[i].b1
+            var b2 = bodies[i].b2
+            
+            var r = Math.sqrt( Math.pow(b1.x-b2.x,2) + Math.pow(b1.y-b2.y,2) )
+            
+            var angle = Math.atan2( b1.y-b2.y, b1.x-b2.x )
+            
+            if(r < b1.radius + b2.radius){
+                b1.x += Math.cos(angle) * (b1.radius+b2.radius - r) * 0.5 * 2*b2.mass / (b1.mass + b2.mass)
+                b1.y += Math.sin(angle) * (b1.radius+b2.radius - r) * 0.5 * 2*b2.mass / (b1.mass + b2.mass)
+                
+                b2.x -= Math.cos(angle) * (b1.radius+b2.radius - r) * 0.5 * 2*b1.mass / (b1.mass + b2.mass)
+                b2.y -= Math.sin(angle) * (b1.radius+b2.radius - r) * 0.5 * 2*b1.mass / (b1.mass + b2.mass)
+            }
+        }
+    }
+    iterator(){
+        var pairs = []
+        var cb = this.celestialBodies.slice().sort((a,b)=>a.x-b.x)
+        for(var i=0;i<cb.length;i++){
+            var b1 = cb[i]
+            var ix = i+1
+            while(ix < cb.length && b1.x + b1.radius >= cb[ix].x - cb[ix].radius){
+                if(b1.y + b1.radius >= cb[ix].y - cb[ix].radius && cb[ix].y + cb[ix].radius >= b1.y - b1.radius){
+                    pairs.push({b1:b1,b2:cb[ix]})
+                }
+                ix++
+            }
+            /*
+            var ix = i-1
+            while(ix >= 0 && cb[ix].x + cb[ix].radius >= b1.x - b1.radius){
+                if(b1.y + b1.radius >= cb[ix].y - cb[ix].radius && cb[ix].y + cb[ix].radius >= b1.y - b1.radius){
+                    pairs.push({b1:b1,b2:cb[ix]})
+                }
+                ix--
+            }*/
+        }
+        return pairs
+    }
+    moveSpeed(){
+        for(var i = 0;i<this.celestialBodies.length;i++){
+            var b = this.celestialBodies[i]
+            b.x += b.vx//*this.GRAVITATIONAL_CONSTANT
+            b.y += b.vy//*this.GRAVITATIONAL_CONSTANT
+        }
+    }
+    draw(){
+        this.ctx.clearRect(0,0,1000,1000)
+        var zoom = this.rc_zoom.getValue()
+        var slad = this.rc_slad.getValue()
+        
+        var average_x = 0//this.celestialBodies.map(x=>x.x-500).reduce((a,b)=>a+b,0)/this.celestialBodies.length
+        var average_y = 0//this.celestialBodies.map(x=>x.y-500).reduce((a,b)=>a+b,0)/this.celestialBodies.length
+        for(var i in this.celestialBodies){
+            var body = this.celestialBodies[i]
+            body.draw_slad(this.ctx,average_x+this.x,average_y+this.y,zoom,slad)
+        }
+
+        for(var i in this.celestialBodies){
+            var body = this.celestialBodies[i]
+            body.draw(this.ctx,average_x+this.x,average_y+this.y,zoom,slad)
+        }
+        this.playerRocket.drawPreview(this.ctx)
+    }
+    setCamera(){
+        var zoom = this.rc_zoom.getValue()
+
+        this.x = (this.playerRocket.x-500)
+        this.y = (this.playerRocket.y-500)
+    }
+    click(e){
+        var zoom = this.rc_zoom.getValue()
+
+        var elemLeft = this.canvas.offsetLeft + this.canvas.clientLeft
+        var elemTop = this.canvas.offsetTop + this.canvas.clientTop
+        
+        var x = (e.pageX - elemLeft)/this.canvas.offsetWidth*1000
+        var y = (e.pageY - elemTop)/this.canvas.offsetHeight*1000
+        
+        this.x += (x-500)/zoom
+        this.y += (y-500)/zoom
+    }
+    actKeys(){
+        if('q' in this.actualKeysDown && this.actualKeysDown['q'] >= 20){
+            this.rc_zoom.wheel(-1)
+        }
+        if('w' in this.actualKeysDown && this.actualKeysDown['w'] >= 20){
+            this.rc_zoom.wheel(1)
+        }
+        if(' ' in this.actualKeysDown){
+            this.playerRocket.propel()
+        }
+        if('r' in this.actualKeysDown){
+            this.playerRocket.stabiliseRotation()
+        } else {
+            if('ArrowUp' in this.actualKeysDown){
+                this.playerRocket.smallPropel(1)
+            }
+            if('ArrowDown' in this.actualKeysDown){
+                this.playerRocket.smallPropel(-1)
+            }
+        }
+        if('ArrowLeft' in this.actualKeysDown){
+            this.playerRocket.smallPropelRotate(-1)
+        }
+        if('ArrowRight' in this.actualKeysDown){
+            this.playerRocket.smallPropelRotate(1)
+        }
+    }
+    wheel(e){
+        this.rc_zoom.wheel(e.wheelDeltaY)
+    }
+}
+function init(){
+    var controller = new Controller()
+}
+
+</script> 
+</head>
+<body>
+<div id="whole">
+<canvas id="canv" width="1000" height="1000">
+</canvas>
+<div id="panel">
+GRA
+<br/>
+<input type="button" id="restartbutton" value="RESTART">
+<input type="button" id="centerbutton" value="ŚRODEK">
+<hr/>
+Ślad:
+<input type="range" min="0" max="2000" id="slad" width="150" />
+<div id="slad-num"></div>
+<hr/>
+Zoom:
+<input type="range" min="0" max="10" id="zoom" width="150" />
+<div id="zoom-num"></div>
+<hr/>
+</div>
+</div>
+<script>
+	init();
+</script>
+</body>
+</html>

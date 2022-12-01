@@ -75,7 +75,6 @@ class CelestialBody {
         ctx.fillColor = '#000'
         ctx.beginPath()
         ctx.arc((this.x-translate_x-500)*zoom+500, (this.y-translate_y-500)*zoom+500, Math.max(0.5,this.radius*zoom), 0, 2*Math.PI)
-        
         ctx.stroke()
     
     }
@@ -146,6 +145,7 @@ class Controller {
         this.rc_radi = new RangeController('radi', x=>x == 0 ? 1 : x*2)
         this.rc_spr = new RangeController('spr', x=>[0,0.1,0.2,0.4,0.5,0.7,0.9,0.95,0.99,0.995,1][x])
         this.rc_zoom = new RangeController('zoom', x=>Math.pow(2,x-8))
+        this.rc_rotation = new RangeController('rotation', x=>x)
         this.rc_slad = new RangeController('slad', x=>x*5)
 
         this.restartbutton.onclick = () => {th.restart()}
@@ -188,11 +188,20 @@ class Controller {
         var masa = this.rc_masa.getValue()
         var radi = this.rc_radi.getValue()
         var spr = this.rc_spr.getValue()
+        var rotation = this.rc_rotation.getValue()
 
+        var center_x = 100 + 20 * num / 2
+        var center_y = 100 + 20 * num / 2
         for(var i = 0;i<num;i++){
             for(var j = 0;j<num;j++){
+                var x = 100+20*i
+                var y = 100+20*j
+                
                 var mass = 25//Math.pow(Math.random(),10)*20
-                var nc = new CelestialBody(100+20*i,100+20*j,radi,masa,(Math.random()*2-1)*velo,(Math.random()*2-1)*velo,spr)
+                var vx = (Math.random()*2-1)*velo + (y-center_y) * rotation / 1000
+                var vy = (Math.random()*2-1)*velo - (x-center_x) * rotation / 1000
+                
+                var nc = new CelestialBody(x,y,radi,masa,vx,vy,spr)
                 this.celestialBodies.push(nc)
             }
         }
@@ -400,6 +409,10 @@ Sprężystość kulek:
 Ślad:
 <input type="range" min="0" max="10" id="slad" width="150" />
 <div id="slad-num"></div>
+<hr/>
+Rotation:
+<input type="range" min="0" max="100" id="rotation" width="150" />
+<div id="rotation-num"></div>
 <hr/>
 Zoom:
 <input type="range" min="0" max="10" id="zoom" width="150" />
