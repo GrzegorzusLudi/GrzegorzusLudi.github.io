@@ -41,7 +41,7 @@ class Camera {  //unused
     }
 }
 class Thing {
-    constructor(x,y,radius,mass,vx,vy,bounce){
+    constructor(x,y,radius,mass,vx,vy,bounce,relativeBody){
         this.x = x
         this.y = y
         this.vx = vx ? vx : 0
@@ -51,12 +51,13 @@ class Thing {
         
         this.radius = radius
         this.mass = mass
+        this.relativeBody = relativeBody
         this.history = []
         this.pora = 0
     }
     draw(ctx,translate_x,translate_y,zoom,slad){
         if(this.pora == 5){
-            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,1000)
+            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,2000)
             this.pora = 0
         } else {
             this.pora++
@@ -83,10 +84,16 @@ class Thing {
     draw_slad(ctx,translate_x,translate_y,zoom,slad){
         ctx.strokeStyle = '#888'
 
+        if(this.relativeBody == null)
+            return
+        
         var former_x = (this.x-translate_x-500)*zoom+500, former_y = (this.y-translate_y-500)*zoom+500
         for(var i in this.history.slice(0,slad)){
-            var p = this.history[i]
-            var this_x = (p.x-translate_x-500)*zoom+500, this_y = (p.y-translate_y-500)*zoom+500
+            if(!(i in this.relativeBody.history))
+                continue
+            var px = this.history[i].x - this.relativeBody.history[i].x + this.relativeBody.x
+            var py = this.history[i].y - this.relativeBody.history[i].y + this.relativeBody.y
+            var this_x = (px-translate_x-500)*zoom+500, this_y = (py-translate_y-500)*zoom+500
 
             ctx.beginPath()
             ctx.moveTo(former_x,former_y)
@@ -108,14 +115,14 @@ class Thing {
     
 }
 class CelestialBody extends Thing {
-    constructor(x,y,radius,mass,vx,vy,bounce,color){
-        super(x,y,radius,mass,vx,vy,bounce)
+    constructor(x,y,radius,mass,vx,vy,bounce,relativeBody,color){
+        super(x,y,radius,mass,vx,vy,bounce,relativeBody)
         if(color != undefined)
             this.color = color
     }
     draw(ctx,translate_x,translate_y,zoom,slad){
         if(this.pora == 5){
-            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,1000)
+            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,2000)
             this.pora = 0
         } else {
             this.pora++
@@ -142,8 +149,8 @@ class CelestialBody extends Thing {
 }
 
 class Rocket extends Thing {
-    constructor(x,y,radius,vx,vy){
-        super(x,y,radius,0,vx,vy,0.4)
+    constructor(x,y,radius,vx,vy,relativeBody){
+        super(x,y,radius,0,vx,vy,0.4,relativeBody)
         this.rotation = 0
         this.propelling = 0
         this.smallpropelling = 0
@@ -465,18 +472,29 @@ class Controller {
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        this.playerRocket = new Rocket(66230,-20,10,0,40)
+        var sun = new CelestialBody(0,0,400,1000,0,0,0,null,'#ff0')
+        this.playerRocket = new Rocket(20000,-20,10,0,40,sun)
+        
+        var firstPlanet = new CelestialBody(8000,0,40,10,0,32,0,sun)
+        var firstPlanetMoon = new CelestialBody(8150,0,10,1,0,35,0,firstPlanet)
+        var secondPlanet = new CelestialBody(20000,0,40,10,0,30,0,sun)
+        var doublePlanetBigger = new CelestialBody(35000,0,30,10,0,35,0,sun)
+        var doublePlanetSmaller = new CelestialBody(35500,0,20,10,0,30,0,sun)
+        var giantPlanet = new CelestialBody(65000,0,100,60,0,40,0.2,sun,'#fd8')
+        var giantPlanetFirstMoon = new CelestialBody(65800,0,20,8,0,48,0.2,giantPlanet)
+        var giantPlanetSecondMoon = new CelestialBody(67300,0,10,5,0,51,0.2,giantPlanet)
+            
         this.celestialBodies = [
             this.playerRocket,
-            new CelestialBody(0,0,400,1000,0,0,0,'#ff0'),
-            new CelestialBody(8000,0,40,10,0,32,0),
-            new CelestialBody(8150,0,10,1,0,35,0),
-            new CelestialBody(20000,0,40,10,0,30,0),
-            new CelestialBody(35000,0,30,10,0,35,0),
-            new CelestialBody(35500,0,20,10,0,30,0),
-            new CelestialBody(65000,0,100,60,0,40,0.2,'#fd8'),
-            new CelestialBody(65800,0,20,8,0,48,0.2),
-            new CelestialBody(67300,0,10,5,0,51,0.2),
+            sun,
+            firstPlanet,
+            firstPlanetMoon,
+            secondPlanet,
+            doublePlanetBigger,
+            doublePlanetSmaller,
+            giantPlanet,
+            giantPlanetFirstMoon,
+            giantPlanetSecondMoon,
         ]
         //this.celestialBodies = []
         /*
