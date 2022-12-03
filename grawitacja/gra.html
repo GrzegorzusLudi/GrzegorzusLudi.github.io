@@ -56,7 +56,7 @@ class Thing {
     }
     draw(ctx,translate_x,translate_y,zoom,slad){
         if(this.pora == 5){
-            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,100)
+            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,1000)
             this.pora = 0
         } else {
             this.pora++
@@ -108,12 +108,14 @@ class Thing {
     
 }
 class CelestialBody extends Thing {
-    constructor(x,y,radius,mass,vx,vy,bounce){
+    constructor(x,y,radius,mass,vx,vy,bounce,color){
         super(x,y,radius,mass,vx,vy,bounce)
+        if(color != undefined)
+            this.color = color
     }
     draw(ctx,translate_x,translate_y,zoom,slad){
         if(this.pora == 5){
-            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,100)
+            this.history = [{x:this.x,y:this.y}].concat(this.history).slice(0,1000)
             this.pora = 0
         } else {
             this.pora++
@@ -463,13 +465,18 @@ class Controller {
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        this.playerRocket = new Rocket(20230,-20,10,0,30)
+        this.playerRocket = new Rocket(66230,-20,10,0,40)
         this.celestialBodies = [
             this.playerRocket,
-            new CelestialBody(0,0,200,1000,0,0),
-            new CelestialBody(8000,0,40,10,0,32),
-            new CelestialBody(8150,0,10,1,0,35),
-            new CelestialBody(20000,0,40,10,0,30),
+            new CelestialBody(0,0,400,1000,0,0,0,'#ff0'),
+            new CelestialBody(8000,0,40,10,0,32,0),
+            new CelestialBody(8150,0,10,1,0,35,0),
+            new CelestialBody(20000,0,40,10,0,30,0),
+            new CelestialBody(35000,0,30,10,0,35,0),
+            new CelestialBody(35500,0,20,10,0,30,0),
+            new CelestialBody(65000,0,100,60,0,40,0.2,'#fd8'),
+            new CelestialBody(65800,0,20,8,0,48,0.2),
+            new CelestialBody(67300,0,10,5,0,51,0.2),
         ]
         //this.celestialBodies = []
         /*
