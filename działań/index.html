@@ -1,0 +1,520 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf8">
+<style type="text/css">
+* {border-collapse:collapse;border-collapse:collapse;
+-moz-box-sizing:border-box;
+-webkit-box-sizing:border-box;
+box-sizing:border-box;margin:0px;padding:0px}
+html,body {color:white;background-color:black;font-family:Courier;width:100%; height:100%;}
+#whole {margin:auto}
+@media (max-aspect-ratio: 1/1) {
+    #whole {width:100vw;height:100vw}
+    #menu {width:100vw;height:100vw}
+    #title {font-size:9vw;padding-top:2vw}
+    #start {font-size:4vw;padding-top:1.5vw}
+    .switch {font-size:4vw;padding-top:1.3vw}
+    .fontsmall {font-size:3vw;padding-top:2vw}
+}
+@media (min-aspect-ratio: 1/1) {
+    #whole {width:100vh;height:100vh}
+    #menu {width:100vh;height:100vh}
+    #title {font-size:9vh;padding-top:2vh}
+    #start {font-size:4vh;padding-top:1.5vh}
+    .switch {font-size:4vh;padding-top:1.3vh}
+    .fontsmall {font-size:3vh;padding-top:2vh}
+}
+#popupinside {position:absolute;display:inline-block;width:40%;height:30%;left:30%;top:20%;border:3px solid white;background-color:#aa0000;text-align:center;display:none}
+#canv {border:1px solid white;width:100%;height:100%;display:block}
+#menu {position:absolute;display:inline-block}
+#menupopup {position:absolute;display:none}
+#title {position:absolute;display:inline-block;width:70%;height:15%;left:15%;top:10%;border:3px solid white;background-color:#aa0000;text-align:center}
+#start {position:absolute;display:inline-block;width:20%;height:8%;left:40%;top:82%;border:3px solid white;background-color:#aa0000;text-align:center}
+
+.switch {position:absolute;display:inline-block;width:20%;height:8%;border:2px solid white;text-align:center}
+
+#team0 {left:5%;top:37%;}
+#team1 {left:5%;top:45%;}
+#team2 {left:5%;top:53%;}
+#team3 {left:5%;top:61%;}
+#team4 {left:5%;top:69%;}
+
+#team5 {left:27%;top:37%;}
+#team6 {left:27%;top:45%;}
+#team7 {left:27%;top:53%;}
+#team8 {left:27%;top:61%;}
+#team9 {left:27%;top:69%;}
+
+#teams {left:7%;top:28%;width:38%;height:7%;background-color:#aa0000}
+#lands {left:53%;top:28%;width:38%;height:7%;background-color:#aa0000}
+#lands0 {left:59%;top:37%;background-color:#aa0000;width:25%}
+#placement {left:53%;top:48%;width:38%;height:7%;background-color:#aa0000}
+#placement0 {left:59%;top:57%;background-color:#aa0000;width:25%}
+#placement1 {left:59%;top:66%;background-color:#aa0000;width:25%}
+
+#menuyesbutton {position:relative;height:30%;width:30%;padding:3%;margin-top:10%;text-align:center;background-color:#aa0000}
+#menunobutton {position:relative;height:30%;width:30%;padding:3%;margin-top:10%;text-align:center;background-color:#aa0000}
+</style>
+<script>
+
+class Value {    
+    constructor(){
+        this.px = null
+        this.py = null
+    }
+    draw(){
+    
+    }
+    setFormerPlace(x,y){
+        this.px = x
+        this.py = y
+    }
+}
+class CompositeValue extends Value {
+    constructor(){
+        super()
+        this.subValues = []
+    }
+    setSubValues(subValues){
+        this.subValues = subValues
+    }
+}
+class CompositeNumber extends CompositeValue {
+    constructor(){
+        super()
+    }
+}
+class Operation extends Value {
+    constructor(sign, priority){
+        super()
+        this.sign = sign
+        this.priority = priority ?? 1
+    }
+    draw(ctx, posx, posy, kx, ky){
+        ctx.fillStyle = "#fff"
+        
+        var fontSize = Math.floor(ky * 0.8)
+        ctx.font = fontSize + 'px sans serif'
+        
+        var x = posx + kx / 2
+        var y = posy + ky * 0.9
+        
+        ctx.fillText(this.sign, x, y)
+    }
+    unitaryPrefix(){ return null }
+    prefix(){ return null }
+    infix(){ return null }
+    suffix(){ return null }
+}
+class Addition extends Operation {
+    constructor(){
+        super('+', 1)
+    }
+    unitaryPrefix(value){
+        if(value instanceof Subtraction){
+            return new Subtraction()
+        }
+        if(value instanceof Addition){
+            return new Addition()
+        }
+        return null
+    }
+    infix(value1, value2){
+        if(value1 instanceof Numer && value2 instanceof Numer){
+            var newNumber = value1.number + value2.number
+            return new Numer(newNumber)
+        }
+        return null
+    }
+}
+class Subtraction extends Operation {
+    constructor(){
+        super('-', 1)
+    }
+    unitaryPrefix(value){
+        if(value instanceof Subtraction){
+            return new Addition()
+        }
+        if(value instanceof Addition){
+            return new Subtraction()
+        }
+        
+        if(value instanceof Numer){
+            var newNumber = -value.number
+            return new Numer(newNumber)
+        }
+        return null
+    }
+    infix(value1, value2){
+        if(value1 instanceof Numer && value2 instanceof Numer){
+            var newNumber = value1.number - value2.number
+            return new Numer(newNumber)
+        }
+        return null
+    }
+}
+class Numerical extends Value {
+    constructor(number){
+        super()
+        this.number = number
+    }
+}
+class Numer extends Numerical {
+    constructor(number){
+        super()
+        this.number = number
+    }
+    draw(ctx, posx, posy, kx, ky){
+        ctx.fillStyle = "#fff"
+        
+        var fontSize = Math.floor(ky * 0.8)
+        ctx.font = fontSize + 'px sans serif'
+        ctx.textAlign = 'center'
+        
+        var x = posx + kx / 2
+        var y = posy + ky * 0.9
+        
+        ctx.fillText(this.number, x, y)
+    }
+}
+class Thing {
+    constructor(value,x,y,px,py){
+        this.value = value
+        this.x = x
+        this.y = y
+        this.px = py
+        this.py = py
+    }
+}
+class Field {
+    constructor(x,y){
+        this.currentThing = null
+        this.formerThing = null
+        this.animation = 0
+        this.x = x
+        this.y = y
+    }
+    addThing(thing){
+        this.formerThing = this.currentThing
+        this.currentThing = thing
+    }
+    clearThing(thing){
+        this.formerThing = this.currentThing
+        this.currentThing = null
+    }
+}
+class Model {
+    constructor(){
+        this.init()
+    }
+    init(){
+        this.level = 1
+        this.boardSize = 6
+        this.board = []
+        this.allFields = []
+        for(var i = 0;i<this.boardSize;i++){
+            this.board[i] = []
+            for(var j = 0;j<this.boardSize;j++){
+                var newField = new Field()
+                this.board[i][j] = newField
+                this.allFields.push(newField)
+            }
+        }
+        this.addRandom()
+        this.addRandom()
+        this.addRandom()
+        this.addRandom()
+        
+        this.key = null
+    }
+    randomThing(){
+        var random1 = Math.random()
+        var random2 = Math.random()
+        if(random1 < 0.3){
+            if(random2 < 0.4){
+                return new Numer(1)
+            } else if(random2 < 0.6){
+                return new Numer(2)
+            } else if(random2 < 0.7){
+                return new Numer(3)
+            } else if(random2 < 0.9){
+                return new Numer(-1)
+            } else {
+                return new Numer(-2)
+            } 
+        } else {
+            if(random2 < 0.5){
+                return new Addition()
+            } else {
+                return new Subtraction()
+            }
+        }
+    }
+    addRandom(){
+        var emptyFields = this.allFields.filter(x => x.currentThing == null)
+        if(emptyFields.length > 0){
+            var wylosowany = Math.floor(Math.random() * emptyFields.length)
+            
+            var newThing = this.randomThing()
+            
+            emptyFields[wylosowany].addThing(newThing)
+        }
+    }
+    setKey(key){
+        this.key = key
+    }
+    collapseStack(stacked, maxPriority){
+        var newStacked = stacked.slice()
+        for(var p = maxPriority;p>0;p--){
+            var somethingHappened = true
+            while(somethingHappened){
+                somethingHappened = false
+                for(var j = 0;j<newStacked.length;j++){
+                    var onStack = newStacked[j]
+                    if(onStack instanceof Operation){
+                        if(j >= 1 && j < newStacked.length-1){
+                            var infix = onStack.infix(newStacked[j-1], newStacked[j+1])
+                            if(infix != null){
+                                newStacked = newStacked.slice(0,j-1).concat(infix).concat(newStacked.slice(j+2))
+                                somethingHappened = true
+                                break
+                            }
+                        }
+                        if(j < newStacked.length-1){
+                            var infix = onStack.unitaryPrefix(newStacked[j+1])
+                            if(infix != null){
+                                newStacked = newStacked.slice(0,j).concat(infix).concat(newStacked.slice(j+2))
+                                somethingHappened = true
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        newStacked = newStacked.filter(x => !(x instanceof Numer && x.number == 0))
+        
+        return newStacked
+    }
+    play(){
+        switch(this.key){
+            case "ArrowLeft":
+                for(var i = 0;i<this.boardSize;i++){
+                    var maxPriority = 0
+                    var stackedThings = []
+                    for(var j = 0;j<this.boardSize;j++){
+                        if(this.board[j][i].currentThing != null){
+                            var currentThing = this.board[j][i].currentThing
+                            if(currentThing.priority > maxPriority)
+                                maxPriority = currentThing.priority
+                                
+                            currentThing.setFormerPlace(j,i)
+                            stackedThings.push(currentThing)
+                        }
+                    }
+                    
+                    stackedThings = this.collapseStack(stackedThings, maxPriority)
+                    
+                    for(var j = 0;j<this.boardSize;j++){
+                        if(j < stackedThings.length){
+                            this.board[j][i].addThing(stackedThings[j])
+                        } else {
+                            this.board[j][i].clearThing()
+                        }
+                    }
+                }
+                this.addRandom(this.key)
+            break
+            case "ArrowRight":
+                for(var i = 0;i<this.boardSize;i++){
+                    var maxPriority = 0
+                    var stackedThings = []
+                    for(var j = 0;j<this.boardSize;j++){
+                        if(this.board[this.boardSize-j-1][i].currentThing != null){
+                            var currentThing = this.board[this.boardSize-j-1][i].currentThing
+                            if(currentThing.priority > maxPriority)
+                                maxPriority = currentThing.priority
+                                
+                            currentThing.setFormerPlace(this.boardSize-j-1,i)
+                            stackedThings.push(currentThing)
+                        }
+                    }
+                    
+                    stackedThings = this.collapseStack(stackedThings, maxPriority)
+                    
+                    for(var j = 0;j<this.boardSize;j++){
+                        if(j < stackedThings.length){
+                            this.board[this.boardSize-j-1][i].addThing(stackedThings[j])
+                        } else {
+                            this.board[this.boardSize-j-1][i].clearThing()
+                        }
+                    }
+                }
+                this.addRandom(this.key)
+            break
+            case "ArrowUp":
+                for(var i = 0;i<this.boardSize;i++){
+                    var maxPriority = 0
+                    var stackedThings = []
+                    for(var j = 0;j<this.boardSize;j++){
+                        if(this.board[i][j].currentThing != null){
+                            var currentThing = this.board[i][j].currentThing
+                            if(currentThing.priority > maxPriority)
+                                maxPriority = currentThing.priority
+                                
+                            currentThing.setFormerPlace(j,i)
+                            stackedThings.push(currentThing)
+                        }
+                    }
+                    
+                    stackedThings = this.collapseStack(stackedThings, maxPriority)
+                    
+                    for(var j = 0;j<this.boardSize;j++){
+                        if(j < stackedThings.length){
+                            this.board[i][j].addThing(stackedThings[j])
+                        } else {
+                            this.board[i][j].clearThing()
+                        }
+                    }
+                }
+                this.addRandom(this.key)
+            break
+            case "ArrowDown":
+                for(var i = 0;i<this.boardSize;i++){
+                    var maxPriority = 0
+                    var stackedThings = []
+                    for(var j = 0;j<this.boardSize;j++){
+                        if(this.board[i][this.boardSize-j-1].currentThing != null){
+                            var currentThing = this.board[i][this.boardSize-j-1].currentThing
+                            if(currentThing.priority > maxPriority)
+                                maxPriority = currentThing.priority
+                                
+                            currentThing.setFormerPlace(i,this.boardSize-j-1)
+                            stackedThings.push(currentThing)
+                        }
+                    }
+                    
+                    stackedThings = this.collapseStack(stackedThings, maxPriority)
+                    
+                    for(var j = 0;j<this.boardSize;j++){
+                        if(j < stackedThings.length){
+                            this.board[i][this.boardSize-j-1].addThing(stackedThings[j])
+                        } else {
+                            this.board[i][this.boardSize-j-1].clearThing()
+                        }
+                    }
+                }
+                this.addRandom(this.key)
+            break
+            case "r":
+                this.init()
+            break
+        }
+        
+        this.key = null
+    }
+}
+class View {
+    constructor(canv){
+        this.canv = canv
+        this.ctx = canv.getContext('2d')
+        
+        this.cw = 1000
+        this.ch = 1000
+        this.plw = 750
+        this.plh = 1000
+        this.pw = 25
+        this.ph = 150
+    }
+    drawLine(x1,y1,x2,y2){
+        this.ctx.beginPath()
+        this.ctx.moveTo(x1,y1)
+        this.ctx.lineTo(x2,y2)
+        this.ctx.closePath()
+        this.ctx.stroke()
+    }
+    draw(model){
+        this.ctx.clearRect(0,0,this.cw,this.ch)
+        this.ctx.lineWidth = 4
+        
+        this.ctx.strokeStyle = "#fff"
+        
+        for(var i = 0;i<=model.boardSize;i++){
+            var pos = this.pw + i * (this.plw - this.pw * 2) / model.boardSize
+            var top = this.ph
+            var bottom = this.plh - this.ph
+            
+            this.drawLine(pos,top,pos,bottom)
+        }
+        for(var i = 0;i<=model.boardSize;i++){
+            var pos = this.ph + i * (this.plh - this.ph * 2) / model.boardSize
+            var left = this.pw
+            var right = this.plw - this.pw
+            
+            this.drawLine(left,pos,right,pos)
+        }
+        
+        for(var i = 0;i<model.boardSize;i++){
+            for(var j = 0;j<model.boardSize;j++){
+                var field = model.board[i][j]
+                
+                if(field.currentThing != null){
+                    var posx = this.pw + i * (this.plw - this.pw * 2) / model.boardSize
+                    var posy = this.ph + j * (this.plh - this.ph * 2) / model.boardSize
+                    
+                    var kx = (this.plw - this.pw * 2) / model.boardSize
+                    var ky = (this.plh - this.ph * 2) / model.boardSize
+                    
+                    field.currentThing.draw(this.ctx, posx, posy, kx, ky)
+                    
+                    
+                }
+            }
+        }
+    }
+}
+class GameController {
+    constructor(canv){
+        this.canv = canv
+        this.view = new View(canv)
+        
+        this.model = new Model()
+        
+        let th = this
+        window.addEventListener('keydown',(e) => {th.keydown(e.key)})        
+        
+        this.loop()
+    }
+    loop(){
+        this.model.play()
+        this.view.draw(this.model)
+        let th = this
+        setTimeout(()=>{th.loop()},50)
+    }
+    keydown(key){
+        console.log(key)
+        this.model.setKey(key)
+    }
+}
+function init(){
+    var canv = document.getElementById('canv')
+    var gc = new GameController(canv)
+    
+}
+
+</script>
+</head>
+<body>
+<div id="whole">
+
+<canvas id="canv" width="1000" height="1000">
+
+</canvas>
+</div>
+<script>
+	init();
+</script>
+</body>
+</html>
