@@ -336,7 +336,7 @@ async function ai1(){
             dfrou=distmapsFromUnit()
             evaluate(dfrou,2)
             legalActions(dfrou)
-            ulepszyns = 8
+            ulepszyns = 12
             aistan = 1.2
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -349,25 +349,69 @@ async function ai1(){
             //legalActions(dbetter)
             possible_targets_ix = 0
             possible_targets = []
+            addedHexes = {}
             for(var key in dfrou.distmaps){
                 var distmap = dfrou.distmaps[key]
-                if(distmap.hex.undr != kolej && (distmap.hex.units.length > 0 || distmap.hex.z > 0)/* && distmap.frontline*/){
-                    possible_targets.push(distmap.hex)
-                }
+                
                 /*
-                if(distmap.hex.undr == kolej && distmap.hex.units.length > 0){
-                    for(var i in distmap.hex.units){
-                        var unit = distmap.hex.units[i]
-                        if(pathIsThroughCrowdedCity(dbetter,distmap.hex.x,distmap.hex.y,unit.ruchk,unit.rucho) && unit.actions.length > 0 && unit.actions[0].type == 'move'
+                if(distmap.hex.undr != kolej && (distmap.hex.units.length > 0 || distmap.hex.z > 0) && distmap.frontline){
+                    possible_targets.push(distmap.hex)
+                }*/
+                if(distmap.hex.heks.undr == kolej && distmap.hex.units.length > 0){
+                    for(var movement_type in distmap.maps){
+                        var dmap = distmap.maps[movement_type].hexmap
+
+                        var dmap = dmap.sort((a,b)=>a.dist-b.dist)
+                        var lvlok = 2
+                        var foundFrontline = false
+                        for(var i in dmap){
+                            var obj = dmap[i]
+                            if(obj.hex.heks.undr != kolej && (obj.hex.units.length > 0 || obj.hex.z > 0)){
+                            console.log(obj.dist)
+                                if(addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] == undefined){
+                                    addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] = obj.dist
+                                    possible_targets.push(obj)
+                                } else if(obj.dist < addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y]){
+                                    addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] = obj.dist
+                                    possible_targets.push(obj)
+                                }
+                                
+                                if(!foundFrontline && obj.hex.heks.undr != -1){
+                                    foundFrontline = true
+                                    lvlok = obj.dist
+                                }
+                                    
+                                if(f.dist > lvlok + 3 && foundFrontline)
+                                    break
+                                    
+                                
+                            }
+                        }
+                    }
+                    
+                    
+                    //for(var i in distmap.hex.units){
+                    //    var unit = distmap.hex.units[i]
+                        /*if(pathIsThroughCrowdedCity(dbetter,distmap.hex.x,distmap.hex.y,unit.ruchk,unit.rucho) && unit.actions.length > 0 && unit.actions[0].type == 'move'
                             || 
                             unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].destination == null && heks[unit.actions[0].destination[0]][unit.actions[0].destination[1]].z > -1 && heks[unit.actions[0].destination[0]][unit.actions[0].destination[1]].undr == kolej
                         )
-                            unit.actions = []
+                            unit.actions = []*/
                             
-                    }
-                }*/
+                    //}
+                }
             }
-            possible_targets.sort((x,y)=>x.units.reduce((a,b)=>a+evalUnitDefense(b),0) -x.il - y.units.reduce((a,b)=>a+evalUnitDefense(b),0) + y.il)
+            var possible_targets2 = []
+            for(var i in possible_targets){
+                var pt = possible_targets[i]
+                if(pt.dist <= addedHexes[pt.hex.heks.x+'#'+pt.hex.heks.y]){
+                    possible_targets2.push(pt)
+                }
+            }
+            possible_targets = possible_targets2
+            possible_targets.sort((x,y)=>(x.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0) -x.hex.il) * Math.pow(0.5,x.dist) - (y.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0) - y.hex.il) * Math.pow(0.5,y.dist))
+            //console.log(possible_targets)
+            //possible_targets = possible_targets.filter(x => x.distanceMap)
             possible_targets = possible_targets.slice(10)
             aistan = 1.3
         break
@@ -385,7 +429,7 @@ async function ai1(){
                     aistan = 1.4
                 }
             } else {
-                for(var i = 0;i<6;i++){
+                for(var i = 0;i<10;i++){
                     var tested_target = possible_targets[possible_targets_ix]
                     
                     var checkedTurn = 2
@@ -393,7 +437,7 @@ async function ai1(){
                     var newDistmap = copyDistmaps(dfrou)
                     evaluate(newDistmap,2)
                     //legalActions(newDistmap)
-                    tryPutUnderAttack(newDistmap,tested_target.x,tested_target.y,kolej)
+                    tryPutUnderAttack(newDistmap,tested_target.hex.x,tested_target.hex.y,kolej)
 
                     evaluate(newDistmap)
                     
