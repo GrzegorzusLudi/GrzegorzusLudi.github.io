@@ -336,7 +336,7 @@ async function ai1(){
             dfrou=distmapsFromUnit()
             evaluate(dfrou,2)
             legalActions(dfrou)
-            ulepszyns = 12
+            ulepszyns = 8
             aistan = 1.2
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -350,6 +350,7 @@ async function ai1(){
             possible_targets_ix = 0
             possible_targets = []
             addedHexes = {}
+            myHexes = 0
             for(var key in dfrou.distmaps){
                 var distmap = dfrou.distmaps[key]
                 
@@ -358,6 +359,7 @@ async function ai1(){
                     possible_targets.push(distmap.hex)
                 }*/
                 if(distmap.hex.heks.undr == kolej && distmap.hex.units.length > 0){
+                    myHexes++
                     for(var movement_type in distmap.maps){
                         var dmap = distmap.maps[movement_type].hexmap
 
@@ -367,7 +369,10 @@ async function ai1(){
                         for(var i in dmap){
                             var obj = dmap[i]
                             if(obj.hex.heks.undr != kolej && (obj.hex.units.length > 0 || obj.hex.z > 0)){
-                            console.log(obj.dist)
+                                
+                                if(f.dist > lvlok + 3 && foundFrontline){
+                                    continue
+                                }
                                 if(addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] == undefined){
                                     addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] = obj.dist
                                     possible_targets.push(obj)
@@ -376,15 +381,12 @@ async function ai1(){
                                     possible_targets.push(obj)
                                 }
                                 
-                                if(!foundFrontline && obj.hex.heks.undr != -1){
+                                if((!foundFrontline || lvlok > obj.dist) && obj.hex.heks.undr != -1){
                                     foundFrontline = true
                                     lvlok = obj.dist
                                 }
                                     
-                                if(f.dist > lvlok + 3 && foundFrontline)
-                                    break
                                     
-                                
                             }
                         }
                     }
@@ -406,13 +408,15 @@ async function ai1(){
                 var pt = possible_targets[i]
                 if(pt.dist <= addedHexes[pt.hex.heks.x+'#'+pt.hex.heks.y]){
                     possible_targets2.push(pt)
+                    pt.hex.heks.test = pt.dist
                 }
             }
             possible_targets = possible_targets2
-            possible_targets.sort((x,y)=>(x.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0) -x.hex.il) * Math.pow(0.5,x.dist) - (y.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0) - y.hex.il) * Math.pow(0.5,y.dist))
+            //possible_targets.sort((x,y)=>(x.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0) -x.hex.il) * Math.pow(0.5,x.dist) - (y.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0) - y.hex.il) * Math.pow(0.5,y.dist))
+            possible_targets.sort((a,b)=>(a.dist - b.dist))
             //console.log(possible_targets)
             //possible_targets = possible_targets.filter(x => x.distanceMap)
-            possible_targets = possible_targets.slice(10)
+            possible_targets = possible_targets.slice(0,myHexes+1)
             aistan = 1.3
         break
         case 1.3:
@@ -432,8 +436,8 @@ async function ai1(){
                 for(var i = 0;i<10;i++){
                     var tested_target = possible_targets[possible_targets_ix]
                     
-                    var checkedTurn = 2
-                    var checkedTurn2 = 5
+                    var checkedTurn = 1
+                    var checkedTurn2 = MAX_TURNS-1
                     var newDistmap = copyDistmaps(dfrou)
                     evaluate(newDistmap,2)
                     //legalActions(newDistmap)
@@ -441,8 +445,42 @@ async function ai1(){
 
                     evaluate(newDistmap)
                     
-                    if(dbetter == null || newDistmap.score[checkedTurn][kolej] > dbetter.score[checkedTurn][kolej] || newDistmap.score[checkedTurn][kolej] >= dbetter.score[checkedTurn][kolej] && newDistmap.score[checkedTurn2][kolej] > dbetter.score[checkedTurn2][kolej])
+                    var score1 = {}
+                    var score2 = {}
+                    
+                    for(var i in newDistmap.score){
+                        score1[i] = {}
+                        for(var j in newDistmap.score[i]){
+                            score1[i][j] = newDistmap.score[i][j]
+                        }
+                        score2[i] = {}
+                        for(var j in dbetter.score[i]){
+                            score2[i][j] = dbetter.score[i][j]
+                        }
+                    }
+                    var fact = 0.8
+                    for(var i in score1){
+                        for(var j in score1[i]){
+                            score1[i][j] = score1[i][j] * Math.pow(fact,i+1) + score2[i][j] * (1 - Math.pow(fact,i+1))
+                        }
+                    }
+                    if(dbetter == null)
                         dbetter = newDistmap
+                    var maxBetter = 0
+                    var minBetter = 0
+                    /*for(var t = 0;t<MAX_TURNS;t++){
+                        if(Math.max(0,-score2[t][kolej] + score1[t][kolej]) > maxBetter){
+                            maxBetter = Math.max(0,score2[t][kolej] - score1[t][kolej])
+                        }
+                        if(Math.max(0,score2[t][kolej] - score1[t][kolej]) > minBetter){
+                            minBetter = Math.max(0,-score2[t][kolej] + score1[t][kolej])
+                        }*/
+                        
+                        if(dbetter == null || score1[checkedTurn][kolej] > score2[checkedTurn][kolej] || score1[checkedTurn][kolej] >= score2[checkedTurn][kolej]*0.8 && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej])
+                            dbetter = newDistmap
+                    //}
+                    //if(maxBetter > minBetter)
+                    //    dbetter = newDistmap
                     
                     possible_targets_ix++
                     if(possible_targets_ix >= possible_targets.length)
@@ -1512,9 +1550,9 @@ function evaluate(dm,time,potentialMoves){
             }
             var fromenemy = Math.min(distmap.fromenemy['n'],Math.min(distmap.fromenemy['c'],distmap.fromenemy['g']))
             var fromally = Math.min(distmap.fromally['n'],Math.min(distmap.fromally['c'],distmap.fromally['g']))
-            var frontline = fromenemy <= 1 || fromally >= fromenemy
+            var frontline = fromenemy <= 2 || fromally >= fromenemy
             distmap.frontline = frontline
-            heks[distmap.hex.x][distmap.hex.y].test = frontline ? 'X' : ''//
+            //heks[distmap.hex.x][distmap.hex.y].test = frontline ? 'X' : ''//
 
             /*if(t == time){
                 if(biggestpower > secondbiggestpower){
@@ -1530,7 +1568,7 @@ function evaluate(dm,time,potentialMoves){
             //    score[distmap.hex.undr] += evaluateDefenseStreng()
             //}
             if(biggestpowercolor > -1){
-                var factor = distmap.frontline ? 1 : 1.5
+                var factor = distmap.frontline ? 1 : 1
                 dm.score[t][biggestpowercolor] += distmap.hex.z + (distmap.hex.stali + Math.min(distmap.hex.prod,distmap.hex.stali)) * 2 * factor
             }
             
@@ -1714,7 +1752,7 @@ function tryPutUnderAttack(dm, x, y, color){
         }
         for(var j in distmap.hex.units){
             var unit = distmap.hex.units[j]
-            if(unit.d != color || unit.rozb > 20 && unit.il < 60 || unit.actions.filter(x => x.type == 'move').length > 0 && !distmap.frontline || unit.actions.filter(x => x.type == 'move' && x.by == 'speculation').length > 0)
+            if(unit.d != color || unit.rozb > 20 && unit.il < 80 && (unit.legalActions.length == 0 || unit.legalActions[0].type == 'move' && heks[unit.legalActions[0].destination[0]][unit.legalActions[0].destination[0]].undr != -1)/* || unit.actions.filter(x => x.type == 'move').length > 0 && !distmap.frontline*/ || unit.actions.filter(x => x.type == 'move' && x.by == 'speculation').length > 0)
                 continue
                 
                 /*
