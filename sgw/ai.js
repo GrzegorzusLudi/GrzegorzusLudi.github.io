@@ -1698,7 +1698,7 @@ function removeAttack(dm, x, y, color){
     var interestingUnits = []
     for(var key in distmaps){
         var distmap = distmaps[key]
-        if(!distmap.frontline)
+        if(distmap.frontline)
             continue
         
         for(var j in distmap.hex.units){
