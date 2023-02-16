@@ -1188,6 +1188,7 @@ class TwoDCanvas extends AbstractCanvas {
 
         this.context.restore(); // restore to original state
         */
+        
         this.context.font = Math.floor((size ? size : 10) * this.camera.getMagnification()) + "px Helvetica"
         this.context.textAlign = textAlign ? textAlign : 'center'
 
