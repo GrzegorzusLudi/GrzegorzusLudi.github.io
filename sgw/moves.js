@@ -64,7 +64,7 @@ function usun(ktor){
 	spis(kolej);
 	this.koloruj();
 }
-function odzaznaj(){
+function odzaznaj(changeTheState){
 	a = 0;
 	while(a<scian){
 		b = 0;
@@ -110,11 +110,12 @@ function odzaznaj(){
 		}
 		ei++;
 	}
-	changeState(2);
+	if(changeTheState == undefined || changeTheState)
+		changeState(2);
 }
-function zaznaj(uni){
+function zaznaj(uni,changeTheState){
 	if(tx!=-1){
-		odzaznaj();
+		odzaznaj(changeTheState);
 	}
 	unitDivisionValue = unix[kolej][uni].il;
 	unitDivisionHighlight = unix[kolej][uni].il;
@@ -210,7 +211,8 @@ function zaznaj(uni){
 	zaznat(uni,2);
 	zaznat(uni,3);
 	}
-	changeState(3);
+	if(changeTheState == undefined || changeTheState)
+		changeState(3);
 }
 function istn(aaa,bbb){
 	var taak = false;
@@ -638,7 +640,7 @@ function uniw(kolq,uni){
 	}
 	return wat;
 }
-function celuj(xhh,yhh,dru,uni){
+function celuj(xhh,yhh,dru,uni,changeTheState){
     var zaznu_original = zaznu
 	if(unix[kolej][zaznu].celd!=-1 || (unix[kolej][zaznu].sebix==unix[kolej][zaznu].x && unix[kolej][zaznu].sebiy==unix[kolej][zaznu].y)){
 		oddroguj(zaznu,kolej,false);
@@ -743,7 +745,7 @@ function celuj(xhh,yhh,dru,uni){
 		unix[dru][uni].celeu[unix[dru][uni].celen] = zaznu;
 		unix[dru][uni].celen++;
 		if(unix[dru][uni].ruchy>0){
-			odzaznaj();
+			odzaznaj(changeTheState);
 		}
 	} else {
 		var wiazka = [];
@@ -827,7 +829,7 @@ function celuj(xhh,yhh,dru,uni){
 			unix[dru][uni].celeu[unix[dru][uni].celen] = zaznu;
 			unix[dru][uni].celen++;
 			if(unix[dru][uni].ruchy>0){
-				odzaznaj();
+				odzaznaj(changeTheState);
 			}
 	}
 
@@ -968,6 +970,8 @@ function odceluj(uni,dru){
 		var afa = 0;
 		while(unix[dru][uni].celen>0){
 			var pagx,pagy;
+			if(unix[dru][uni].celeu[unix[dru][uni].celen-1],unix[dru][uni].celed[unix[dru][uni].celen-1] == undefined)
+				continue
 			oddroguj(unix[dru][uni].celeu[unix[dru][uni].celen-1],unix[dru][uni].celed[unix[dru][uni].celen-1],true);
 			/*unix[unix[kolej][uni].celed[unix[kolej][uni].celen-1]][unix[kolej][uni].celeu[unix[kolej][uni].celen-1]].celk = -1;
 			unix[unix[kolej][uni].celed[unix[kolej][uni].celen-1]][unix[kolej][uni].celeu[unix[kolej][uni].celen-1]].celd = -1;
@@ -1192,7 +1196,7 @@ function tatasuj(uni,wyski){
 	}
 
 }
-function divideUnit(uni,zost){
+function divideUnit(uni,zost,changeTheState){
 	if(unix[kolej][uni].il>zost && heks[unix[kolej][uni].x][unix[kolej][uni].y].unp<4){
 		var pal = 0;
 		while(pal<oddid[kolej] && !unix[kolej][pal].kosz){
@@ -1205,10 +1209,10 @@ function divideUnit(uni,zost){
 		unix[kolej][pal].szy = unix[kolej][uni].szy;
 		unix[kolej][pal].szyt = unix[kolej][uni].szyt;
 		if(zaznu!=-1){
-            odzaznaj();
+            odzaznaj(changeTheState);
             zaznu = pal;
 
-            zaznaj(zaznu);
+            zaznaj(zaznu,changeTheState);
 		}
 		return pal
 	}
@@ -1759,9 +1763,9 @@ function aktdroguj(kolejk,uni){
                             wiah = wiah.border[5];
 
 
-            }
-        }
-	}
+				}
+			}
+		}
 
 	}
 }
@@ -2023,7 +2027,7 @@ function atakujmost(uni,hek){
 		unix[kolej][uni].celk = -1;
 	}
 }
-function zespoj(uni,unic){
+function zespoj(uni,unic,changeTheState){
     var unichex = heks[unix[kolej][unic].x][unix[kolej][unic].y]
 	if(unix[kolej][uni].il-(-unix[kolej][unic].il)>99){
 		unix[kolej][uni].il = unix[kolej][uni].il-(-unix[kolej][unic].il)-99;
@@ -2032,7 +2036,7 @@ function zespoj(uni,unic){
 	} else {
 		unix[kolej][unic].il -= -unix[kolej][uni].il;
 		unix[kolej][uni].il = 0;
-		odceluj(uni,kolej);
+		odceluj(uni,kolej,changeTheState);
 		var ata = 0;
 		while(ata<4 && ata<heks[unix[kolej][uni].x][unix[kolej][uni].y].unp){
 			if(heks[unix[kolej][uni].x][unix[kolej][uni].y].unt[ata] == uni){
@@ -2044,7 +2048,7 @@ function zespoj(uni,unic){
 		}
 		zaznu = unic;
         if(unix[kolej][unic].x != -1)
-            zaznaj(zaznu);
+            zaznaj(zaznu,changeTheState);
 		zaznu = unic;
 		while(unichex.unt[unichex.unp-1] != zaznu){
 			unichex.tasuj();

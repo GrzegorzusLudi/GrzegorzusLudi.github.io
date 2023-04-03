@@ -668,8 +668,9 @@ function nextTurn(){
 		}
 		ej++;
 	}
-	if(dru[kolej]>1)
+	if(dru[kolej]>1){
 		aistan = 0;
+	}
 	pokap();
 }
 function generateTerrain(){
@@ -1329,16 +1330,16 @@ function klik(){
 							//unit is highlighted (ready to be attacked, merged or transported by air)
 
 							if((podswd==kolej && (unix[podswd][podswu].kolor==1 || unix[podswd][podswu].kolor==3)) || (podswd!=kolej && unix[podswd][podswu].kolor==2)){
-							celuj(unix[podswd][podswu].x,unix[podswd][podswu].y,podswd,podswu);
+								celuj(unix[podswd][podswu].x,unix[podswd][podswu].y,podswd,podswu);
 
-							if(zaznu!=-1){
-								heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].zmiana++;
-								unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
-								unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
-								odzaznaj();
-							}
-							zaznu = -1;
-							zaznx = -1;zazny = -1;
+								if(zaznu!=-1){
+									heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].zmiana++;
+									unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
+									unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
+									odzaznaj();
+								}
+								zaznu = -1;
+								zaznx = -1;zazny = -1;
 							}
 						} else if(zaznu>-1 && podswu>-1 && podswd==kolej) {
 							//select unselected unit from current team
@@ -1391,7 +1392,7 @@ function klik(){
 								heks[podswx][podswy].wyladr[uniw(kolej,zaznu)] = kolej;
 							} else { //landing from airbone
 								wyladuj(zaznu);
-								odzaznaj(zaznu);
+								odzaznaj();
 							}
 						} else if(zaznu!=-1 && unix[kolej][zaznu].sebix == unix[kolej][zaznu].x && unix[kolej][zaznu].sebiy == unix[kolej][zaznu].y){
 								//remove path (click on hex where unit stays)
