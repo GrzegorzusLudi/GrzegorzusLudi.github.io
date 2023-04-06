@@ -148,7 +148,7 @@ class Land{
             for(var i in temp1){
                 var g = temp1[i]
                 g.waterbody = this
-                g.test = num
+                //g.test = num
                 if(g.z>0)
                     this.cities.push(g)
                 for(var j = 0;j<6;j++){
@@ -185,7 +185,7 @@ class Water{
             for(var i in temp1){
                 var g = temp1[i]
                 g.waterbody = this
-                g.test = num
+                //g.test = num
                 if(g.z>0)
                     this.cities.push(g)
                 for(var j = 0;j<6;j++){
@@ -228,7 +228,7 @@ function generate_areas(mist,params){
     }
     lands = []
     for(var i = 0;i<mist.length;i++){
-        mist[i].test = mist[i].value()
+        //mist[i].test = mist[i].value()
         //lands.push(new Land(mist[i],params))
     }
 }
@@ -313,8 +313,10 @@ async function ai1(){
                                 unit2.rozb = 99-unit2.il
                             if(unit1.rozb + unit1.il > 99)
                                 unit1.rozb = 99-unit1.il
-                            if(zaznu > -1)
+                            if(zaznu > -1){
                                 odzaznaj(false)
+                                zaznu = -1
+                            }
                             nodziel = true
                             break
                         }
@@ -431,7 +433,7 @@ async function ai1(){
                 var pt = possible_targets[i]
                 if(pt.dist <= addedHexes[pt.hex.heks.x+'#'+pt.hex.heks.y]){
                     possible_targets2.push(pt)
-                    pt.hex.heks.test = pt.dist
+                    //pt.hex.heks.test = pt.dist
                 }
             }
             possible_targets = possible_targets2
@@ -526,7 +528,7 @@ async function ai1(){
 
 			if(miastkol<mista && mist[miastkol].undr==kolej){
 				var k = mistdefval[mist[miastkol].x][mist[miastkol].y].blisk=checknearest(mist[miastkol]);
-                                mist[miastkol].test = k
+                                //mist[miastkol].test = k
 			}
 			miastkol++;
 			if(miastkol>=mista){
@@ -772,6 +774,8 @@ async function ai1(){
 			}
 		break;
 		case 9001:
+            zaznx = -1
+            zazny = -1
             tx = -1
             ty = -1
             zaznu = -1
@@ -1095,6 +1099,7 @@ function aidistmap(){
             }
             //newLevel.water.push(water_distmap)
         }
+        /*
         for(var j in newLevel.land){
             if(l > 1){
                 newLevel.land[j].addBelonging(levels[l-1].land)
@@ -1103,7 +1108,7 @@ function aidistmap(){
             } else {
                 heks[newLevel.land[j].x][newLevel.land[j].y].test = 1
             }
-        }
+        }*/
                 //redraw(true);
         levels[l] = newLevel
     }
@@ -1141,8 +1146,8 @@ function checkDistmapDistance(distmap){
                 }
             }
             var allAreaValues = Object.values(area.attackEvaluation).reduce((a,b) => a+b,0) + Object.values(area.productionPotential).reduce((a,b) => a+b,0)
-            heks[area.x][area.y].test = level+'#'+(maxeval * 2 - allAreaValues)
-            heks[area.x][area.y].testColor = evalcolor
+            //heks[area.x][area.y].test = level+'#'+(maxeval * 2 - allAreaValues)
+            //heks[area.x][area.y].testColor = evalcolor
         }
     }
 }
@@ -2086,6 +2091,7 @@ function actionsToReal(dm,color){
                         unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
                         unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
                         odzaznaj(false);
+                        zaznu = -1
                     }
 
 
@@ -2120,7 +2126,10 @@ function actionsToReal(dm,color){
                         heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].zmiana++;
                         unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
                         unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
+                        tx = cords[0]
+                        ty = cords[1]
                         odzaznaj(false);
+                        zaznu = -1
                     }
                 }
                 if(unit.actions.length == 0){
@@ -2130,7 +2139,7 @@ function actionsToReal(dm,color){
                 zaznx = -1;zazny = -1;
                 tx = -1
                 ty = -1
-                changeState(4)
+                changeState(2)
             }
             if(tratwa > 0){
                 dodai(distmap.hex.x,distmap.hex.y,0,8,Math.min(Math.floor(tratwa),99))

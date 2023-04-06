@@ -39,6 +39,8 @@ async function anim(){
 			} else {
 				unix[kolej][ruchwkolejce[uniwy]].przes -= szpak;
 			}
+			var tax = unix[kolej][ruchwkolejce[uniwy]].x
+			var tay = unix[kolej][ruchwkolejce[uniwy]].y
 			aktwok(unix[kolej][ruchwkolejce[uniwy]].x,unix[kolej][ruchwkolejce[uniwy]].y);
 
 			if(unix[kolej][ruchwkolejce[uniwy]].szyt=="l" && szyt[unix[kolej][ruchwkolejce[uniwy]].rodz]!="l" && unix[kolej][ruchwkolejce[uniwy]].wypax==unix[kolej][ruchwkolejce[uniwy]].x && unix[kolej][ruchwkolejce[uniwy]].wypay==unix[kolej][ruchwkolejce[uniwy]].y && unix[kolej][ruchwkolejce[uniwy]].przes>=0 && jesio>=0 && heks[unix[kolej][ruchwkolejce[uniwy]].wypax][unix[kolej][ruchwkolejce[uniwy]].wypay].unp<4){
@@ -70,8 +72,12 @@ async function anim(){
 					//if(jesio>0)
 					jesio--;
 					if(unix[kolej][ruchwkolejce[uniwy]].rucho[0]>0 || unix[kolej][ruchwkolejce[uniwy]].ruchy>0){
+						var tanx = heks[unix[kolej][ruchwkolejce[uniwy]].x][unix[kolej][ruchwkolejce[uniwy]].y].border[unix[kolej][ruchwkolejce[uniwy]].ruchk[0]].x
+						var tany = heks[unix[kolej][ruchwkolejce[uniwy]].x][unix[kolej][ruchwkolejce[uniwy]].y].border[unix[kolej][ruchwkolejce[uniwy]].ruchk[0]].y
 						unix[kolej][ruchwkolejce[uniwy]].rucho[0]--;
 						unix[kolej][ruchwkolejce[uniwy]].przenies(unix[kolej][ruchwkolejce[uniwy]].ruchk[0]);
+						aktdroguj(kolej,uniwy);
+
 						if(!unix[kolej][ruchwkolejce[uniwy]].kosz){
 							if(heks[unix[kolej][ruchwkolejce[uniwy]].x][unix[kolej][ruchwkolejce[uniwy]].y].z == -2 && unix[kolej][ruchwkolejce[uniwy]].szyt!="g" /*górski oddział*/ && unix[kolej][ruchwkolejce[uniwy]].szyt!="l" /*oddział latający*/){
 								jesio = 0;
@@ -81,6 +87,8 @@ async function anim(){
 								unix[kolej][ruchwkolejce[uniwy]].przes += 2;
 							}
 						} else {
+							console.log('a:',tanx,tany)
+							czyscc(ruchwkolejce[uniwy],tanx,tany,kolej)
 							jesio = 0;
 						}
 					} else if(unix[kolej][ruchwkolejce[uniwy]].celd>-1) {
@@ -101,10 +109,12 @@ async function anim(){
 			/*if((unix[kolej][uniwy].ruchy == 0 && jesio == 0) && unix[kolej][uniwy].przes>=0 && unix[kolej][uniwy].celd>-1 && !unix[kolej][uniwy].kosz){
 				unix[kolej][uniwy].kiero = unix[kolej][uniwy].celk;
 			}*/
+			aktdroguj(kolej,uniwy);
+
 			if(((unix[kolej][ruchwkolejce[uniwy]].ruchy == 0 || jesio == 0) && unix[kolej][ruchwkolejce[uniwy]].przes>0 && (unix[kolej][ruchwkolejce[uniwy]].celd==-1 || jesio == 0)) || (jesio==-1 && unix[kolej][ruchwkolejce[uniwy]].przes<0) || unix[kolej][ruchwkolejce[uniwy]].kosz){
 				unix[kolej][ruchwkolejce[uniwy]].przes = 0;
-				//czyscc(uniwy,unix[kolej][uniwy].x,unix[kolej][uniwy].y);
-				//aktdroguj(kolej,uniwy);
+				//czyscc(ruchwkolejce[uniwy],tax,tay,kolej);
+				aktdroguj(kolej,ruchwkolejce[uniwy]);
 				uniwy++;
 				nastepnyoddzial();
 			}
@@ -114,9 +124,9 @@ async function anim(){
 			while(a<scian){
 				b = 0;
 				while(b<scian){
-					if(heks[a][b].unp>0 && dohod(a,b)>0 && heks[a][b].podatpr>0){
+					/*if(heks[a][b].unp>0 && dohod(a,b)>0 && heks[a][b].podatpr>0){
 
-					}
+					}*/
 					if(heks[a][b].unp>0 && dohod(a,b)>0 && heks[a][b].podatpr>0){
 						przekazk(a,b);
 					}

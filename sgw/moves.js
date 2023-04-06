@@ -1108,6 +1108,15 @@ function oddroguj(uni,koloj,odc){
 	unix[koloj][uni].wypay = -1;
 
 }
+function przeczyscc(unu,kpx,kpy,dru){
+	var numa = 0
+	while(numa<heks[kpx][kpy].drogn){
+		if(heks[kpx][kpy].drogd[numa] == dru && heks[kpx][kpy].drogg[numa] == unu){
+			heks[kpx][kpy].drogp[numa] = -1
+		}
+		numa++;
+	}
+}
 function czyscc(unu,kpx,kpy,dru){
 	var numa = 0;
 
@@ -1126,6 +1135,7 @@ function czyscc(unu,kpx,kpy,dru){
 				numu++;
 			}
 			heks[kpx][kpy].drogn--;
+			numa--
 		}
 		numa++;
 	}
@@ -1198,6 +1208,9 @@ function tatasuj(uni,wyski){
 }
 function divideUnit(uni,zost,changeTheState){
 	if(unix[kolej][uni].il>zost && heks[unix[kolej][uni].x][unix[kolej][uni].y].unp<4){
+		
+		tx = unix[kolej][uni].x
+		ty = unix[kolej][uni].y
 		var pal = 0;
 		while(pal<oddid[kolej] && !unix[kolej][pal].kosz){
 			pal++;
@@ -1632,6 +1645,7 @@ function przenies(kierunek){
 		jesio = -1;
 	}
 	if(ton>0){
+		przeczyscc(this.id,this.x,this.y,this.d)
 		czyscc(this.id,tox,toy,this.d);
 		aktdroguj(kolej,this.id);
 	}
@@ -1649,7 +1663,9 @@ function aktdroguj(kolejk,uni){
 	a = 0;
 	while(a<tph.drogn){
 		if(tph.drogg[a]==uni && tph.drogd[a]==kolejk && tph.drogkol[a]==0){
-			tph.drogp[a] = -1.11;
+			tph.drogp[a] = -1;
+			tph.drogk[a] = -1;
+
 			tph.drogw[a] = uniw(kolejk,uni);
 			tph.drogpr[a] = 2;
 		}

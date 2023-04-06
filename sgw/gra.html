@@ -12,7 +12,46 @@ body {
 	font-family: Trebuchet MS;
 	background-color: black;
 	color: white;
-	font-size: 10pt
+	font-size: 12pt
+}
+input[type=button] {
+  background-color: #ccc;
+  border: 2px solid #aaa;
+  padding: 5px;
+  font-size: 14px
+}
+input[type=button]:hover {
+  background-color: #eee;
+}
+input[type=button]:active {
+  background-color: #bbb;
+}
+input[type=range]{
+  -webkit-appearance: none;  
+  -moz-appearance: none;
+  height: 30px
+}
+input[type=range]::-webkit-slider-runnable-track {
+  height: 100%;
+  border: 2px solid #aaf
+}
+input[type=range]::-moz-range-track {
+  height: 100%;
+  border: 2px solid #aaf
+}
+input[type=range]::-webkit-slider-thumb {
+  border: 1px solid #000000;
+  height: 30px;
+  width: 15px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  background-color:#aaf;
+  border: 2px solid #000000;
+  height: 30px;
+  width: 15px;
+  cursor: pointer;
 }
 #canv {
 	border: 1px solid white;
@@ -213,6 +252,8 @@ p {
             <input type="button" value="PODZIEL" id="divideButton" onclick="divideUnit(zaznu,unitDivisionValue);" />
             <input type="button" value="ROZBUDUJ" id="expandButton" onclick="expandUnit(zaznu,unitDivisionValue);" />
             <input type="button" value="ZOSTAW 10" onclick="divideUnit(zaznu,10);" />
+            <input type="button" value="ROZBUDUJ DO 99" onclick="expandUnit(zaznu,99);" />
+
             <canvas width="220px" height="90px" id="unitDivisionCanvas" onclick="gmp(unitDivisionCanvas,event);unitDivisionClick();" onmousemove="gmp(unitDivisionCanvas,event);unitDivisionMove();" onmouseout="unitDivisionHighlight=unitDivisionValue;unitDivisionDraw()"></canvas>
           <div> Połącz z jednostkami z tego samego hexa:<br/>
             <canvas width="220px" height="110px" id="unitMerge" onclick="gmp(unitMergeCanvas,event);unitMergeClick();" onmousemove="gmp(unitMergeCanvas,event);unitMergeMove();" onmouseout="unitMergeChoice=-1;redrawCanvas(unitMergeCanvasCtx)"></canvas>

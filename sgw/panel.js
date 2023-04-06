@@ -990,6 +990,31 @@ function redrawCanvas(rtx){
 						rtx.textAlign = "right";
 						rtx.fillText("+"+unix[kolej][heks[zaznx][zazny].unt[nui]].rozb,190,28+a*30);
 					}
+					if(unix[kolej][heks[zaznx][zazny].unt[nui]].ruchy > 0 || unix[kolej][heks[zaznx][zazny].unt[nui]].celu != -1){
+						rtx.fillStyle = "#00FF00";
+						rtx.strokeStyle = "#666666";
+						rtx.lineWidth = 2
+						if(unix[kolej][heks[zaznx][zazny].unt[nui]].celu != -1){
+							if(unix[kolej][heks[zaznx][zazny].unt[nui]].celd != kolej){
+								rtx.fillStyle = "#FF0000";
+							} else if(unix[unix[kolej][heks[zaznx][zazny].unt[nui]].celd][unix[kolej][heks[zaznx][zazny].unt[nui]].celu].rodz == unix[kolej][heks[zaznx][zazny].unt[nui]].rodz){
+								rtx.fillStyle = "#0000FF";
+							} else if(unix[unix[kolej][heks[zaznx][zazny].unt[nui]].celd][unix[kolej][heks[zaznx][zazny].unt[nui]].celu].rodz == 10) {
+								rtx.fillStyle = "#FF8800";
+							} else {
+								rtx.fillStyle = "#00000000";
+							}
+						}
+						rtx.beginPath()
+						rtx.moveTo(190,15+a*30)
+						rtx.lineTo(190,35+a*30)
+						rtx.lineTo(190+10,25+a*30)
+						rtx.closePath()
+						rtx.fill()
+						rtx.stroke()
+						rtx.fillRect(180,20+a*30,5,10);
+						rtx.strokeRect(180,20+a*30,5,10);
+					}
 				}
 				rtx.strokeStyle = "#666666";
 				rtx.strokeRect(10,10+a*30,200,30);
@@ -1179,6 +1204,39 @@ function redrawCanvas(rtx){
 						rtx.fillStyle="#FF8800";
 						rtx.fillRect(180,20+30*hb,10,10);
 						rtx.strokeRect(180,20+30*hb,10,10);
+					}
+					
+					
+					if(unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].rozb>0){
+						rtx.font = '10pt Trebuchet MS';
+						rtx.fillStyle = "#006666";
+						rtx.textAlign = "right";
+						rtx.fillText("+"+unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].rozb,70,28+a*30);
+					}
+					if(unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].ruchy > 0 || unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].celu != -1){
+						rtx.fillStyle = "#00FF00";
+						rtx.strokeStyle = "#666666";
+						rtx.lineWidth = 2
+						if(unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].celu != -1){
+							if(unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].celd != kolej){
+								rtx.fillStyle = "#FF0000";
+							} else if(unix[unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].celd][unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].celu].rodz == unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].rodz){
+								rtx.fillStyle = "#0000FF";
+							} else if(unix[unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].celd][unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].celu].rodz == 10) {
+								rtx.fillStyle = "#FF8800";
+							} else {
+								rtx.fillStyle = "#00000000";
+							}
+						}
+						rtx.beginPath()
+						rtx.moveTo(70,15+a*30)
+						rtx.lineTo(70,35+a*30)
+						rtx.lineTo(70+10,25+a*30)
+						rtx.closePath()
+						rtx.fill()
+						rtx.stroke()
+						rtx.fillRect(60,20+a*30,5,10);
+						rtx.strokeRect(60,20+a*30,5,10);
 					}
 				}
 				if(a<3){
