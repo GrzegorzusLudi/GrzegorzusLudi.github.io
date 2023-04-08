@@ -2090,6 +2090,8 @@ function actionsToReal(dm,color){
                         heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].zmiana++;
                         unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
                         unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
+                        tx = unix[kolej][zaznu].x;
+                        ty = unix[kolej][zaznu].y;
                         odzaznaj(false);
                         zaznu = -1
                     }
@@ -2120,6 +2122,7 @@ function actionsToReal(dm,color){
                     console.log(distmap.hex.x,distmap.hex.y,cords[0],cords[1],stopBefore)
                     tx = cords[0]
                     ty = cords[1]
+                    
                     celuj(cords[0],cords[1],action2.celd,action2.celu,false);
 
                     if(zaznu!=-1){
