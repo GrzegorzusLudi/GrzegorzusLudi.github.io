@@ -967,19 +967,24 @@ function droguj(xhh,yhh,uni){
 	kierk = kier;
 }
 function odceluj(uni,dru){
-
+	
 		var afa = 0;
 		while(unix[dru][uni].celen>0){
 			var pagx,pagy;
 			//if(unix[dru][uni].celeu[unix[dru][uni].celen-1],unix[dru][uni].celed[unix[dru][uni].celen-1] == undefined)
 			//	continue
 			if(unix[dru][uni].celeu[unix[dru][uni].celen-1] != -1 && unix[dru][uni].celed[unix[dru][uni].celen-1] != -1){
-				oddroguj(unix[dru][uni].celeu[unix[dru][uni].celen-1],unix[dru][uni].celed[unix[dru][uni].celen-1],true);
-				/*unix[unix[kolej][uni].celed[unix[kolej][uni].celen-1]][unix[kolej][uni].celeu[unix[kolej][uni].celen-1]].celk = -1;
-				unix[unix[kolej][uni].celed[unix[kolej][uni].celen-1]][unix[kolej][uni].celeu[unix[kolej][uni].celen-1]].celd = -1;
-				unix[unix[kolej][uni].celed[unix[kolej][uni].celen-1]][unix[kolej][uni].celeu[unix[kolej][uni].celen-1]].celu = -1;*/
-				unix[dru][uni].celeu[unix[dru][uni].celen-1] = -1;
-				unix[dru][uni].celed[unix[dru][uni].celen-1] = -1;
+				if(unix[dru][uni].celeu[unix[dru][uni].celen-1].x == -1){
+					unix[dru][uni].celeu[unix[dru][uni].celen-1] = -1;
+					unix[dru][uni].celed[unix[dru][uni].celen-1] = -1;
+				} else {
+					oddroguj(unix[dru][uni].celeu[unix[dru][uni].celen-1],unix[dru][uni].celed[unix[dru][uni].celen-1],true);
+					/*unix[unix[kolej][uni].celed[unix[kolej][uni].celen-1]][unix[kolej][uni].celeu[unix[kolej][uni].celen-1]].celk = -1;
+					unix[unix[kolej][uni].celed[unix[kolej][uni].celen-1]][unix[kolej][uni].celeu[unix[kolej][uni].celen-1]].celd = -1;
+					unix[unix[kolej][uni].celed[unix[kolej][uni].celen-1]][unix[kolej][uni].celeu[unix[kolej][uni].celen-1]].celu = -1;*/
+					unix[dru][uni].celeu[unix[dru][uni].celen-1] = -1;
+					unix[dru][uni].celed[unix[dru][uni].celen-1] = -1;
+				}
 			}
 
 

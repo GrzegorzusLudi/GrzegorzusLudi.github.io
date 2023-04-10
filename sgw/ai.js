@@ -933,7 +933,7 @@ function hexrangemap(x,y,water,mountain,air,heavy,hekstable){
         hekstable = heks
         
     var LARGEST_DIST = zas.reduce((a,b)=>Math.max(a,b),0)
-    console.log(LARGEST_DIST)
+    //console.log(LARGEST_DIST)
     var checkedList = []
     for(var _x in hekstable){
         for(var _y in hekstable[_x]){
@@ -1254,9 +1254,11 @@ class Copyable {
             var key = this.fieldsToCopy[i]
             
             if(key in obj){
-                fields[key] = obj[key]
-                if(fields[key] instanceof Array)
-                    fields[key] = fields[key].slice()
+                if(fields[key] instanceof Array){
+                    fields[key] = obj[key].slice()
+                } else {
+                    fields[key] = obj[key]
+                }
             } else {
                 fields[key] = undefined
             }
@@ -1265,9 +1267,11 @@ class Copyable {
     }
     setFields(fields){
         for(var key in fields){
-            this[key] = fields[key] 
-            if(this[key] instanceof Array)
-                this[key] = this[key].slice()
+            if(this[key] instanceof Array){
+                this[key] = fields[key].slice()
+            } else {
+                this[key] = fields[key] 
+            }
         }
     }
 }
@@ -1293,9 +1297,9 @@ class UnitAction extends Copyable {
             this.actions = unit.actions.map(dict => copyDict(dict))
             this.legalActions = unit.legalActions.map(array => array.map(dict => copyDict(dict)))
         } else {
-            var rucho = this.rucho.slice(0,this.ruchy)
-            var ruchk = this.ruchk.slice(0,this.ruchy)
             if(this.ruchy > 0){
+                var rucho = this.rucho.slice(0,this.ruchy)
+                var ruchk = this.ruchk.slice(0,this.ruchy)
                 this.actions.push({type:'move',by:'real',rucho:rucho,ruchk:ruchk,il:unit.il,destination:leadPath(hex.x,hex.y,ruchk,rucho)})
             }
             if(this.celu != -1 && this.celd in unix){
@@ -1983,10 +1987,10 @@ function tryPutUnderAttack(dm, x, y, color){
                         continue
                     }
                     
-                    if(legalAction[0].type == 'aim'){
-                        console.log(legalAction[0].destination,[x,y])
-                        console.log(evalUnitAttack(unit,legalAction), evalUnitAttack(unit,bestAction))
-                    }
+                    //if(legalAction[0].type == 'aim'){
+                    //    console.log(legalAction[0].destination,[x,y])
+                    //    console.log(evalUnitAttack(unit,legalAction), evalUnitAttack(unit,bestAction))
+                    //}
                     if(bestAction == null || evalUnitAttack(unit,legalAction) > evalUnitAttack(unit,bestAction)){
                         //if(legalAction.length >= 2)
                         //    console.log('c'+(evalUnitAttack(unit,legalAction) + ',' + evalUnitAttack(unit,bestAction)))
