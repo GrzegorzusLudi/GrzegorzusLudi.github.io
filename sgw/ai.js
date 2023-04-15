@@ -330,7 +330,9 @@ async function ai1(){
                 var unit = unix[kolej][hex.unt[i]]
                 if(unit != undefined && pathIsThroughCrowdedCity(null,hex.x,hex.y,unit.ruchk,unit.rucho)){
                     odceluj(hex.unt[i],kolej);
-                    oddroguj(hex.unt[i],kolej,false);
+                    if(hex.unt[i].x != -1){
+                        oddroguj(hex.unt[i],kolej,false);
+                    }
                 }
             }
             spojy++
@@ -366,6 +368,13 @@ async function ai1(){
                 if(distmap.hex.undr != kolej && (distmap.hex.units.length > 0 || distmap.hex.z > 0) && distmap.frontline){
                     possible_targets.push(distmap.hex)
                 }*/
+                var totalUnitSize = 0
+                for(var i in distmap.hex.units){
+                    if(distmap.hex.units[i].rozb <= 10)
+                        totalUnitSize += distmap.hex.units[i].il
+                }
+                if(totalUnitSize < 10)
+                    continue
                 if(distmap.hex.heks.undr == kolej && distmap.hex.units.length > 0){
                     myHexes++
                     for(var movement_type in distmap.maps){
@@ -874,7 +883,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,hekstable){
     for(var i = 0;i<scian;i++){
         checkedGrid[i] = []
         for(var j = 0;j<scian;j++){
-            checkedGrid[i][j] = {dist:-1,water:startwater}
+            checkedGrid[i][j] = {dist:-1,water:startwater,range:-1}
         }        
     }
     checkedGrid[x][y].dist = 0
@@ -1911,7 +1920,7 @@ function removeAttack(dm, x, y, color){
             if(unit.actions.length > 0){
                 var action = unit.actions[0]
                 if(unit.actions.length == 1 && action.type == 'move' && action.destination[0] == x && action.destination[1] == y){
-                    unit.actions = []
+                    unit.actions.splice(0,unit.actions.length)
                 }
             }
         }
@@ -1930,24 +1939,6 @@ function tryPutUnderAttack(dm, x, y, color){
         //if(!distmap.frontline)
         //    continue
         
-        /*
-        for(var movement_type in distmap.maps){
-            var map_of_movement_type = distmap.maps[movement_type].hexmap
-            
-            for(var j in distmap.hex.units){
-                var unit = distmap.hex.units[j]
-                if(unit.d != color)
-                    continue
-                
-                if(unit.szyt != movement_type)
-                    continue
-                    
-                var hex_to_find = map_of_movement_type.filter(h => h.hex.x == x && h.hex.y == y)
-                if(hex_to_find.length >= 1)
-                    interestingUnits[movement_type].push({unit:unit,hex:distmap})
-                
-            }
-        }*/
         var smallestUnit = -1
         for(var j in distmap.hex.units){
             var unit = distmap.hex.units[j]
@@ -2123,7 +2114,6 @@ function actionsToReal(dm,color){
 
                     zaznu = unid
                     var cords = leadPath(distmap.hex.x,distmap.hex.y,action1.ruchk,action1.rucho,stopBefore)
-                    console.log(distmap.hex.x,distmap.hex.y,cords[0],cords[1],stopBefore)
                     tx = cords[0]
                     ty = cords[1]
                     

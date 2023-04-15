@@ -1086,9 +1086,11 @@ function oddroguj(uni,koloj,odc){
 
                             wiah = wiah.border[kiera];
 
+							if(wiah == null)
+								break
 
 
-		}
+					}
 		}
 	var tao = 0;
 	var mag = unix[unix[koloj][uni].celd][unix[koloj][uni].celu].celen;
