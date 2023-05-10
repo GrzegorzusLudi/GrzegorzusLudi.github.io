@@ -763,7 +763,6 @@ function celuj(xhh,yhh,dru,uni,changeTheState){
 			wiah = wiah.border[1];
 			wiazka[wiah.x] = wiah.y;
 		}
-		console.log(heks[unix[dru][uni].x][unix[dru][uni].y])
 		wiah = heks[unix[dru][uni].x][unix[dru][uni].y];
 		while((wiah.x!=unix[kolej][zaznu].sebix || wiah.y!=unix[kolej][zaznu].sebiy)){
 			if(wiah.x==unix[kolej][zaznu].sebix){
@@ -973,7 +972,7 @@ function odceluj(uni,dru){
 			var pagx,pagy;
 			//if(unix[dru][uni].celeu[unix[dru][uni].celen-1],unix[dru][uni].celed[unix[dru][uni].celen-1] == undefined)
 			//	continue
-			if(unix[dru][uni].celeu[unix[dru][uni].celen-1] != -1 && unix[dru][uni].celed[unix[dru][uni].celen-1] != -1){
+			if(unix[dru][uni].celeu[unix[dru][uni].celen-1] != -1 && unix[dru][uni].celed[unix[dru][uni].celen-1] != -1 && unix[unix[dru][uni].celed[unix[dru][uni].celen-1]][unix[dru][uni].celeu[unix[dru][uni].celen-1]].x != -1){
 				if(unix[dru][uni].celeu[unix[dru][uni].celen-1].x == -1){
 					unix[dru][uni].celeu[unix[dru][uni].celen-1] = -1;
 					unix[dru][uni].celed[unix[dru][uni].celen-1] = -1;
@@ -985,6 +984,8 @@ function odceluj(uni,dru){
 					unix[dru][uni].celeu[unix[dru][uni].celen-1] = -1;
 					unix[dru][uni].celed[unix[dru][uni].celen-1] = -1;
 				}
+			} else {
+				unix[unix[dru][uni].celed[unix[dru][uni].celen-1]][unix[dru][uni].celeu[unix[dru][uni].celen-1]].kosz = true
 			}
 
 
@@ -1687,6 +1688,8 @@ function aktdroguj(kolejk,uni){
 		bjk = 0;
 		while(bjk<unix[kolejk][uni].rucho[ajk]){
 			tph = hexOfUnit(tph).border[unix[kolejk][uni].ruchk[ajk]];
+			if(tph == undefined)
+				break
 			if(zasieg>=0){
 				zasieg--;
 			}

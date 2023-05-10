@@ -330,7 +330,7 @@ async function ai1(){
                 var unit = unix[kolej][hex.unt[i]]
                 if(unit != undefined && pathIsThroughCrowdedCity(null,hex.x,hex.y,unit.ruchk,unit.rucho)){
                     odceluj(hex.unt[i],kolej);
-                    if(hex.unt[i].x != -1){
+                    if(unix[kolej][hex.unt[i]] != undefined && unix[kolej][hex.unt[i]].x != undefined && unix[kolej][hex.unt[i]].x != -1){
                         oddroguj(hex.unt[i],kolej,false);
                     }
                 }
@@ -451,6 +451,7 @@ async function ai1(){
             //console.log(possible_targets)
             //possible_targets = possible_targets.filter(x => x.distanceMap)
             possible_targets = possible_targets.slice(0,myHexes+1)
+            console.log(possible_targets.length)
             aistan = 1.3
         break
         case 1.3:
@@ -729,8 +730,8 @@ async function ai1(){
                             } else {
                                 var isShip = false
                                 for(var j = 0;j<city.unp;j++){
-                                    if(city.unt[j].szyt == 'w' && zast[city.unt[j].rodz] == 'n'){
-                                        neededToShip -= city.unt[j].il+city.unt[j].rozb
+                                    if(unix[kolej][city.unt[j]].szyt == 'w' && zast[unix[kolej][city.unt[j]].rodz] == 'n'){
+                                        neededToShip -= unix[kolej][city.unt[j]].il+unix[kolej][city.unt[j]].rozb
                                         isShip = true
                                     }
                                 }
@@ -757,7 +758,7 @@ async function ai1(){
 					if(mist[miastkol].unp>=4){
 					} else if(creat==-1 && mist[miastkol].unp > 0) {
 						dodai(mist[miastkol].x,mist[miastkol].y,0,needed,99);
-                        odzaz();
+                        odzaz(); 
 					}
 				}
 			}
@@ -1347,7 +1348,8 @@ function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho){
         }
         if(he == undefined)
             break
-        if(i > 0 && i < ruchk.length-1 && (dm != undefined && he.x+'#'+he.y in dm.distmaps && dm.distmaps[he.x+'#'+he.y].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp == 4))
+        var str = he.x+'#'+he.y
+        if(i > 0 && i < ruchk.length-1 && (dm != undefined && str in dm.distmaps && dm.distmaps[str].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp == 4))
             return true
     }
     
@@ -1599,7 +1601,7 @@ function evaluate(dm,time,potentialMoves){
                             var dist = action.rucho.reduce((a,b)=>a+b,0)
                             var unitAttackStrength = evalUnitAttack(unit)
 
-                            if(true || !pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho))
+                            if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho))
                                 if(code in distmaps && szy[unit.rodz] * t + (zas[unit.rodz] <= 1 || t == 0 ? 0 : zas[unit.rodz]) >= dist){
                                     //console.log(szy[unit.rodz] * t + zas[unit.rodz], dist, unitAttackStrength)
                                     var unitAttackStrength2 = evalUnitAttack(unit, [action])
@@ -1731,9 +1733,9 @@ function evaluate(dm,time,potentialMoves){
                     biggestpowercolor = d   
                 }
             }
-            var fromenemy = Math.min(distmap.fromenemy['n'],Math.min(distmap.fromenemy['c'],distmap.fromenemy['g']))
-            var fromally = Math.min(distmap.fromally['n'],Math.min(distmap.fromally['c'],distmap.fromally['g']))
-            var frontline = fromenemy <= 2 || fromally >= fromenemy
+            var fromenemy = Math.min(Math.min(distmap.fromenemy['w'],distmap.fromenemy['n']),Math.min(distmap.fromenemy['c'],distmap.fromenemy['g']))
+            var fromally = Math.min(Math.min(distmap.fromally['w'],distmap.fromally['n']),Math.min(distmap.fromally['c'],distmap.fromally['g']))
+            var frontline = fromenemy <= 1 || fromally >= fromenemy
             distmap.frontline = frontline
             //heks[distmap.hex.x][distmap.hex.y].test = frontline ? 'X' : ''//
 
@@ -1932,6 +1934,7 @@ function tryPutUnderAttack(dm, x, y, color){
     var distmaps = dm.distmaps
     
     var hexUnderAttack = distmaps[x+'#'+y].hex
+    var hasunits = hexUnderAttack.units.length > 0
     //var interestingUnits = {'c':[],'n':[],'l':[],'g':[],'w':[]}
     var interestingUnits = []
     for(var key in distmaps){
@@ -1948,9 +1951,21 @@ function tryPutUnderAttack(dm, x, y, color){
         }
         for(var j in distmap.hex.units){
             var unit = distmap.hex.units[j]
-            if(unit.d != color || unit.rozb > 20 && unit.il < 80 && (unit.legalActions.length == 0 || unit.legalActions[0].type == 'move' && heks[unit.legalActions[0].destination[0]][unit.legalActions[0].destination[0]].undr != -1)/* || unit.actions.filter(x => x.type == 'move').length > 0 && !distmap.frontline*/ || unit.actions.filter(x => x.type == 'move' && x.by == 'speculation').length > 0)
+            if(unit.d != color || unit.rozb > 20 && unit.il < 80 && (unit.legalActions.length == 0 || unit.legalActions[0].type == 'move' && heks[unit.legalActions[0].destination[0]][unit.legalActions[0].destination[0]].undr != -1)/* || unit.actions.filter(x => x.type == 'move').length > 0 && !distmap.frontline || unit.actions.filter(x => x.type == 'move' && x.by == 'speculation').length > 0*/)
                 continue
                 
+            var susactions = false
+            for(var i in unit.actions){
+                if(unit.actions[i].type == 'move' && unit.actions[i].by == 'speculation'){
+                    susactions = true
+                    break
+                }
+            }
+            if(susactions)
+                continue
+            
+            if(hasunits && (zast[unit.rodz] == 'x' || zast[unit.rodz] == 'm'))
+                continue
                 /*
             if(unit.actions.length > 0 && unit.actions[0].type == 'move' && distmap.hex.units[0] == unit && unit.actions[0].il > unit.il-10)
                 continue*/
