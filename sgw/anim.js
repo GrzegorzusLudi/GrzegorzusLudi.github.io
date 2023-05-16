@@ -22,7 +22,7 @@ function aktwok(vx,vy){
 	}
 }
 blokada = false
-async function anim(){
+function anim(){
     if(!blokada){
         blokada = true
 	szpak = 0.34; //xD
@@ -157,11 +157,11 @@ async function anim(){
 
 	} else if(dru[kolej]>1 && stan>1){
 		switch(dru[kolej]){
-			case 2: await ai1();break;
-			case 3: await ai2();break;
-			case 4: await ai3();break;
-			case 5: await ai4();break;
-			case 6: await ai5();break;
+			case 2:  ai1();break;
+			case 3:  ai2();break;
+			case 4:  ai3();break;
+			case 5:  ai4();break;
+			case 6:  ai5();break;
 		}
 	}
 	if(kotron<scian){
@@ -231,6 +231,7 @@ async function anim(){
 
         blokada = false
     }
+    setTimeout(()=>anim(),25)
 }
 function nastepnyoddzial(){
     while(uniwy<ruchwkolejcen && (unix[kolej][ruchwkolejce[uniwy]]==null || unix[kolej][ruchwkolejce[uniwy]].kosz || (unix[kolej][ruchwkolejce[uniwy]].ruchy<=0 && unix[kolej][ruchwkolejce[uniwy]].celd==-1))){
