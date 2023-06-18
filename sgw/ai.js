@@ -465,7 +465,7 @@ async function ai1(){
                 } else {
                     dfrou = dbetter
                     
-                    aistan = 1.4
+                    aistan = 1.35
                 }
             } else {
                 for(var i = 0;i<10;i++){
@@ -522,8 +522,222 @@ async function ai1(){
                 }
             }
         break
+        case 1.35:
+            pola_z_tratwami = {}
+            
+            for(var key in dfrou.distmaps){
+                var distmap = dfrou.distmaps[key]
+                
+                if(distmap.hex.dru != kolej)
+                    continue
+                    
+                /*
+                if(distmap.hex.undr != kolej && (distmap.hex.units.length > 0 || distmap.hex.z > 0) && distmap.frontline){
+                    possible_targets.push(distmap.hex)
+                }*/
+                var totalUnitSize = 0
+                if(distmap.hex.units.filter(x=>x.szyt == 'w' && zast[x.rodz] == 'x' && x.il >= 20).length > 0){
+                    var code = distmap.hex.x+'#'+distmap.hex.y
+
+                    pola_z_tratwami[code] = distmap
+                }
+            }
+            var miejsca_do_wysłania_tratw = {}
+            for(var key in dfrou.distmaps){
+                var distmap = dfrou.distmaps[key]
+                
+                if(distmap.hex.dru != kolej)
+                    continue
+                    
+                for(var i in distmap.hex.units){
+                    var unit = distmap.hex.units[i]
+                    
+                    if(unit.szyt == 'w' || unit.szyt == 'l')
+                        continue
+                    
+                    if(unit.actions.length > 0 && unit.actions[0].type == 'move'){
+                        var result = calculatePathUntilEmbarking(distmap.maps[unit.szyt],distmap.hex,unit,unit.actions[0])
+                        
+                        if(result != null){
+                            var code = result.x+'#'+result.y
+                            if(code in miejsca_do_wysłania_tratw && miejsca_do_wysłania_tratw[code] != null){
+                                miejsca_do_wysłania_tratw[code].turn = Math.min(miejsca_do_wysłania_tratw[code].turn,result.turn)
+                                miejsca_do_wysłania_tratw[code].need += result.need
+                            } else {
+                                miejsca_do_wysłania_tratw[code] = result
+                            }
+                            if(miejsca_do_wysłania_tratw[code].hex.units.length > 3)
+                                miejsca_do_wysłania_tratw[code].need = 0
+                        }
+                        
+                        //unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}]
+
+                    }
+                }
+            }
+            
+            for(var i in pola_z_tratwami){
+                var pole_z_tratwami = pola_z_tratwami[i]
+                
+                var map = pole_z_tratwami.maps['w'].hexmap
+                
+                for(var j in pole_z_tratwami.hex.units){
+                    var unit = pole_z_tratwami.hex.units[j]
+                    
+                    if(unit.szyt == 'w' && zast[unit.rodz] == 'x'){
+                        if(unit.actions.length == 1 && unit.actions[0].type == 'move' && unit.actions[0].by == 'real'){
+                            var code = unit.actions[0].destination[0] + '#' + unit.actions[0].destination[1]
+                            if(code in miejsca_do_wysłania_tratw && miejsca_do_wysłania_tratw[code] != null){
+                                miejsca_do_wysłania_tratw[code].satisfied += unit.actions[0].il
+                                continue
+                            }
+                        }
+                        
+                    }
+                    
+                    for(var k in map){
+                        var field = map[k]
+                        
+                        var code = field.hex.x+'#'+field.hex.y
+                        
+                        if(code in miejsca_do_wysłania_tratw){
+                                        
+                            var result = getRuch(map,field)
+                            
+                            var ruchk = result.ruchk
+                            var rucho = result.rucho
+                        
+                            var action = {type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,destination:leadPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho)}
+                            
+                            var turnsToGo = Math.floor(ruchk.length/unit.szy)
+                            
+                            var possibleMove = { unit:unit, unitId:unit.id, dru:unit.d, action:action, turnsToGo: turnsToGo }
+
+                            miejsca_do_wysłania_tratw[code].possibleMoves.push(possibleMove)
+                        }
+                    }
+                }
+            }
+                        
+            var użyteTratwy = {}
+            
+            completely_used_passages = {}
+
+            var miejsca = Object.values(miejsca_do_wysłania_tratw).sort((a,b)=>a.turn-b.turn)
+            
+            for(var i in miejsca){
+                var miejsce = miejsca[i]
+                
+                for(var j in miejsce.possibleMoves){
+                    if(miejsce.satisfied > miejsce.need){
+                        break
+                    }
+                        
+                    var possibleMove = miejsce.possibleMoves[j]
+                    
+                    if(użyteTratwy[possibleMove.unit.id])
+                        continue
+                        
+                    miejsce.satisfied += possibleMove.unit.il
+                    possibleMove.unit.actions = [possibleMove.action]
+                    
+                    użyteTratwy[possibleMove.unit.id] = true
+                }
+                
+                if(miejsce.satisfied > miejsce.need){
+                    completely_used_passages[miejsce.x+'#'+miejsce.y] = true
+                }
+            }
+            
+            aistan = 1.4
+        break
         case 1.4:
-            actionsToReal(dfrou,kolej)
+            actionsToReal(dfrou,kolej,completely_used_passages)
+            aistan = 1.5
+        break
+        case 1.5:
+            
+            
+            var endings = {}
+            var paths = {}
+            var relations = {}
+            
+            for(var i = 0;i<ruchwkolejcen;i++){
+                var a_x = unix[kolej][ruchwkolejce[i]].x
+                var a_y = unix[kolej][ruchwkolejce[i]].y
+                if(a_x < 0 || a_x >= scian || a_y < 0 || a_y >= scian)
+                    continue
+                    
+                if(unix[kolej][ruchwkolejce[i]].szyt == 'w' && zast[unix[kolej][ruchwkolejce[i]]] == 'x')
+                    continue
+                    
+                var path = getLeadedPath(a_x,a_y,unix[kolej][ruchwkolejce[i]].ruchk,unix[kolej][ruchwkolejce[i]].rucho)
+                
+                if(path == undefined)
+                    continue
+                
+                paths[ruchwkolejce[i]] = path
+                var pathcode = path.x+'#'+path.y
+                
+                if(!(pathcode in endings))
+                    endings[pathcode] = new Set()
+                    
+                endings[pathcode].add(ruchwkolejce[i])
+                
+            }
+            
+            for(var unit_id in paths){
+                var path_set = paths[unit_id]
+                var code1 = path_set.x+'#'+path_set.y
+                for(var j in path_set.path){
+                    var code2 = path_set.path[j].x+'#'+path_set.path[j].y
+                    if(code2 in endings){
+                        var setarray = Array.from(endings[code2])
+                        for(var k in setarray){
+                            if(!(unit_id in relations))
+                                relations[unit_id] = new Set()
+                            relations[unit_id].add(setarray[k])
+                        }
+                    }
+                }
+            }
+            var porządek = weźSilneSkładowe(relations)
+            var newDivide = []
+            for(var key in porządek.perskł){
+                newDivide = newDivide.concat(porządek.perskł[key].map(x=>Number(x)))
+            }
+            newDivide = newDivide.reverse()
+            
+            var ruchy_tratw = []
+            for(var i=0;i<ruchwkolejcen;i++){
+                if(unix[kolej][ruchwkolejce[i]].szyt == 'w' && zast[unix[kolej][ruchwkolejce[i]]] == 'x')
+                    ruchy_tratw.push(Number(ruchwkolejce[i]))
+            }
+            
+            var rest = []
+            for(var i=0;i<ruchwkolejcen;i++){
+                if(!ruchy_tratw.includes(ruchwkolejce[i]) && !newDivide.includes(ruchwkolejce[i]))
+                    rest.push(Number(ruchwkolejce[i]))
+            }
+            
+            ruchwkolejcen = 0
+            ruchwkolejce.length = 0
+            for(var i in ruchy_tratw){
+                ruchwkolejce.push(ruchy_tratw[i])
+                ruchwkolejcen++
+            }
+            for(var i in rest){
+                ruchwkolejce.push(rest[i])
+                ruchwkolejcen++
+            }
+            for(var i in newDivide){
+                ruchwkolejce.push(newDivide[i])
+                ruchwkolejcen++
+            }
+            console.log(newDivide)
+            
+            
+            
             aistan = 4
         break
 		case 2:
@@ -672,14 +886,14 @@ async function ai1(){
 					}
 
 					if(jest){
-                                            zazmiasto(mist[miastkol].x,mist[miastkol].y);
-                                            taxRange.value = 100;
-                                            makeTaxPath();
-                                            for(var i = path.length-1;i>=0;i--){
-                                                    popodatkuj(path[i].x,path[i].y,0);
-                                            }
-                                            odzaz();
-                                            //odpodatkuj(vybor.x,vybor.y,0);
+                        zazmiasto(mist[miastkol].x,mist[miastkol].y);
+                        taxRange.value = 100;
+                        makeTaxPath();
+                        for(var i = path.length-1;i>=0;i--){
+                            popodatkuj(path[i].x,path[i].y,0);
+                        }
+                        odzaz();
+                        //odpodatkuj(vybor.x,vybor.y,0);
 					}
 				}
 			}
@@ -792,6 +1006,95 @@ async function ai1(){
 			changeState(4);
 		break;
 	}
+}
+function dfsStack(v,visited,stack,relations){
+    visited[v] = true
+    if(!(v in relations))
+        return
+    var arrayFromSet = Array.from(relations[v])
+    for(var i in arrayFromSet){
+        var v2 = arrayFromSet[i]
+        
+        if(!visited[v2]){
+            dfsStack(v2,visited,stack,relations)
+        }
+        
+        stack.push(v)
+    }
+}
+function dfsAdd(v,visited,transponded,składowa_które_należy,cn){
+    visited[v] = true
+    składowa_które_należy[v] = cn
+    for(var i in transponded[v]){
+        var v2 = transponded[v][i]
+        if(!visited[v2]){
+            dfsAdd(v2,visited,transponded,składowa_które_należy,cn)
+        }
+    }
+}
+function weźSilneSkładowe(relations){
+    var allVertices = Array.from(new Set(Object.values(relations).map(x=>Array.from(x)).reduce((a,b)=>a.concat(b),[]).concat(Object.keys(relations)).map(x=>Number(x))))
+    
+    var visited = {}
+    var stack = []
+    for(var i in allVertices){
+        visited[allVertices[i]] = false
+    }
+    for(var i in allVertices){
+        dfsStack(allVertices[i],visited,stack,relations)
+    }
+    var transponded = {}
+    for(var key in relations){
+        var arrayFromSet = Array.from(relations[key])
+        for(var j in arrayFromSet){
+            var key2 = arrayFromSet[j]
+            if(!(key2 in transponded))
+                transponded[key2] = []
+            transponded[key2].push(key)
+        }
+    }
+    for(var i in allVertices){
+        visited[allVertices[i]] = false
+    }
+    
+    var składowa_które_należy = {}
+    var cn = 0
+    while(stack.length > 0){
+        var v = stack.pop()
+        
+        if(visited[v])
+            continue
+            
+        cn++
+        
+        dfsAdd(v,visited,transponded,składowa_które_należy,cn)
+    }
+    
+    var jednostki_wg_składowych = {}
+    var relacje_między_składowymi = {}
+    
+    for(var key in składowa_które_należy){
+        var key2 = składowa_które_należy[key]
+        if(!(key2 in jednostki_wg_składowych))
+            jednostki_wg_składowych[key2] = []
+        jednostki_wg_składowych[key2].push(key)
+    }
+    for(var key1 in jednostki_wg_składowych){
+        for(var i in jednostki_wg_składowych[key1]){
+            var unit_id = jednostki_wg_składowych[key1][i]
+            var arrayFromSet = Array.from(relations[unit_id])
+            for(var j in arrayFromSet){
+                var dest = arrayFromSet[j]
+                if(składowa_które_należy[dest] != key1){
+                    if(!(key1 in relacje_między_składowymi))
+                        relacje_między_składowymi[key1] = new Set()
+                    if(dest in składowa_które_należy)
+                        relacje_między_składowymi[key1].add(składowa_które_należy[dest])
+                }
+            }
+        }
+    }
+    return {perskł:jednostki_wg_składowych,relation:relacje_między_składowymi}
 }
 function attfunc(hexx,hexy){
 	var powermap = [];
@@ -906,16 +1209,24 @@ function hexdistmap(x,y,water,mountain,air,heavy,hekstable){
                         if(hexto.z == -2 || hexto.z == 0)
                             continue
                     } else {
+                        var unp_to = hexto.units ? hexto.units.length : hexto.unp
+                        var unp_from = hexfrom.units ? hexfrom.units.length : hexfrom.unp
+                        
+                        var dru_to = hexto.dru ? hexto.dru : hexto.undr
+                        var dru_from = hexfrom.dru ? hexfrom.dru : hexfrom.undr
+                        
                         if(hexto.z == -2 && heavy)
                             continue
                         if(hexto.z == -2 && !mountain)
                             step = 2
                         if((hexfrom.z > 0 || hexfrom.z == -1) && hexto.z == -1){
                             pluswater = 1
-                        if(hexto.unp > 3 && hexfrom.unp <= 3 && hexto.undr == checkedGrid[x][y].undr && checkedGrid[x][y] != -1)
-                            step *= 10
                         } else if(hexfrom.z != -1 && hexto.z == -1){
                             continue
+                        }
+                        if(unp_to > 3 && unp_from <= 3 && dru_to == (checkedGrid[x][y].dru != undefined ? checkedGrid[x][y].dru : checkedGrid[x][y].undr) && checkedGrid[x][y] != -1){
+                            step *= 10
+                            console.log('x')
                         }
                     }
                     var dist = checkedGrid[hexfrom.x][hexfrom.y].dist + step + pluswater*2
@@ -1186,7 +1497,7 @@ function evaluateProductionPotential(h,level){
     return h.z / 4 * level
 }
 
-function putPath(uni, hex_x, hex_y, stopBefore){
+function putPath(uni, hex_x, hex_y, stopBefore, completely_used_passages){
     //szyt = ["n","c","c","n","g","c","w","w","w","l","l","n"];
     //zast = ["n","n","n","n","n","p","n","n","x","l","x","m"];
 
@@ -1248,7 +1559,37 @@ function putPath(uni, hex_x, hex_y, stopBefore){
         ty = -1
     }
     
-    return path.length > 0 && unit.szyt != 'w' && unit.szyt != 'l' && heks[unit.x][unit.y].z > 0 && heks[path[0].x][path[0].y].z == -1        
+    return path.length > 0 && unit.szyt != 'w' && unit.szyt != 'l' && heks[unit.x][unit.y].z > 0 && heks[path[0].x][path[0].y].z == -1 && !(path[0].x+'#'+path[0].y in completely_used_passages)
+}
+
+
+function calculatePathUntilEmbarking(unitDistMap,hex, unit, action, stopBefore){
+    var he = heks[hex.x][hex.y]
+    if(stopBefore == undefined)
+        stopBefore = 0
+        
+    var speed = unit.szy
+
+    var turn = 0
+    for(var i in action.ruchk){
+        if(i >= action.ruchk.length-stopBefore)
+            break
+        for(var j = 0;j<action.rucho[i];j++){
+            he = he.border[action.ruchk[i]]
+            if(he.z == -2 && unit.szyt != 'g'){
+                turn++
+            } else {
+                turn+=1/speed
+            }
+            if(he.z == -1){
+                return {x:he.x,y:he.y,hex:hex,turn:Math.ceil(turn),need:unit.il,satisfied:0,possibleMoves:[]}
+            }
+                
+            if(he == undefined)
+                return undefined
+        }
+    }
+    return null
 }
 
 class Copyable {
@@ -1297,7 +1638,7 @@ function copyDict(dict){
 }
 class UnitAction extends Copyable {
     constructor(unit,hex){
-        super(['d','il','id','rodz','ata','atakt','celd','celu','ruchk','ruchy','rucho','zalad','rozb','kolor','szyt','atakt'])
+        super(['d','il','id','rodz','ata','atakt','celd','celu','ruchk','ruchy','rucho','zalad','rozb','kolor','szy','szyt','atakt'])
         
         //this.unit = unit
         this.setFields(this.getFields(unit))
@@ -1338,6 +1679,24 @@ function leadPath(x,y,ruchk,rucho,stopBefore){
     }
     return [he.x,he.y]
 }
+function getLeadedPath(x,y,ruchk,rucho,stopBefore){
+    var leadedPath = []
+    
+    var he = heks[x][y]
+    if(stopBefore == undefined)
+        stopBefore = 0
+    for(var i in ruchk){
+        if(i >= ruchk.length-stopBefore)
+            break
+        for(var j = 0;j<rucho[i];j++){
+            he = he.border[ruchk[i]]
+            if(he == undefined)
+                return undefined
+            leadedPath.push({x:he.x, y:he.y})
+        }
+    }
+    return {x:x,y:y,path:leadedPath}
+}
 function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho){
     var he = heks[x][y]
     for(var i in ruchk){
@@ -1357,7 +1716,7 @@ function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho){
 }
 class BoardHex extends Copyable {
     constructor(x,y,oldheks){
-        super(['most','z','hutn','prod','zpl','hutnpl','prodpl','kasy','stali','zmiana'])
+        super(['z','hutn','prod','zpl','hutnpl','prodpl','kasy','stali','zmiana'])
         
         this.x = x
         this.y = y
@@ -1774,6 +2133,27 @@ function exponentiel(number){
     return Math.pow(number,1.2)
 }
 
+function getRuch(map_of_movement_type,hex){
+    var hToCheck = map_of_movement_type.filter(h => h.hex.x == hex.hex.x && h.hex.y == hex.hex.y)[0]
+    var ruchk = []
+    while(hToCheck.from != null){
+        var hfrom = hToCheck.from
+        var goodkier = -1
+        for(var k = 0;k<6;k++){
+            if(hfrom.border[k] != undefined && hfrom.border[k].x == hToCheck.hex.x && hfrom.border[k].y == hToCheck.hex.y){
+                goodkier = k
+                break
+            }
+        }
+        ruchk.push(goodkier)
+        var hToCheck = map_of_movement_type.filter(h => h.hex.x == hfrom.x && h.hex.y == hfrom.y)[0]
+    }
+    ruchk = ruchk.reverse()
+    rucho = ruchk.map(a => 1)
+    
+    return {ruchk:ruchk,rucho:rucho}
+}
+
 function legalActions(dm){
     var distmaps = dm.distmaps
     for(var key in distmaps){
@@ -1819,22 +2199,10 @@ function legalActions(dm){
                             //if(hexkey in distmaps && ( distmaps[hexkey].frontline || distmaps[hexkey].units.length == 0 ||  )){
                                 //unit.legalActions.push({type:'move',rucho:rucho,ruchk:ruchk,destination:leadPath(hex.x,hex.y,ruchk,rucho)})
                                     
-                    var hToCheck = map_of_movement_type.filter(h => h.hex.x == hex.hex.x && h.hex.y == hex.hex.y)[0]
-                    var ruchk = []
-                    while(hToCheck.from != null){
-                        var hfrom = hToCheck.from
-                        var goodkier = -1
-                        for(var k = 0;k<6;k++){
-                            if(hfrom.border[k] != undefined && hfrom.border[k].x == hToCheck.hex.x && hfrom.border[k].y == hToCheck.hex.y){
-                                goodkier = k
-                                break
-                            }
-                        }
-                        ruchk.push(goodkier)
-                        var hToCheck = map_of_movement_type.filter(h => h.hex.x == hfrom.x && h.hex.y == hfrom.y)[0]
-                    }
-                    ruchk = ruchk.reverse()
-                    rucho = ruchk.map(a => 1)
+                    var result = getRuch(map_of_movement_type,hex)
+                    
+                    var ruchk = result.ruchk
+                    var rucho = result.rucho
                     //console.log([hex.hex.x,hex.hex.y,ruchk,rucho])
                     
                     if(true || !pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,ruchk,rucho)){
@@ -2045,8 +2413,9 @@ function tryPutUnderAttack(dm, x, y, color){
     
 }
 
-function actionsToReal(dm,color){
+function actionsToReal(dm,color,completely_used_passages){
     if(color == kolej){
+        console.log(completely_used_passages)
         var distmaps = dm.distmaps
         
         for(var key in distmaps){
@@ -2072,7 +2441,7 @@ function actionsToReal(dm,color){
                         if(unid == -1)
                             continue
                     }
-                    var dodajTratwe = putPath(unid,properAction.destination[0],properAction.destination[1])
+                    var dodajTratwe = putPath(unid,properAction.destination[0],properAction.destination[1],undefined,completely_used_passages)
                     if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l')
                         tratwa += properAction.il
 
@@ -2121,7 +2490,7 @@ function actionsToReal(dm,color){
                     if((zast[unit.rodz] == 'n' || zast[unit.rodz] == 'p' || zast[unit.rodz] == 'l') && zas[unit.rodz] > 1)
                         stopBefore = zas[unit.rodz]
                         
-                    var dodajTratwe = putPath(unid,action1.destination[0],action1.destination[1],stopBefore)
+                    var dodajTratwe = putPath(unid,action1.destination[0],action1.destination[1],stopBefore,completely_used_passages)
                     if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l')
                         tratwa += action1.il
                         
