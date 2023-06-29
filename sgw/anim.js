@@ -23,6 +23,7 @@ function aktwok(vx,vy){
 }
 blokada = false
 function anim(){
+	try {
     if(!blokada){
         blokada = true
 	szpak = 0.34; //xD
@@ -231,6 +232,10 @@ function anim(){
 
         blokada = false
     }
+	} catch(e){
+		throw e
+		return
+	}
     setTimeout(()=>anim(),25)
 }
 function nastepnyoddzial(){

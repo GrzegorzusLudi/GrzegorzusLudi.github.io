@@ -344,9 +344,10 @@ async function ai1(){
         break;
         case 1.1:
             dfrou=distmapsFromUnit()
+            simplifieddistmaps=simpledistmaps(dfrou)
             evaluate(dfrou,2)
-            legalActions(dfrou)
-            ulepszyns = 8
+            legalActions(dfrou,simplifieddistmaps)
+            ulepszyns = 15
             aistan = 1.2
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -354,6 +355,12 @@ async function ai1(){
         break
         case 1.2:
             
+            var sidima = {}
+            for(var i in simplifieddistmaps){
+                for(var j in simplifieddistmaps[i]){
+                    sidima[j] = true
+                }
+            }
             dbetter = copyDistmaps(dfrou)
             evaluate(dbetter,2)
             //legalActions(dbetter)
@@ -390,12 +397,16 @@ async function ai1(){
                                 if(f.dist > lvlok + 3 && foundFrontline){
                                     continue
                                 }
-                                if(addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] == undefined){
-                                    addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] = obj.dist
-                                    possible_targets.push(obj)
-                                } else if(obj.dist < addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y]){
-                                    addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] = obj.dist
-                                    possible_targets.push(obj)
+                                
+                                var code = obj.hex.heks.x + '#' + obj.hex.heks.y
+                                if(addedHexes[code] == undefined){
+                                    addedHexes[code] = obj.dist
+                                    if(code in sidima)
+                                        possible_targets.push(obj)
+                                } else if(obj.dist < addedHexes[code]){
+                                    addedHexes[code] = obj.dist
+                                    if(code in sidima)
+                                        possible_targets.push(obj)
                                 }
                                 
                                 if((!foundFrontline || lvlok > obj.dist) && obj.hex.heks.undr != -1){
@@ -414,9 +425,11 @@ async function ai1(){
                             var obj = rmap[i]
                             if(obj.hex.heks.undr != kolej && obj.hex.units.length > 0){
                                 
-                                if(addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] == undefined){
-                                    addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] = obj.dist
-                                    possible_targets.push(obj)
+                                var code = obj.hex.heks.x + '#' + obj.hex.heks.y
+                                if(addedHexes[code] == undefined){
+                                    addedHexes[code] = obj.dist
+                                    if(code in sidima)
+                                        possible_targets.push(obj)
                                 }/* else if(obj.dist < addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y]){
                                     addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] = obj.dist
                                     possible_targets.push(obj)
@@ -441,7 +454,8 @@ async function ai1(){
             for(var i in possible_targets){
                 var pt = possible_targets[i]
                 if(pt.dist <= addedHexes[pt.hex.heks.x+'#'+pt.hex.heks.y]){
-                    possible_targets2.push(pt)
+                    if(pt.hex.heks.x+'#'+pt.hex.heks.y in sidima)
+                        possible_targets2.push(pt)
                     //pt.hex.heks.test = pt.dist
                 }
             }
@@ -1854,6 +1868,9 @@ function distmapsFromUnit(){
             }
             
         }
+        if(distmaps[code].maps['n'] == undefined){
+            distmaps[code].maps['n'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,false,false,false,board)}
+        }
     }
     return {distmaps:distmaps,score:null,model:model}
 }
@@ -2154,7 +2171,49 @@ function getRuch(map_of_movement_type,hex){
     return {ruchk:ruchk,rucho:rucho}
 }
 
-function legalActions(dm){
+function simpledistmaps(dm){
+    var map = {}
+    
+    var distmaps = dm.distmaps
+    for(var key in distmaps){
+        
+        var distmap = distmaps[key]
+        
+        map[key] = {}
+        
+        for(var movement_type in distmap.maps){
+            var map_of_movement_type = distmap.maps[movement_type].hexmap
+
+            var hexesToCheck = map_of_movement_type.filter(x => x.hex.z > 0 || x.hex.units.length > 0)
+                        
+            for(var i in hexesToCheck){
+                var hex = hexesToCheck[i]
+                var hexkey = hex.hex.x + '#' + hex.hex.y
+                
+                //if(hex.hex.units.length == 0 && hex.hex.z <= 0)
+                //    continue
+                
+                if(hexkey != key && hexkey in distmaps && (!(hexkey in map[key]) || map[key][hexkey] > hex.dist)){
+                    map[key][hexkey] = hex.dist
+                }
+            }
+        }
+    }
+    for(var i in map){
+        for(var j in map[i]){
+            for(var k in map){
+                if(k in map && k in map[i] && j in map[k] && map[i][j]-2 > (map[i][k] + map[k][j]) * 0.8 && !(dm.distmaps[i].hex.units.length > 0 && dm.distmaps[k].hex.units.length > 0 && dm.distmaps[i].hex.units[0].dru == dm.distmaps[k].hex.units[0].dru)){
+                    //console.log('tró')
+                    delete map[i][j]
+                    delete map[j][i]
+                    break
+                }
+            }
+        }
+    }
+    return map
+}
+function legalActions(dm,simplifieddistmaps){
     var distmaps = dm.distmaps
     for(var key in distmaps){
         var distmap = distmaps[key]
@@ -2186,6 +2245,9 @@ function legalActions(dm){
                 for(var i in hexesToCheck){
                     var hex = hexesToCheck[i]
                     var hexkey = hex.hex.x + '#' + hex.hex.y
+                    
+                    if(!(key in simplifieddistmaps && hexkey in simplifieddistmaps[key]))
+                        continue
                     
                     if(hex.hex.units.length == 0 && hex.hex.z <= 0)
                         continue
