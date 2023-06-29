@@ -470,6 +470,7 @@ async function ai1(){
         break
         case 1.3:
             if(possible_targets_ix >= possible_targets.length){
+                
                 if(ulepszyns > 0){
                     ulepszyns--
                     dfrou = copyDistmaps(dbetter)
@@ -1868,9 +1869,21 @@ function distmapsFromUnit(){
             }
             
         }
-        if(distmaps[code].maps['n'] == undefined){
+        if(bhex.units.length == 0){
             distmaps[code].maps['n'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,false,false,false,board)}
+        }/*
+        if(distmaps[code].maps['c'] == undefined){
+            distmaps[code].maps['c'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,false,false,true,board),rangemap:hexrangemap(bhex.x,bhex.y,false,false,false,true,board)}
         }
+        if(distmaps[code].maps['l'] == undefined){
+            distmaps[code].maps['l'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,false,true,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,false,true,false,board)}
+        }
+        if(distmaps[code].maps['g'] == undefined){
+            distmaps[code].maps['g'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,true,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,true,false,false,board)}
+        }
+        if(distmaps[code].maps['w'] == undefined){
+            distmaps[code].maps['w'] = {hexmap:hexdistmap(bhex.x,bhex.y,true,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,true,false,false,false,board)}
+        }*/
     }
     return {distmaps:distmaps,score:null,model:model}
 }
@@ -2202,7 +2215,7 @@ function simpledistmaps(dm){
     for(var i in map){
         for(var j in map[i]){
             for(var k in map){
-                if(k in map && k in map[i] && j in map[k] && map[i][j]-2 > (map[i][k] + map[k][j]) * 0.8 && !(dm.distmaps[i].hex.units.length > 0 && dm.distmaps[k].hex.units.length > 0 && dm.distmaps[i].hex.units[0].dru == dm.distmaps[k].hex.units[0].dru)){
+                if(k in map && k in map[i] && j in map[k] && map[i][j]-3 > (map[i][k] + map[k][j]) * 0.8 && !(dm.distmaps[i].hex.units.length > 0 && dm.distmaps[k].hex.units.length > 0 && dm.distmaps[i].hex.units[0].dru == dm.distmaps[k].hex.units[0].dru)){
                     //console.log('tró')
                     delete map[i][j]
                     delete map[j][i]
@@ -2477,7 +2490,6 @@ function tryPutUnderAttack(dm, x, y, color){
 
 function actionsToReal(dm,color,completely_used_passages){
     if(color == kolej){
-        console.log(completely_used_passages)
         var distmaps = dm.distmaps
         
         for(var key in distmaps){
