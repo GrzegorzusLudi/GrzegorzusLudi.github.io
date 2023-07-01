@@ -466,6 +466,7 @@ async function ai1(){
             //possible_targets = possible_targets.filter(x => x.distanceMap)
             possible_targets = possible_targets.slice(0,myHexes+1)
             console.log(possible_targets.length)
+            overall_score_changed = false
             aistan = 1.3
         break
         case 1.3:
@@ -473,6 +474,10 @@ async function ai1(){
                 
                 if(ulepszyns > 0){
                     ulepszyns--
+                    if(overall_score_changed)
+                        overall_score_changed = false
+                    else
+                        ulepszyns = 0
                     dfrou = copyDistmaps(dbetter)
                     evaluate(dfrou,2)
                     //legalActions(dfrou)
@@ -525,8 +530,11 @@ async function ai1(){
                             minBetter = Math.max(0,-score2[t][kolej] + score1[t][kolej])
                         }*/
                         
-                        if(dbetter == null || score1[checkedTurn][kolej] > score2[checkedTurn][kolej] || score1[checkedTurn][kolej] >= score2[checkedTurn][kolej]*0.8 && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej])
-                            dbetter = newDistmap
+                    if(dbetter == null || score1[checkedTurn][kolej] > score2[checkedTurn][kolej] || score1[checkedTurn][kolej] >= score2[checkedTurn][kolej]*0.8 && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej]){
+                        dbetter = newDistmap
+                        overall_score_changed = true
+                    }
+                        
                     //}
                     //if(maxBetter > minBetter)
                     //    dbetter = newDistmap
@@ -2215,7 +2223,7 @@ function simpledistmaps(dm){
     for(var i in map){
         for(var j in map[i]){
             for(var k in map){
-                if(k in map && k in map[i] && j in map[k] && map[i][j]-3 > (map[i][k] + map[k][j]) * 0.8 && !(dm.distmaps[i].hex.units.length > 0 && dm.distmaps[k].hex.units.length > 0 && dm.distmaps[i].hex.units[0].dru == dm.distmaps[k].hex.units[0].dru)){
+                if(k in map && k in map[i] && j in map[k] && map[i][j]-2 > (map[i][k] + map[k][j]) * 0.6 && !(dm.distmaps[i].hex.units.length > 0 && dm.distmaps[k].hex.units.length > 0 && dm.distmaps[i].hex.units[0].dru == dm.distmaps[k].hex.units[0].dru)){
                     //console.log('tró')
                     delete map[i][j]
                     delete map[j][i]
