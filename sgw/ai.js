@@ -2520,7 +2520,7 @@ function tryPutUnderAttack(dm, x, y, color){
     var postęp = 0
     var valuesByTime = dm.distmaps[x+'#'+y].alliegance
     for(var t in valuesByTime){
-        valuesByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
+        valuesByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2,t+1) : 0
     }
     var value = valuesByTime.reduce((a,b) => a+b, 0)
     
@@ -2533,7 +2533,7 @@ function tryPutUnderAttack(dm, x, y, color){
         var values2ByTime = dm.distmaps[x+'#'+y].alliegance
         
         for(var t in values2ByTime){
-            values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
+            values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2,t+1) : 0
         }
         value2 = values2ByTime.reduce((a,b) => a+b, 0)
 
