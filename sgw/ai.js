@@ -2027,11 +2027,15 @@ function evaluate(dm,time,potentialMoves){
                                 var field = path.path[k]
                                 var code2 = field.x+'#'+field.y
                                 
+                                var turn = Math.ceil((k - (zas[unit.rodz] <= 1 ? 0 : zas[unit.rodz])) / szy[unit.rodz])
                                 if(code2 in distmaps && (distmaps[code2].hex.units.length > 0 && distmaps[code2].hex.units[0].d != unit.d)){
                                     for(var l in distmaps[code2].hex.units){
                                         var unit2 = distmaps[code2].hex.units[l]
                                         var evaldefense = evalUnitDefense(unit2)
-                                        distmaps[code2].realtocome[t][unit2.d] -= unitAttackStrength2
+                                        for(var l in distmaps[code2].realtocome){
+                                            if(l <= turn)
+                                                distmaps[code2].realtocome[l][unit2.d] -= unitAttackStrength2
+                                        }
                                         unitAttackStrength2 -= evaldefense
                                         if(unitAttackStrength2 < 0)
                                             unitAttackStrength2 = 0
