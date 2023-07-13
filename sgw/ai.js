@@ -472,7 +472,7 @@ function aimachine(ailevel){
             possible_targets.sort((a,b)=>(a.dist - b.dist))
             //console.log(possible_targets)
             //possible_targets = possible_targets.filter(x => x.distanceMap)
-            possible_targets = possible_targets.slice(0,myHexes+1)
+            possible_targets = possible_targets.slice(0,15)
             console.log(possible_targets.length)
             overall_score_changed = false
             aistan = 1.3
@@ -485,7 +485,7 @@ function aimachine(ailevel){
                     if(overall_score_changed)
                         overall_score_changed = false
                     else
-                        ulepszyns = 0
+                        ulepszyns--
                     dfrou = copyDistmaps(dbetter)
                     evaluate(dfrou,2)
                     //legalActions(dfrou)
@@ -496,7 +496,7 @@ function aimachine(ailevel){
                     aistan = 1.35
                 }
             } else {
-                for(var i = 0;i<10;i++){
+                for(var i = 0;i<12;i++){
                     var tested_target = possible_targets[possible_targets_ix]
                     var checkedTurn = 1
                     var checkedTurn2 = MAX_TURNS-1
@@ -597,8 +597,8 @@ function aimachine(ailevel){
                             } else {
                                 miejsca_do_wysłania_tratw[code] = result
                             }
-                            if(miejsca_do_wysłania_tratw[code].hex.units.length > 3)
-                                miejsca_do_wysłania_tratw[code].need = 0
+                            //if(miejsca_do_wysłania_tratw[code].hex.units.length > 3)
+                            //    miejsca_do_wysłania_tratw[code].need = 0
                         }
                         
                         //unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}]
@@ -765,7 +765,7 @@ function aimachine(ailevel){
                 ruchwkolejce.push(newDivide[i])
                 ruchwkolejcen++
             }
-            console.log(newDivide)
+            //console.log(newDivide)
             
             
             
@@ -1216,11 +1216,13 @@ function hexdistmap(x,y,water,mountain,air,heavy,hekstable){
     var tocheck2 = []
     var checkedGrid = []
     var startwater = !water && !air && hekstable[x][y].z == -1 ? 1 : 0
-    var checkedList = [ { hex: hekstable[x][y], dist: 0, water:startwater, from: null } ]
+    var checkedList = []//[ { hex: hekstable[x][y], dist: 0, water:startwater, from: null } ]
     for(var i = 0;i<scian;i++){
         checkedGrid[i] = []
         for(var j = 0;j<scian;j++){
-            checkedGrid[i][j] = {dist:-1,water:startwater,range:-1}
+            checkedGrid[i][j] = {dist:-1,water:startwater,range:-1,from:null}
+            
+            heks[i][j].test = ""
         }        
     }
     checkedGrid[x][y].dist = 0
@@ -1230,7 +1232,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,hekstable){
         for(var i in tocheck){
             var hexfrom = tocheck[i]
             for(var j = 0;j<6;j++){
-                if(tocheck[i].border[j] != null && tocheck[i].border[j].x < scian && tocheck[i].border[j].y < scian && (checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist == -1 || checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist > checkedGrid[tocheck[i].x][tocheck[i].y].dist + step/* || checkedGrid[tocheck[i].x][tocheck[i].y].water + 1 < checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].water*/)){
+                if(tocheck[i].border[j] != null && tocheck[i].border[j].x < scian && tocheck[i].border[j].y < scian && (checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist == -1 || checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist > checkedGrid[tocheck[i].x][tocheck[i].y].dist/* || checkedGrid[tocheck[i].x][tocheck[i].y].water + 1 < checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].water*/)){
                     var hexto = tocheck[i].border[j]
                     
                     var step = 1
@@ -1248,37 +1250,47 @@ function hexdistmap(x,y,water,mountain,air,heavy,hekstable){
                         var dru_to = hexto.dru ? hexto.dru : hexto.undr
                         var dru_from = hexfrom.dru ? hexfrom.dru : hexfrom.undr
                         
-                        if(hexto.z == -2 && heavy)
+                        if(hexto.z == -2 && (heavy || hexfrom.z == -1))
                             continue
                         if(hexto.z == -2 && !mountain)
                             step = 2
                         if((hexfrom.z > 0 || hexfrom.z == -1) && hexto.z == -1){
                             pluswater = 1
+                            if(hexfrom.z == -1 && dru_to != -1 && dru_to != kolej)
+                                continue
+                                
                         } else if(hexfrom.z != -1 && hexto.z == -1){
                             continue
                         }
                         if(unp_to > 3 && unp_from <= 3 && dru_to == (checkedGrid[x][y].dru != undefined ? checkedGrid[x][y].dru : checkedGrid[x][y].undr) && checkedGrid[x][y] != -1){
                             step *= 10
-                            console.log('x')
                         }
                     }
-                    var dist = checkedGrid[hexfrom.x][hexfrom.y].dist + step + pluswater*2
-                    var waterdist = checkedGrid[hexfrom.x][hexfrom.y].water + pluswater
-                    
-                    //console.log(dist)
-                    tocheck2.push(tocheck[i].border[j])
-                    checkedList.push( { hex: tocheck[i].border[j], dist: dist, water : waterdist, from: hexfrom  } )
-                    checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist = dist
-                    checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].water = waterdist
-                    checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].from = hexfrom
-                    
-                    //heks[tocheck[i].border[j].x][tocheck[i].border[j].y].test = dist    //debug
+                    if(checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist == -1 || checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist > checkedGrid[tocheck[i].x][tocheck[i].y].dist + step){
+                        var dist = checkedGrid[hexfrom.x][hexfrom.y].dist + step + pluswater*2
+                        var waterdist = checkedGrid[hexfrom.x][hexfrom.y].water + pluswater
+                        
+                        //console.log(dist)
+                        tocheck2.push(tocheck[i].border[j])
+                        //checkedList.push( { hex: tocheck[i].border[j], dist: dist, water : waterdist, from: hexfrom  } )
+                        checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist = dist
+                        checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].water = waterdist
+                        checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].from = hexfrom
+                        
+                        //if(heks[x][y].undr == 0)
+                        //    heks[tocheck[i].border[j].x][tocheck[i].border[j].y].test = dist+'/'+pluswater    //debug
+                    }
                 }
             }
         }
         tocheck = tocheck2
         tocheck2 = []
         step++
+    }
+    for(var i = 0;i<scian;i++){
+        for(var j = 0;j<scian;j++){
+            checkedList.push( { hex: hekstable[i][j], dist: checkedGrid[i][j].dist, water : checkedGrid[i][j].water, from: checkedGrid[i][j].from } )
+        }        
     }
     return checkedList
 }
@@ -1540,7 +1552,7 @@ function putPath(uni, hex_x, hex_y, stopBefore, completely_used_passages){
     var unit = unix[kolej][uni]
     unit.rozb = 0
     
-    var unitDistMap = hexdistmap(unit.x,unit.y,unit.szyt == 'w',unit.szyt == 'g',unit.szyt == 'l',unit.szyt == 'c')
+    var unitDistMap = hexdistmap(unit.x,unit.y,szyt[unit.rodz] == 'w',szyt[unit.rodz] == 'g',szyt[unit.rodz] == 'l',szyt[unit.rodz] == 'c')
     
     var heksk = unitDistMap.filter(a => a.hex.x == hex_x && a.hex.y == hex_y)
     if(heksk.length == 0)
@@ -1615,7 +1627,7 @@ function calculatePathUntilEmbarking(unitDistMap,hex, unit, action, stopBefore){
                 turn+=1/speed
             }
             if(he.z == -1){
-                return {x:he.x,y:he.y,hex:hex,turn:Math.ceil(turn),need:unit.il,satisfied:0,possibleMoves:[]}
+                return {x:he.x,y:he.y,hex:hex,turn:Math.ceil(turn),need:unit.il,satisfied:0,possibleMoves:[],addedTratwas:0}
             }
                 
             if(he == undefined)
@@ -1739,14 +1751,15 @@ function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho,unitAttackStrength){
             if(he == undefined)
                 break
             
-            if(i > 0 && i < ruchk.length-1 && (dm != undefined && str in dm.distmaps && dm.distmaps[str].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp == 4)){
+            if(i > 0 && i < ruchk.length-1 && (he.dru != undefined && he.dru != kolej || he.d != undefined && he.d != kolej) && (dm != undefined && str in dm.distmaps && dm.distmaps[str].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp == 4)){
                 return true
             }
+            /*
             if(false && unitAttackStrength != undefined){
                 if(i > 0 && i < ruchk.length-1 && (dm != undefined && str in dm.distmaps && dm.distmaps[str].hex.units.length > 0 || dm == undefined && heks[he.x][he.y].unp > 0) && heks[he.x][he.y].undr != orhe.undr && heks[he.x][he.y].undr != -1){
                     return true
                 }
-            }
+            }*/
         }
         if(he == undefined)
             break
@@ -1862,7 +1875,7 @@ function copyDistmaps(dm){
         newDistmaps[code] = {maps:{}, hex:bhex, potentialtocome:[], realtocome:[], defence:[],alliegance:allTurns(),fromenemy:allMoves(),fromally:allMoves(),frontline:false}
         for(var j in bhex.units){
             var unit = bhex.units[j]
-            var szybt = unit.szyt
+            var szybt = szyt[unit.rodz]
             if(!(szybt in newDistmaps[code])){
                 newDistmaps[code].maps[szybt] = {hexmap:copyHexdistmap(distmaps[code].maps[szybt].hexmap,board), rangemap:copyHexrangemap(distmaps[code].maps[szybt].rangemap,board)}//{hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board)}
             }
@@ -1889,7 +1902,7 @@ function distmapsFromUnit(){
         distmaps[code] = {maps:{}, hex:bhex, potentialtocome:[], realtocome:[], defence:[],alliegance:allTurns(),fromenemy:allMoves(),fromally:allMoves(),frontline:false}
         for(var j in bhex.units){
             var unit = bhex.units[j]
-            var szybt = unit.szyt
+            var szybt = szyt[unit.rodz]
             if(!(szybt in distmaps[code])){
                 distmaps[code].maps[szybt] = {hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board),rangemap:hexrangemap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board)}
             }
@@ -2033,7 +2046,7 @@ function evaluate(dm,time,potentialMoves){
                                         var unit2 = distmaps[code2].hex.units[l]
                                         var evaldefense = evalUnitDefense(unit2)
                                         for(var l in distmaps[code2].realtocome){
-                                            if(l <= turn)
+                                            if(l >= turn)
                                                 distmaps[code2].realtocome[l][unit2.d] -= unitAttackStrength2
                                         }
                                         unitAttackStrength2 -= evaldefense
@@ -2454,7 +2467,7 @@ function tryPutUnderAttack(dm, x, y, color){
         }
         for(var j in distmap.hex.units){
             var unit = distmap.hex.units[j]
-            if(unit.d != color || unit.rozb > 20 && unit.il < 80 && (unit.legalActions.length == 0 || unit.legalActions[0].type == 'move' && heks[unit.legalActions[0].destination[0]][unit.legalActions[0].destination[0]].undr != -1)/* || unit.actions.filter(x => x.type == 'move').length > 0 && !distmap.frontline || unit.actions.filter(x => x.type == 'move' && x.by == 'speculation').length > 0*/)
+            if(unit.d != color || unit.rozb > 20 && unit.il < 20 && (unit.legalActions.length == 0 || unit.legalActions[0].type == 'move' && heks[unit.legalActions[0].destination[0]][unit.legalActions[0].destination[0]].undr != -1)/* || unit.actions.filter(x => x.type == 'move').length > 0 && !distmap.frontline || unit.actions.filter(x => x.type == 'move' && x.by == 'speculation').length > 0*/)
                 continue
                 
             var susactions = false
@@ -2520,7 +2533,7 @@ function tryPutUnderAttack(dm, x, y, color){
     var postęp = 0
     var valuesByTime = dm.distmaps[x+'#'+y].alliegance
     for(var t in valuesByTime){
-        valuesByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2,t+1) : 0
+        valuesByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.5,t+1) : 0
     }
     var value = valuesByTime.reduce((a,b) => a+b, 0)
     
@@ -2533,12 +2546,15 @@ function tryPutUnderAttack(dm, x, y, color){
         var values2ByTime = dm.distmaps[x+'#'+y].alliegance
         
         for(var t in values2ByTime){
-            values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2,t+1) : 0
+            values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.5,t+1) : 0
         }
         value2 = values2ByTime.reduce((a,b) => a+b, 0)
 
         //console.log('a',value2,value)
         if(value2 > value)
+            break
+            
+        if(value2 < value && i >= 2)
             break
     }
     if(value2 == undefined || value2 <= value)
