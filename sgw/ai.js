@@ -2549,7 +2549,7 @@ function tryPutUnderAttack(dm, x, y, color){
             }
         }
     }
-    interestingUnits.sort((a,b) => (-1/Math.pow(2,a.hex.dist)*(a.unit.il+10) + 1/Math.pow(b.hex.dist)*(b.unit.il+10)))
+    interestingUnits.sort((a,b) => (-1/Math.pow(2,a.hex.dist)*(a.unit.il+10) + 1/Math.pow(2,b.hex.dist)*(b.unit.il+10)))
     //interestingUnits.sort((a,b) => (a.hex.dist - b.hex.dist))
     //console.log(interestingUnits)
     
@@ -2583,7 +2583,7 @@ function tryPutUnderAttack(dm, x, y, color){
         if(value2 < value){
             unitaction.unit.actions = oldaction
             fails++
-            if(fails > 4)
+            if(fails > 6)
                 break
         }
     }
