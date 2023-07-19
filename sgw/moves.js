@@ -1036,7 +1036,11 @@ function oddroguj(uni,koloj,odc){
                     tph = unix[unix[koloj][uni].celd][unix[koloj][uni].celu];
 		if(unix[koloj][uni].celd==koloj){
                     //tph = unix[unix[koloj][uni].celd][unix[koloj][uni].celu];
-                    czyscc(uni,tph.x,tph.y,koloj);
+			for(var i = 0;i<scian;i++){
+				for(var j = 0;j<scian;j++){
+                    czyscc(uni,i,j,koloj);
+				}
+			}
 
 
                     tph.zmiana++;
@@ -1079,8 +1083,14 @@ function oddroguj(uni,koloj,odc){
                             }
 
 
-                            czyscc(uni,wiah.x,wiah.y,koloj);
-                            czyscc(uni,wiah.x,wiah.y,koloj);
+						for(var i = 0;i<scian;i++){
+							for(var j = 0;j<scian;j++){
+								czyscc(uni,i,j,koloj);
+								czyscc(uni,i,j,koloj);
+							}
+						}
+                            //czyscc(uni,wiah.x,wiah.y,koloj);
+                            //czyscc(uni,wiah.x,wiah.y,koloj);
 
 
                             tph.zmiana++;

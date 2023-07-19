@@ -391,7 +391,9 @@ function aimachine(ailevel){
                 }
                 if(totalUnitSize < 10)
                     continue
-                if(distmap.hex.heks.undr == kolej && distmap.hex.units.length > 0){
+                    
+                var dr = distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
+                if(dr == kolej && distmap.hex.units.length > 0){
                     myHexes++
                     for(var movement_type in distmap.maps){
                         var dmap = distmap.maps[movement_type].hexmap
@@ -401,10 +403,11 @@ function aimachine(ailevel){
                         var foundFrontline = false
                         for(var i in dmap){
                             var obj = dmap[i]
-                            if(obj.hex.heks.undr != kolej && (obj.hex.units.length > 0 || obj.hex.z > 0)){
+                            var obdr = obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru
+                            if(obdr != kolej && (obj.hex.units.length > 0 || obj.hex.z > 0)){
                                 
                                 if(f.dist > lvlok + 3 && foundFrontline){
-                                    //continue
+                                    continue
                                 }
                                 
                                 /*
@@ -424,7 +427,7 @@ function aimachine(ailevel){
                                         possible_targets.push(obj)
                                 }
                                 
-                                if((!foundFrontline || lvlok > obj.dist) && obj.hex.heks.undr != -1){
+                                if((!foundFrontline || lvlok > obj.dist) && obdr != -1){
                                     foundFrontline = true
                                     lvlok = obj.dist
                                 }
@@ -438,7 +441,9 @@ function aimachine(ailevel){
                         var rmap = rmap.sort((a,b)=>a.dist-b.dist)
                         for(var i in rmap){
                             var obj = rmap[i]
-                            if(obj.hex.heks.undr != kolej && obj.hex.units.length > 0){
+                            var obdr = obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru
+
+                            if(obdr != kolej && obj.hex.units.length > 0){
                                 
                                 var code = obj.hex.heks.x + '#' + obj.hex.heks.y
                                 if(addedHexes[code] == undefined){
@@ -2372,20 +2377,21 @@ function legalActions(dm,simplifieddistmaps){
                                 var aimedunit = hex.hex.units[hex.hex.units.length-1]
                                 //tprh.unp>0 && lookedUpUnit.d==kolej && lookedUpUnit.rodz==10 && tprh.unt[tprh.unp-1]!=aimingUnit.id && aimingUnit.szyt!="w" && aimingUnit.szyt!="c" && aimingUnit.szyt!="l"
                                 if(aimedunit != null && aimedunit.d != unit.d && miaruj(unit,aimedunit,hex.hex)){
-                                    rucho2 = rucho.slice(0,rucho.length - zas[unit.rodz])
-                                    ruchk2 = ruchk.slice(0,ruchk.length - zas[unit.rodz])
+                                    rucho2 = rucho.slice(0,rucho.length - zas[unit.rodz] - 1)
+                                    ruchk2 = ruchk.slice(0,ruchk.length - zas[unit.rodz] - 1)
                                     
                                     var lp = leadPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)
-                                    var ds = distance(lp[0],lp[1],distmap.hex.x,distmap.hex.y)
+                                    var ds = distance(lp[0],lp[1],hex.hex.x,hex.hex.y)
                                     if(ds != undefined && ds <= zas[unit.rodz]){
+                                        console.log(lp[0],lp[1],hex.hex.x,hex.hex.y, ds, zas[unit.rodz])
                                         unit.legalActions.push([
                                             {type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,destination:lp},
-                                            {type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,destination:[distmap.hex.x,distmap.hex.y]},
+                                            {type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,destination:[hex.hex.x,hex.hex.y]},
                                         ])
                                         if(unit.il > 10 && distmap.hex.units.length <= 3)
                                             unit.legalActions.push([
                                                 {type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il-10,destination:lp},
-                                                {type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,il:unit.il-10,destination:[distmap.hex.x,distmap.hex.y]},
+                                                {type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,il:unit.il-10,destination:[hex.hex.x,hex.hex.y]},
                                             ])
                                     }
 
@@ -2507,7 +2513,7 @@ function tryPutUnderAttack(dm, x, y, color){
             var populateAction = null
             var lac = unit.legalActions
 
-            for(var i = lac.length-1;i>=0;i--){
+            for(var i in lac){
                 var legalAction = lac[i]
 
                 if(legalAction.length >= 1 && (legalAction[0].type == 'move' || legalAction[0].type == 'aim') && legalAction[0].destination != undefined && legalAction[0].destination[0] == x && legalAction[0].destination[1] == y){
@@ -2556,9 +2562,11 @@ function tryPutUnderAttack(dm, x, y, color){
     var value = valuesByTime.reduce((a,b) => a+b, 0)
     
     var value2
+    var fails = 0
     for(var i in interestingUnits){
         var unitaction = interestingUnits[i]
         
+        var oldaction = unitaction.unit.actions
         unitaction.unit.actions = unitaction.action
         evaluate(dm)
         var values2ByTime = dm.distmaps[x+'#'+y].alliegance
@@ -2572,8 +2580,12 @@ function tryPutUnderAttack(dm, x, y, color){
         if(value2 > value)
             break
             
-        if(value2 < value && i >= 2)
-            break
+        if(value2 < value){
+            unitaction.unit.actions = oldaction
+            fails++
+            if(fails > 4)
+                break
+        }
     }
     if(value2 == undefined || value2 <= value)
         return []
