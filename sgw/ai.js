@@ -11,7 +11,7 @@ function loadStats(){
 	["1.5","0.8","0","0","0","0"],
 	["1","1.5","0","0","0","5"],
 	["0.5","4","0","0","0","0"],
-	["1","1.2","1","1","0","0"],
+	["1","1","1","1","0","0"],
 	["5","5","4","4","0","0"],
 	["0","0","0","0","0","0"],
 	["3","3","2","1.5","1","1"],
@@ -2058,8 +2058,11 @@ function evaluate(dm,time,potentialMoves){
                                         var unit2 = distmaps[code2].hex.units[l]
                                         var evaldefense = evalUnitDefense(unit2)
                                         for(var l in distmaps[code2].realtocome){
-                                            if(l >= turn)
+                                            if(l >= turn){
                                                 distmaps[code2].realtocome[l][unit2.d] -= unitAttackStrength2
+                                                if(distmaps[code2].realtocome[l][unit2.d] < 0)
+                                                    distmaps[code2].realtocome[l][unit2.d] = 0
+                                            }
                                         }
                                         unitAttackStrength2 -= evaldefense
                                         if(unitAttackStrength2 < 0)
@@ -2385,12 +2388,12 @@ function legalActions(dm,simplifieddistmaps){
                                     if(ds != undefined && ds <= zas[unit.rodz]){
                                         console.log(lp[0],lp[1],hex.hex.x,hex.hex.y, ds, zas[unit.rodz])
                                         unit.legalActions.push([
-                                            {type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,destination:lp},
+                                            {type:'move',by:'speculation',rucho:rucho2,ruchk:ruchk2,il:unit.il,destination:lp},
                                             {type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,destination:[hex.hex.x,hex.hex.y]},
                                         ])
                                         if(unit.il > 10 && distmap.hex.units.length <= 3)
                                             unit.legalActions.push([
-                                                {type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il-10,destination:lp},
+                                                {type:'move',by:'speculation',rucho:rucho2,ruchk:ruchk2,il:unit.il-10,destination:lp},
                                                 {type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,il:unit.il-10,destination:[hex.hex.x,hex.hex.y]},
                                             ])
                                     }
@@ -2566,6 +2569,9 @@ function tryPutUnderAttack(dm, x, y, color){
     for(var i in interestingUnits){
         var unitaction = interestingUnits[i]
         
+        if(!(unitaction.unit.actions.length == 0 || unitaction.unit.actions[0].by == 'real'))
+            continue
+            
         var oldaction = unitaction.unit.actions
         unitaction.unit.actions = unitaction.action
         evaluate(dm)
