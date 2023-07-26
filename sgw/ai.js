@@ -2386,6 +2386,8 @@ function exponentiel(number){
 function getRuch(map_of_movement_type,hex){
     var hToCheck = map_of_movement_type.filter(h => h.hex.x == hex.hex.x && h.hex.y == hex.hex.y)[0]
     var ruchk = []
+    
+    var i = scian*10
     while(hToCheck.from != null){
         var hfrom = hToCheck.from
         var goodkier = -1
@@ -2397,6 +2399,9 @@ function getRuch(map_of_movement_type,hex){
         }
         ruchk.push(goodkier)
         var hToCheck = map_of_movement_type.filter(h => h.hex.x == hfrom.x && h.hex.y == hfrom.y)[0]
+        i--
+        if(i<0)
+            break
     }
     ruchk = ruchk.reverse()
     rucho = ruchk.map(a => 1)
