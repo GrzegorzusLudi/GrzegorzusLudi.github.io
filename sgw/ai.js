@@ -518,7 +518,6 @@ function aimachine(ailevel){
             //possible_targets = possible_targets.filter(x => x.distanceMap)
             possible_targets = possible_targets.slice(0,15)
             //possible_targets.sort(() => Math.random() - 0.5)
-            console.log(possible_targets)
             overall_score_changed = false
             aistan = 1.3
         break
@@ -1016,6 +1015,17 @@ function aimachine(ailevel){
 				if(v>0){
 					var needed = 0;		//todo
 					
+					var code = mist[miastkol].x+'#'+mist[miastkol].y
+					var dm_lad = dfrou.distmaps[code].maps['n'].heksmap
+					//var dm_morze = dfrou.distmaps[code].maps['w'].heksmap
+					
+					for(var i in dm_lad){
+                        var hks = dm_lad[i]
+                        
+                        console.log(hks)
+                    }
+					
+					/*
                     var wb = waterbodies.filter(a => a.hexes.filter(h => h.x == mist[miastkol].x && h.y == mist[miastkol].y).length > 0)
                     wb = wb.length > 0 ? wb[0] : null
                     if(wb && wb.cities.length < wb.hexes.length){
@@ -1044,7 +1054,7 @@ function aimachine(ailevel){
                             needed = 6
                         }
                         //console.log(mist[miastkol].x,mist[miastkol].y,wb)
-                    }
+                    }*/
 					var creat = -1;
 					for(var i = 0;i<mist[miastkol].unp;i++){
 						if(unix[kolej][mist[miastkol].unt[i]].rodz==needed && unix[kolej][mist[miastkol].unt[i]].il<80)
@@ -1262,7 +1272,7 @@ function copyHexrangemap(hexrangemap,hekstable){
     return hexrangemap.map( x => new Object({ hex: hekstable[x.hex.x][x.hex.y], dist: x.dist}))
 }
 
-function hexdistmap(x,y,water,mountain,air,heavy,hekstable){
+function hexdistmap(x,y,water,mountain,air,heavy,transporting,hekstable){
     if(hekstable == undefined)
         hekstable = heks
     var tocheck = [ hekstable[x][y] ]
@@ -1290,18 +1300,50 @@ function hexdistmap(x,y,water,mountain,air,heavy,hekstable){
                     var step = 1
                     var pluswater = 0
                     
+                    var unp_to = hexto.units ? hexto.units.length : hexto.unp
+                    var unp_from = hexfrom.units ? hexfrom.units.length : hexfrom.unp
+                    
+                    var wieltratw = 0
+                    if(hexto.units != undefined){
+                        for(var k in hexto.units){
+                            var uniit = hexto.units[k].rodz
+                            if(szyt[uniit.rodz] == 'w' && zast[uniit.rodz] == 'x'){
+                                wieltratw++
+                            }
+                        }
+                    } else {
+                        for(var k=0;k<hexto.unp;k++){
+                            var uniit = unix[kolej][hexto.unt[k]]
+                            if(uniit == undefined){
+                                continue
+                            }
+                            if(szyt[uniit.rodz] == 'w' && zast[uniit.rodz] == 'x'){
+                                wieltratw++
+                            }
+                        }
+                    }
+                    
+                    var dru_to = hexto.dru ? hexto.dru : hexto.undr
+                    var dru_from = hexfrom.dru ? hexfrom.dru : hexfrom.undr
+                    
                     if(air){
                         
                     } else if(water){
                         step = 0.8
                         if(hexto.z == -2 || hexto.z == 0)
                             continue
-                    } else {
-                        var unp_to = hexto.units ? hexto.units.length : hexto.unp
-                        var unp_from = hexfrom.units ? hexfrom.units.length : hexfrom.unp
+                            
+                        if(transporting && dru_to != -1 && dru_to != kolej){
+                            continue
+                        }
                         
-                        var dru_to = hexto.dru ? hexto.dru : hexto.undr
-                        var dru_from = hexfrom.dru ? hexfrom.dru : hexfrom.undr
+                        if(unp_to > 3 && unp_from <= 3 && dru_to == (checkedGrid[x][y].dru != undefined ? checkedGrid[x][y].dru : checkedGrid[x][y].undr)/* && checkedGrid[x][y] != -1*/){
+                            step *= 10
+                        }
+                        if(unp_to == 4 && dru_to == (checkedGrid[x][y].dru != undefined ? checkedGrid[x][y].dru : checkedGrid[x][y].undr)){
+                            continue
+                        }
+                    } else {
                         
                         if(hexto.z == -2 && (heavy || hexfrom.z == -1))
                             continue
@@ -1309,15 +1351,26 @@ function hexdistmap(x,y,water,mountain,air,heavy,hekstable){
                             step = 2
                         if(hexto.z == -1){
                             if(hexfrom.z > 0){
-                                pluswater = 1
+                                if(wieltratw > 0){
+                                    pluswater = 1
+                                } else {
+                                    pluswater = 1.2
+                                }
                             } else if(hexfrom.z != -1){
-                                continue
+                                if(wieltratw > 0){
+                                    pluswater = 1
+                                } else {
+                                    continue
+                                }
                             }
                         }
                         if(hexfrom.z == -1 && dru_to != -1 && dru_to != kolej)
                             continue
-                        if(unp_to > 3 && unp_from <= 3 && dru_to == (checkedGrid[x][y].dru != undefined ? checkedGrid[x][y].dru : checkedGrid[x][y].undr)/* && checkedGrid[x][y] != -1*/){
+                        if(unp_to > 3 && unp_from <= 3 && dru_to == kolej/* && checkedGrid[x][y] != -1*/){
                             step *= 10
+                        }
+                        if(unp_to == 4 && dru_to == kolej){
+                            continue
                         }
                     }
                     if(checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist == -1 || checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist > checkedGrid[tocheck[i].x][tocheck[i].y].dist + step + pluswater*2){
@@ -1501,7 +1554,7 @@ function aidistmap(){
     
     for(var l = 1;l<=10;l++){
         var newLevel = {land:[],water:[]}
-        var nmiasta = miasta.map(m=>[hexdistmap(m.x,m.y,false,false,false,false).filter(x=>x.dist <= 2*l),m]).map(([distmap,m])=>[distmap,m,distmap.map(x=>cityscore(x.hex)).reduce((a,b)=>a+b,0)]).sort((a,b)=>-a[2]+b[2])
+        var nmiasta = miasta.map(m=>[hexdistmap(m.x,m.y,false,false,false,false,false).filter(x=>x.dist <= 2*l),m]).map(([distmap,m])=>[distmap,m,distmap.map(x=>cityscore(x.hex)).reduce((a,b)=>a+b,0)]).sort((a,b)=>-a[2]+b[2])
         for(var i in nmiasta){
             var miasto = nmiasta[i][1]
             var land_distmap = nmiasta[i][0]
@@ -1607,7 +1660,7 @@ function putPath(uni, hex_x, hex_y, stopBefore, completely_used_passages){
     var unit = unix[kolej][uni]
     unit.rozb = 0
     
-    var unitDistMap = hexdistmap(unit.x,unit.y,szyt[unit.rodz] == 'w',szyt[unit.rodz] == 'g',szyt[unit.rodz] == 'l',szyt[unit.rodz] == 'c')
+    var unitDistMap = hexdistmap(unit.x,unit.y,szyt[unit.rodz] == 'w',szyt[unit.rodz] == 'g',szyt[unit.rodz] == 'l',szyt[unit.rodz] == 'c',zast[unit.rodz] == 'x')
     
     var heksk = unitDistMap.filter(a => a.hex.x == hex_x && a.hex.y == hex_y)
     if(heksk.length == 0)
@@ -1682,7 +1735,16 @@ function calculatePathUntilEmbarking(unitDistMap,hex, unit, action, stopBefore){
                 turn+=1/speed
             }
             if(he.z == -1){
-                return {x:he.x,y:he.y,hex:hex,turn:Math.ceil(turn),need:unit.il,satisfied:0,possibleMoves:[],addedTratwas:0}
+                var tratwas = 0
+                for(var k = 0;k<he.unp;k++){
+                    var uu = unix[kolej][he.unt[k]]
+                    if(uu == undefined)
+                        continue
+                    if(zast[uu.rodz] == 'x' && szyt[uu.rodz] == 'w'){
+                        tratwas++
+                    }
+                }
+                return {x:he.x,y:he.y,hex:hex,turn:Math.ceil(turn),need:unit.il,satisfied:0,possibleMoves:[],addedTratwas:tratwas}
             }
                 
             if(he == undefined)
@@ -1928,12 +1990,12 @@ function copyDistmaps(dm){
         var bhex = board[coord[0]][coord[1]]
         var code = coord[0]+'#'+coord[1]
         newDistmaps[code] = {maps:{}, hex:bhex, potentialtocome:[], realtocome:[], defence:[],alliegance:allTurns(),fromenemy:allMoves(),fromally:allMoves(),frontline:false}
-        for(var j in bhex.units){
-            var unit = bhex.units[j]
-            var szybt = szyt[unit.rodz]
-            if(!(szybt in newDistmaps[code])){
+        for(var szybt in distmaps[code].maps){
+            //var unit = bhex.units[j]
+            //var szybt = szyt[unit.rodz]
+            //if(!(szybt in newDistmaps[code].maps)){
                 newDistmaps[code].maps[szybt] = {hexmap:copyHexdistmap(distmaps[code].maps[szybt].hexmap,board), rangemap:copyHexrangemap(distmaps[code].maps[szybt].rangemap,board)}//{hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board)}
-            }
+            //}
         }
     }
     return {distmaps:newDistmaps,score:null,model:model}
@@ -1958,14 +2020,17 @@ function distmapsFromUnit(){
         for(var j in bhex.units){
             var unit = bhex.units[j]
             var szybt = szyt[unit.rodz]
+            if(szybt == 'w' && zast[unit.rodz] == 'x')
+                szybt == 'x'
+            
             if(!(szybt in distmaps[code])){
-                distmaps[code].maps[szybt] = {hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board),rangemap:hexrangemap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board)}
+                distmaps[code].maps[szybt] = {hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w' || szybt == 'x',szybt == 'g',szybt == 'l',szybt == 'c',szybt == 'x',board),rangemap:hexrangemap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board)}
             }
             
         }
         
-        if(bhex.units.length == 0){
-            distmaps[code].maps['n'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,false,false,false,board)}
+        if(distmaps[code].maps['n'] == undefined){
+            distmaps[code].maps['n'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,false,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,false,false,false,board)}
         }/*
         if(distmaps[code].maps['c'] == undefined){
             distmaps[code].maps['c'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,false,false,true,board),rangemap:hexrangemap(bhex.x,bhex.y,false,false,false,true,board)}
@@ -1975,9 +2040,9 @@ function distmapsFromUnit(){
         }
         if(distmaps[code].maps['g'] == undefined){
             distmaps[code].maps['g'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,true,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,true,false,false,board)}
-        }
+        }*//*
         if(distmaps[code].maps['w'] == undefined){
-            distmaps[code].maps['w'] = {hexmap:hexdistmap(bhex.x,bhex.y,true,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,true,false,false,false,board)}
+            distmaps[code].maps['w'] = {hexmap:hexdistmap(bhex.x,bhex.y,true,false,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,true,false,false,false,board)}
         }*/
     }
     return {distmaps:distmaps,score:null,model:model}
@@ -2456,7 +2521,6 @@ function legalActions(dm,simplifieddistmaps){
                                     var lp = leadPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)
                                     var ds = distance(lp[0],lp[1],hex.hex.x,hex.hex.y)
                                     if(ds != undefined && ds <= zas[unit.rodz]){
-                                        console.log(lp[0],lp[1],hex.hex.x,hex.hex.y, ds, zas[unit.rodz])
                                         unit.legalActions.push([
                                             {type:'move',by:'speculation',rucho:rucho2,ruchk:ruchk2,il:unit.il,destination:[hex.hex.x,hex.hex.y]},  //not a real situation, but it solves some problem
                                             {type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,destination:[hex.hex.x,hex.hex.y]},
@@ -2625,13 +2689,13 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
         }
     }
     //console.log(interestingUnits.map(a => 1/Math.pow(2,a.action[0].rucho ? a.action[0].rucho.length : 0)*(a.action[0].il)))
-    interestingUnits.sort((a,b) => (-1/Math.pow(2,a.action[0].rucho ? a.action[0].rucho.length : 0)*(a.action[0].il) + 1/Math.pow(2,b.action[0].rucho ? b.action[0].rucho.length : 0)*(b.action[0].il)))
+    interestingUnits.sort((a,b) => (-1/Math.pow(a.action[0].rucho ? a.action[0].rucho.length : 0,1)*(a.action[0].il) + 
+                                     1/Math.pow(b.action[0].rucho ? b.action[0].rucho.length : 0,1)*(b.action[0].il)))
     //interestingUnits.sort((a,b) => (a.action.il - b.action.il))
 
     //interestingUnits1 = interestingUnits.filter(x=>x.action.length == 0 || x.action[0].by == 'real')
     //interestingUnits2 = interestingUnits.filter(x=>x.action.length > 0 && x.action[0].by != 'real')
     //interestingUnits.sort((a,b) => (a.hex.dist - b.hex.dist))
-    console.log(interestingUnits)
     
     //interestingUnits = interestingUnits1.concat(interestingUnits2)
     
