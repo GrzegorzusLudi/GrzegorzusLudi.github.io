@@ -710,6 +710,7 @@ function aimachine(ailevel){
             
             for(var i in miejsca){
                 var miejsce = miejsca[i]
+                miejsce.possibleMoves.sort((a,b)=>a.turnsToGo-b.turnsToGo)
                 
                 for(var j in miejsce.possibleMoves){
                     if(miejsce.satisfied > miejsce.need){
