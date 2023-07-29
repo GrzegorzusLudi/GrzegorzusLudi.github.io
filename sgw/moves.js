@@ -47,19 +47,19 @@ function usun(ktor){
 	}
 	oddroguj(this.unt[wybur],this.undr,false);
 	if(wybur>=0){
-	unix[this.undr][this.unt[wybur]].kosz = true;
-	unix[this.undr][this.unt[wybur]].x = -1;
-	unix[this.undr][this.unt[wybur]].y = -1;
-	unix[this.undr][this.unt[wybur]].celd = -1;
-	if(this.unp==1){
-		this.undr = -1;
-	}
-	this.unt[this.unp] = -1;
-	while(wybur<this.unp-1){
-		this.unt[wybur] = this.unt[wybur+1];
-		wybur++;
-	}
-	this.unp--;
+		unix[this.undr][this.unt[wybur]].kosz = true;
+		unix[this.undr][this.unt[wybur]].x = -1;
+		unix[this.undr][this.unt[wybur]].y = -1;
+		unix[this.undr][this.unt[wybur]].celd = -1;
+		if(this.unp==1){
+			this.undr = -1;
+		}
+		this.unt[this.unp] = -1;
+		while(wybur<this.unp-1){
+			this.unt[wybur] = this.unt[wybur+1];
+			wybur++;
+		}
+		this.unp--;
 	}
 	spis(kolej);
 	this.koloruj();
@@ -918,6 +918,7 @@ function droguj(xhh,yhh,uni){
 	while(tph!=null && tph.x>=0 && tph.y>=0 && tph.x<scian && tph.y<scian && moz){
 		hph = tph;
 		tph = tph.border[kier];
+		console.log(tph)
 		tph.drogp[tph.drogn] = (kier+3)%6;
 		dloh++;
 		unix[kolej][uni].ruchh++;
@@ -1556,6 +1557,7 @@ function przenies(kierunek){
 			if(peh.unp>0 && peh.undr==kolej){
 				var gv = 0;
 				while(gv<peh.unp){
+					console.log(hexOfUnit(this).unt[gv])
 					if(unix[kolej][peh.unt[gv]].rodz==8 && unix[kolej][hexOfUnit(this).unt[gv]].rozb==0){
 						while(nump>0 && unix[kolej][peh.unt[gv]].il>0){
 							nump--;
@@ -1674,6 +1676,8 @@ function przenies(kierunek){
 
 //returns hexagon where unit is placed
 function hexOfUnit(unit){
+	if(unit.x == -1 || unit.y == -1)
+		return null
 	return heks[unit.x][unit.y];
 }
 

@@ -1640,10 +1640,14 @@ function gotoTheCityWhereUnitIsPlaced(){
 	cityName.value = heks[zaznx][zazny].nazwa;
 }
 function ataz(att,obrr,ty){
-	var vae = 1;
-	var voe = 1;
 	var ae = heks[att.x][att.y];
 	var oe = heks[obrr.x][obrr.y];
+	return ataz2(att,obrr,ae,oe,ty)
+}
+	
+function ataz2(att,obrr,ae,oe,ty){
+	var vae = 1;
+	var voe = 1;
 	if(ae.z==-1 && oe.z!=-1){
 		vae = 0.75;
 		voe = 1.25;
