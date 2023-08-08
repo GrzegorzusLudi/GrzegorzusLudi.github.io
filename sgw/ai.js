@@ -1025,19 +1025,78 @@ function aimachine(ailevel){
 					var needed = 0;		//todo
 					
 					var code = mist[miastkol].x+'#'+mist[miastkol].y
-					var dm_lad = dfrou.distmaps[code].maps['n'].heksmap
-					var dm_morze = dfrou.distmaps[code].maps['w'].heksmap
+					var dm_lad = dfrou.distmaps[code].maps['n'].hexmap
+					var dm_morze = dfrou.distmaps[code].maps['w'].hexmap
+					//console.log('l',dm_lad,'m',dm_morze)
 					
+					var lad_needs = 0
+					var morze_needs = 0
 					for(var i in dm_lad){
                         var hks = dm_lad[i]
                         
-                    }
-                    for(var i in dm_lad){
+                        if(hks.water > 0 || hks.dist <= 0)
+                            continue
+                            
+                        var hdru = hks.hex.d != undefined ? hks.hex.d : hks.hex.dru
+                        
+                        if(hdru != kolej){
+                            if(hks.z > 0){
+                                lad_needs += Number(hks.hex.z - 15 * hks.dist)
+                            }
+                            for(var j in hks.hex.units){
+                                var unit = hks.hex.units[j]
+                                
+                                if(zast[unit.rodz] == 'n'){
+                                    lad_needs += Number(evalUnitDefense(unit,unit.il+unit.rozb))
+                                }
+                            }
+                        } else {
+                            for(var j in hks.hex.units){
+                                var unit = hks.hex.units[j]
+                                
+                                if(zast[unit.rodz] == 'n'){
+                                    lad_needs -= evalUnitAttack(unit,[{il:unit.il + unit.rozb}])
+                                }
+                            }
+                        }
                         
                     }
+                    for(var i in dm_morze){
+                        var hks = dm_morze[i]
+                        
+                        if(hks.dist <= 0)
+                            continue
+                        
+                        var hdru = hks.hex.d != undefined ? hks.hex.d : hks.hex.dru
+                        
+                        
+                        if(hdru != kolej){
+                            if(hks.z > 0){
+                                morze_needs += Number(hks.hex.z - 45 * hks.dist)
+                            }
+                            for(var j in hks.hex.units){
+                                var unit = hks.hex.units[j]
+                                
+                                if(zast[unit.rodz] == 'n'){
+                                    morze_needs += Number(evalUnitDefense(unit,unit.il+unit.rozb))
+                                }
+                            }
+                        } else {
+                            for(var j in hks.hex.units){
+                                var unit = hks.hex.units[j]
+                                
+                                if(zast[unit.rodz] == 'n'){
+                                    morze_needs -= evalUnitAttack(unit,[{il:unit.il + unit.rozb}])
+                                }
+                            }
+                        }
+                    }
                     
-					mist[miastkol].test = ''
-					
+					mist[miastkol].test = Math.floor(lad_needs) + '/' + Math.floor(morze_needs)
+                    
+                    if(morze_needs > lad_needs && morze_needs > 0)
+                        needed = 6
+					/*
                     var wb = waterbodies.filter(a => a.hexes.filter(h => h.x == mist[miastkol].x && h.y == mist[miastkol].y).length > 0)
                     wb = wb.length > 0 ? wb[0] : null
                     if(wb && wb.cities.length < wb.hexes.length){
@@ -1066,7 +1125,7 @@ function aimachine(ailevel){
                             needed = 6
                         }
                         //console.log(mist[miastkol].x,mist[miastkol].y,wb)
-                    }
+                    }*/
 					var creat = -1;
 					for(var i = 0;i<mist[miastkol].unp;i++){
 						if(unix[kolej][mist[miastkol].unt[i]].rodz==needed && unix[kolej][mist[miastkol].unt[i]].il<80)
@@ -2557,7 +2616,6 @@ function legalActions(dm,simplifieddistmaps){
                     
                     //if(movement_type != 'w' && movement_type != 'l' && hex.water > 0 && (unit.d != undefined && (unit.d == -1 || unit.d != kolej) || unit.dru != undefined && (unit.dru == -1 || unit.dru != kolej)))
                     //    continue
-                    console.log(hex.water)
                     
                     if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,ruchk,rucho)){
                         unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])

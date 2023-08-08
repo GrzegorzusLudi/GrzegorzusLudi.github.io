@@ -157,6 +157,7 @@ function anim(){
 		}
 
 	} else if(dru[kolej]>1 && stan>1){
+		pokap()
 		switch(dru[kolej]){
 			case 2:  ai1();break;
 			case 3:  ai2();break;

@@ -83,6 +83,8 @@ upgradeCityCanvas=document.getElementById("upgradeCityCanvas");
 upgradeCityCanvasCtx=upgradeCityCanvas.getContext("2d");
 unitMergeCanvas=document.getElementById("unitMerge");
 unitMergeCanvasCtx=unitMergeCanvas.getContext("2d");
+movesToMakeCanvas=document.getElementById("movesToMakeCanvas");
+movesToMakeCanvasCtx=movesToMakeCanvas.getContext("2d");
 ctx.mozImageSmoothingEnabled = false;
 ctx.font = "8pt Arial";
 ctx.fillStyle = "white";
@@ -106,6 +108,7 @@ okoy = -1;
 terrainChooseNumber = -1;
 teamChooseNumber = -1;
 unitChoiceNumber = -1;
+movesToMakeNumber = -1;
 scian = 15;
 kotron = scian;
 
@@ -617,12 +620,17 @@ function changeState(newState){
 				a++;
 			}
 		}
-
+		rescaleMovesToMakeCanvasCts()
+		redrawCanvas(movesToMakeCanvasCtx)
 	}
 	uniwy = -1;
 	jesio = -1;
 	pokap();
 	unitDivisionDraw();
+}
+function rescaleMovesToMakeCanvasCts(){
+	movesToMakeCanvas.height = ruchwkolejcen*30 + 20
+	movesToMakeCanvasCtx=movesToMakeCanvas.getContext("2d");
 }
 function spis(druz){
 	var lib = 0;

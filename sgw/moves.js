@@ -918,7 +918,7 @@ function droguj(xhh,yhh,uni){
 	while(tph!=null && tph.x>=0 && tph.y>=0 && tph.x<scian && tph.y<scian && moz){
 		hph = tph;
 		tph = tph.border[kier];
-		console.log(tph)
+
 		tph.drogp[tph.drogn] = (kier+3)%6;
 		dloh++;
 		unix[kolej][uni].ruchh++;

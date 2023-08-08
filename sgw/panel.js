@@ -458,6 +458,7 @@ function pokap(){
 		endturn.disabled = false;
 	else
 		endturn.disabled = true;
+	
 	if(zaznu!=-1){
 		redrawCanvas(teamPreview3CanvasCtx);
 		teamName3.innerHTML = defdr[kolej];
@@ -528,7 +529,7 @@ function pokap(){
 	}
 }
 function redrawCanvas(rtx){
-	if(dru[kolej]==1 || rtx==teamPreviewCanvasCtx || rtx==teamPreview3CanvasCtx){
+	if(dru[kolej]!=0 || rtx==teamPreviewCanvasCtx || rtx==teamPreview2CanvasCtx || rtx==teamPreview3CanvasCtx || rtx==movesToMakeCanvasCtx){
 	dtr = kolej;
 	if(zaznu!=-1){
 		dth = unix[kolej][zaznu].rodz;
@@ -983,7 +984,7 @@ function redrawCanvas(rtx){
 						rtx.fillRect(10,10+a*30,200,30);
 						rtx.globalAlpha = 1;
 					}
-					rysunicik(32,26+a*30,rtx,nui,6);
+					rysunicik(32,26+a*30,rtx,nui,6,heks[zaznx][zazny].unt[nui]);
 					if(unix[kolej][heks[zaznx][zazny].unt[nui]].rozb>0){
 						rtx.font = '10pt Trebuchet MS';
 						rtx.fillStyle = "#006666";
@@ -1016,6 +1017,72 @@ function redrawCanvas(rtx){
 						rtx.strokeRect(180,20+a*30,5,10);
 					}
 				}
+				rtx.strokeStyle = "#666666";
+				rtx.strokeRect(10,10+a*30,200,30);
+				a++;
+			}
+		break;
+		case movesToMakeCanvasCtx:
+			rtx.fillStyle = "#000000";
+			rtx.fillRect(0,0,220,220);
+			rtx.lineWidth = 2;
+			console.log('a')
+			var a = 0;
+			while(a<ruchwkolejcen){
+				rtx.fillStyle = "#CCCCCC";
+				rtx.fillRect(10,10+a*30,200,30);
+				if(movesToMakeNumber==a){
+					rtx.fillStyle = "#FFFFFF";
+					rtx.globalAlpha = 0.6;
+					rtx.fillRect(10,10+a*30,200,30);
+					rtx.globalAlpha = 1;
+				}
+				if(unix[kolej][ruchwkolejce[a]] == undefined)
+					continue
+					
+				if(unix[kolej][ruchwkolejce[a]].x > -1)
+					rysunicik(32,26+a*30,rtx,a,6,ruchwkolejce[a]);
+				if(unix[kolej][ruchwkolejce[a]].ruchy > 0 || unix[kolej][ruchwkolejce[a]].celu != -1){
+					rtx.fillStyle = "#00FF00";
+					rtx.strokeStyle = "#666666";
+					rtx.lineWidth = 2
+					
+					var hexFrom = '(' + unix[kolej][ruchwkolejce[a]].x + ',' + unix[kolej][ruchwkolejce[a]].y + ')'
+					
+					var dest = ''
+					if(unix[kolej][ruchwkolejce[a]].celu != -1)
+						dest = [unix[unix[kolej][ruchwkolejce[a]].celd][unix[kolej][ruchwkolejce[a]].celu].x, unix[unix[kolej][ruchwkolejce[a]].celd][unix[kolej][ruchwkolejce[a]].celu].y]
+					else
+						dest = leadPath(unix[kolej][ruchwkolejce[a]].x,unix[kolej][ruchwkolejce[a]].y,unix[kolej][ruchwkolejce[a]].ruchk,unix[kolej][ruchwkolejce[a]].rucho)
+					//leadPath(x,y,ruchk,rucho,stopBefore
+					var hexTo = dest ? '(' + dest[0] + ',' + dest[1] + ')' : ''
+					
+					if(unix[kolej][ruchwkolejce[a]].celu != -1){
+						if(unix[kolej][ruchwkolejce[a]].celd != kolej){
+							rtx.fillStyle = "#FF0000";
+						} else if(unix[unix[kolej][ruchwkolejce[a]].celd][unix[kolej][ruchwkolejce[a]].celu].rodz == unix[kolej][ruchwkolejce[a]].rodz){
+							rtx.fillStyle = "#0000FF";
+						} else if(unix[unix[kolej][ruchwkolejce[a]].celd][unix[kolej][ruchwkolejce[a]].celu].rodz == 10) {
+							rtx.fillStyle = "#FF8800";
+						} else {
+							rtx.fillStyle = "#00000000";
+						}
+					}
+					rtx.beginPath()
+					rtx.moveTo(120,15+a*30)
+					rtx.lineTo(120,35+a*30)
+					rtx.lineTo(120+10,25+a*30)
+					rtx.closePath()
+					rtx.fill()
+					rtx.stroke()
+					rtx.fillRect(110,20+a*30,5,10);
+					rtx.strokeRect(110,20+a*30,5,10);
+				}
+				rtx.font = '10pt Trebuchet MS';
+				rtx.fillStyle = "#006666";
+				rtx.textAlign = "right";
+				rtx.fillText(hexFrom,100,28+a*30);
+				rtx.fillText(hexTo,180,28+a*30);
 				rtx.strokeStyle = "#666666";
 				rtx.strokeRect(10,10+a*30,200,30);
 				a++;
@@ -1194,7 +1261,7 @@ function redrawCanvas(rtx){
 						rtx.fillRect(10,10+hb*30,200,30);
 						rtx.globalAlpha = 1;
 					}
-					rysunicik(32,26+hb*30,rtx,nui,6);
+					rysunicik(32,26+hb*30,rtx,nui,6,heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]);
 					if(unix[kolej][zaznu].rodz==unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].rodz && unix[kolej][zaznu].szyt==unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[hb]].szyt){
 						rtx.fillStyle="#0000FF";
 						rtx.fillRect(180,20+30*hb,10,10);
@@ -1256,20 +1323,26 @@ function redrawCanvas(rtx){
 	}
 }
 
-function rysunicik(x4,y4,zr,nr,wielok){
+function rysunicik(x4,y4,zr,nr,wielok,zazanu){
 	/*ctx.fillStyle = kolox(this.d,1);
 	ctx.strokeStyle = kolox(this.d,0);
 	ctx.fillRect(x4-150/scian,y4-225/scian,300/scian,450/scian);
 	ctx.strokeRect(x4-150/scian,y4-225/scian,300/scian,450/scian);*/
+	var fzazanu = zazanu
+	if(zazanu == undefined)
+		zazanu = zaznu
+		
 	if(zaznx>-1){
 		zaznxh = zaznx;
 		zaznyh = zazny;
+		if(fzazanu == undefined)
+			zazanu = heks[zaznxh][zaznyh].unt[nr]
 	} else {
-		zaznxh = unix[kolej][zaznu].x;
-		zaznyh = unix[kolej][zaznu].y;
+		zaznxh = unix[kolej][zazanu].x;
+		zaznyh = unix[kolej][zazanu].y;
 	}
 			dtr = kolej;
-			dth = unix[kolej][heks[zaznxh][zaznyh].unt[nr]].rodz;
+			dth = unix[kolej][zazanu].rodz;
 			xg = x4;
 			yg = y4;
 			sx = wielok*3;
@@ -1280,7 +1353,7 @@ function rysunicik(x4,y4,zr,nr,wielok){
 			zr.lineWidth = 1;
 
 			zr.fillRect(xg-sx,yg-sy,sx*2,sy*2);
-				zr.globalAlpha = 1-unix[kolej][heks[zaznxh][zaznyh].unt[nr]].il/100;
+				zr.globalAlpha = 1-unix[kolej][zazanu].il/100;
 				zr.fillStyle = "#FFFFFF";
 				zr.fillRect(xg-sx,yg-sy,sx*2,sy*2);
 				zr.globalAlpha = 1;
@@ -1509,7 +1582,7 @@ function rysunicik(x4,y4,zr,nr,wielok){
 			zr.font = Math.floor(sy*0.8)+'pt Calibri';
 			zr.textAlign = "left";
 			zr.fillStyle = "#FFFFFF";
-      		zr.fillText(unix[kolej][heks[zaznxh][zaznyh].unt[nr]].il, xg-sx, yg+sy*0.9);
+      		zr.fillText(unix[kolej][zazanu].il, xg-sx, yg+sy*0.9);
 }
 function rysunitek(x4,y4,zr,nr,wielok){
 	/*ctx.fillStyle = kolox(this.d,1);
@@ -2222,6 +2295,16 @@ function unitMergeMove(){
 	redrawCanvas(unitMergeCanvasCtx);
 }
 
+function movesToMakeMove(){
+	if(mousePositionByCanvas.x>10 && mousePositionByCanvas.x<210 && mousePositionByCanvas.y>10 && mousePositionByCanvas.y<130){
+		movesTo = Math.floor((mousePositionByCanvas.y-10)/30);
+	} else {
+		movesToMakeNumber = -1;
+	}
+	redrawCanvas(movesToMakeCanvasCtx);
+}
+
+
 
 /*
 	Functions triggered when one of canvas from the left panel is clicked
@@ -2359,6 +2442,17 @@ function unitMergeClick(){
 
 	pokap();
 }
+
+function movesToMakeClick(){
+	if(movesToMakeNumber>-1 && movesToMakeNumber<=ruchwkolejcen){
+		//zaznu=heks[zaznx][zazny].unt[3-unitsInCityNumber];
+		//zaznaj(zaznu);
+		//zaznx = -1;zazny = -1;
+	}
+
+	redrawCanvas(movesToMakeCanvasCtx);
+	
+}
 function changeRangeInput(sp,slaj){
 	sp.innerHTML = slaj;
 	if(sp == mapsizevalue){
@@ -2467,8 +2561,9 @@ function checkTeams(){
 	return su;
 }
 function changeScreenWidth(w){
-	c.width = w;
-	c.height = w;
+	var prawo = document.getElementById('right')
+	mainCanvas.width = w;
+	mainCanvas.height = w;
 	aroundcanv.style.height = w+"px";
 	aroundcanv.style.width = w+"px";
 	if(w==1000){
@@ -2478,7 +2573,7 @@ function changeScreenWidth(w){
 	} else {
 		prawo.style.marginTop = "0px";
 	}
-	ctx=c.getContext("2d");
+	ctx=mainCanvas.getContext("2d");
 	redraw(true);
 }
 function makeTaxPath(){

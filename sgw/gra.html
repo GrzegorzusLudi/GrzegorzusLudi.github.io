@@ -233,11 +233,16 @@ p {
         <canvas id="teamPreview2" width="50" height="50"></canvas>
         <h3 style="padding:15px;padding-left:0px;float:left" id="teamName2">CZERWONI</h3>
       </div>
+      <p>
+        <input type="button" value="ZAKOŃCZ TURĘ" id="endturn" onclick="changeState(4);" />
+      </p>
       <div id="controlfield">
         <div id="controltitle">Ruchy wojsk</div>
-        <div id="controlfieldin"> </div>
+        <div id="controlfieldin"> 
+            <canvas width="220px" height="140px" id="movesToMakeCanvas" onclick="gmp(movesToMakeCanvas,event);movesToMakeClick();" onmousemove="gmp(movesToMakeCanvas,event);movesToMakeMove();" onmouseout="movesToMakeNumber=-1;redrawCanvas(movesToMakeCanvasCtx)" ></canvas>
+
+        </div>
       </div>
-      <input type="button" value="ZAKOŃCZ TURĘ" id="endturn" onclick="changeState(4);" />
     </div>
     <div id="u4">
       <div style="height:60px">
