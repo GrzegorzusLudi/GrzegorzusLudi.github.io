@@ -7,6 +7,7 @@
 <script src="anim.js"></script>
 <script src="drawing.js"></script>
 <script src="ai.js"></script>
+<script src="history.js"></script>
 <style>
 body {
 	font-family: Trebuchet MS;
@@ -107,6 +108,14 @@ p {
 	margin: 5px
 }
 #teamPreview2 {
+	float: left;
+	margin: 5px
+}
+#teamPreview4 {
+	float: left;
+	margin: 5px
+}
+#klepsydraPreview {
 	float: left;
 	margin: 5px
 }
@@ -235,6 +244,7 @@ p {
       </div>
       <p>
         <input type="button" value="ZAKOŃCZ TURĘ" id="endturn" onclick="changeState(4);" />
+        <input type="button" value="HISTORIA" id="history" onclick="changeState(6);" />
       </p>
       <div id="controlfield">
         <div id="controltitle">Ruchy wojsk</div>
@@ -283,7 +293,23 @@ p {
       </div>
       </span>
     </div>
-    <div id="u5"> ... </div>
+    <div id="u5">
+      <div style="height:60px">
+        <canvas id="teamPreview4" width="50" height="50"></canvas>
+        <h3 style="padding:15px;padding-left:0px;float:left" id="teamName4">CZERWONI</h3>
+      </div>
+      <p>
+        <input type="button" value="PAUZA" id="pauseanim" onclickno="changeState(4);" />
+        <!--input type="button" value="HISTORIA" disabled="true" id="historyanim" onclick="" /-->
+      </p>
+      <div id="controlfield2">
+        <div id="controltitle2">Ruchy wojsk</div>
+        <div id="controlfieldin2"> 
+            <canvas width="220px" height="140px" id="movesToMakeCanvas2" onclick="gmp(movesToMakeCanvas2,event);movesToMakeClick2();" onmousemove="gmp(movesToMakeCanvas2,event);movesToMakeMove2();" onmouseout="movesToMakeNumber2=-1;redrawCanvas(movesToMakeCanvasCtx2)" ></canvas>
+
+        </div>
+      </div>
+    </div>
     <div id="u6">
       <div style="height:60px">
         <canvas id="cityPreview" width="50" height="50" style="float:left"></canvas>
@@ -332,7 +358,40 @@ p {
         </div>
       </div>
     </div>
-    <div id="u7"> ... </div>
+    <div id="u7">
+      <div style="height:60px">
+        <canvas id="klepsydraPreview" width="50" height="50"></canvas>
+        <h3 style="padding:15px;padding-left:0px;float:left" id="teamName2">HISTORIA</h3>
+      </div>
+      <p>
+        <input type="button" value="WRÓĆ" id="wroc" onclick="changeState(2);" />
+      </p>
+      <div id="controlfield">
+        <div id="controltitle">Kontrola</div>
+        <div id="controlfieldin"> 
+          <div><b>Tura: </b><span id="historia-tura-span"></span></div>
+          <div><b>Drużyna: </b><span id="historia-druzyna-span"></span></div>
+          <div><b>Ruch: </b><span id="historia-ruch-span"></span></div>
+          <br/>
+          <div>
+            <input type="button" value="&lt;&lt;&lt;" onclick="historyMove(true,false,false,false);" />
+            <input type="button" value="&lt;&lt;" onclick="historyMove(false,true,false,false);" />
+            <input type="button" value="&lt;" onclick="historyMove(false,false,true,false);" />
+            <input type="button" id="historyplej" value="▶" onclick="historyPlay();" />
+            <input type="button" value="&gt;" onclick="historyMove(false,false,true,true);" />
+            <input type="button" value="&gt;&gt;" onclick="historyMove(false,true,false,true);" />
+            <input type="button" value="&gt;&gt;&gt;" onclick="historyMove(true,false,false,true);" />
+            
+          </div>
+        </div>
+      </div>
+      <div id="controlfield">
+        <div id="controltitle">Statystyki</div>
+        <div id="controlfieldin"> 
+        
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 <div style="float:left;clear:left"><span style="float:left;margin-top:40px">Wymiary planszy:</span>

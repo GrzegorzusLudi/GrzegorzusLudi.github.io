@@ -1085,7 +1085,7 @@ function aimachine(ailevel){
                             for(var j in hks.hex.units){
                                 var unit = hks.hex.units[j]
                                 
-                                if(zast[unit.rodz] == 'n'){
+                                if(zast[unit.rodz] == 'n' && szyt[unit.rodz] == 'w'){
                                     morze_needs -= evalUnitAttack(unit,[{il:unit.il + unit.rozb}])
                                 }
                             }
@@ -1841,7 +1841,7 @@ class Copyable {
             var key = this.fieldsToCopy[i]
             
             if(key in obj){
-                if(fields[key] instanceof Array){
+                if(obj[key] instanceof Array){
                     fields[key] = obj[key].slice()
                 } else {
                     fields[key] = obj[key]
@@ -1856,6 +1856,49 @@ class Copyable {
         for(var key in fields){
             if(this[key] instanceof Array){
                 this[key] = fields[key].slice()
+            } else {
+                this[key] = fields[key] 
+            }
+        }
+    }
+}
+class CopyableDeeper extends Copyable {
+    getFields(obj){
+        if(obj == undefined)
+            obj = this
+            
+        var fields = {}
+        for(var i in this.fieldsToCopy){
+            var key = this.fieldsToCopy[i]
+            
+            if(key in obj){
+                if(obj[key] instanceof Array){
+                    fields[key] = obj[key].slice()
+                    for(var j in fields[key]){
+                        
+                        if(fields[key][j] instanceof Array){
+                            fields[key][j] = fields[key][j].slice()
+                        }
+                    }
+                } else {
+                    fields[key] = obj[key]
+                }
+            } else {
+                fields[key] = undefined
+            }
+        }
+        return fields
+    }
+    setFields(fields){
+        for(var key in fields){
+            if(this[key] instanceof Array){
+                this[key] = fields[key].slice()
+                for(var j in this[key]){
+                    
+                    if(this[key][j] instanceof Array){
+                        this[key][j] = this[key][j].slice()
+                    }
+                }
             } else {
                 this[key] = fields[key] 
             }

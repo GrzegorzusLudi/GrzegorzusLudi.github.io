@@ -1,4 +1,10 @@
-﻿function drawHex(numb){
+﻿function drawHex(numb,unixdata,kolej_at_time,heksdata){
+	if(unixdata == undefined)
+		unixdata = unix
+	if(kolej_at_time == undefined)
+		kolej_at_time = kolej
+	if(heksdata == undefined)
+		heksdata = heks
 	if(numb==1){
 	au = magni*472*(mainCanvas.width/800)/(scian-(-0.5));
 	bu = magni*723*(mainCanvas.height/800)/Math.sqrt(3)/(scian-(-1));
@@ -170,7 +176,7 @@
 		var av  = 0;
 		while(av<6){
 			if(this.most[av]>0){
-				if(this.unt[-1]!=null && unix[-2][this.unt[-1]].kolor>0)
+				if(this.unt[-1]!=null && unixdata[-2][this.unt[-1]].kolor>0)
 					ctx.fillStyle = "#B59B77";
 				else
 					ctx.fillStyle = "#634A29";
@@ -260,8 +266,8 @@
 		}
 		var f = 0;
 		while(f<6){
-			if(this.border[f]!=null){
-				if(this.border[f].kolz!=this.kolz){
+			if(this.border[f]!=null && this.border[f].x in heksdata && this.border[f].y in heksdata[this.border[f].x]){
+				if(heksdata[this.border[f].x][this.border[f].y].kolz!=this.kolz){
 					ctx.beginPath();
 					ctx.moveTo(x0+kir(f,(f-1)%6,"x")*2,y0+kir(f,(f-1)%6,"y")*2);
 					ctx.lineTo(x0+kir(f,(f+1)%6,"x")*2,y0+kir(f,(f+1)%6,"y")*2);
@@ -394,11 +400,11 @@
 		while(ag<this.drogn){
 			popr = ctx.strokeStyle;
 			popw = ctx.fillStyle;
-			if(this.drogw[ag]==rst && this.drogd[ag]==kolej){
+			if(this.drogw[ag]==rst && this.drogd[ag]==kolej_at_time){
 				y0-=bu/4;
 				switch(this.drogkol[ag]){
 					case 0:
-				if(this.drogg[ag]==zaznu && this.drogd[ag]==kolej){
+				if(this.drogg[ag]==zaznu && this.drogd[ag]==kolej_at_time){
 					ctx.strokeStyle="#77FF77";
 					ctx.fillStyle="#77FF77";
 				} else {
@@ -407,7 +413,7 @@
 				}
 				break;
 				case 1:
-				if(this.drogg[ag]==zaznu && this.drogd[ag]==kolej){
+				if(this.drogg[ag]==zaznu && this.drogd[ag]==kolej_at_time){
 					ctx.strokeStyle="#7777FF";
 					ctx.fillStyle="#7777FF";
 				} else {
@@ -416,7 +422,7 @@
 				}
 				break;
 				case 2:
-				if(this.drogg[ag]==zaznu && this.drogd[ag]==kolej){
+				if(this.drogg[ag]==zaznu && this.drogd[ag]==kolej_at_time){
 					ctx.strokeStyle="#FF7777";
 					ctx.fillStyle="#FF7777";
 				} else {
@@ -425,7 +431,7 @@
 				}
 				break;
 				case 3:
-				if(this.drogg[ag]==zaznu && this.drogd[ag]==kolej){
+				if(this.drogg[ag]==zaznu && this.drogd[ag]==kolej_at_time){
 					ctx.strokeStyle="#FFCC77";
 					ctx.fillStyle="#FFCC77";
 				} else {
@@ -630,7 +636,8 @@
 	rst = 0;
 	while(rst<4){
 		if(this.undr >-1 && rst<this.unp){
-			unix[this.undr][this.unt[rst]].rysunit(x0-rst*2,y0-rst*2-bu/4);
+			//console.log([this.undr,unixdata[this.undr].length,this.unt[rst],unixdata[this.undr][this.unt[rst]]],unixdata)
+			unixdata[this.undr][this.unt[rst]].rysunit(x0-rst*2,y0-rst*2-bu/4,unixdata,kolej_at_time);
 		}
 		for(var i = 0;i<6;i++){
 			if(this.buchy[i].stan<20){
@@ -661,12 +668,16 @@
 	ctx.font = '8pt Calibri';
 	ctx.fillText(this.test, x0-au/2, y0+bu/1.5);
 }
-function rysunit(x4,y4){
+function rysunit(x4,y4,unixdata,kolej_at_time){
+	if(unixdata == undefined)
+		unixdata = unix
+	if(kolej_at_time == undefined)
+		kolej_at_time = kolej
 	/*ctx.fillStyle = kolox(this.d,1);
 	ctx.strokeStyle = kolox(this.d,0);
 	ctx.fillRect(x4-150/scian,y4-225/scian,300/scian,450/scian);
 	ctx.strokeRect(x4-150/scian,y4-225/scian,300/scian,450/scian);*/
-			dtr = kolej;
+			dtr = kolej_at_time;
 			dth = this.rodz;
 			xg = x4;
 			yg = y4;
@@ -678,7 +689,7 @@ function rysunit(x4,y4){
 			xg+=kir((this.kiero+5)%6,(this.kiero+1)%6,"x")*3*this.przes;
 			yg+=kir((this.kiero+5)%6,(this.kiero+1)%6,"y")*3*this.przes;
 
-			if(kolej!=this.d || zaznu!=this.id){
+			if(kolej_at_time!=this.d || zaznu!=this.id){
 
 				if(podswu==this.id && podswd==this.d){
 					ctx.strokeStyle = "#FFFF88";
@@ -733,7 +744,7 @@ function rysunit(x4,y4){
 				ctx.beginPath();
 				ctx.arc(xg, yg, sy/3, 0, 2*Math.PI, false);
 				ctx.closePath();
-				if(zaznu!=this.id || kolej!=this.d){
+				if(zaznu!=this.id || kolej_at_time!=this.d){
 					if(podswd==this.d && podswu==this.id){
 						ctx.fillStyle = "#FFFF88";
 					} else {
@@ -780,7 +791,7 @@ function rysunit(x4,y4){
 				ctx.lineTo(xg-sx/2,yg+sy);
 				ctx.lineTo(xg+sx/2,yg+sy);
 				ctx.closePath();
-				if(zaznu!=this.id || kolej!=this.d){
+				if(zaznu!=this.id || kolej_at_time!=this.d){
 					if(podswd==this.d && podswu==this.id){
 						ctx.fillStyle = "#FFFF88";
 					} else {
@@ -1005,7 +1016,7 @@ function rysunit(x4,y4){
 		var far = 0;
 		while(far<this.celen){
 			if(this.celed[far]==this.d){
-				if(unix[this.d][this.celeu[far]].rodz==this.rodz){
+				if(unixdata[this.d][this.celeu[far]].rodz==this.rodz){
 					kolot = 1;
 				} else if(kolot!=1 && this.rodz==10) {
 					kolot = 3;
@@ -1099,12 +1110,14 @@ function budyn(x1,y1,wel,koli,druza){
 		}
 
 }
-function textuj(){
+function textuj(heksdata){
+	if(heksdata == undefined)
+		heksdata = heks
 	var tka = "";
 	if(podswx!=-1){
 		tka+="Sześciokąt("+podswx+","+podswy+")";
-		if(heks[podswx][podswy].z>0){
-			tka+=" Miasto "+heks[podswx][podswy].nazwa+"; Populacja: "+heks[podswx][podswy].z+" Hutnictwo: "+heks[podswx][podswy].hutn+" Produkcja: "+heks[podswx][podswy].prod;
+		if(heksdata[podswx][podswy].z>0){
+			tka+=" Miasto "+heksdata[podswx][podswy].nazwa+"; Populacja: "+heksdata[podswx][podswy].z+" Hutnictwo: "+heksdata[podswx][podswy].hutn+" Produkcja: "+heksdata[podswx][podswy].prod;
 		}
 	}
 	wix = mainCanvas.width/800*80;

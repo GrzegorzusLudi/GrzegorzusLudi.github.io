@@ -39,6 +39,9 @@ createUnitNumber = -1;
 upgradeCityNumber = -1;
 unitMergeChoice = -1;
 
+playing = false
+playframe = 0
+
 liczeb = [];
 
 miasy = 25;
@@ -73,6 +76,10 @@ teamPreview2Canvas=document.getElementById("teamPreview2");
 teamPreview2CanvasCtx=teamPreview2Canvas.getContext("2d");
 teamPreview3Canvas=document.getElementById("teamPreview3");
 teamPreview3CanvasCtx=teamPreview3Canvas.getContext("2d");
+teamPreview4Canvas=document.getElementById("teamPreview4");
+teamPreview4CanvasCtx=teamPreview4Canvas.getContext("2d");
+klepsydraPreviewCanvas=document.getElementById("klepsydraPreview");
+klepsydraPreviewCanvasCtx=klepsydraPreviewCanvas.getContext("2d")
 cityPreviewCanvas=document.getElementById("cityPreview");
 cityPreviewCanvasCtx=cityPreviewCanvas.getContext("2d");
 unitsInCityCanvas=document.getElementById("unitsInCity");
@@ -85,6 +92,8 @@ unitMergeCanvas=document.getElementById("unitMerge");
 unitMergeCanvasCtx=unitMergeCanvas.getContext("2d");
 movesToMakeCanvas=document.getElementById("movesToMakeCanvas");
 movesToMakeCanvasCtx=movesToMakeCanvas.getContext("2d");
+movesToMakeCanvas2=document.getElementById("movesToMakeCanvas2");
+movesToMakeCanvasCtx2=movesToMakeCanvas2.getContext("2d");
 ctx.mozImageSmoothingEnabled = false;
 ctx.font = "8pt Arial";
 ctx.fillStyle = "white";
@@ -109,6 +118,7 @@ terrainChooseNumber = -1;
 teamChooseNumber = -1;
 unitChoiceNumber = -1;
 movesToMakeNumber = -1;
+movesToMakeNumber2 = -1;
 scian = 15;
 kotron = scian;
 
@@ -145,6 +155,10 @@ cityData = document.getElementById("cityData");
 zatw = document.getElementById("zatw");
 remindField = document.getElementById("remindField");
 endturn = document.getElementById("endturn");
+historiaTuraSpan = document.getElementById("historia-tura-span");
+historiaDruzynaSpan = document.getElementById("historia-druzyna-span");
+historiaRuchSpan = document.getElementById("historia-ruch-span");
+historyPlej = document.getElementById("historyplej");
 equality.disabled = false;
 equality.checked = false;
 
@@ -234,7 +248,6 @@ generateTerrain();
 smoothenCoastline();
 smoothenCoastline();
 smoothenCoastline();
-redraw(true);
 changeState(0);
 oddnum = Array(12);
 oddid = Array(12);
@@ -255,11 +268,14 @@ while(ts<12){
 	 ts++;
  ts++;
 }
+redraw(true);
 kierk = -1.11;
 gameplay = false;
 	taxRange.disabled = false;
 	tx = -1;
 	ty = -1;
+	
+	historyDex = new HistoryDex(this)
 }
 
 //Class for hexagon
@@ -570,6 +586,7 @@ function kir(odd,doo,xy){
 function changeState(newState){
 	akcja = -1;
 	f = 0;
+	var nowatura = false
 	stin = document.getElementById("u"+1);
 	while(f<7){
 		h = f-(-1);
@@ -582,16 +599,19 @@ function changeState(newState){
 		f++;
 	}
 	var zamak = false;
-	if(stan == 4)zamak = true;
+	if(stan == 4){
+		zamak = true;
+	}
 	if(stan==1 && newState==2){
 		for(var i = 0;i<12;i++){
 			spis(i);
 		}
+		//historyDex.zapisz()
 	}
 	stan = newState;
 	if(stan == 1){
 		kolej = -1;
-		nextTurn();
+		nextTurn();nowatura = true
 		unitChoiceDraw();
 
 			var a = 0;
@@ -609,7 +629,8 @@ function changeState(newState){
 		}
 		if(zamak || !gameplay){
 			takole = kolej;
-			nextTurn();
+			nextTurn();nowatura = true
+			
 			kotron = 0;
 			ruchwkolejcen = 0;
 			var a = 0;
@@ -623,10 +644,18 @@ function changeState(newState){
 		rescaleMovesToMakeCanvasCts()
 		redrawCanvas(movesToMakeCanvasCtx)
 	}
+	if(stan == 6){
+		historyDex.setShowcaseDataToCurrent()
+		
+		playing = false
+		playframe = 0
+	}
 	uniwy = -1;
 	jesio = -1;
 	pokap();
 	unitDivisionDraw();
+	//if(nowatura)
+	//	historyDex.zapisz()
 }
 function rescaleMovesToMakeCanvasCts(){
 	movesToMakeCanvas.height = ruchwkolejcen*30 + 20
@@ -666,16 +695,21 @@ function nextTurn(){
 	akcja = -1;
 	var ej = 0;
 	defdr[kolej] = teamName.value;
+	
+	var overflow = false
 	while(ej<12){
 		kolej++;
 		if(kolej>=12){
 			kolej = 0;
+			overflow = true
 		}
 		if(dru[kolej]!=0 && (liczeb[kolej]>0 || stan<2)){
 			ej = 12;
 		}
 		ej++;
 	}
+	
+	historyDex.nowaKolej(overflow)
 	if(dru[kolej]>1){
 		aistan = 0;
 	}
@@ -901,6 +935,7 @@ function sprawdz(cx,cy){
 	/*
 	10+723*
 	*/
+	
 	vox = 0;
 	voy = 0;
 	if(wix!=undefined){
@@ -1072,7 +1107,15 @@ function cursormove(){
 	okom = objt.m;
 	okomm = objt.mm;
 
-	if(okou) {
+	
+	
+	if(stan == 6){
+		podswx = okox;
+		podswy = okoy;
+		podswd = -1;
+		podswu = -1;
+		podsm = -1;
+	} else if(okou) {
 		podswd = heks[okox][okoy].undr;
 		podswu = unix[podswd][heks[okox][okoy].unt[heks[okox][okoy].unp-1]].id;
 		podswx = -1;
@@ -1503,32 +1546,69 @@ function redraw(all){
  		ctx.fillStyle = "#eee";
  		ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
 	}
-	a = 0;
-	while(a<scian){
-		b = 0;
-		while(b<scian){
-			xq = 10+au*3/2*((a-scian/2+pox)+scian/magni/2);
-			yq = 10+bu*Math.sqrt(3)*((b-scian/2+poy)+scian/magni/2);
-			if(all == true){
-				if(xq>=-200 && xq<=mainCanvas.width && yq>=-200 && yq<=mainCanvas.height){
-					heks[a][b].drawHex(1);
-					heks[a][b].drawHex(0);
+	
+	//drawHex(numb,unixdata,kolej_at_time)
+	
+	if(stan == 6){
+		var currentState = historyDex.getCurrentState()
+		
+		if(currentState != undefined){
+		
+			a = 0;
+			while(a<scian){
+				b = 0;
+				while(b<scian){
+					xq = 10+au*3/2*((a-scian/2+pox)+scian/magni/2);
+					yq = 10+bu*Math.sqrt(3)*((b-scian/2+poy)+scian/magni/2);
+					if(all == true){
+						if(xq>=-200 && xq<=mainCanvas.width && yq>=-200 && yq<=mainCanvas.height){
+							currentState.heks[a][b].drawHex(1,currentState.unix,currentState.kolej,currentState.heks);
+							currentState.heks[a][b].drawHex(0,currentState.unix,currentState.kolej,currentState.heks);
+						}
+					} else {
+						if(currentState.heks[a][b].zmiana>0){
+							currentState.heks[a][b].zmiana--;
+							if(xq>=-200 && xq<=mainCanvas.width && yq>=-200 && yq<=mainCanvas.height){
+								currentState.heks[a][b].drawHex(1,currentState.unix,currentState.kolej,currentState.heks);
+								currentState.heks[a][b].drawHex(0,currentState.unix,currentState.kolej,currentState.heks);
+							}
+						}
+
+					}
+					b++;
 				}
-			} else {
-				if(heks[a][b].zmiana>0){
-					heks[a][b].zmiana--;
+				a++;
+			}
+		}
+		textuj(currentState.heks);
+	} else {
+		a = 0;
+		while(a<scian){
+			b = 0;
+			while(b<scian){
+				xq = 10+au*3/2*((a-scian/2+pox)+scian/magni/2);
+				yq = 10+bu*Math.sqrt(3)*((b-scian/2+poy)+scian/magni/2);
+				if(all == true){
 					if(xq>=-200 && xq<=mainCanvas.width && yq>=-200 && yq<=mainCanvas.height){
 						heks[a][b].drawHex(1);
 						heks[a][b].drawHex(0);
 					}
-				}
+				} else {
+					if(heks[a][b].zmiana>0){
+						heks[a][b].zmiana--;
+						if(xq>=-200 && xq<=mainCanvas.width && yq>=-200 && yq<=mainCanvas.height){
+							heks[a][b].drawHex(1);
+							heks[a][b].drawHex(0);
+						}
+					}
 
+				}
+				b++;
 			}
-			b++;
+			a++;
 		}
-		a++;
+		textuj();
 	}
-	textuj();
 }
 function removeUnits(){
 	equaUnitDistribution = false;

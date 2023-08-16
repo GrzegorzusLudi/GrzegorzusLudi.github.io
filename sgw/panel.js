@@ -450,8 +450,10 @@ function teamChooseDraw(){
 	}
 }
 function pokap(){
+	redrawCanvas(teamPreview4CanvasCtx);
 	redrawCanvas(teamPreview2CanvasCtx);
 	redrawCanvas(teamPreviewCanvasCtx);
+	redrawCanvas(klepsydraPreviewCanvasCtx);
 	teamName.value = defdr[kolej];
 	teamName2.innerHTML = defdr[kolej];
 	if(dru[kolej]==1)
@@ -527,9 +529,18 @@ function pokap(){
 		changeRangeInput(taxRangeValue,taxRange.value);
 		changeRangeInput(newUnitSizeValue,newUnitSizeRange.value);
 	}
+	
+	historiaTuraSpan.innerHTML = historyDex.showcaseTurn
+	historiaDruzynaSpan.innerHTML = defdr[historyDex.showcaseKolej]
+	historiaDruzynaSpan.style.color = kolox(historyDex.showcaseKolej,0)
+	historiaDruzynaSpan.style.backgroundColor = kolox(historyDex.showcaseKolej,1)
+	historiaDruzynaSpan.style.border = '2px solid '+kolox(historyDex.showcaseKolej,0)
+	historiaDruzynaSpan.style.padding = '3px'
+	historiaRuchSpan.innerHTML = historyDex.showcaseMove
+	historyPlej.value = playing ? '⏸' : '▶'
 }
 function redrawCanvas(rtx){
-	if(dru[kolej]!=0 || rtx==teamPreviewCanvasCtx || rtx==teamPreview2CanvasCtx || rtx==teamPreview3CanvasCtx || rtx==movesToMakeCanvasCtx){
+	if(dru[kolej]!=0 || rtx==teamPreviewCanvasCtx || rtx==teamPreview2CanvasCtx || rtx==teamPreview3CanvasCtx || rtx==teamPreview4CanvasCtx || rtx == klepsydraPreviewCanvasCtx || rtx==movesToMakeCanvasCtx){
 	dtr = kolej;
 	if(zaznu!=-1){
 		dth = unix[kolej][zaznu].rodz;
@@ -544,6 +555,50 @@ function redrawCanvas(rtx){
 	var sx = 24;
 	var sy = 16;
 	switch(rtx){
+		case klepsydraPreviewCanvasCtx:
+			
+			rtx.lineWidth = 2;
+			rtx.fillStyle = '#554';
+			rtx.strokeStyle = '#554';
+			rtx.fillRect(bq*50,aq*50,50,50);
+			rtx.fillStyle = '#aa8';
+			rtx.fillRect(bq*50+2,aq*50+2,46,46);
+			
+			rtx.fillStyle = '#554';
+			rtx.strokeRect(xg-15,yg-15,30,3);
+			rtx.fillRect(xg-15,yg-15,30,3);
+			rtx.strokeRect(xg-15,yg+12,30,3);
+			rtx.fillRect(xg-15,yg+12,30,3);
+			
+			rtx.beginPath();
+			rtx.moveTo(xg-15,yg-15);
+			rtx.lineTo(xg-15,yg-8);
+			rtx.lineTo(xg+15,yg+8);
+			rtx.lineTo(xg+15,yg+15);
+			rtx.stroke();
+			rtx.beginPath();
+			rtx.moveTo(xg+15,yg-15);
+			rtx.lineTo(xg+15,yg-8);
+			rtx.lineTo(xg-15,yg+8);
+			rtx.lineTo(xg-15,yg+15);
+			rtx.stroke();
+			
+			rtx.beginPath();
+			rtx.moveTo(xg,yg);
+			rtx.lineTo(xg-8,yg-5);
+			rtx.lineTo(xg+8,yg-5);
+			rtx.stroke();
+			rtx.fill();
+			rtx.beginPath();
+			rtx.moveTo(xg,yg+5);
+			rtx.lineTo(xg,yg);
+			rtx.lineTo(xg,yg+5);
+			rtx.lineTo(xg-12,yg+12);
+			rtx.lineTo(xg+12,yg+12);
+			rtx.stroke();
+			rtx.fill();
+			break
+		case teamPreview4CanvasCtx:
 		case teamPreview2CanvasCtx:
 		case teamPreviewCanvasCtx:
 			rtx.lineWidth = 2;
