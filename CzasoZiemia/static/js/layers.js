@@ -25,6 +25,7 @@ class LayerPanel {
         this.operationOnShapesType = null
         
         this.addWholeLines = false
+        this.snapToLines = false
         
         this.selectedPoint = null
         
@@ -67,6 +68,7 @@ class LayerPanel {
     }
     setGlobalDate(date){
         this.globalDate = date
+        this.timeControl.setDate(date)
     }
     
     setConfig(configs){
@@ -85,7 +87,10 @@ class LayerPanel {
                     this.editFeatureTimeToolbar = document.getElementById(configs[option])
                     break
                 case "canvas":
-                    this.canvas = document.getElementById(configs[option])
+                    this.canvas = configs[option]
+                    break;
+                case "timeControl":
+                    this.timeControl = configs[option]
                     break;/*
                 case "timeControl":
                     this.timeControl = configs[option]
@@ -120,7 +125,6 @@ class LayerPanel {
         }
         var transformed = this.validateAndTransformToGeoJson(initialData, type)
         
-        //console.log(initialData,transformed)
         var testname = name
         var number = 2
         while(testname in realpath.children){
@@ -168,6 +172,10 @@ class LayerPanel {
                     'value': null,
                     'column': null,
                 },
+                pointSignificance: {
+                    'value': null,
+                    'column': null,
+                },
             }
         }
         this.render(realpath.children[testname], bounds, resolution)
@@ -176,8 +184,7 @@ class LayerPanel {
     updateLayer(layer,od,keeporiginaldata){
         var newData,transformed
         if(keeporiginaldata){
-            newData = od
-            transformed = this.validateAndTransformToGeoJson(newData, layer.type, true)
+            transformed = this.validateAndTransformToGeoJson(od, layer.type, true, layer.data)
         } else {
             switch(layer.type){
                 case "tempgeojson":
@@ -191,16 +198,20 @@ class LayerPanel {
             transformed = this.validateAndTransformToGeoJson(newData, layer.type)
         }
         
-        layer.originaldata = transformed["copied"]
-        layer.data = transformed["data"]
-        layer.drawable = transformed["drawable"]
+        if(!keeporiginaldata){
+            layer.originaldata = transformed["copied"]
+            layer.data = transformed["data"]
+            layer.drawable = transformed["drawable"]
+        }
         
         this.render(layer)
         this.updateLayerView(this.layers)
+        this.canvas.draw()
         
     }
     
     renderLayers(bounds, resolution){
+        this.pointrendermap = {}
         for(var i in this.layers.children){
             this.render(this.layers.children[i], bounds, resolution)
         }
@@ -208,6 +219,7 @@ class LayerPanel {
     
     render(layer, bounds, resolution){
         layer.rendered = {}
+        
         if(bounds != null)
             this.lastbounds = bounds
         else
@@ -219,66 +231,116 @@ class LayerPanel {
             
         var featuresGroupedByIds = {}
         var ungroupedFeatures = []
-        this.mapLayerToRendered(layer.data,layer.rendered,bounds,resolution,featuresGroupedByIds,ungroupedFeatures)
+        this.mapLayerToRendered(layer.data,layer.rendered,bounds,resolution,featuresGroupedByIds,ungroupedFeatures,layer)
         if(this.isSpatiotemporal(layer)){
-            layer.rendered.features = this.aggregateFeatures(featuresGroupedByIds,ungroupedFeatures)
+            layer.rendered.features = this.aggregateFeatures(featuresGroupedByIds,ungroupedFeatures,layer, bounds, resolution)
         }
     }
-    aggregateFeatures(featuresGroupedByIds,ungroupedFeatures){
+
+    
+    aggregateFeatures(featuresGroupedByIds,ungroupedFeatures, layer, bounds, resolution){
         var newRendered = []
         for(var id in featuresGroupedByIds){
-            if(this.editing != null && this.editing.selectedFeature != null && id == this.editing.selectedFeature.id){
-                newRendered = newRendered.concat(featuresGroupedByIds[id])
-                continue
-            }
-            var features = featuresGroupedByIds[id].concat(ungroupedFeatures)
-
-            var newF = features.filter(x => x.operation == 'NEW')
-            var firstFeature
-            if(newF.length == 0){
-                features.sort((a,b) => a.timebox_from-b.timebox_from)
-                firstFeature = features[0]
-                features = features.slice(1)
-            } else {
-                firstFeature = newF[0]
-                features = features.filter(x=>x.operation != 'NEW')
-                features.sort((a,b) => a.timebox_from-b.timebox_from)
-            }
-            firstFeature.type = "Feature"
-            for(var i=0;i<features.length;i++){
-                var feature = features[i]
-                feature.type = "Feature"
-                var newGeom = null
-                if(!this.validPolygon(feature))
-                    continue
-                switch(feature.operation){
-                    case 'UNION':
-                        newGeom = turf.union(firstFeature,feature)
-                        break
-                    case 'DIFF':
-                        newGeom = turf.difference(firstFeature,feature)
-                        break
-                    case 'INTERSECT':
-                        newGeom = turf.intersect(firstFeature,feature)
-                        break
-                    case 'UNION_ALL_FEATURES':
-                        if(feature.id == firstFeature.id){
-                            newGeom = turf.union(firstFeature,feature)
-                        } else {
-                            newGeom = turf.difference(firstFeature,feature)
-                        }
-                        break
+            /*if(this.editing != null && this.editing.selectedFeature != null && id == this.editing.selectedFeature.id){
+                for(var i in featuresGroupedByIds[id]){
+                    newRendered.push(featuresGroupedByIds[id][i])
                 }
-                feature.type = "TempFeature"
-                if(newGeom == null)
-                    continue
-                firstFeature.geometry = newGeom.geometry
-            }
-            firstFeature.type = "TempFeature"
-            newRendered.push(firstFeature)
+                //continue
+            }*/
+            var features = featuresGroupedByIds[id].concat(ungroupedFeatures).filter(x => x.geometry != null)
+            features.sort((a,b) => a.timebox_from-b.timebox_from)
+
+            if(features.length == 0)
+                continue
+                
+            this.aggregateFeaturesById(features, layer, bounds, resolution, newRendered)
         }
+        if(Object.keys(featuresGroupedByIds).length == 0){
+            var features = ungroupedFeatures.filter(x => x.geometry != null)
+            features.sort((a,b) => a.timebox_from-b.timebox_from)
+
+            if(features.length > 0)
+                this.aggregateFeaturesById(features, layer, bounds, resolution, newRendered)
+        }
+        
         return newRendered
     }
+    aggregateFeaturesById(features, layer, bounds, resolution, newRendered){
+
+        var newF = features.filter(x => x.operation == 'NEW' || x.operation == 'NEW_ALL_FEATURES')
+        var firstFeature
+        if(newF.length == 0){
+            features = features.sort((a,b) => this.compareDates(a.timebox_from,b.timebox_from))
+            firstFeature = features[0]
+            features = features.slice(1)
+        } else {
+            firstFeature = newF[0]
+            features = features.filter(x=>x.operation != 'NEW' && x.operation != 'NEW_ALL_FEATURES')
+            features = features.sort((a,b) => this.compareDates(a.timebox_from,b.timebox_from))
+        }
+        firstFeature.type = "Feature"
+        for(var i=0;i<features.length;i++){
+            var feature = features[i]
+            feature.type = "Feature"
+            var newGeom = null
+            //if(!this.validPolygon(feature))
+            //    continue
+            switch(feature.operation){
+                case 'UNION':
+                    newGeom = turf.union(firstFeature,feature)
+                    break
+                case 'DIFF':
+                    newGeom = turf.difference(firstFeature,feature)
+                    break
+                case 'INTERSECT':
+                    newGeom = turf.intersect(firstFeature,feature)
+                    break
+                case 'NEW_ALL_FEATURES':
+                case 'UNION_ALL_FEATURES':
+                    if(feature.id == firstFeature.id){
+                        if(feature.operation != 'NEW_ALL_FEATURES')
+                            newGeom = turf.union(firstFeature,feature)
+                    } else {
+                        newGeom = turf.difference(firstFeature,feature)
+                    }
+                    break
+            }
+            feature.type = "TempFeature"
+            if(newGeom == null)
+                continue
+            firstFeature.geometry = newGeom.geometry
+        }
+        firstFeature.type = "TempFeature"
+        /*if(firstFeature.geometry.type == "Point" && this.getStyleProperties(layer,'pointSignificance',firstFeature) != undefined){
+            if(this.pointToLayerPoint(layer,firstFeature,bounds,resolution)){
+                newRendered.push(firstFeature)
+            }
+        } else {*/
+            newRendered.push(firstFeature)
+        //}
+    }
+    pointToLayerPoint(layer,feature,bounds,resolution){
+        var point = feature.geometry.coordinates
+        var x = Math.floor(point[0]/resolution/40)
+        var y = Math.floor(point[1]/resolution/40)
+         
+        if(!(x+','+y in this.pointrendermap) || this.getStyleProperties(layer,'pointSignificance',feature) > this.getStyleProperties(layer,'pointSignificance',this.pointrendermap[x+','+y])){
+            
+            if("bbox" in feature && (
+                feature.bbox[0] > bounds.right || 
+                feature.bbox[1] > bounds.bottom || 
+                feature.bbox[2] < bounds.left || 
+                feature.bbox[3] < bounds.top)
+            )
+                return false
+                
+            this.pointrendermap[x+','+y] = feature
+            return true
+        }
+        return false
+        
+    }
+    
     validPolygon(feature){
         if(feature == null)
             return false
@@ -346,15 +408,16 @@ class LayerPanel {
         return (!('timebox_to' in feature) || feature.timebox_to == '' || this.compareDates(feature.timebox_to,this.globalDate) > -1) && (!('timebox_from' in feature) || feature.timebox_from == '' || this.compareDates(feature.timebox_from,this.globalDate) < 1)
     }
     
-    mapLayerToRendered(layer,rendered,bounds,resolution,featuresGroupedByIds,ungroupedFeatures){
-        var lastPositionx = null, lastPositiony = null, penultimalPositionx = null, penultimalPositiony = null, notinbounds = null
+    mapLayerToRendered(layer,rendered,bounds,resolution,featuresGroupedByIds,ungroupedFeatures,topLayer){
+        var lastPositionx = null, lastPositiony = null, penultimalPositionx = null, penultimalPositiony = null, notinbounds = null, notadded = false
+
         for(var property in layer){
             var value = layer[property]
             if(value instanceof Object && !(value instanceof Array)){
                 if(layer instanceof Array && "resolution" in value && value.resolution<resolution*4){
                     break
                 }
-                if((!("operation" in value) || (value.operation != 'INTERSECT' || value.operation != 'NEW')) && "bbox" in value && (
+                if((!("operation" in value) || (value.operation != 'INTERSECT' && value.operation != 'NEW' && value.operation != 'NEW_ALL_FEATURES')) && "bbox" in value && (
                     value.bbox[0] > bounds.right || 
                     value.bbox[1] > bounds.bottom || 
                     value.bbox[2] < bounds.left || 
@@ -366,9 +429,14 @@ class LayerPanel {
                 if('timebox_to' in value && !this.checkIfFeatureInTime(value))
                     continue
                     
+                    
                 var newObject = {}
                 rendered[property] = newObject
                 if(value.type == "TempFeature"){
+                    if(value.geometry.type == "Point" && this.getStyleProperties(topLayer,'pointSignificance',value) != undefined){
+                        if(!this.pointToLayerPoint(topLayer,value,bounds,resolution))
+                            continue
+                    }
                     switch(value.operation){
                         case "NEW":
                         case "DIFF":
@@ -378,26 +446,41 @@ class LayerPanel {
                                 featuresGroupedByIds[value.id] = []
                             featuresGroupedByIds[value.id].push(newObject)
                             break
-                        case "UNION_ALL_FEATURES":
+                        case "NEW_ALL_FEATURES":
                             if(featuresGroupedByIds[value.id] == undefined)
                                 featuresGroupedByIds[value.id] = []
+                            featuresGroupedByIds[value.id].push(newObject)
+                            ungroupedFeatures.push(newObject)
+                            break
+                        case "UNION_ALL_FEATURES":
                             ungroupedFeatures.push(newObject)
                             break
                     }
                 }
-                this.mapLayerToRendered(value,newObject,bounds,resolution,featuresGroupedByIds,ungroupedFeatures)
-            } else if(layer instanceof Array && value instanceof Array && value.length > 0 && typeof value[0] == "number"){
                 
+               
+                this.mapLayerToRendered(value,newObject,bounds,resolution,featuresGroupedByIds,ungroupedFeatures,topLayer)
+            } else if(layer instanceof Array && value instanceof Array && value.length > 0 && typeof value[0] == "number"){
+                /*
                 var posx = Math.min(Math.max(value[0], bounds.left), bounds.right)
                 var posy = Math.min(Math.max(value[1], bounds.top), bounds.bottom)
+                */
+                var posx = value[0]
+                var posy = value[1]
+
                 var wasnotinbounds = notinbounds
                 notinbounds = posx !== value[0] || posy !== value[1]
                 if(lastPositionx === null || property === layer.length-1){
                     lastPositionx = posx
                     lastPositiony = posy
                     
+                    notadded = true
                     rendered.push([posx,posy])
                 } else if(Math.abs(lastPositionx-posx) + Math.abs(lastPositiony-posy) > resolution){
+                    notadded = false
+
+                    rendered.push([posx,posy])
+                    /*
                     if(notinbounds){
                         if(!wasnotinbounds || 
                             this.checkIfInBound(lastPositionx,bounds.left,bounds.right)
@@ -416,17 +499,18 @@ class LayerPanel {
                             rendered.push([lastPositionx,lastPositiony])
                             
                         rendered.push([posx,posy])
-                    }
+                    }*/
                     lastPositionx = posx
                     lastPositiony = posy
                 }
+            
             } else if(value instanceof Array){
                 if(layer instanceof Array && "resolution" in value && value.resolution<resolution*4){
                     break
                 }
                 var newObject = []
                 rendered[property] = newObject
-                this.mapLayerToRendered(value,newObject,bounds,resolution,featuresGroupedByIds,ungroupedFeatures)
+                this.mapLayerToRendered(value,newObject,bounds,resolution,featuresGroupedByIds,ungroupedFeatures,topLayer)     
             } else {
                 rendered[property] = value
                 
@@ -486,7 +570,7 @@ class LayerPanel {
     }
     
     layerProperties(e,layerName,layerTreeElement,layer){
-        this.layerPropertiesDialogWindow.action(e,true,layer)
+        this.layerPropertiesDialogWindow.action(e,true,layer,null,this.globalDate)
     }
     
     startEditingLayer(e,layerName,layerTreeElement){
@@ -496,6 +580,8 @@ class LayerPanel {
     }
     
     stopEditingLayer(e,layerName,layerTreeElement){
+        this.updateLayer(this.editing,this.editing.originaldata)
+
         this.editing.edited = false
         this.editing.selectedFeature = null
         this.editing.selectedPoint = null
@@ -524,6 +610,11 @@ class LayerPanel {
     
     addWholeLinesChange(){
         this.addWholeLines = !this.addWholeLines
+        this.updateLayerView(this.layers)
+    }
+    
+    snapToLinesChange(){
+        this.snapToLines = !this.snapToLines
         this.updateLayerView(this.layers)
     }
     
@@ -619,6 +710,10 @@ class LayerPanel {
             var addWholeLinesButton = document.getElementById('add-whole-lines')
             addWholeLinesButton.onclick = (e)=>{th.addWholeLinesChange();e.preventDefault()}
             addWholeLinesButton.style.border = this.addWholeLines ? "2px solid yellow" : ""
+            
+            var snapButton = document.getElementById('snap')
+            snapButton.onclick = (e)=>{th.snapToLinesChange();e.preventDefault()}
+            snapButton.style.border = this.snapToLines ? "2px solid yellow" : ""
             
             if(this.editing.selectedFeature != null){
                 this.editFeatureToolbar.style.display = 'inline-block'
@@ -731,7 +826,8 @@ class LayerPanel {
             
             if(this.isSpatiotemporal(this.editing)){
                 var id = action == 'time' ? this.addingFeatureId : null
-                newFeature = {type:"TempFeature",id:id,operation:"NEW",from:"",to:"",geometry:{type:shape,coordinates:coords},properties:{},adding:true}
+                var from_date = action == 'time' ? this.globalDate : ""
+                newFeature = {type:"TempFeature",id:id,operation:"NEW_ALL_FEATURES",from:from_date,to:"",geometry:{type:shape,coordinates:coords},properties:{},adding:true}
             } else {
                 newFeature = {type:"Feature",geometry:{type:shape,coordinates:coords},properties:{},adding:true}
             }
@@ -747,7 +843,7 @@ class LayerPanel {
                     break
             }
         } else {
-            //this.stopAddingShape()
+            this.stopAddingShape()
         }
         this.updateLayerView(this.layers)
     }
@@ -815,6 +911,7 @@ class LayerPanel {
             switch(this.addingAction){
                 case null:
                 case "time":
+                    this.editing.data.features.push(newFeature)
                     this.editing.originaldata.features.push(newFeature)
                     delete this.editing.selectedFeature['adding']
                     this.editing.selectedFeature = null
@@ -937,7 +1034,14 @@ class LayerPanel {
             
             collection = this.groupFeaturesByIds(collection)
             
+            var start = false
             for(var i in collection.grouped){
+                if(!start){
+                    start = true
+                } else {
+                    var line = document.createElement('hr')
+                    subnodes.append(line)
+                }
                 var tempFeatures = collection.grouped[i]
                 this.renderItemVersions(tempFeatures,subnodes,layerId,i,t)
             }
@@ -951,7 +1055,7 @@ class LayerPanel {
     renderItemVersions(features,subnodes,layerId,i,t){
         var firstFeature = features[0]
         var newNode = document.createElement("div")
-        var fname = firstFeature['id'] != null ? firstFeature['id'] : firstFeature['properties']['name'] == null ? "<i>child-"+id+"</i>" : firstFeature['properties']['name']
+        var fname = firstFeature['id'] != null ? firstFeature['id'] : firstFeature['properties']['name'] == null ? "<i>child-"+i+"</i>" : firstFeature['properties']['name']
 
         newNode.innerHTML = `<div>${firstFeature["type"]} : ${fname}</div>`
 
@@ -994,8 +1098,15 @@ class LayerPanel {
                 t.editing.selectedFeature = ff
                 t.lastPointDrawing = null
                 t.addingDrawing = false
+                if(ff.from != null)
+                    t.setGlobalDate(ff.from)
+                else if(ff.to != null)
+                    t.setGlobalDate(ff.to)
                 t.updateLayer(t.editing,t.editing.originaldata,true)
                 t.updateLayerView(t.layers)
+                
+                t.render(t.editing)
+                t.canvas.draw()
             }
             if(feature == this.editing.selectedFeature){
                 document.getElementById("edit-properties-"+layerId+"-"+id).onclick = (e)=>{
@@ -1027,14 +1138,18 @@ class LayerPanel {
                 return initialData
         }
     }
-    validateAndTransformToGeoJson(data, type, dontparse){
+    validateAndTransformToGeoJson(data, type, dontparse, unoriginaldata){
         var newdata, copied, drawable = false, scheme = null
         switch(type){
             case "tempgeojson":
             case "geojson":
-                    newdata = dontparse ? data : JSON.parse(data)
-                    scheme = this.tryGetScheme(newdata)
-                    copied = this.copyGeoJSON(newdata)
+                    if(!dontparse){
+                        newdata = JSON.parse(data)
+                        scheme = this.tryGetScheme(newdata)
+                        copied = this.copyGeoJSON(newdata)
+                    } else {
+                        newdata = unoriginaldata
+                    }
                     this.addBboxes(newdata)
                     if(type == "tempgeojson")
                         this.addTimeboxes(newdata)
@@ -1119,7 +1234,7 @@ class LayerPanel {
             right: Math.max(bbox1.right,bbox2.right), 
             top: Math.min(bbox1.top,bbox2.top), 
             bottom: Math.max(bbox1.bottom,bbox2.bottom),
-            points: bbox1.points+bbox2.points,
+            points: bbox1.points ? (bbox2.points ? bbox1.points+bbox2.points : bbox1.points) : (bbox2.points ? bbox2.points : 0),
         }
     }
     mergeArrayBoxes(bbox1,bbox2){
@@ -1172,6 +1287,7 @@ class LayerPanel {
                             var feature = features[i]
                             switch(feature.operation){
                                 case "NEW":
+                                case "NEW_ALL_FEATURES":
                                     if(feature.from != "")
                                         newDates.push(feature.from)
 
@@ -1191,6 +1307,7 @@ class LayerPanel {
                             var feature = features[i]
                             switch(feature.operation){
                                 case "NEW":
+                                case "NEW_ALL_FEATURES":
                                 case "UNION":
                                 case "UNION_ALL_FEATURES":
                                 case "DIFF":
@@ -1287,14 +1404,16 @@ class LayerPanel {
             case "MultiLineString":
             case "LineString":
             case "MultiPoint":
-            case "Point":
                 bbox = this.addBboxes(data.coordinates)
+                break
+            case "Point":
+                bbox = {left: data.coordinates[0], top: data.coordinates[1], right: data.coordinates[0], bottom: data.coordinates[1]}
                 break
         }
         if(bbox == null)
             return null
         data.bbox = [bbox.left, bbox.top, bbox.right, bbox.bottom]
-        data.pointNumber = bbox.points   //not cannonical
+        data.pointNumber = bbox.points  //not cannonical
         if(bbox.points > 10000){
             switch(data.type){
                 case "FeatureCollection":
@@ -1374,6 +1493,22 @@ class LayerPanel {
         }
         intersectionPoints.sort((a,b)=>(a-b))
         return intersectionPoints.filter(x => x < lat).length % 2 == 1
+    }
+    
+    getSnapPointCoordinates(coordinates,lon,lat,pixelDifference){
+        if(coordinates.length == 0)
+            return null
+        var coords = null
+        if(typeof coordinates[0] == 'number'){
+            newCoords = coordinates
+            coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+        } else {
+            for(var i in coordinates){
+                var newCoords = this.getSnapPointCoordinates(coordinates[i],lon,lat,pixelDifference)
+                coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+            }
+        }
+        return coords
     }
     
     hitTestPolygonWithHoles(polygon,lon,lat){
@@ -1489,9 +1624,16 @@ class LayerPanel {
                         return result
                 }
                 break
+            case "Point":
+                var result = this.checkPointsOfCoords(feature.coordinates,lon,lat,pixelDifference,magnification)
+
+                if(result)
+                    return result
+                break
         }
         return null
     }
+    
     
     checkPointsOfCoords(feature,lon,lat,pixelDifference,magnification){
         if(typeof feature[0] == "number"){
@@ -1539,6 +1681,110 @@ class LayerPanel {
         return null
     }
 
+    getSnapPointAllLayers(lon,lat,degreeBounds,pixelDifference,magnification){
+        
+        console.log('a',pixelDifference,magnification)
+        var layerset = []
+        for(var i in this.layers.children){
+            layerset.push({key:i,value:this.layers.children[i]})
+        }
+        layerset = layerset.reverse()
+        
+        var coords = null
+        for(var i in layerset){
+            
+            var key = layerset[i].key
+            var layer = layerset[i].value
+            
+            var newCoords = this.getSnapPoint(layer.data,lon,lat,degreeBounds,pixelDifference,magnification)
+            
+            coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+        }
+        return coords
+    }
+    betterSnapPoint(lon,lat,coords,newCoords,pixelDifference){
+        const PIXEL_DIFFERENCE_FACTOR = 1
+        if(newCoords != null && Math.max(Math.abs(lon-newCoords[0]),Math.abs(lat-newCoords[1])) < pixelDifference/PIXEL_DIFFERENCE_FACTOR && (coords == null || Math.abs(newCoords[0]-lon)+Math.abs(newCoords[1]-lat) < Math.abs(coords[0]-lon)+Math.abs(coords[1]-lat))){
+            console.log('b',[lon,lat],newCoords,pixelDifference/PIXEL_DIFFERENCE_FACTOR)
+            return newCoords
+        }
+        return coords
+    }
+    getSnapPoint(layer,lon,lat,degreeBounds,pixelDifference,magnification){
+        
+        if(!(layer instanceof Object))
+            return null
+
+        if("bbox" in layer && (
+            layer.bbox[0] > lon + pixelDifference || 
+            layer.bbox[1] > lat + pixelDifference || 
+            layer.bbox[2] < lon - pixelDifference || 
+            layer.bbox[3] < lat - pixelDifference)
+        )
+            return null
+        
+        if('timebox_to' in layer && !this.checkIfFeatureInTime(layer))
+            return null
+            
+        var coords = null
+        switch(layer.type){
+            case "FeatureCollection":
+                for(var i = layer.features.length-1;i>=0;i--){
+                    var newCoords = this.getSnapPoint(layer.features[i],lon,lat,degreeBounds,pixelDifference,magnification)
+                    
+                    coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+                }
+                break
+            case "TempFeature":
+            case "Feature":
+                    var newCoords = this.getSnapPoint(layer.geometry,lon,lat,degreeBounds,pixelDifference,magnification)
+                    coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+                    
+                break
+            case "Interval":
+                if(layer.children != undefined)
+                for(var i = layer.children.length-1;i>=0;i--){
+                    var newCoords = this.getSnapPoint(layer.children[i],lon,lat,degreeBounds,pixelDifference,magnification)
+                    coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+                }
+                break
+            case "MultiPolygon":
+                for(var i = layer.coordinates.length-1;i>=0;i--){
+                    if(i == "resolution")
+                        continue
+                        
+                    var newCoords = this.getSnapPointCoordinates(layer.coordinates[i],lon,lat,pixelDifference)
+                    coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+                }
+                break
+            case "Polygon":
+                var newCoords = this.getSnapPointCoordinates(layer.coordinates,lon,lat,pixelDifference)
+                coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+                break
+            case "LineString":
+                var newCoords = this.getSnapPointCoordinates(layer.coordinates,lon,lat,pixelDifference)
+                coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+                break
+            case "MultiLineString":
+                for(var i in layer.coordinates){
+                        
+                    if(i == "resolution")
+                        continue
+                        
+                    var geometry = layer.coordinates[i]
+                    var newCoords = this.getSnapPointCoordinates(geometry,lon,lat,pixelDifference)
+                    coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+                    
+                }
+                break
+            case "Point":
+                if(Math.max(Math.abs(lon-layer.coordinates[0]),Math.abs(lat-layer.coordinates[1])) < pixelDifference/5){
+                    coords = layer.coordinates
+                }
+                break
+        }
+        return coords
+    }
     allLayersHitTest(lon,lat,degreeBounds,pixelDifference,magnification,availableShapes){
         var layerset = []
         for(var i in this.layers.children){
@@ -1564,10 +1810,10 @@ class LayerPanel {
             return null
 
         if("bbox" in layer && (
-            layer.bbox[0] > lon || 
-            layer.bbox[1] > lat || 
-            layer.bbox[2] < lon || 
-            layer.bbox[3] < lat)
+            layer.bbox[0] > lon + pixelDifference || 
+            layer.bbox[1] > lat + pixelDifference || 
+            layer.bbox[2] < lon - pixelDifference || 
+            layer.bbox[3] < lat - pixelDifference)
         )
             return null
         
@@ -1617,7 +1863,7 @@ class LayerPanel {
                     return layer
                 break
             case "MultiLineString":
-                    for(var i in layer.coordinates){
+                for(var i in layer.coordinates){
                         
                     if(i == "resolution")
                         continue
@@ -1646,9 +1892,19 @@ class LayerPanel {
     coordDistance(a,b){
         return Math.abs(a.x-b.x)+Math.abs(a.y-b.y)
     }
-    
     notifyClick(lon,lat,degreeBounds,pixelDifference,magnification){
         if(this.editing != null){
+            if(this.snapToLines){
+                var snappedCoords = this.getSnapPointAllLayers(lon,lat,degreeBounds,pixelDifference,magnification)
+                console.log(lon,lat,snappedCoords)
+                
+                if(snappedCoords != null){
+                    lon = snappedCoords[0]
+                    lat = snappedCoords[1]
+                }
+            }
+            
+            
             if(this.addingDrawing){
                 this.editing.selectedPoint = null
                 switch(this.addingDrawingType){
@@ -1699,7 +1955,12 @@ class LayerPanel {
                         
                         this.lastPointDrawing = this.lastShapeDrawing
                         
+                        var feature = this.editing.selectedFeature
+                        
                         this.stopAddingShape()
+                        if(!adding && !this.detectUpdate())
+                            this.propertiesDialogWindow.action(null,true,feature,this.editing.scheme)
+
                         return true
                         
                         break
@@ -1765,7 +2026,8 @@ class LayerPanel {
                     this.changePointPosition(this.editing.selectedPoint,lon,lat)
                 } else {
                     var selectedFeature = this.hitTest(this.editing.data,lon,lat,degreeBounds,pixelDifference,magnification)
-                    
+                    if(selectedFeature != null)
+                        console.log(selectedFeature.geometry.type)
                     var previousEditing = this.editing.selectedFeature
                     this.editing.selectedFeature = selectedFeature
                     if(this.editing.selectedFeature == null){

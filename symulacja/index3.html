@@ -39,6 +39,7 @@ class Human{
         this.id = null
         this.father = null
         this.mother = null
+        this.children = []
         
         this.attack = 1
         this.defence = 0
@@ -59,7 +60,7 @@ class Human{
         this.dead = 0
         this.owned = true   //potentially
         
-        
+        this.boundaryColor = "#000000"
     }
     mutate(a,b,max,min,mutationRate,disadvantage){
         if(min == undefined)
@@ -77,9 +78,9 @@ class Human{
         this.parent.familytree.registerHuman(newHuman,this,another)
         
         newHuman.attack = this.mutate(this.attack,another.attack,150,1,2,1.1)
-        newHuman.defence = this.mutate(this.defence,another.defence,80,0,1,1.2)
-        newHuman.aggression = this.mutate(this.aggression,another.aggression,15,1,2,1)
-        newHuman.tribalism = this.mutate(this.tribalism,another.tribalism,15,1,2,1)
+        newHuman.defence = this.mutate(this.defence,another.defence,80,0,1,1.1)
+        newHuman.aggression = this.mutate(this.aggression,another.aggression,15,1,2,0.9)
+        newHuman.tribalism = this.mutate(this.tribalism,another.tribalism,15,1,2,0.9)
         
         newHuman.willToTravel = this.mutate(this.willToTravel,another.willToTravel,10,1,1,1.1)
         newHuman.travel = this.mutate(this.travel,another.travel,12,3,1,1.1)
@@ -163,11 +164,11 @@ class Human{
         var sqWidth = 1000/this.parent.boardSize
         var color = RGB2HTML(this.red,this.green,this.blue)
         var sqWidth2 = sqWidth*1.8
-        this.parent.ctx.strokeStyle = '#000'
-        this.parent.ctx.strokeWidth = 4
-        this.parent.ctx.strokeRect(this.x*sqWidth+(sqWidth-sqWidth2)/2,this.y*sqWidth+(sqWidth-sqWidth2)/2,sqWidth2,sqWidth2)
+        this.parent.ctx.strokeStyle = this.boundaryColor
+        this.parent.ctx.lineWidth = this.boundaryColor == "#000000" ? 1 : 2
         this.parent.ctx.fillStyle = color
         this.parent.ctx.fillRect(this.x*sqWidth+(sqWidth-sqWidth2)/2,this.y*sqWidth+(sqWidth-sqWidth2)/2,sqWidth2,sqWidth2)
+        this.parent.ctx.strokeRect(this.x*sqWidth+(sqWidth-sqWidth2)/2,this.y*sqWidth+(sqWidth-sqWidth2)/2,sqWidth2,sqWidth2)
         
         this.parent.ctx.font = '11px sans-serif'
         this.parent.ctx.fillStyle = '#000'
@@ -224,10 +225,11 @@ function arrayMax(arr) {
   });
 }
 class FamilyTree {
-    constructor(){
+    constructor(parent){
         this.canvas = document.getElementById("familytreecanv")
         this.div = document.getElementById("familytreediv")
         this.shown = false
+        this.parent = parent
         
         this.ix = 0
         this.humansByGeneration = {}
@@ -245,7 +247,7 @@ class FamilyTree {
     }
     draw(){
         var generations = Object.keys(this.humansByGeneration).length
-        
+//         
         var timefactor = 1
         this.canvas.width = 750
         this.canvas.height = generations*timefactor
@@ -257,15 +259,16 @@ class FamilyTree {
             var glen = Math.floor(generation.length/2)
             for(var j in generation){
                 var human = generation[j]
-                this.ctx.fillStyle = '#' + human.red.toString(16) + human.green.toString(16) + human.blue.toString(16)
+                this.ctx.fillStyle = '#' + (human.red).toString(16) + (human.green).toString(16) + (human.blue).toString(16)
                 this.ctx.fillRect(250 - glen + Number(j),i*timefactor,1,timefactor)
             }
         }
     }
     sortGenerations(){
         var generations = Object.keys(this.humansByGeneration).length
-
-        for(var i = 1;i<generations;i++){
+        
+        var minGen = Math.max(1,this.parent.people.map(x=>x.generation).reduce((a,b)=>Math.min(a,b),Infinity)-1)
+        for(var i = minGen;i<generations;i++){
             var prevgen = this.humansByGeneration[i-1]
             for(var j in prevgen){
                 prevgen[j].ixin = j
@@ -277,6 +280,16 @@ class FamilyTree {
         human.id = this.ix++
         human.father = father
         human.mother = mother
+        if(human.father){
+            father.children.push(human)
+            //if(Number.parseInt(human.boundaryColor.slice(3,5),16) < Number.parseInt(father.boundaryColor.slice(3,5),16))
+            //    human.boundaryColor = father.boundaryColor
+        }
+        if(human.mother){
+            mother.children.push(human)
+            //if(Number.parseInt(human.boundaryColor.slice(3,5),16) < Number.parseInt(mother.boundaryColor.slice(3,5),16) )
+            //    human.boundaryColor = mother.boundaryColor
+        }
         
         if(!(human.generation in this.humansByGeneration))
             this.humansByGeneration[human.generation] = []
@@ -303,12 +316,14 @@ class Controller {
         
         this.ctx = this.canvas.getContext('2d')
         
-        this.familytree = new FamilyTree()
+        this.familytree = new FamilyTree(this)
         
         this.gobutton.onclick = () => {th.setGoing()}
         this.nextbutton.onclick = () => {th.move()}
         this.restartbutton.onclick = () => {th.restart()}
         this.familytreebutton.onclick = () => {th.familytree.show()}
+        
+        this.canvas.onclick = (e) => {th.seeRelatives(e)}
         
         this.boardSize = 130
         this.landWaterRatio = 0.56
@@ -322,6 +337,82 @@ class Controller {
         
         this.loop(0)
         this.draw()
+    }
+    seeRelatives(e){
+        var originalSize = 1000
+		var rect = this.canvas.getBoundingClientRect()
+		var x = Math.round((e.clientX - rect.left)*originalSize/rect.width)
+		var y = Math.round((e.clientY - rect.top)*originalSize/rect.height)
+		
+        var sqWidth = 1000/this.boardSize
+        var sqWidth2 = sqWidth*4
+
+		var chosen = null
+		for(var i in this.people){
+            var human = this.people[i]
+            var hx = (human.x+1.5)*sqWidth+(sqWidth-sqWidth2)/2
+            var hy = (human.y+1.5)*sqWidth+(sqWidth-sqWidth2)/2
+            
+            human.boundaryColor = "#000000"
+            if((chosen == null || Math.abs(x - hx) + Math.abs(y - hy) < Math.abs(x - chosen.x) + Math.abs(y - chosen.y)) && Math.abs(x - hx) < sqWidth2/2 && Math.abs(y - hy) < sqWidth2/2){
+                chosen = human
+            }
+		}
+		if(chosen != null){
+            this.setRelatives(chosen,64)
+		}
+        
+    }
+    setRelatives(chosen,relatives){
+        this.setRelatives2(chosen,relatives,relatives)
+        chosen.boundaryColor = "#00ffff"
+        this.draw()
+        
+    }
+    setRelatives2(chosen,relatives,allRelatives){
+        if(relatives <= 0)
+            return
+        if(chosen.boundaryColor == "#000000"){
+            var greenNumber = Number(Math.floor(relatives / allRelatives * 188)+67).toString(16).padStart(0,2)
+            chosen.boundaryColor = "#00" + greenNumber + "00"
+        } else 
+            return
+            
+        if(chosen.father != null){
+            this.setRelatives2(chosen.father,relatives - 1,allRelatives)
+        }
+        if(chosen.mother != null){
+            this.setRelatives2(chosen.father,relatives - 1,allRelatives)
+        }
+        for(var i in chosen.children){
+            this.setRelatives2(chosen.children[i],relatives - 1,allRelatives)
+        }
+        
+    }
+    seePath(e){
+        var originalSize = 1000
+		var rect = this.canvas.getBoundingClientRect()
+		var x = Math.round((e.clientX - rect.left)*originalSize/rect.width)
+		var y = Math.round((e.clientY - rect.top)*originalSize/rect.height)
+		
+        var sqWidth = 1000/this.boardSize
+        var sqWidth2 = sqWidth*1.8
+
+		var chosen = null
+		for(var i in this.people){
+            var human = this.people[i]
+            var hx = (human.x+1)*sqWidth+(sqWidth-sqWidth2)/2
+            var hy = (human.y+1)*sqWidth+(sqWidth-sqWidth2)/2
+                console.log(hx,hy,x,y)
+            if(Math.abs(x - hx) < sqWidth2/2 && Math.abs(y - hy) < sqWidth2/2){
+                human.red = 255
+                human.green = 0
+                human.blue = 0
+                this.draw()
+
+                return
+            }
+		}
     }
     restart(){
         this.prepareBoard()

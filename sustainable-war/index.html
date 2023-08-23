@@ -449,7 +449,6 @@ class Square{
             ctx.strokeStyle = '#f00'
             prepareNumber(ctx,(this.x+0.4)*sqWidth,(this.y+0.1)*sqWidth,sqWidth*0.15+1,sqWidth*0.4+1,this.debug % 10)
             ctx.stroke()
-
         }
         /*
         if(this.area != null && this.area.number != undefined){
@@ -631,7 +630,7 @@ class Unit{
         
         prepareNumber(ctx,(this.field.x+0.7)*sqWidth,(this.field.y+0.4)*sqWidth,sqWidth*0.2+1,sqWidth*0.3,this.morale)
         ctx.stroke()
-        
+        /*
         ctx.fillStyle = "#f00"
         if(this.food == 1){
             ctx.fillStyle = "#ff0"
@@ -696,6 +695,10 @@ class LandWater {
         for(var i in this.lands){
             var land = this.lands[i]
             land.landWaterArea = this
+        }
+        for(var i in this.lands){
+            var land = this.lands[i]
+
             var neighbors = Object.values(this.parent.getDirectNeighborsWithDiagonals(land.x,land.y)).filter(x=>x != null)
             var isBorderland = false
             for(var i in neighbors){
@@ -715,7 +718,7 @@ class LandWater {
 }
 class Model {
     constructor(){
-        this.boardSize = 25
+        this.boardSize = 30
         this.landWaterRatio = 0.48
         this.landDistanceRatio = -0.05
         this.sizeOfLands = 3
@@ -752,7 +755,7 @@ class Model {
         
         
         this.truces = {}
-        this.proposerTruceLength = 1
+        this.proposerTruceLength = 5
     }
     copyModel(){
         var state = this.saveState()
@@ -811,7 +814,8 @@ class Model {
                     x:i,
                     y:j,
                     color:field.color,
-                    unit:this.saveUnit(field.unit)
+                    unit:this.saveUnit(field.unit),
+                    fortification:field.fortification
                 }
             }
         }
@@ -838,6 +842,7 @@ class Model {
                     this.board[i][j].removeUnit(this.board[i][j].unit)
                 this.board[i][j].color = board[i][j].color
                 this.board[i][j].area = null
+                this.board[i][j].fortification = fortification
                 var unit = board[i][j].unit
                 if(unit != null){
                     this.restoreUnit(i,j,unit)
@@ -1010,8 +1015,10 @@ class Model {
         for(var i = 0;i<this.boardSize;i++){
             for(var j = 0;j<this.boardSize;j++){
                 this.board[i][j].hill = Math.min(this.board[i][j].hill,6)
-                if(!this.board[i][j].land)
-                    this.land = 0
+                if(!this.board[i][j].land){
+                    this.board[i][j].hill = 0
+                    this.board[i][j].cityVillage = 0
+                }
             }
         }
     }
@@ -1132,7 +1139,9 @@ class Model {
         this.truces = {}
     
         var cities = this.allLands.filter(x => x.land == true && x.cityVillage == 3)
-        cities = cities.sort((a,b)=>(a.x+a.y) % 3 - (b.x+b.y) % 3)
+        cities = cities.map(value => ({ value, sort: Math.random() }))
+            .sort((a, b) => a.sort - b.sort)
+            .map(({ value }) => value)
         cities = cities.slice(0,Math.floor(cities.length/2.5))
         
         for(var i in cities){
@@ -1288,6 +1297,7 @@ class Model {
                     delete this.truces[this.currentPlayer][player]
                 }
             }
+            console.log(this.legalMoves())
         }
     }
     
@@ -1310,9 +1320,8 @@ class Model {
         return Math.ceil(size * moveCount)
     }
     
-    lateness(landFrom,landTo,unit){
+    lateness(landFrom,landTo,unit,unitLand){
         var MAX = unit.originalRange //makes unit stop
-        var unitLand = unit.field
         var diagonalFafctor = Math.abs(landFrom.x - landTo.x) + Math.abs(landFrom.y - landTo.y) >= 2 ? 1.5 : 1
         if(landTo.unit != null && landTo.unit.color != unit.color)
             return MAX
@@ -1323,61 +1332,97 @@ class Model {
             if(!landFrom.land && landTo.land)
                 return MAX
         } else {
-            if(landFrom.land && !landTo.land && !(unitLand == landFrom && landFrom.cityVillage == 3))
-                return null
+            if(landTo.fortification && landTo.fortificationColor != unit.color)
+                return MAX
+                
+            if(landFrom.land && !landTo.land && !(unitLand == landFrom && landFrom.cityVillage == 3)){
+                if(unitLand != landFrom)
+                    return null
+                else
+                    return MAX
+            }
             if(landTo.hill >= 1)
                 return (1 + landTo.hill/3) * diagonalFafctor
         }
         return 1 * diagonalFafctor
     }
+        
     getUnitLegalMoves(x,y){
+        return this.getUnitLegalMovesForMoreTurns(x,y,1)
+    }
+    getUnitLegalMovesForMoreTurns(x,y,turns){
         var land = this.board[x][y]
-        var legalMoves = [{x: x,y: y,distance: 0, lastMove: null, stopHere: false}]
+        var legalMoves = [{x: x,y: y,distance: 0, lastMove: null, stopHere: false, turn:0, initialLand: land}]
+        var legalMovesAdded = new Set([x+'#'+y])
+        var legalMovesAddedBoard = {}
+        legalMovesAddedBoard[x+'#'+y] = legalMoves[0]
         var searchedLegalMoves = legalMoves.slice()
         var nextLegalMoves = []
-        for(var i = 0;i<land.unit.range;i++){
-            for(var j in searchedLegalMoves){
-                var move = searchedLegalMoves[j]
-                var landFrom = this.board[move.x][move.y]
-                if(move.distance >= land.unit.range)
-                    continue
-                if(move.stopHere)
-                    continue
-
-                if(landFrom.fortification && landFrom.fortificationColor != land.color)
-                    continue
-                    
-                var neighbors = Object.values(this.getDirectNeighborsWithDiagonals(move.x, move.y)).filter(a=>a != null)
-                
-                var stopHere = false
-                //if(/*landFrom != land && */Object.values(this.getDirectNeighbors(move.x, move.y)).filter(x=>x != null && x.unit && x.unit.color != land.unit.color).length > 0)
-                //    stopHere = true
-                
-                for(var k in neighbors){
-                    var neighbor = neighbors[k]
-                    var lateness = this.lateness(landFrom,neighbor,land.unit)
-                    if(lateness == null)
+        var turnLegalMoves = []
+        for(var t = 0;t<turns;t++){
+            var range = t == 0 ? land.unit.range : land.unit.originalRange
+            for(var i = 0;i<range;i++){
+                for(var j in searchedLegalMoves){
+                    var move = searchedLegalMoves[j]
+                    var landFrom = this.board[move.x][move.y]
+                    if(landFrom != move.initialLand && (move.distance >= range || move.stopHere)){
                         continue
-                    if(land.land && land.color != null && neighbor.color in this.truces[land.color] && this.truces[land.color][neighbor.color] >= 0)
-                        continue
-                    //if(stopHere && !neighbor.unit)
-                    //    continue
+                    }
                         
-                    if(legalMoves.filter(a=>a.x == neighbor.x && a.y == neighbor.y).length == 0){
-                        var newMove = {x:neighbor.x, y:neighbor.y, distance: stopHere ? land.unit.originalRange + 1: move.distance + lateness, lastMove: move, stopHere:stopHere}
-                        legalMoves.push(newMove)
-                        nextLegalMoves.push(newMove)
-                    } else {
-                        var existingMove = legalMoves.filter(a=>a.x == neighbor.x && a.y == neighbor.y)[0]
-                        if(existingMove.distance > move.distance + lateness){
-                            existingMove.distance = move.distance + lateness
-                            existingMove.lastMove = move
+                    var neighbors = Object.values(this.getDirectNeighborsWithDiagonals(move.x, move.y)).filter(a=>a != null)
+                    
+                    var stopHere = false
+                    //if(/*landFrom != land && */Object.values(this.getDirectNeighbors(move.x, move.y)).filter(x=>x != null && x.unit && x.unit.color != land.unit.color).length > 0)
+                    //    stopHere = true
+                    
+                    for(var k in neighbors){
+                        var neighbor = neighbors[k]
+                        var lateness = this.lateness(landFrom,neighbor,land.unit,move.initialLand)
+                        if(lateness == null){
+                            continue
+                        }
+                        if(land.color != null && neighbor.color in this.truces[land.color] && this.truces[land.color][neighbor.color] >= 0)
+                            continue
+                        //if(stopHere && !neighbor.unit)
+                        //    continue
+                            
+                        if(!(legalMovesAdded.has(neighbor.x+'#'+neighbor.y))){
+                            var newMove = {x:neighbor.x, y:neighbor.y, distance: move.distance + lateness, lastMove: move, stopHere:stopHere, turn:t, initialLand: move.initialLand}
+                            legalMoves.push(newMove)
+                            legalMovesAdded.add(newMove.x+'#'+newMove.y)
+                            legalMovesAddedBoard[newMove.x+'#'+newMove.y] = newMove
+                            nextLegalMoves.push(newMove)
+                            turnLegalMoves.push(newMove)
+                            //this.board[newMove.x][newMove.y].debug = t
+                        } else {
+                            var existingMove = legalMovesAddedBoard[neighbor.x+'#'+neighbor.y]
+                            if((existingMove.distance > move.distance + lateness) && existingMove.turn == t){
+                                existingMove.distance = move.distance + lateness
+                                existingMove.lastMove = move
+                                existingMove.initialLand = move.initialLand
+                                //this.board[existingMove.x][existingMove.y].debug = t
+
+                            }
                         }
                     }
                 }
+                searchedLegalMoves = nextLegalMoves
+                nextLegalMoves = []
             }
-            searchedLegalMoves = nextLegalMoves
-            nextLegalMoves = []
+            if(t < turns -1){
+                legalMoves.forEach(x => {x.distance = 0; x.initialLand = this.board[x.x][x.y];x.stopHere = false})
+                
+                searchedLegalMoves = turnLegalMoves.slice()//legalMoves.filter(a => Object.values(this.getDirectNeighborsWithDiagonals(a.x, a.y)).filter(x => x != null && !legalMovesAdded.has(x.x+'#'+x.y)).length > 0)
+                turnLegalMoves = []
+                console.log(searchedLegalMoves.length)
+                //var neighboring = legalMoves.filter(a => a != null )
+            }
+        }
+        var set = Array.from(new Set(legalMoves.map(x => [x.initialLand, x.turn]).map(x => x[0].x + '#' + x[0].y+'#'+x[1])))
+        for(var i in set){
+            var s = set[i].split('#')
+            //console.log(s)
+            //this.board[Number(s[0])][Number(s[1])].debug = s[2]
         }
         return legalMoves
     }
@@ -1391,6 +1436,7 @@ class Model {
             }
         }
     }
+    
     battle(unit1,unit2,fieldFrom){
         var defence = unit2.defence(fieldFrom)
         
@@ -1559,7 +1605,7 @@ class Model {
         return lands
     }
     
-    getAreaPartsWithTheSameLandWater(x,y){
+    getAreaPartsWithTheSameLandWater(x,y,straitBlockades){
         var land = this.board[x][y]
         var lands = [land]
         var landWater = land.land
@@ -1575,7 +1621,7 @@ class Model {
                 for(var k in neighbors){
                     var neighbor = neighbors[k]
                         
-                    if(lands.filter(a=>a.x == neighbor.x && a.y == neighbor.y).length == 0){
+                    if(lands.filter(a=>a.x == neighbor.x && a.y == neighbor.y).length == 0 && (!straitBlockades || this.board[neighbor.x][neighbor.y].unit != landFrom.color)){
                         var newLand = this.board[neighbor.x][neighbor.y]
                         lands.push(newLand)
                         nextLands.push(newLand)
@@ -1673,6 +1719,78 @@ class Model {
             }
         }
     }
+    
+    
+    
+    //move (x1,y1,x2,y2,part)
+    //fund (x,y,plusminus)
+    //recruit (x,y,size)
+    //fortify (x,y)
+    //truce (color,turns)
+    legalMoves(){
+        return this.possibleUnitMoves()
+            .concat(this.possibleUnitFunding())
+            .concat(this.possibleRecruitments())
+    }
+    makeMove(move){
+        
+    }
+    
+    possibleUnitMoves(){
+        var units = this.allLands.filter(x=>x.unit != null && x.unit.color == this.currentPlayer).map(x=>x.unit)
+        var legalMoves = []
+        for(var i in units){
+            var unit = units[i]
+            legalMoves.push({
+                type:'move',
+                x:unit.x,
+                y:unit.y,
+                destinations:this.getUnitLegalMoves(unit.x,unit.y).map(a=>new Object({x:a.x, y:a.y}))
+            })
+        }
+        return legalMoves
+    }
+    possibleUnitFunding(){
+        var units = this.allLands.filter(x=>x.unit != null && x.unit.color == this.currentPlayer).map(x=>x.unit)
+        var legalMoves = []
+        for(var i in units){
+            var unit = units[i]
+            var plusminus = [-1,1]
+            if(unit.level == 0)
+                plusminus = [1]
+            if(unit.level == 3)
+                plusminus = [-1]
+            legalMoves.push({
+                type:'fund',
+                x:unit.x,
+                y:unit.y,
+                plusminus:plusminus
+            })
+        }
+        return legalMoves
+    }
+    possibleRecruitments(){
+        var lands = this.allLands.filter(x=>x.color == this.currentPlayer).filter(x=>x.unit == null || x.unit.size < 99)
+        var legalMoves = []
+        for(var i in lands){
+            var land = lands[i]
+            var sizes = [5]
+            if(land.unit == null || land.unit.size < 95)
+                sizes.push(10)
+            if(land.unit == null || land.unit.size < 90)
+                sizes.push(50)
+            if(land.unit == null || land.unit.size < 50)
+                sizes.push(99)
+            legalMoves.push({
+                type:'recruit',
+                x:land.x,
+                y:land.y,
+                sizes:sizes
+            })
+        }
+        return legalMoves
+    }
+    
 }
 class Area{
     constructor(color,model){
@@ -1856,7 +1974,7 @@ class Area{
     }
 }
 class Controller {
-    constructor(){
+    constructor(ai){
         let th = this
         
         this.canvas = document.getElementById("canv")
@@ -1965,8 +2083,15 @@ class Controller {
         this.model = new Model()
         this.model.prepareBoard()
         
+        
+        this.addAi(ai)
+        
         this.loop()
         this.draw()
+    }
+    addAi(ai){
+        this.ai = ai
+        ai.addModel(this.model)
     }
     updowngrade(way){
         this.model.updowngrade(way)
@@ -2274,9 +2399,33 @@ class Controller {
 }
 const MAX_PIECES = 11
 function init(){
-    var controller = new Controller()
+    var ai = new Ai
+    var controller = new Controller(ai)
 }
 
+class Ai {
+    constructor(){
+    }
+    addModel(model){
+        this.model = model
+        
+        this.testDebug()
+    }
+    testDebug(){
+        var firstCity = this.model.allLands.filter(x=>x.unit != null)[0]
+        var debugMap = this.model.getUnitLegalMovesForMoreTurns(firstCity.x,firstCity.y,20)
+        var cities = this.model.allLands.filter(x=>x.unit != null)
+        for(var i in cities){
+            debugMap = this.model.getUnitLegalMovesForMoreTurns(cities[i].x,cities[i].y,20)
+            for(var i in debugMap){
+                var move = debugMap[i]
+                //if(this.model.board[move.x][move.y].debug == null || this.model.board[move.x][move.y].debug>move.turn)
+                //    this.model.board[move.x][move.y].debug = move.turn
+            }
+        }
+
+    }
+}
 </script> 
 </head>
 <body>

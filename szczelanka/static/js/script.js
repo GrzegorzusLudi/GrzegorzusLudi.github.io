@@ -7,6 +7,8 @@ class Camera {
         this.skewed = 0.5
         this.rotation = 60 * Math.PI / 180
         this.magnification = 3
+        
+        this.dummyBounds = [[0,0,0],[0,0,0]]
         if(oldCamera !== undefined){
             if(oldCamera.x)
                 this.x = oldCamera.x
@@ -170,7 +172,14 @@ class AbstractCanvas {
         this.cameratimeout = undefined
         this.rerendertimeout = undefined
         
+        this.additional = []
+        
+
         this.actualizeBounds()
+        
+        this.staticObjectOrder = {'-1':{'-1':{objects:[],objbounds:[]},'1':{objects:[],objbounds:[]}},'1':{'-1':{objects:[],objbounds:[]},'1':{objects:[],objbounds:[]}}}
+        this.prepareStatic()
+
     }
     setStyle(styles){
         for(var style in styles){
@@ -248,8 +257,52 @@ class AbstractCanvas {
         this.bounds = bounds
         
         this.initializeContext()
+        
         this.setStyle(this.styles)
         this.draw()
+    }
+    prepareStatic(){
+        for(var x_dir = -1;x_dir<=1;x_dir+=2){
+            for(var y_dir = -1;y_dir<=1;y_dir+=2){
+                
+                var sortedFromLeft = this.gameModel.elements.filter(x=>x.static)
+                var centers = {}
+                var objbounds = []
+                for(var i in sortedFromLeft){
+                    centers[i] = sortedFromLeft[i].getCenter(this.camera,this.bounds)
+                    objbounds[i] = sortedFromLeft[i].getBounds()
+                }
+                
+                for(var i = 0;i<sortedFromLeft.length;i++){
+                    for(var j = i+1;j<sortedFromLeft.length;j++){
+                        if(
+                           this.relation(i,j,sortedFromLeft,objbounds,x_dir,y_dir)
+                        ){
+                            var aux = sortedFromLeft[i]
+                            sortedFromLeft[i] = sortedFromLeft[j]
+                            sortedFromLeft[j] = aux
+                            
+                            aux = objbounds[i]
+                            objbounds[i] = objbounds[j]
+                            objbounds[j] = aux
+                        }
+                    }
+                }
+                
+                this.staticObjectOrder[x_dir][y_dir].objects = sortedFromLeft
+                this.staticObjectOrder[x_dir][y_dir].objbounds = objbounds
+                
+            }
+        }
+    }
+    relation(i,j,sortedFromLeft,objbounds,x_dir,y_dir){
+        return (this.relationZ(sortedFromLeft[i],sortedFromLeft[j],objbounds[i],objbounds[j]) == -1 && 
+                            this.relationY(sortedFromLeft[i],sortedFromLeft[j],objbounds[i],objbounds[j]) == 0 && 
+                            this.relationX(sortedFromLeft[i],sortedFromLeft[j],objbounds[i],objbounds[j]) == 0
+                            ) || 
+                            (this.relationY(sortedFromLeft[i],sortedFromLeft[j],objbounds[i],objbounds[j]) == y_dir && this.relationX(sortedFromLeft[i],sortedFromLeft[j],objbounds[i],objbounds[j]) == 0 || 
+                                this.relationX(sortedFromLeft[i],sortedFromLeft[j],objbounds[i],objbounds[j]) == x_dir && this.relationY(sortedFromLeft[i],sortedFromLeft[j],objbounds[i],objbounds[j]) == 0
+                            )
     }
     actualizeElementSize(){
         var bounds = this.parentDiv.getBoundingClientRect()
@@ -261,7 +314,41 @@ class AbstractCanvas {
     }
     
     drawPanel(){
+        var y = this.bounds.height-100
+        var x = this.bounds.width/2
+        this.drawInventory(this.gameModel.gamer.inventory,x,y)
+    }
+    
+    drawInventory(inventory,x,y){
+        var l = inventory.items.length
+        var sq_width = 40
+        var gap = 5
+        for(var i in inventory.items){
+            var x_pos = -(sq_width*l + gap*(l-1)) / 2 + (sq_width*i + gap*(i-1))
+            
+            this.context.strokeStyle = "#4444bb"
+            this.context.fillStyle = "#6666ff88"
+            this.context.fillRect(x + x_pos,y,sq_width,sq_width)
+            this.context.strokeRect(x + x_pos,y,sq_width,sq_width)
+            
+
+            if(inventory.items[i] != null)
+                this.drawThingFrontally(x + x_pos + sq_width/2, y + sq_width/2, inventory.items[i])
+            
+        }
+        var pos = inventory.pos
+        var pos_x = x - (sq_width*l + gap*(l-1)) / 2 + (sq_width*pos + gap*(pos-1)) + sq_width/2
+        var pos_y = y + sq_width + gap
         
+        this.context.beginPath()
+        
+        this.context.moveTo(pos_x,pos_y)
+        this.context.lineTo(pos_x-5,pos_y+5)
+        this.context.lineTo(pos_x+5,pos_y+5)
+        this.context.closePath()
+        
+        this.context.fill()
+        this.context.stroke()
     }
     
     draw(){
@@ -270,6 +357,19 @@ class AbstractCanvas {
         this.drawGrid()
         this.drawThings()
         this.drawPanel()
+        for(var i in this.additional){
+            var add = this.additional[i]
+            
+            this.context.strokeStyle = '#08f'
+            this.context.beginPath()
+            this.context.moveTo(add[0],add[2])
+            this.context.moveTo(add[1],add[3])
+            this.context.lineTo(add[0],add[2])
+            this.context.lineTo(add[1],add[3])
+            this.context.stroke()
+            this.context.closePath()
+        }
+        this.additional = []
     }
     getDegreeBounds(){
         return {
@@ -290,17 +390,404 @@ class AbstractCanvas {
             return (ac[0] + ac[1] - bc[0] - bc[1])/2
         }
     }
-    compareTwoObjects(a,b){
-        var ac = a.getCenter(this.camera,this.bounds)
-        var bc = b.getCenter(this.camera,this.bounds)
-        if(ac[5]-5 <= bc[4] || bc[5]-5 <= ac[4])
-            return (ac[4] + ac[5] - bc[4] - bc[5])/2
-        if(ac[3] < bc[2] || bc[3] < ac[2])
+    objectsInZPlane(a,b){
+        var objBoundsA = a.getBounds()
+        var objBoundsB = b.getBounds()
+
+        var ptsA = [ a.x+objBoundsA[0][0],a.x+objBoundsA[1][0],a.y+objBoundsA[0][1], a.y+objBoundsA[1][1] ] 
+        var ptsB = [ b.x+objBoundsB[0][0],b.x+objBoundsB[1][0],b.y+objBoundsB[0][1], b.y+objBoundsB[1][1] ] 
+
+        return ptsA[1] >= ptsB[0] && ptsB[1] >= ptsA[0] && ptsA[3] >= ptsB[2] && ptsB[3] >= ptsA[2]
+    }
+    objectsIntersect(a,b,ac,bc,aob,bob){
+        return a.z+aob[1][2] > b.z+bob[0][2] && b.z+bob[1][2] > a.z+aob[0][2] && 
+            a.x+aob[1][0] > b.x+bob[0][0] && b.x+bob[1][0] > a.x+aob[0][0] && 
+            a.y+aob[1][1] > b.y+bob[0][1] && b.y+bob[1][1] > a.y+aob[0][1]
+    }
+    relationZ(a,b,aob,bob){
+        if(a.z+aob[1][2] <= b.z+bob[0][2]){
+            return 1
+        }
+        if(b.z+bob[1][2] <= a.z+aob[0][2]){// && this.objectsInZPlane(a,b)){// && ac[7] >= bc[6] && ac[7] >= bc[6]){
+            return -1
+        }
+        return 0
+    }
+    relationX(a,b,aob,bob){
+        if(a.x+aob[1][0] <= b.x+bob[0][0]){
+            return 1
+        }
+        if(b.x+bob[1][0] <= a.x+aob[0][0]){// && this.objectsInZPlane(a,b)){// && ac[7] >= bc[6] && ac[7] >= bc[6]){
+            return -1
+        }
+        return 0
+    }
+    relationY(a,b,aob,bob){
+        if(a.y+aob[1][1] <= b.y+bob[0][1]){
+            return 1
+        }
+        if(b.y+bob[1][1] <= a.y+aob[0][1]){// && this.objectsInZPlane(a,b)){// && ac[7] >= bc[6] && ac[7] >= bc[6]){
+            return -1
+        }
+        return 0
+    }
+    objectAbove(a,b,ac,bc,aob,bob){
+        /*
+        if( a.z+aob[1][2] > b.z+bob[0][2] && b.z+bob[1][2] > a.z+aob[0][2] && 
+            a.x+aob[1][0] > b.x+bob[0][0] && b.x+bob[1][0] > a.x+aob[0][0] && 
+            a.y+aob[1][1] > b.y+bob[0][1] && b.y+bob[1][1] > a.y+aob[0][1])
+                return 0
+        */
+        
+        if(a.z+aob[1][2] <= b.z+bob[0][2]){// && this.objectsInZPlane(a,b)){// && ac[7] >= bc[6] && ac[7] >= bc[6]){
+            return -(a.z+aob[1][2]) + (b.z+bob[0][2])
+        }
+        if(b.z+bob[1][2] <= a.z+aob[0][2]){// && this.objectsInZPlane(a,b)){// && ac[7] >= bc[6] && ac[7] >= bc[6]){
+            return (b.z+bob[1][2]) - (a.z+aob[0][2])
+        }
+        
+        var rot = (this.camera.getRotation() + 360) % 360
+        //if(Math.random()<0.001)
+        //    console.log(rot)
+        
+        var x_dir,y_dir
+        if(rot >= 0 && rot < 90){
+            x_dir = 1
+            y_dir = 1
+        } else if(rot >= 90 && rot < 180){
+            x_dir = 1
+            y_dir = -1
+        } else if(rot >= 270 && rot < 360){
+            x_dir = -1
+            y_dir = 1
+        } else {
+            x_dir = -1
+            y_dir = -1
+        }
+        
+        var res_y = 0
+        var res_x = 0
+        if((a.y+aob[1][1]) * y_dir >= (b.y+bob[0][1]) * y_dir){// && this.objectsInZPlane(a,b)){// && ac[7] >= bc[6] && ac[7] >= bc[6]){
+            res_y = (a.y+aob[1][1]) * y_dir - (b.y+bob[0][1]) * y_dir
+        }
+        if((b.y+bob[1][1]) * y_dir >= (a.y+aob[0][1]) * y_dir){// && this.objectsInZPlane(a,b)){// && ac[7] >= bc[6] && ac[7] >= bc[6]){
+            res_y = -(b.y+bob[1][1]) * y_dir + (a.y+aob[0][1]) * y_dir
+        }
+        
+        if((a.x+aob[1][0]) * x_dir >= (b.x+bob[0][0]) * x_dir){// && this.objectsInZPlane(a,b)){// && ac[7] >= bc[6] && ac[7] >= bc[6]){
+            res_x = (a.x+aob[1][0]) * x_dir + (b.x+bob[0][0]) * x_dir
+        }
+        if((b.x+bob[1][0]) * x_dir >= (a.x+aob[0][0]) * x_dir){// && this.objectsInZPlane(a,b)){// && ac[7] >= bc[6] && ac[7] >= bc[6]){
+            res_x = -(b.x+bob[1][0]) * x_dir + (a.x+aob[0][0]) * x_dir
+        }
+        
+        return res_y > res_x
+        /*
+        return 0
+        
+        var pt_a_w = Math.abs(-aob[0][0]+aob[1][0])
+        var pt_a_h = Math.abs(-aob[0][1]+aob[1][1])
+        
+        var pt_b_w = Math.abs(-bob[0][0]+bob[1][0])
+        var pt_b_h = Math.abs(-bob[0][1]+bob[1][1])
+        
+        var axis_a_x = pt_a_w > pt_a_h + 0.001
+        var axis_a_y = !axis_a_x && pt_a_h > pt_a_w + 0.001
+        
+        var axis_b_x = pt_b_w > pt_b_h + 0.001
+        var axis_b_y = !axis_b_x && pt_b_h > pt_b_w + 0.001
+                
+        //if(Math.random()<0.001)
+        //    console.log([axis_a_x && axis_b_x || axis_a_x && !axis_b_y || !axis_a_y && axis_a_x])
+            
+        if(axis_a_x && axis_b_x || axis_a_x && !axis_b_y || !axis_a_y && axis_b_x){
+            //this.additional.push( [ ac[0],bc[0],ac[2],bc[2] ])
+            return a.y * y_dir < b.y * y_dir
+        }
+        if(axis_a_y && axis_b_y || axis_a_y && !axis_b_x || !axis_a_x && axis_b_y){
+            //this.additional.push( [ ac[0],bc[0],ac[2],bc[2] ])
+            return a.x * x_dir < b.x * x_dir
+        }/*
+        if(axis_a_x && axis_b_y){
+            return ac[2]+ac[3] < bc[2]+bc[3]
+        }
+        if(axis_a_y && axis_b_x){
+            return ac[2]+bc[3] < bc[2]+bc[3]
+        }*/
+        /*
+        if(axis_b_x && axis_a_y){
+            //this.additional.push( [ ac[0],bc[0],ac[2],bc[2] ])
+
+            if(b.y > a.y ){
+                if(b.x < a.x){
+                    return -b.y + (a.y + aob[1][1]) < -(b.x + bob[0][1]) + a.x
+                } else {
+                    return false
+                }
+            } else {
+                if(b.x  < a.x ){
+                    return true
+                } else {
+                    return -b.y + (a.y + aob[0][1]) < -(b.x + bob[1][1]) + a.x
+                }
+            }
+        }
+        
+        if(axis_a_x && axis_b_y){
+            //this.additional.push( [ ac[0],bc[0],ac[2],bc[2] ])
+
+            if(a.y > b.y ){
+                if(a.x  < b.x ){
+                    return -a.y + (b.y + bob[1][1]) < -(a.x + aob[0][1]) + b.x
+                } else {
+                    return true
+                }
+            } else {
+                if(a.x  < b.x ){
+                    return false
+                } else {
+                    return -a.y + (b.y + bob[0][1]) < -(a.x + aob[1][1]) + b.x
+                }
+            }
+        }
+        
+        
+        if(!axis_a_x && !axis_a_y && !axis_b_x && !axis_b_y)
+            return ac[2]+bc[3] < bc[2]+bc[3]// * y_dir > b.y * y_dir
+        
+        return null*/
+    }
+    objectBefore(a,b,ac,bc){/*
+        if(ac[11] < bc[10] && ac[10] < bc[10] && ac[11] < bc[11] && ac[10] < bc[11]){
+            return true
+        }
+        if(bc[11] < ac[10] && bc[10] < ac[10] && bc[11] < ac[11] && bc[10] < ac[11]){
+            return false
+        }*/
+                    
+        var alin_a = (ac[10]-ac[11]) / (ac[0]-ac[1])
+        var alin_b = (ac[10] - alin_a * ac[0])
+        
+        
+        //this.additional.push( [ ac[0],ac[1],ac[2],ac[3] ])
+        
+        var blin_a = (bc[10]-bc[11]) / (bc[0]-bc[1])
+        var blin_b = (bc[10] - blin_a * bc[0])
+        
+        var przy_x,przy_y
+        if(Math.abs(ac[0]-ac[1])<0.01 && Math.abs(bc[0]-bc[1])<0.01){
+            return 0
+        } else if(Math.abs(ac[0]-ac[1])<0.01){
+            przy_y = (ac[0]+ac[1])/2
+            przy_x = (przy_y - blin_b) / blin_a
+        } else if(Math.abs(bc[0]-bc[1])<0.01){
+            przy_y = (bc[0]+bc[1])/2
+            przy_x = (przy_y - alin_b) / alin_a
+        } else {
+            przy_x = (alin_b - blin_b) / (blin_a - alin_a)
+            przy_y = blin_a * przy_x + blin_b
+        }
+        //this.additional.push( [ przy_x,przy_x+10,przy_y,przy_y ])
+        /*
+        var win_a = (bc[0]-bc[1]) != 0 && (ac[10] > blin_a * ac[0] + blin_b && ac[11] > blin_a * ac[1] + blin_b 
+            || bc[10] <= alin_a * bc[0] + alin_b && bc[11] <= alin_a * bc[1] + alin_b)
+            
+        var win_b = (ac[0]-ac[1]) != 0 && (bc[10] > alin_a * bc[0] + alin_b && bc[11] > alin_a * bc[1] + alin_b
+            || ac[10] <= blin_a * ac[0] + blin_b && ac[11] <= blin_a * ac[1] + blin_b)
+          */
+        
+        //if(a instanceof Cube && b instanceof Cube)
+        //    this.additional.push( [ ac[0],bc[0],ac[2],bc[2] ])
+        
+        //var win_a = (ac[10] > przy_y && ac[11] > przy_y || bc[10] < przy_y && bc[11] < przy_y)
+        //var win_b = (bc[10] > przy_y && bc[11] > przy_y || ac[10] < przy_y && ac[11] < przy_y)
+                        
+        
+        if(Math.abs(alin_a - blin_a) < 0.01){
+
+            if(alin_b < blin_b)
+                return 1
+            if(alin_b > blin_b)
+                return -1
+            
+        }
+            
+
+        var poz_a = Math.min(przy_x - ac[0], ac[1] - przy_x)
+        var poz_b = Math.min(przy_x - bc[0], bc[1] - przy_x)
+        
+        if(poz_a < 0 && poz_b > 0)
+            return -1
+        if(poz_a > 0 && poz_b < 0)
+            return 1
+        
+        
+        
+        /*if(win_b && !win_a)
+            return true
+        if(!win_b && win_a)
+            return false
+            
+        if(win_a && win_b){
+            if(this.dist(przy_x,przy_y, bc[0],bc[10]) < this.dist(przy_x,przy_y, ac[0],ac[10]) && 
+                this.dist(przy_x,przy_y, bc[0],bc[10]) < this.dist(przy_x,przy_y, ac[1],ac[11]) ||
+                this.dist(przy_x,przy_y, bc[1],bc[11]) < this.dist(przy_x,przy_y, ac[0],ac[10]) && 
+                this.dist(przy_x,przy_y, bc[1],bc[11]) < this.dist(przy_x,przy_y, ac[1],ac[11]))
+                    return true
+            if(this.dist(przy_x,przy_y, bc[0],bc[10]) > this.dist(przy_x,przy_y, ac[0],ac[10]) && 
+                this.dist(przy_x,przy_y, bc[1],bc[11]) > this.dist(przy_x,przy_y, ac[0],ac[10]) ||
+                this.dist(przy_x,przy_y, bc[0],bc[10]) > this.dist(przy_x,przy_y, ac[1],ac[11]) && 
+                this.dist(przy_x,przy_y, bc[1],bc[11]) > this.dist(przy_x,przy_y, ac[1],ac[11]))
+                    return false
+        }*//*
+        this.additional.push( [ ac[0],ac[1],ac[2],ac[3] ])
+        this.additional.push( [ bc[0],bc[1],bc[2],bc[3] ])
+        */
+        /*
+        
+        if(ac[5] > bc[4])
+            return true
+        if(bc[5] < ac[4])
+            return false*/
+        return 0//bc[11] > ac[11]
+    }
+    dist(p10,p11,p20,p21){
+        return Math.sqrt(Math.pow(p10 - p20,2) + Math.pow(p11 - p21,2))
+    }
+    compareTwoObjects(a,b,ac,bc){
+        //var ac = a.getCenter(this.camera,this.bounds)
+        //var bc = b.getCenter(this.camera,this.bounds)
+        
+        var awon = -1
+        var bwon = 1
+        //this.additional.push( [ac[0],ac[1],ac[2],ac[3] ])
+                
+        //if(ac[5]-20 <= bc[4] || bc[5]-20 <= ac[4])
+        //    return (ac[4] + ac[5] - bc[4] - bc[5])/2
+        
+            
+        if(ac[5]-5 < bc[4])// && bc[5]-5 > ac[4])
+            return bwon
+        if(bc[5]-5 < ac[4])// && ac[5]-5 > bc[4])
+            return awon
+
+        //return ac[3] - bc[3]
+        
+        var apoint = Math.abs(ac[0] - ac[1])<5 && Math.abs(ac[2] - ac[3])<5// || (ac[1] < bc[0] || bc[1] < ac[0]) && (ac[3] < bc[2] || bc[3] < ac[2])
+        var bpoint = Math.abs(bc[0] - bc[1])<5 && Math.abs(bc[2] - bc[3])<5// || (ac[1] < bc[0] || bc[1] < ac[0]) && (ac[3] < bc[2] || bc[3] < ac[2])
+        
+        //return (ac[2] + ac[3]) / 2 > (bc[2] + bc[3]) / 2 ? awon : bwon
+        if(apoint && bpoint){
+            if(ac[2] < bc[2])
+                return bwon
+            else
+                return awon
+        }
+        
+        //if(ac[1]+20 < bc[0] && bc[1] > ac[0] || bc[1]+20 < ac[0] && ac[1] > bc[0])
+        //    return ac[2] > bc[2] ? awon : bwon
+            
+        if(apoint && !bpoint){
+            //this.additional.push( [ bc[0],bc[1],bc[2]-4,bc[3] ])
+            var blin_a = (bc[2]-bc[3]) / (bc[0]-bc[1])
+            var blin_b = (bc[2] - blin_a * bc[0])
+            if(ac[2] < blin_a * ac[0] + blin_b)
+                return bwon
+            else
+                return awon
+            
+        }
+        if(bpoint && !apoint){
+            //this.additional.push( [ ac[0],ac[1],ac[2]-4,ac[3] ])
+            var alin_a = (ac[2]-ac[3]) / (ac[0]-ac[1])
+            var alin_b = (ac[2] - alin_a * ac[0])
+            if(bc[2] < alin_a * bc[0] + alin_b){
+                return awon
+            } else
+                return bwon
+            
+        } 
+        if(!apoint && !bpoint){
+            var alin_a = (ac[2]-ac[3]) / (ac[0]-ac[1])
+            var alin_b = (ac[2] - alin_a * ac[0])
+            
+            this.additional.push( [ ac[0],ac[1],alin_a*ac[0] + alin_b,alin_a*ac[1] + alin_b ])
+            
+            var blin_a = (bc[2]-bc[3]) / (bc[0]-bc[1])
+            var blin_b = (bc[2] - blin_a * bc[0])
+            
+            if(Math.abs(alin_a - blin_a) < 0.001){
+                //this.additional.push( [ ac[0],bc[0],ac[2],bc[2] ])
+                //this.additional.push( [ ac[0],ac[1],ac[2]-4,ac[3] ])
+                
+                if(alin_b > blin_b)
+                    return awon
+                if(alin_b < blin_b)
+                    return bwon
+            }
+
+            var prz_x = (alin_b - blin_b) / (blin_a - alin_a)
+            var prz_y = blin_a * prz_x + blin_b
+            
+            
+            var win_a = ac[2] >= prz_y && ac[3] >= prz_y || bc[2] < prz_y && bc[3] < prz_y
+            var win_b = bc[2] >= prz_y && bc[3] >= prz_y || ac[2] < prz_y && ac[3] < prz_y
+            
+            if(win_a && !win_b)
+                return awon
+                
+            if(win_b && !win_a)
+                return bwon
+        }
+        return ac[2] > bc[2] ? awon : bwon
+        /*if(ac[3] < bc[2] || bc[3] < ac[2])
             return (ac[0] + ac[1] - bc[0] - bc[1])/2
         else {
             return (ac[0] + ac[1] - bc[0] - bc[1])/2
+        }*/
+        /*
+        if(ac[2] <= bc[2] && ac[2] <= bc[3] && ac[3] <= bc[2] && ac[3] <= bc[3]){
+            return awon
         }
+        if(bc[2] <= ac[2] && bc[2] <= ac[3] && bc[3] <= ac[2] && bc[3] <= ac[3]){
+            return bwon
+        }*//*
+        var awon_possible = 0
+        var bwon_possible = 0
+        
+        if(Math.abs(ac[0] - ac[1]) >= 1){
+            var alin_a = (ac[2]-ac[3]) / (ac[0]-ac[1])
+            var alin_b = (ac[2] - alin_a * ac[0])
             
+            //this.additional.push( [ bc[0],bc[1],bc[0] * alin_a + alin_b,bc[1] * alin_a + alin_b ])
+            
+            if(bc[0] * alin_a + alin_b <= bc[2] && bc[1] * alin_a + alin_b <= bc[3]){
+                bwon_possible = 1
+            }
+        }
+        
+        if(Math.abs(bc[0] - bc[1]) >= 1){
+            var alin_a = (bc[2]-bc[3]) / (bc[0]-bc[1])
+            var alin_b = (bc[2] - alin_a * bc[0])
+            
+            //this.additional.push( [ ac[0],ac[1],ac[0] * alin_a + alin_b,ac[1] * alin_a + alin_b ])
+            if(ac[0] * alin_a + alin_b <= ac[2] && ac[1] * alin_a + alin_b <= ac[3]){
+                awon_possible = 1
+            }
+        }
+        if(awon_possible - bwon_possible == 0){
+            if(ac[2] > bc[2] && ac[2] > bc[3])
+                return awon
+            if(ac[3] > bc[2] && ac[3] > bc[3])
+                return awon
+            if(bc[2] > ac[2] && bc[2] > ac[3])
+                return bwon
+            if(bc[3] > ac[2] && bc[3] > ac[3])
+                return bwon
+        }
+        
+        return awon_possible && !bwon_possible ? awon : bwon_possible && !awon_possible ? bwon : 0
+         */   
 //         if(ac instanceof Array){
 //             if(bc instanceof Array)
 //                 bc = (bc[0] + bc[1]) / 2
@@ -313,13 +800,170 @@ class AbstractCanvas {
     }
     drawThings(){
         this.setStyle({strokeStyle:"#000",fillStyle:"#fff",lineWidth:this.camera.magnification})
-        var things = this.gameModel.elements.filter(x=>this.camera.checkIfFits(x,this.bounds)).sort((a,b)=>this.compareTwoObjects(a,b)/*this.camera.getAbsoluteY(a.x,a.y,this.bounds)-this.camera.getAbsoluteY(b.x,b.y,this.bounds)*/)
-        for(var i in things){
-            this.drawThing(things[i].getThing(),things[i].rotation,things[i].hidable && this.checkHide(things[i]))
+        //var things = this.gameModel.elements.filter(x=>this.camera.checkIfFits(x,this.bounds))
+        //var sortedFromLeft = things.sort((a,b) => a.getCenter(this.camera,this.bounds)[6] - b.getCenter(this.camera,this.bounds)[6])
+        /*
+        var relation_x = {}
+        var relation_y = {}
+        var relation_z = {}
+        var todelete = {}
+        var centers = {}
+        var objbounds = []
+        for(var i in sortedFromLeft){
+            objbounds[i] = sortedFromLeft[i].getBounds()
+        }*/
+        
+        
+        var rot = ((this.camera.getRotation()) % 360 + 720) % 360
+        //if(Math.random()<0.001)
+        //    console.log(rot)
+        
+        var x_dir,y_dir
+        if(rot >= 0 && rot < 90){
+            x_dir = 1
+            y_dir = 1
+        } else if(rot >= 90 && rot < 180){
+            x_dir = 1
+            y_dir = -1
+        } else if(rot >= 270 && rot < 360){
+            x_dir = -1
+            y_dir = 1
+        } else {
+            x_dir = -1
+            y_dir = -1
         }
+        if(this.staticObjectOrder == undefined)
+            return
+        //things = things.sort((a,b) => a.getCenter(this.camera,this.bounds)[4] - b.getCenter(this.camera,this.bounds)[5])
+        var things = this.staticObjectOrder[x_dir][y_dir].objects.filter(x=>this.camera.checkIfFits(x,this.bounds))
+        //var objbounds = this.staticObjectOrder[x_dir][y_dir].objbounds.slice()
+
+        var notSolid = this.gameModel.elements.filter(x => !x.static).filter(x=>this.camera.checkIfFits(x,this.bounds)).sort((a,b) => a.getCenter(this.camera,this.bounds)[3] - b.getCenter(this.camera,this.bounds)[2])
+        var objbounds = []
+        things = things.concat(notSolid)
+        for(var i in things){
+            objbounds[i] = things[i].getBounds()
+        }
+        
+        for(var i = notSolid.length-1;i>=0;i--){
+            for(var j = things.length-1;j>=1;j--){
+                if(
+                    (!things[j-1].static || !things[j].static) && 
+                    ((things[j-1].static || things[j].static) && (!this.relation(j,j-1,things,objbounds,x_dir,y_dir)) || 
+                        (!things[j-1].static && !things[j].static && (things[j].z-5 < things[j-1].z || objbounds[j][3] < objbounds[j-1][2])
+                    ))
+                ){
+                    var aux = things[j-1]
+                    things[j-1] = things[j]
+                    things[j] = aux
+                    
+                    aux = objbounds[j-1]
+                    objbounds[j-1] = objbounds[j-1]
+                    objbounds[j] = aux
+                }
+            }
+        }
+        
+        
+        for(var i in things){
+            this.drawThing(things[i].getThing(),things[i].rotation,things[i].hidable && this.checkHide(things[i],objbounds[i]))
+        }
+        /*
+        for(var i in sortedFromLeft){
+            var a = sortedFromLeft[i]
+
+            for(var j = i-(-1);j<sortedFromLeft.length;j++){
+                var b = sortedFromLeft[j]
+                
+                if(centers[i][7] <= centers[j][6] || centers[j][7] <= centers[i][6]){
+                    break
+                }
+                //if(a instanceof Cube && b instanceof Cube)
+                //this.additional.push( [centers[i][0],centers[j][0],centers[i][2],centers[j][2] ])
+                
+                //var cont = false
+                //for(var k = 0;k < sortedFromLeft.length;k++){
+                //    if(relations[i][k] && relations[k][j] || relations[j][k] && relations[k][i]){
+                //         cont = true
+                //         break
+                //    }
+                        
+                //}
+                //if(cont)
+                //    continue
+                    
+                if(this.objectAbove(a,b,centers[i],centers[j],objbounds[i],objbounds[j]) > 0){// || this.objectAbove(b,a,centers[j],centers[i],objbounds[i],objbounds[j]) == -1){
+                    relations[i][j] = true
+                } else if(this.objectAbove(b,a,centers[j],centers[i],objbounds[j],objbounds[i]) > 0){// || this.objectAbove(a,b,centers[i],centers[j],objbounds[i],objbounds[j]) == -1){                    
+                    relations[j][i] = true
+                }
+
+                    //delete relations[i][j]
+                    //delete relations[j][i]
+            }
+        }        
+        for(var i in relations){
+            for(var j in relations[i]){ 
+                for(var k in relations[j]){
+                    //delete relations[i][k]
+                }
+            }
+        }
+        
+        var newThings = []
+        //console.log(waiting,added)
+        
+        var notadded = Object.keys(sortedFromLeft)
+        var k = 0
+        while(notadded.length > 0 && k < 100){
+            k++
+            var refs = {}
+            for(var i in notadded){
+                var val = notadded[i]
+                refs[val] = 0
+            }
+            for(var i in notadded){
+                var val = notadded[i]
+                for(var j in relations[val]){
+                    refs[j]++
+                }
+            }
+            var minref = Infinity
+            
+            for(var i in notadded){
+                var val = notadded[i]
+
+                if(refs[val] < minref){
+                    minref = refs[val]
+                }
+            }
+            //console.log(minref)
+            //console.log(notadded.length)
+            var toadd = notadded.filter(x => refs[x] <= minref)//.sort((a,b) => -this.objectBefore(sortedFromLeft[a],sortedFromLeft[b],centers[a],centers[b]))
+            for(var i in toadd){
+                newThings.push(sortedFromLeft[toadd[i]])
+            }
+            notadded = notadded.filter(x => refs[x] > minref)
+        }*/
+        //console.log(relations)
+        //throw new Error()
+        
+        //things = newThings//sortedFromLeft
+        //things = things.sort((a,b)=>this.compareTwoObjects(a,b))
+        /*this.camera.getAbsoluteY(a.x,a.y,this.bounds)-this.camera.getAbsoluteY(b.x,b.y,this.bounds)*///)
+        /*for(var i = 1;i<things.length;i++){
+            for(var j = i;j<things.length;j++){
+                var diff = this.compareTwoObjects(things[i],things[j])
+                if(diff == -1){
+                    var aux = things[i]
+                    things[i] = things[i-1]
+                    things[i-1] = aux
+                }
+            }
+        }*/
     }
-    checkHide(thing){
-        return this.camera.checkIfFits(thing,{left:0,top:0,width:0,height:0}) && this.compareWithCamera(thing) > 25
+    checkHide(thing, objbounds){
+        return this.camera.checkIfFits(thing,{left:0,top:0,width:0,height:0}) && this.compareWithCamera(thing) > 25 || this.relationZ(thing,this.camera,objbounds,this.camera.dummyBounds) == -1 && this.relationX(thing,this.camera,objbounds,this.camera.dummyBounds) == 0 && this.relationY(thing,this.camera,objbounds,this.camera.dummyBounds) == 0
     }
     drawThing(rendered,rotation,tohide){
         var r = rotation
@@ -337,6 +981,26 @@ class AbstractCanvas {
                     break
                 case "ball":
                     this.drawBall(obj.coords,false,rendered.x,rendered.y,rendered.z)
+                    break
+            }
+        }
+    }
+    drawThingFrontally(x,y,item){
+        var objs = item.getDisplay()
+        var translation = item.getTranslation()
+        
+        for(var i in objs){
+            var obj = objs[i]
+            this.setStyle({strokeStyle:(obj.stroke ? obj.stroke : "#000"),fillStyle:(obj.fill ? obj.fill : "#fff"),lineWidth:this.camera.magnification/2})
+            switch(obj.type){
+                case "line":
+                    this.drawPolyLineFrontally(obj.coords,false,x,y,0,translation)
+                    break
+                case "polygon":
+                    this.drawPolygonFrontally(obj.coords,false,x,y,0,translation)
+                    break
+                case "ball":
+                    this.drawBallFrontally(obj.coords,false,x,y,0,translation)
                     break
             }
         }
@@ -522,59 +1186,6 @@ class TwoDCanvas extends AbstractCanvas {
         this.context.stroke()
     }
     drawPolygon(line, closed,x,y,z,rotation){
-        /*
-        if(polygon.length === 0)
-            return
-            
-        var firstPoint = true
-
-        this.context.beginPath()
-        var x1,y1
-        for(var i in polygon){
-            var line = polygon[i]
-                
-            for(var point in line){
-                var pointx = this.camera.degreesToPixels(line[point][0],line[point][1],this.bounds,true)
-                var pointy = this.camera.degreesToPixels(line[point][0],line[point][1],this.bounds,false)
-                if(point === 0){
-                    if(firstPoint)
-                        this.context.moveTo(pointx,pointy)
-                    else
-                        this.context.lineTo(pointx,pointy)
-                    firstPoint = false
-                    x1 = pointx
-                    y1 = pointy
-                } else
-                    this.context.lineTo(pointx,pointy)
-            }
-            if(x1)
-                this.context.lineTo(x1,y1)
-        }
-        this.context.fill()
-        this.context.closePath()
-        
-        for(var i in polygon){
-            var line = polygon[i]
-            if(line.length === 0)
-                continue
-                
-            this.context.beginPath()
-            var x1,y1
-            for(var point in line){
-                var pointx = this.camera.degreesToPixels(line[point][0],line[point][1],this.bounds,true)
-                var pointy = this.camera.degreesToPixels(line[point][0],line[point][1],this.bounds,false)
-                if(point === 0){
-                    this.context.moveTo(pointx,pointy)
-                    x1 = pointx
-                    y1 = pointy
-                } else
-                    this.context.lineTo(pointx,pointy)
-            }
-            this.context.lineTo(x1,y1)
-            this.context.closePath()
-            this.context.stroke()
-        }*/
-        
         if(line.length === 0)
             return
             
@@ -593,6 +1204,62 @@ class TwoDCanvas extends AbstractCanvas {
                 line[point][0]*cos+line[point][1]*sin+x,
                 -line[point][0]*sin+line[point][1]*cos+y,
                 this.bounds,false,line[point][2]+z)
+            
+            if(point === 0){
+                this.context.moveTo(pointx,pointy)  
+                x1 = pointx
+                y1 = pointy
+            } else
+                this.context.lineTo(pointx,pointy)
+        }
+            this.context.lineTo(x1,y1)
+        this.context.closePath()
+        this.context.fill()
+        this.context.stroke()
+    }
+    drawPolyLineFrontally(line, closed,x,y,z,translation){
+        
+        if(line.length === 0)
+            return
+        
+        if(translation == undefined)
+            translation = [1,2]
+            
+        this.context.beginPath()
+        
+        
+        var x1,y1
+        for(var point in line){
+            var pointx = x + line[point][Math.abs(translation[0])-1] * (translation[0] > 0 ? 1 : -1)
+            var pointy = y + line[point][Math.abs(translation[1])-1] * (translation[1] > 0 ? 1 : -1)
+            
+            if(point === 0){
+                this.context.moveTo(pointx,pointy)  
+                x1 = pointx
+                y1 = pointy
+            } else
+                this.context.lineTo(pointx,pointy)
+        }
+        if(closed)
+            this.context.lineTo(x1,y1)
+        this.context.stroke()
+        //if(closed)
+        //    this.context.fill()
+        this.context.closePath()
+    }
+    drawPolygonFrontally(line, closed, x, y, z, translation){
+        if(line.length === 0)
+            return
+        
+        if(translation == undefined)
+            translation = [1,2]
+            
+        this.context.beginPath()
+        
+        var x1,y1
+        for(var point in line){
+            var pointx = x + line[point][Math.abs(translation[0])-1] * (translation[0] > 0 ? 1 : -1)
+            var pointy = y + line[point][Math.abs(translation[1])-1] * (translation[1] > 0 ? 1 : -1)
             
             if(point === 0){
                 this.context.moveTo(pointx,pointy)  

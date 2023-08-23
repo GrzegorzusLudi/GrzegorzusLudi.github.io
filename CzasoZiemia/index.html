@@ -16,6 +16,8 @@
                     <img id="add-point" class="toolbar-button" src="static/img/add-point.png" alt="add point" title="add point" />
                     <img id="delete-shape" class="toolbar-button" src="static/img/gummi.png" alt="delete shape" title="delete shape" />
                     <img id="add-whole-lines" class="toolbar-button" src="static/img/add-whole-lines.png" alt="add whole lines" title="add whole lines" />
+                    <span class="separator"></span>
+                    <img id="snap" class="toolbar-button" src="static/img/snap.png" alt="snap to points" title="snap to points" />
                 </span>
                 <span id="edit-feature-buttons">
                     <span class="separator"></span>
@@ -194,6 +196,7 @@
                 </td>
                 <td>
                 <select id="feature-temp-operation-type">
+                    <option value="NEW_ALL_FEATURES" name="NEW_ALL_FEATURES">NEW_ALL_FEATURES</option>
                     <option value="NEW" name="NEW">NEW</option>
                     <option value="UNION_ALL_FEATURES" name="UNION_ALL_FEATURES">UNION_ALL_FEATURES</option>
                     <option value="UNION" name="UNION">UNION</option>
@@ -371,6 +374,17 @@
                 <td></td>
                 <td>
                     <select class="table-input" id="layer-property-select-point-text">
+                        <option value="" name="none">-- NONE --</option>
+                    </select>
+                </td>
+                </tr>
+                
+                <tr>
+                <td>Point significance:</td>
+                <td><input class="table-input" id="layer-property-input-point-significance" /></td>
+                <td></td>
+                <td>
+                    <select class="table-input" id="layer-property-select-point-significance">
                         <option value="" name="none">-- NONE --</option>
                     </select>
                 </td>

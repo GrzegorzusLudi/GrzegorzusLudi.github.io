@@ -1,0 +1,3981 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<script type="text/javascript">
+
+
+function laduj(){
+yu = [];
+yi = [];
+wq = "BITEWKA"; //title
+
+klatka = 0;     //curent frame
+doklatki = 0;	//destination frame after changing the current frame
+zaslona = 10;	//opacity of "curtain"
+
+//auxilliary variables to delay counting the soldiers
+	klatek = 0;
+	sekund = 1;
+	
+//auxilliary arrays used to count soldiers at certain second of fight (used to make diagram)
+	twojsil = [];  //(twój=your in polish)
+	wrogsil = [];  //enemy (wróg=enemy in polish)
+
+
+//Making these big gray buttons (przycisk=button)
+pszycow = 0;
+pszy = [];
+pszy[pszycow] = new Pszycisk(200,300,"Noob war",0,4);
+pszy[pszycow] = new Pszycisk(600,300,"Łucznicy",0,5);
+pszy[pszycow] = new Pszycisk(200,430,"Konie",0,6);
+pszy[pszycow] = new Pszycisk(600,430,"Słonie",0,7);
+pszy[pszycow] = new Pszycisk(200,560,"Wyzwanie",0,8);
+pszy[pszycow] = new Pszycisk(600,560,"Chuck Norris",0,9);
+pszy[pszycow] = new Pszycisk(200,690,"Kusze",0,10);
+pszy[pszycow] = new Pszycisk(600,690,"Sandbox",0,11);
+pszy[pszycow] = new Pszycisk(100,20,"Powrót",11,0);
+pszy[pszycow] = new Pszycisk(450,20,"Kod",11,13);
+pszy[pszycow] = new Pszycisk(800,20,"Graj>>",11,12);
+pszy[pszycow] = new Pszycisk(20,20,"Menu",14,0);
+pszy[pszycow] = new Pszycisk(20,170,"Jeszcze raz",14,15);
+
+//array used in cheching potential enemies of one soldier (who may be attacked by him)
+potencjalni = [];
+potencjalnych = 0; //size of array
+
+//parameters of dividing the board into smaller fields (optimalization)
+obszx = 8;  //horizontal division
+obszy = 6;  //vertical
+
+//comstructing arrays
+obsz = [];
+obszow = [];
+var i = 0;
+while(i<obszx){
+	obsz[i] = [];
+	obszow[i] = [];
+	var j = 0;
+	while(j<obszy){
+		obsz[i][j] = [];  //array of soldiers put in one field
+		obszow[i][j] = 0; //number of them
+		j++;
+	}
+	i++;
+}
+
+//position of cursor
+xx = 0;
+yy = 0;
+
+pauz = true;             //pause
+vitezstvo = false;       //victory of one side (vítězstvi=victory in czech although I'm not czech)
+nicsieniestalo = false;  //defeat of player/victory of opponent (nic się nie stało=nothing [important] has happened in polish)
+
+//canvas. 'Tede' is nickname of famous polish rapper, unrelated :D
+tede=document.getElementById("tede");
+p=tede.getContext("2d");
+
+//selected unit (of Peja type), -1 is none
+zaz = -1;
+
+//array of soldiers (ludzie=people, ludek~stickman)
+ludn = 0;
+lud = [];
+
+//initiation of all objects reserved to soldiers 
+var as = 0;
+while(as<256){
+	lud[as] = new Ludek();
+	lud[as].zyc = 0;
+	as++;
+}
+ludn = 0;
+
+//blood (krew=blood)
+krwi = 0;
+krew = [];
+
+//grass (trawa=grass)
+trawax = [];
+traway = [];
+var a = 0;
+while(a<40){
+	trawax[a] = Math.random()*1200;
+	traway[a] = Math.random()*900;
+	a++;
+}
+//fill colour of soldier
+nasze = ["#f00"]; //nasze=ours
+ich = ["#00f"];   //enemy, ich=their
+
+//stroke colour of soldier
+naszeg = ["#800"];
+ichg = ["#008"];
+//I have put the colours into array because there could be many colours fighting for each side ;P
+
+/*properties of each type. For example atamiecz[1][2] is attack power of the axeman
+ Types put at each place: 0 - swordsman, 1 - axeman, 2 - bowman, 3 - crossbowman, 4 - spearman, 5 - horseman, 6 - elephant, 7 - Chuck Norris
+*/
+atamiecz = [[1,2,3],[2,4,5],[1,1,"t"],[1,1,2],[1,2,2],[2,4,4],[7,10,10],[20,20,20]]; //attack power, "t" is poisoning, with power of 1
+zasimiecz = [[1,1,1],[1,1,1],[5,10,10],[4,8,8],[2,2,3],[2,2,2],[2,2,2],[7,7,7]];	 //attack range
+przemiecz = [10,10,12,15,10,10,4,1];												 //frecquency of attack
+lidzba = [16,16,16,16,16,9,4,1];													 //number of soldiers in one unit (of Peja type)
+obrtarcza = [[1,2,2],[0,0,0],[0,0,0],[1,2,2],[1,2,2],[1,2,2],[4,4,4],[10,10,10]];	 //defence
+cietarcza = [[1,2,1],[0,0,0],[0,0,0],[1,2,1],[1,2,1],[1,2,1],[0,0,0],[-5,-5,-5]];	 //weight of the shield
+jezd = [[8,8,8],[8,8,8],[8,8,8],[8,8,8],[8,8,8],[16,16,20],[4,4,6],[40,40,40]];		 //speed
+
+//colours of horse (rumak=knight's horse) and elephant (słoń)
+ruma = ["#a75","#753","#ccc"];
+rumak = ["#542","#321","#666"]; //stroke
+slon = ["#aaa","#888","#a85"];
+slok = ["#555","#444","#542"];  //stroke
+
+//array of units used in replay (at start of the game, it's filled with copies of units)
+zachow = [];
+
+//array of units (Peja is next famous polish rapper)
+pejan = 0;
+peja = [];
+as = 0;
+while(as<16){
+	peja[pejan] = new Peja();
+	zachow[as] = new Zachowajc();
+	as++;
+}
+
+//Fields in sandbox creator
+polaki = [];
+for(i = 0;i<4;i++){
+	polaki[i] = new Polak(0,i,-1);
+	polaki[i+4] = new Polak(1,i,-1);
+	polaki[i+8] = new Polak(2,i,1);
+	polaki[i+12] = new Polak(3,i,1);
+}
+
+rysuj(); //draw
+
+}
+//checks if colour belongs to player
+function nasz(kol){
+	var wyn = false;
+	var a = 0;
+	while(nasze[a]!=undefined){
+		if(nasze[a]==kol){
+		wyn = true;
+		}
+		a++;
+	}
+	return wyn;
+}
+//bloodstain
+function Krew(x,y){
+	this.x = x+(Math.random()-0.5)*20;
+	this.y = y+(Math.random()-0.5)*10;
+	t = this;
+	t.kx = [];
+	t.ky = [];
+	this.rysuj = function(){
+		t = this;
+		p.fillStyle="#a11";
+		p.scale(2,1);
+			p.globalAlpha = 0.2;
+			p.beginPath();
+			p.arc(t.x/2,t.y,18,0, 2 * Math.PI, false);
+			p.fill();
+			p.scale(0.5,1);
+			p.globalAlpha = 1;
+	}
+	krwi++;
+}
+//new bloodstain
+function krwiuj(x,y){
+	var zlic = 0;
+	var i = 0;
+	while(i<krwi){
+		if(odl({x:x,y:y},krew[i])<15){
+			zlic++;
+			
+		}
+		if(zlic>=3)
+		break;
+		i++;
+	}
+	if(zlic<3)
+	krew[krwi] = new Krew(x,k.y);
+}
+//function returns right position of a soldier in unit
+//num - number of soldiers in unit; nu - place of soldier in array; kie - side of unit, enemy has 1, player -1; typ - type of unit
+function pozycj(num,nu,kie,typ){
+ var px,py;
+ if(nu<=1){
+  px = 0;
+  py = 0;
+ } else if(nu<=2){
+  px = 0;
+  py = 25-num*50;
+ } else if(nu<=4){
+  if(num<2){
+   px = -25;
+   py = 25-num*50;
+  } else {
+   px = 25;
+   if(nu<=3){
+    py = 0;
+   } else {
+    py = 25-(num-2)*50;
+   }
+  }
+ } else if(nu<=6){
+  if(num<3){
+   px = -25;
+   py = 50-num*50;
+  } else {
+   px = 25;
+   if(nu<=5){
+    py = 25-(num-3)*50;
+   } else {
+    py = 50-(num-3)*50;
+   }
+  }
+ } else if(nu<=9){
+  if(num<3){
+   px = -50;
+   py = 50-num*50;
+  } else if(num<6){
+   px = 0;
+   py = 50-(num-3)*50;
+  } else {
+   px = 50;
+   if(nu<=7){
+    py = 0;
+   } else if(nu<=8){
+    py = 25-(num-6)*50;
+   } else {
+    py = 50-(num-6)*50;
+   }
+  }
+ } else if(nu<=12){
+  if(num<4){
+   px = -50;
+   py = 75-num*50;
+  } else if(nu<11){
+   if(num<7){
+    px = 0;
+    py = 50-(num-4)*50;
+   } else {
+    px = 50;
+    py = 50-(num-7)*50;
+   }
+  } else if(num<8){
+    px = 0;
+    py = 75-(num-4)*50;
+  } else if(nu<12){
+    px = 50;
+    py = 50-(num-8)*50;
+  } else {
+    px = 50;
+    py = 75-(num-8)*50;
+  }
+ } else {
+  if(num<4){
+   px = -75;
+   py = 75-num*50;
+  } else if(num<8){
+   px = -25;
+   py = 75-(num-4)*50;
+  } else if(num<12){
+   px = 25;
+   py = 75-(num-8)*50;
+  } else {
+   px = 75;
+   if(nu<14){
+    py = 0;
+   } else if(nu<15){
+    py = 25-(num-12)*50;
+   } else if(nu<16){
+    py = 50-(num-12)*50;
+   } else {
+    py = 75-(num-12)*50;
+   }
+  }
+ }
+px*=kie;
+var rozc = 1;
+if(typ==5)
+rozc = 1.3;
+if(typ==6)
+rozc = 2;
+return {x:px*rozc,y:-py*rozc};
+}
+//maked copies of 'Peja' objects
+function Zachowajc(){
+	this.zachowajcuj = zachowajcuj;
+}
+//The unit. Has an array of soldiers, controlled by it. 
+function Peja(){
+this.pejuj = pejuj;
+this.num = pejan;
+pejan++;
+}
+//It's named for Ryszard 'Peja' Andrzejewski, famous polish rapper. 
+//When I started making this game, I had fun of memes which derided the polish hip-hop musicians. ( ͡° ͜ʖ ͡°)
+
+//draws a distinct mark of each type (for example sword is a mark of swordsmen). This game contains no images. All is in this one file. ;P
+function znak(x,y,w,kol,kolo,rodz,lv1,lv2){ //w - size,kol - fill,kolo - stroke,rodz - type (rodzaj), lv1 - weapon level, lv2 - shield level
+	var fx = 30*w;
+	var fy = 30*w;
+	p.strokeStyle=kolo;
+	p.fillStyle=kol;
+	switch(rodz){
+		case 0:
+			p.beginPath();
+			p.moveTo(x+fx*(-0.7),y+fy*(-0.7));
+			p.lineTo(x+fx*(-0.4),y+fy*(-0.7));
+			p.lineTo(x+fx*(0.4),y+fy*(0.2));
+			p.lineTo(x+fx*(0.6),y+fy*(0.0));
+			p.lineTo(x+fx*(0.0),y+fy*(0.6));
+			p.lineTo(x+fx*(0.2),y+fy*(0.4));
+			p.lineTo(x+fx*(-0.7),y+fy*(-0.4));
+			p.closePath();
+			p.fill();
+			p.stroke();
+			
+			p.fillStyle=kolo;
+			p.beginPath();
+			p.moveTo(x+fx*(0.4),y+fy*(0.2));
+			p.lineTo(x+fx*(0.2),y+fy*(0.4));
+			p.lineTo(x+fx*(0.6),y+fy*(0.8));
+			p.lineTo(x+fx*(0.8),y+fy*(0.6));
+			p.closePath();
+			p.fill();
+			p.stroke();
+		break;
+		case 1:
+			p.beginPath();
+			p.moveTo(x+fx*(-0.3),y+fy*(-0.7));
+			p.lineTo(x+fx*(-0.8),y+fy*(-0.5));
+			p.lineTo(x+fx*(-0.75),y+fy*(-0.0));
+			p.lineTo(x+fx*(-0.3),y+fy*(0.2));
+			p.lineTo(x+fx*(0.1),y+fy*(-0.2));
+			p.closePath();
+			p.fill();
+			p.stroke();
+			
+			p.fillStyle=kolo;
+			p.beginPath();
+			p.moveTo(x+fx*(-0.4),y+fy*(-0.7));
+			p.lineTo(x+fx*(-0.25),y+fy*(-0.85));
+			p.lineTo(x+fx*(0.85),y+fy*(0.25));
+			p.lineTo(x+fx*(0.7),y+fy*(0.4));
+			p.closePath();
+			p.fill();
+			p.stroke();
+		break;
+		case 2:
+			p.beginPath();
+			p.moveTo(x+fx*(-0.7),y+fy*(-0.7));
+			p.lineTo(x+fx*(-0.6),y+fy*(-0.5));
+			p.lineTo(x+fx*(-0.4),y+fy*(-0.4));
+			p.lineTo(x+fx*(0.3),y+fy*(0.3));
+			p.lineTo(x+fx*(0.3),y+fy*(0.4));
+			p.lineTo(x+fx*(0.5),y+fy*(0.6));
+			p.lineTo(x+fx*(0.6),y+fy*(0.5));
+			p.lineTo(x+fx*(0.4),y+fy*(0.3));
+			p.lineTo(x+fx*(0.3),y+fy*(0.3));
+			p.lineTo(x+fx*(-0.4),y+fy*(-0.4));
+			p.lineTo(x+fx*(-0.5),y+fy*(-0.6));
+			p.closePath();
+			p.fill();
+			p.stroke();
+			
+			p.fillStyle=kolo;
+			p.beginPath();
+			p.moveTo(x+fx*(0.3),y+fy*(-0.5));
+			p.lineTo(x+fx*(0.6),y+fy*(-0.6));
+			p.lineTo(x+fx*(0.2),y+fy*(-0.6));
+			p.lineTo(x+fx*(-0.6),y+fy*(0.2));
+			p.lineTo(x+fx*(-0.6),y+fy*(0.6));
+			p.lineTo(x+fx*(-0.5),y+fy*(0.3));
+			p.closePath();
+			p.fill();
+			p.stroke();
+			p.beginPath();
+			p.moveTo(x+fx*(0.6),y+fy*(-0.6));
+			p.lineTo(x+fx*(-0.6),y+fy*(0.6));
+			p.stroke();
+		break;
+		case 3:
+			
+			p.fillStyle=kolo;
+			p.beginPath();
+			p.moveTo(x+fx*(-0.6),y+fy*(-0.6));
+			p.lineTo(x+fx*(0.6),y+fy*(-0.6));
+			p.lineTo(x+fx*(0.6),y+fy*(-0.4));
+			p.lineTo(x+fx*(-0.4),y+fy*(-0.4));
+			p.lineTo(x+fx*(-0.4),y+fy*(0.6));
+			p.lineTo(x+fx*(-0.6),y+fy*(0.6));
+			p.closePath();
+			p.fill();
+			p.stroke();
+			
+			p.fillStyle=kol;
+			p.beginPath();
+			p.moveTo(x+fx*(-0.7),y+fy*(-0.5));
+			p.lineTo(x+fx*(-0.5),y+fy*(-0.7));
+			p.lineTo(x+fx*(0.6),y+fy*(0.4));
+			p.lineTo(x+fx*(0.4),y+fy*(0.6));
+			p.closePath();
+			p.fill();
+			p.stroke();
+			
+			p.stroke();
+			p.beginPath();
+			p.moveTo(x+fx*(0.5),y+fy*(-0.5));
+			p.lineTo(x+fx*(-0.5),y+fy*(0.5));
+			p.stroke();
+		break;
+		case 4:
+			p.fillStyle=kolo;
+			p.beginPath();
+			p.moveTo(x+fx*(-0.7),y+fy*(-0.6));
+			p.lineTo(x+fx*(-0.6),y+fy*(-0.7));
+			p.lineTo(x+fx*(0.7),y+fy*(0.6));
+			p.lineTo(x+fx*(0.6),y+fy*(0.7));
+			p.closePath();
+			p.fill();
+			p.stroke();
+			
+			p.fillStyle=kol;
+			
+			p.beginPath();
+			p.moveTo(x+fx*(-0.9),y+fy*(-0.9));
+			p.lineTo(x+fx*(-0.8),y+fy*(-0.55));
+			p.lineTo(x+fx*(-0.55),y+fy*(-0.55));
+			p.lineTo(x+fx*(-0.55),y+fy*(-0.8));
+			p.closePath();
+			p.fill();
+			p.stroke();
+			
+		break;
+		case 5:
+			p.fillStyle=kolo;
+			p.fillRect(x+fx*(-0.8),y+fy*(-0.7),fx*0.3,fy*0.6);
+			p.fillRect(x+fx*(-0.3),y+fy*(-0.3),fx*1.0,fy*0.5);
+			p.lineWidth = 3;
+			p.beginPath();
+			p.moveTo(x+fx*(-0.6),y+fy*(-0.6));
+			p.lineTo(x+fx*(-0.3),y+fy*(-0.3));
+			p.stroke();
+			p.beginPath();
+			p.moveTo(x+fx*(-0.2),y+fy*(0.1));
+			p.lineTo(x+fx*(-0.3),y+fy*(0.7));
+			p.stroke();
+			p.beginPath();
+			p.moveTo(x+fx*(-0.0),y+fy*(0.1));
+			p.lineTo(x+fx*(0.1),y+fy*(0.7));
+			p.stroke();
+			p.beginPath();
+			p.moveTo(x+fx*(0.4),y+fy*(0.1));
+			p.lineTo(x+fx*(0.3),y+fy*(0.7));
+			p.stroke();
+			p.beginPath();
+			p.moveTo(x+fx*(0.6),y+fy*(0.1));
+			p.lineTo(x+fx*(0.7),y+fy*(0.7));
+			p.stroke();
+			p.lineWidth = 1;
+			
+			
+		break;
+		case 6:
+			p.fillStyle=kolo;
+			p.fillRect(x+fx*(-0.5),y+fy*(-0.5),fx*1.0,fy*0.75);
+			p.fillRect(x+fx*(-0.8),y+fy*(-0.65),fx*0.6,fy*0.6);
+			p.fillRect(x+fx*(0.2),y+fy*(-0.68),fx*0.6,fy*0.6);
+			
+			p.fillRect(x+fx*(-0.15),y+fy*(-0.5),fx*0.3,fy*1.2);
+			
+			p.beginPath();
+			p.moveTo(x+fx*(0.6),y+fy*(0.1));
+			p.lineTo(x+fx*(0.7),y+fy*(0.7));
+			p.fill();
+			
+			
+		break;
+		case 7:
+			p.beginPath();
+			p.moveTo(x+fx*(-0.8),y+fy*(-0.8));
+			p.lineTo(x+fx*(-0.2),y+fy*(0.8));
+			p.stroke();
+			p.beginPath();
+			p.moveTo(x+fx*(-0.2),y+fy*(-0.8));
+			p.lineTo(x+fx*(-0.8),y+fy*(0.8));
+			p.stroke();
+			p.beginPath();
+			p.moveTo(x+fx*(0.2),y+fy*(-0.8));
+			p.lineTo(x+fx*(0.6),y+fy*(-0.6));
+			p.lineTo(x+fx*(0.8),y+fy*(0.0));
+			p.lineTo(x+fx*(0.6),y+fy*(0.6));
+			p.lineTo(x+fx*(0.2),y+fy*(0.8));
+			p.closePath();
+			p.stroke();
+			
+			
+		break;
+	}
+	p.fillStyle=kol;
+}
+function zachowajcuj(x,y,liczb,kier,kol,kolo,typ,lv1,lv2){
+this.x = x;
+this.y = y;
+this.liczb = liczb;
+this.kier = kier;
+this.kol = kol;
+this.kolo = kolo;
+this.typ = typ;
+this.lv1 = lv1;
+this.lv2 = lv2;
+if(typ == 1 || typ == 2 || typ == 5)
+this.lv2 = lv1;
+}
+//making unit (Peja)
+function pejuj(x,y,liczb,kier,kol,kolo,typ,lv1,lv2){
+this.x = x;
+this.y = y;
+this.liczb = liczb;       //number of soldiers
+this.liczbz = this.liczb;
+this.kier = kier;		  //kierunek=direction, to which side unit belongs
+this.kol = kol;			  //fill colour
+this.kolo = kolo;		  //stroke colour
+this.nal = [];			  //array of soldiers
+this.typ = typ;			  //type of unit
+this.lv1 = lv1;			  //level of weapon
+this.lv2 = lv2;			  //level of shield
+if(typ == 1 || typ == 2 || typ == 5) //if doesn't have shield
+this.lv2 = lv1;
+
+this.niew = true;  //unused (niewykorzystany)
+
+this.cel = -1;    //cel=target, another soldier
+
+//creating the soldiers
+var g = 0;
+while(g<liczb){
+this.nal[g] = ludn;
+lud[ludn].ludkuj(this.x+pozycj(g,liczb,kier,typ).x,this.y+pozycj(g,liczb,kier,typ).y,kol,kolo,this.typ,lv1,lv2);
+lud[ludn-1].senior = this;
+g++;
+}
+
+//method which draws the Peja
+this.rysuj = function(){
+if(nasz(this.kol)){
+var wx,wy,wax,way;
+wx = this.x;
+wy = this.y;
+wax = srodak(this).x;
+way = srodak(this).y;
+p.fillStyle=kol;
+p.strokeStyle="#444";
+
+p.strokeRect(wax-30,way-30,60,60);
+p.beginPath();
+p.moveTo(wax,way);
+p.lineTo(wx,wy);
+p.stroke();
+p.strokeStyle=kolo;
+
+
+p.globalAlpha = 0.7;
+p.fillRect(wx-30,wy-30,60,60);
+p.globalAlpha = 1;
+znak(wx,wy,1,this.kol,this.kolo,this.typ,this.lv1,this.lv2);
+if(Math.abs(xx-wx)<30 && Math.abs(yy-wy)<30 && nasz(t.kol)){
+p.fillStyle="#fff";
+p.globalAlpha = 0.5;
+p.fillRect(wx-30,wy-30,60,60);
+}
+p.globalAlpha = 1;
+p.strokeRect(wx-30,wy-30,60,60);
+}
+}
+
+//sorting the soldiers after death of at least one of them
+this.tasuj = function(){
+
+var ai = 0;
+var le,pr,go,dl;
+while(ai<this.liczb){
+n = lud[this.nal[ai]];
+if(ai>0){
+if(n.x<le){
+le = n.x;}
+if(n.x>pr){
+pr = n.x;}
+if(n.y<go){
+go = n.y;}
+if(n.y>dl){
+dl = n.y;}
+
+} else {
+le = n.x;
+pr = n.x;
+go = n.y;
+dl = n.y;
+}
+ai++;
+}
+srx = (le+pr)/2;
+sry = (go+dl)/2;
+var tab = [];
+var tapa = [];
+var taqa = [];
+ai = 0;
+while(ai<this.liczb){
+ tapa[ai] = 0;
+ ai++;
+}
+ai = 0;
+while(ai<this.liczb){
+ n = lud[this.nal[ai]];
+ if(n.zyc>=10){
+  var bi = 0;
+  tab[ai] = [];
+  while(bi<this.liczb-1){
+   ox = srx+pozycj(bi,this.liczb-1,this.kier).x;
+   oy = sry+pozycj(bi,this.liczb-1,this.kier).y;
+   tab[ai][bi] = Math.sqrt(Math.pow(ox-n.x,2)+Math.pow(oy-n.y,2));
+   bi++;
+  }
+  naj = -1;
+  var bi = 0;
+  while(bi<this.liczb-1){
+   while(tapa[bi]==1 && bi<this.liczb-1){
+    bi++;
+   }
+   if(naj==-1){
+    naj = bi;
+   } else {
+    if(tab[ai][bi]<tab[ai][naj]){
+     naj = bi;
+    }
+   }
+   bi++;
+  }
+  tapa[naj] = 1;
+  taqa[naj] = this.nal[ai];
+  n.senior = this;
+ }
+ ai++;
+}
+
+var ai = 0;
+while(ai<this.liczb-1){
+this.nal[ai] = taqa[ai];
+ai++;
+}
+
+this.liczb--;
+if(this.liczb<=0){
+if(zaz==this.num)
+zaz = -1;
+this.x = -100;
+this.y = -100;
+}
+}
+
+}
+//The soldier (ludek can be translated as "litle human", ludzie=people)
+function Ludek(){
+this.ludkuj = ludkuj;
+}
+//kol - fill, kolo - stroke, typ - type, lv1 - level of weapon, lv2 - level of shield
+function ludkuj(x,y,kol,kolo,typ,lv1,lv2){
+this.numer = ludn;     //index of soldier
+ludn++;
+//this.Ludek = Ludek;
+this.x = x;
+this.y = y;
+this.kol = kol;
+this.kolo = kolo;
+
+//destination, when different from position, the soldier walks there
+this.cx = x;
+this.cy = y;
+
+this.kier = 1;
+
+//stopa=foot variables used in animation of walking
+this.stop = 0;
+this.stopa = 0;
+
+this.zyc = 10; //(życia=lives, żyć=[number] of lives) used in fadening of dead soldiers (for 0, it disappears)
+this.typ = typ;
+this.lv1 = lv1;
+this.lv2 = lv2;
+
+this.stc = -1;  //target of bowman of crosbowman
+this.sto = 0;   //used in animation of flying arrow/bolt
+
+this.nali = 0;
+this.count = 0;   //count of killed enemies
+this.dyst = 0;    //distance made by the soldier
+this.obraz = 0;   //hp taken from the enemy
+
+//area, where the soldier belongs (see line 49)
+this.nalex = -1;
+this.naley = -1;
+
+this.wierzch = false;    //jeździć wierzchem=ride an animal, used in animation
+this.wysk = 0;      //number of pixels above normal position when riding an animal
+this.szyp = jezd[typ][lv1];   //speed
+this.hp = 4;      //healthpoints
+this.grub = 20;   //radius of the soldier
+if(typ==5){     //if horse
+this.grub = 25;
+this.wysk = 25;
+this.hp = 5;
+this.wierzch = true;
+}
+if(typ==6){    //if elephant
+this.grub = 40;
+this.wysk = 40;
+this.hp = 8;
+this.wierzch = true;
+}
+if(typ==7){   //if Chuck Norris XD
+this.hp=100;
+}
+this.atak = atamiecz[typ][lv1];     //attack power
+this.obrona = obrtarcza[typ][lv2];  //shield power
+this.zasi = 40*zasimiecz[typ][lv1]; //range
+
+this.p = this.szyp-cietarcza[typ][lv2]*2; //real speed
+
+//"velocity vector"
+this.px = 0;
+this.py = 0;
+
+this.maxhp = this.hp;          //maximal healthpoints
+this.przelad = przemiecz[typ]; //fracquency of attacks
+this.cool = this.przelad;
+this.ataf = 0;
+
+this.kat = 0;
+
+this.tru = false;   //if is poisoned
+
+//bronie
+//this.typ = 0;
+this.cien = function(){
+	t = this;
+	var wiel = 10;
+	if(t.typ==5)
+	wiel = 15;
+	if(t.typ==6)
+	wiel = 20;
+	p.fillStyle="#666";
+	p.scale(2,1);
+	p.globalAlpha = 0.5;
+	p.beginPath();
+	p.arc(t.x/2,t.y+20,wiel,0, 2 * Math.PI, false);
+	p.fill();
+	p.scale(0.5,1);
+	p.globalAlpha = 1;
+}
+//Used after victory
+this.randomizuj = function(){
+ this.cx = Math.floor(Math.random()*1000+100);
+ this.cy = Math.floor(Math.random()*700+100);
+}
+//draws head of horse/elephant
+this.glowak = function(){
+if(t.typ==5){ //horse
+	t = this;
+		p.fillStyle=ruma[t.lv1];
+		p.strokeStyle=rumak[t.lv1];
+		p.globalAlpha = t.zyc/10;
+		
+		p.fillRect(t.x+Math.sin(t.kat)*30-10,t.y-28,20,30);
+if(t.tru){
+p.fillStyle="#6b0";
+p.globalAlpha = t.zyc/20;
+p.fillRect(t.x+Math.sin(t.kat)*30-10,t.y-28,20,30);
+p.fillStyle=this.kol;
+p.globalAlpha = t.zyc/10;
+}
+		p.strokeRect(t.x+Math.sin(t.kat)*30-10,t.y-28,20,30);
+p.beginPath();
+p.moveTo(t.x+Math.sin(t.kat)*30-Math.cos(t.kat)*7-2,t.y-28);
+p.lineTo(t.x+Math.sin(t.kat)*30-Math.cos(t.kat)*7,t.y-28-6);
+p.lineTo(t.x+Math.sin(t.kat)*30-Math.cos(t.kat)*7+2,t.y-28);
+p.fill();
+if(t.tru){
+p.fillStyle="#6b0";
+p.globalAlpha = t.zyc/20;
+p.fill();
+p.fillStyle=this.kol;
+p.globalAlpha = t.zyc/10;
+}
+p.stroke();
+p.beginPath();
+p.moveTo(t.x+Math.sin(t.kat)*30+Math.cos(t.kat)*7-2,t.y-28);
+p.lineTo(t.x+Math.sin(t.kat)*30+Math.cos(t.kat)*7,t.y-28-6);
+p.lineTo(t.x+Math.sin(t.kat)*30+Math.cos(t.kat)*7+2,t.y-28);
+p.fill();
+if(t.tru){
+p.fillStyle="#6b0";
+p.globalAlpha = t.zyc/20;
+p.fill();
+p.fillStyle=this.kol;
+p.globalAlpha = t.zyc/10;
+}
+p.stroke();
+if(t.kat>-Math.PI/2+1.4 && t.kat<Math.PI/2+1.4){
+p.beginPath();
+p.moveTo(t.x+Math.sin(t.kat-0.3)*30,t.y-18);
+p.lineTo(t.x+Math.sin(t.kat-0.3)*30,t.y-12);
+p.stroke();
+}
+
+if(t.kat>-Math.PI/2-1.4 && t.kat<Math.PI/2-1.4){
+p.beginPath();
+p.moveTo(t.x+Math.sin(t.kat+0.3)*30,t.y-18);
+p.lineTo(t.x+Math.sin(t.kat+0.3)*30,t.y-12);
+p.stroke();
+}
+}
+if(t.typ==6){  //elephant
+
+t = this;
+p.fillStyle=slon[t.lv1];
+p.strokeStyle=slok[t.lv1];
+var two = 0;
+if(t.cool<=2)
+two = 10;
+p.beginPath();
+p.moveTo(t.x-22+Math.sin(t.kat)*40+Math.sin(t.kat)*two,t.y-30+two);
+
+p.lineTo(t.x+22+Math.sin(t.kat)*40+Math.sin(t.kat)*two,t.y-30+two);
+p.lineTo(t.x+22+Math.sin(t.kat)*40+Math.sin(t.kat)*two+Math.abs(Math.cos(t.kat)*20),t.y-30+two);
+p.lineTo(t.x+22+Math.sin(t.kat)*40+Math.sin(t.kat)*two+Math.abs(Math.cos(t.kat)*20),t.y-5+two);
+p.lineTo(t.x+22+Math.sin(t.kat)*40+Math.sin(t.kat)*two,t.y-5+two);
+p.lineTo(t.x+22+Math.sin(t.kat)*40+Math.sin(t.kat)*two,t.y+0+two);
+p.lineTo(t.x+5+Math.sin(t.kat)*52+Math.sin(t.kat)*two,t.y+0+two);
+p.lineTo(t.x+5+Math.sin(t.kat)*52+Math.sin(t.kat)*two,t.y+20+two);
+p.lineTo(t.x-5+Math.sin(t.kat)*52+Math.sin(t.kat)*two,t.y+20+two);
+p.lineTo(t.x-5+Math.sin(t.kat)*52+Math.sin(t.kat)*two,t.y+0+two);
+p.lineTo(t.x-22+Math.sin(t.kat)*40+Math.sin(t.kat)*two,t.y+0+two);
+p.lineTo(t.x-22+Math.sin(t.kat)*40+Math.sin(t.kat)*two,t.y-5+two);
+p.lineTo(t.x-22+Math.sin(t.kat)*40+Math.sin(t.kat)*two-Math.abs(Math.cos(t.kat)*20),t.y-5+two);
+p.lineTo(t.x-22+Math.sin(t.kat)*40+Math.sin(t.kat)*two-Math.abs(Math.cos(t.kat)*20),t.y-30+two);
+p.closePath();
+p.fill();
+if(t.tru){
+p.fillStyle="#6b0";
+p.globalAlpha = t.zyc/20;
+p.fill();
+p.fillStyle=slon[t.lv1];
+p.globalAlpha = t.zyc/10;
+}
+p.stroke();
+if(t.kat>-Math.PI/2+0.2 && t.kat<Math.PI/2+0.2){
+p.beginPath();
+p.moveTo(t.x+Math.sin(t.kat-0.2)*60+Math.sin(t.kat)*two,t.y-18+two);
+p.lineTo(t.x+Math.sin(t.kat-0.2)*60+Math.sin(t.kat)*two,t.y-12+two);
+p.stroke();
+}
+
+if(t.kat>-Math.PI/2-0.2 && t.kat<Math.PI/2-0.2){
+p.beginPath();
+p.moveTo(t.x+Math.sin(t.kat+0.2)*60+Math.sin(t.kat)*two,t.y-18+two);
+p.lineTo(t.x+Math.sin(t.kat+0.2)*60+Math.sin(t.kat)*two,t.y-12+two);
+p.stroke();
+}
+p.globalAlpha = t.zyc/10;
+}
+}
+//draws the soldier
+this.rys=function(){
+
+p.lineWidth=2;
+t = this;
+
+
+
+p.globalAlpha=t.zyc/10;
+
+if((this.kat<-Math.PI/2 || this.kat>=Math.PI/2) && this.wierzch){
+	t.glowak();
+}
+
+//broń=weapon
+if(this.kat>=-Math.PI && this.kat<0){ //checks if it's in the front or back 
+ bron(t.x,t.y-t.wysk,t.kat,t.typ,0,t.lv1);
+ 
+} else {
+ bron(t.x,t.y-t.wysk,t.kat,t.typ,1,t.lv2);
+}
+
+p.strokeStyle=this.kolo;
+p.fillStyle=this.kol;
+
+if(!this.wierzch){
+//nnogi (legs)
+p.fillRect(t.x-4-Math.cos(t.kat)*11,t.y+6+t.stop-t.wysk,9,14);
+p.fillRect(t.x-4+Math.cos(t.kat)*11,t.y+6-t.stop-t.wysk,9,14);
+if(t.tru){
+p.fillStyle="#6b0";
+p.globalAlpha = t.zyc/20;
+p.fillRect(t.x-4-Math.cos(t.kat)*11,t.y+6+t.stop-t.wysk,9,14);
+p.fillRect(t.x-4+Math.cos(t.kat)*11,t.y+6-t.stop-t.wysk,9,14);
+p.fillStyle=this.kol;
+p.globalAlpha = t.zyc/10;
+}
+p.strokeRect(t.x-4-Math.cos(t.kat)*11,t.y+6+t.stop-t.wysk,9,14);
+p.strokeRect(t.x-4+Math.cos(t.kat)*11,t.y+6-t.stop-t.wysk,9,14);
+
+} else {
+//tail of the animal
+	if(t.typ==5){ //horse
+		p.fillStyle=ruma[t.lv1];
+		p.strokeStyle=rumak[t.lv1];
+		p.globalAlpha = t.zyc/10;
+		var taj = Math.max(Math.abs(-Math.cos(t.kat)*20+Math.sin(t.kat)*26),Math.abs(Math.cos(t.kat)*20+Math.sin(t.kat)*26));
+		
+		p.fillRect(t.x-2-Math.cos(t.kat)*12-Math.sin(t.kat)*26,t.y+6+t.stop,8,14);
+		p.fillRect(t.x-2+Math.cos(t.kat)*12-Math.sin(t.kat)*26,t.y+6-t.stop,8,14);
+		p.fillRect(t.x-2-Math.cos(t.kat)*12+Math.sin(t.kat)*18,t.y+6+t.stop,8,14);
+		p.fillRect(t.x-2+Math.cos(t.kat)*12+Math.sin(t.kat)*18,t.y+6-t.stop,8,14);
+		
+		p.strokeRect(t.x-2-Math.cos(t.kat)*12-Math.sin(t.kat)*26,t.y+6+t.stop,8,14);
+		p.strokeRect(t.x-2+Math.cos(t.kat)*12-Math.sin(t.kat)*26,t.y+6-t.stop,8,14);
+		p.strokeRect(t.x-2-Math.cos(t.kat)*12+Math.sin(t.kat)*18,t.y+6+t.stop,8,14);
+		p.strokeRect(t.x-2+Math.cos(t.kat)*12+Math.sin(t.kat)*18,t.y+6-t.stop,8,14);	
+		
+		p.fillRect(t.x-taj-Math.sin(t.kat)*5,t.y-13,taj*2,20); //tail
+		if(t.tru){
+			p.fillStyle="#6b0";
+			p.globalAlpha = t.zyc/20;
+		p.fillRect(t.x-2-Math.cos(t.kat)*12-Math.sin(t.kat)*26,t.y+6+t.stop,9,14);
+		p.fillRect(t.x-2+Math.cos(t.kat)*12-Math.sin(t.kat)*26,t.y+6-t.stop,9,14);
+		p.fillRect(t.x-2-Math.cos(t.kat)*12+Math.sin(t.kat)*18,t.y+6+t.stop,9,14);
+		p.fillRect(t.x-2+Math.cos(t.kat)*12+Math.sin(t.kat)*18,t.y+6-t.stop,9,14);
+		
+			p.fillRect(t.x-taj-Math.sin(t.kat)*5,t.y-13,taj*2,20);
+			p.fillStyle=this.kol;
+			p.globalAlpha = t.zyc/10;
+		}	
+		
+		p.strokeRect(t.x-taj-Math.sin(t.kat)*5,t.y-13,taj*2,20); //tail
+
+		p.fillStyle=this.kol;
+		
+		
+	}
+	if(t.typ==6){ //elephant
+		
+		p.fillStyle=slon[t.lv1];
+		p.strokeStyle=slok[t.lv1];
+		p.globalAlpha = t.zyc/10;
+		var taj = Math.max(Math.abs(-Math.cos(t.kat)*20+Math.sin(t.kat)*26),Math.abs(Math.cos(t.kat)*20+Math.sin(t.kat)*26));
+		
+		p.fillRect(t.x-10-Math.cos(t.kat)*20-Math.sin(t.kat)*20,t.y+t.stop,20,20);
+		p.fillRect(t.x-10+Math.cos(t.kat)*20-Math.sin(t.kat)*20,t.y-t.stop,20,20);
+if(t.tru){
+p.fillStyle="#6b0";  //colour of poison
+p.globalAlpha = t.zyc/20;
+		p.fillRect(t.x-10-Math.cos(t.kat)*20-Math.sin(t.kat)*20,t.y+t.stop,20,20);
+		p.fillRect(t.x-10+Math.cos(t.kat)*20-Math.sin(t.kat)*20,t.y-t.stop,20,20);
+p.fillStyle=slon[t.lv1];
+p.globalAlpha = t.zyc/10;
+}
+		
+		p.strokeRect(t.x-10-Math.cos(t.kat)*20-Math.sin(t.kat)*20,t.y+t.stop,20,20);
+		p.strokeRect(t.x-10+Math.cos(t.kat)*20-Math.sin(t.kat)*20,t.y-t.stop,20,20);
+		p.fillRect(t.x-10-Math.cos(t.kat)*20+Math.sin(t.kat)*20,t.y+t.stop,20,20);
+		p.fillRect(t.x-10+Math.cos(t.kat)*20+Math.sin(t.kat)*20,t.y-t.stop,20,20);
+if(t.tru){
+p.fillStyle="#6b0";
+p.globalAlpha = t.zyc/20;
+		p.fillRect(t.x-10-Math.cos(t.kat)*20+Math.sin(t.kat)*20,t.y+t.stop,20,20);
+		p.fillRect(t.x-10+Math.cos(t.kat)*20+Math.sin(t.kat)*20,t.y-t.stop,20,20);
+p.fillStyle=slon[t.lv1];
+p.globalAlpha = t.zyc/10;
+}
+		p.strokeRect(t.x-10-Math.cos(t.kat)*20+Math.sin(t.kat)*20,t.y+t.stop,20,20);
+		p.strokeRect(t.x-10+Math.cos(t.kat)*20+Math.sin(t.kat)*20,t.y-t.stop,20,20);	
+		
+		p.fillRect(t.x-40-Math.cos(t.kat),t.y-30,80,40);
+if(t.tru){
+p.fillStyle="#6b0";
+p.globalAlpha = t.zyc/20;
+		p.fillRect(t.x-40-Math.cos(t.kat),t.y-30,80,40);
+p.fillStyle=slon[t.lv1];
+p.globalAlpha = t.zyc/10;
+}
+		p.strokeRect(t.x-40-Math.cos(t.kat),t.y-30,80,40);
+
+		p.strokeStyle=this.kol;
+		p.fillStyle=this.kol;
+	}
+	
+	if(this.kat>=-Math.PI && this.kat<0){
+		p.fillRect(t.x-4+Math.cos(t.kat)*11,t.y+6-t.wysk,9,14);
+		if(t.tru){
+			p.fillStyle="#6b0";
+			p.globalAlpha = t.zyc/20;
+			p.fillRect(t.x-4+Math.cos(t.kat)*11,t.y+6-t.wysk,9,14);
+			p.fillStyle=this.kol;
+			p.globalAlpha = t.zyc/10;
+		}
+		p.strokeRect(t.x-4+Math.cos(t.kat)*11,t.y+6-t.wysk,9,14);
+		
+	} else {
+		p.fillRect(t.x-4-Math.cos(t.kat)*11,t.y+6-t.wysk,9,14);
+		if(t.tru){
+			p.fillStyle="#6b0";
+			p.globalAlpha = t.zyc/20;
+			p.fillRect(t.x-4-Math.cos(t.kat)*11,t.y+6-t.wysk,9,14);
+			p.fillStyle=this.kol;
+			p.globalAlpha = t.zyc/10;
+		}
+		p.strokeRect(t.x-4-Math.cos(t.kat)*11,t.y+6-t.wysk,9,14);
+		
+	}
+	p.strokeStyle=this.kolo;
+}
+
+p.fillRect(t.x-20,t.y-7-t.wysk,40,20);
+if(t.tru){
+p.fillStyle="#6b0";
+p.globalAlpha = t.zyc/20;
+p.fillRect(t.x-20,t.y-7-t.wysk,40,20);
+p.fillStyle=this.kol;
+p.globalAlpha = t.zyc/10;
+}
+p.strokeRect(t.x-20,t.y-7-t.wysk,40,20);
+p.fillRect(t.x-10,t.y-20-t.wysk,20,13);
+
+if(t.tru){
+p.fillStyle="#6b0";
+p.globalAlpha = t.zyc/20;
+p.fillRect(t.x-10,t.y-20-t.wysk,20,13);
+p.fillStyle=this.kol;
+p.globalAlpha = t.zyc/10;
+}
+p.strokeRect(t.x-10,t.y-20-t.wysk,20,13);
+
+if(t.kat>-Math.PI/2+0.5 && t.kat<Math.PI/2+0.5){
+p.beginPath();
+p.moveTo(t.x+Math.sin(t.kat-0.5)*10,t.y-17-t.wysk);
+p.lineTo(t.x+Math.sin(t.kat-0.5)*10,t.y-11-t.wysk);
+p.stroke();
+}
+
+if(t.kat>-Math.PI/2-0.5 && t.kat<Math.PI/2-0.5){
+p.beginPath();
+p.moveTo(t.x+Math.sin(t.kat+0.5)*10,t.y-17-t.wysk);
+p.lineTo(t.x+Math.sin(t.kat+0.5)*10,t.y-11-t.wysk);
+p.stroke();
+}
+
+//draws an arrow/belt
+if(t.stc!=-1){
+var ka = Math.atan2(t.stc.x-t.x,t.stc.y-t.y);
+
+p.lineWidth=3;
+x = t.x+Math.sin(ka)*100*t.sto;
+y = t.y+Math.cos(ka)*100*t.sto;
+p.beginPath();
+p.moveTo(x+Math.cos(ka)*22+Math.sin(ka)*17,y+4+Math.cos(ka)*17/2-t.wysk);
+p.lineTo(x+Math.cos(ka)*22+Math.sin(ka)*15,y+2+Math.cos(ka)*15/2-t.wysk);
+p.lineTo(x+Math.cos(ka)*22+Math.sin(ka)*17,y+Math.cos(ka)*17/2-t.wysk);
+p.lineTo(x+Math.cos(ka)*22+Math.sin(ka)*15,y+2+Math.cos(ka)*15/2-t.wysk);
+p.lineTo(x+Math.cos(ka)*22+Math.sin(ka)*7,y+2+Math.cos(ka)*7/2-t.wysk);
+p.lineTo(x+Math.cos(ka)*22+Math.sin(ka)*5,y+Math.cos(ka)*5/2-t.wysk);
+p.lineTo(x+Math.cos(ka)*22+Math.sin(ka)*7,y+2+Math.cos(ka)*7/2-t.wysk);
+p.lineTo(x+Math.cos(ka)*22+Math.sin(ka)*5,y+4+Math.cos(ka)*5/2-t.wysk);
+p.stroke();
+if(t.atak=="t"){
+	
+	p.lineWidth=5;
+	p.strokeStyle="#6f0";
+	p.beginPath();
+	p.moveTo(x+Math.cos(ka)*22+Math.sin(ka)*16,y+2+Math.cos(ka)*16/2-t.wysk);
+	p.lineTo(x+Math.cos(ka)*22+Math.sin(ka)*12,y+2+Math.cos(ka)*12/2-t.wysk);
+	p.stroke();
+	p.lineWidth=2;
+}
+}
+
+if(this.kat>=-Math.PI/2 && this.kat<Math.PI/2 && this.wierzch){
+	t.glowak();
+}
+
+//weapon (=broń)
+if(this.kat>=0 && this.kat<Math.PI){
+ bron(t.x,t.y-t.wysk,t.kat,t.typ,0,t.lv1);
+} else {
+ bron(t.x,t.y-t.wysk,t.kat,t.typ,1,t.lv2);
+
+}
+if(t.zyc>=10){
+p.strokeStyle=t.kolo;
+p.fillStyle=t.kol;
+var g = 0;
+while(g<t.maxhp){
+ax = t.x-(t.maxhp-1)*3+g*6;
+ay = t.y-28;
+if(g<t.hp)
+p.fillRect(ax-3,ay-4-t.wysk,6,8);
+p.strokeRect(ax-3,ay-4-t.wysk,6,8);
+g++;
+}
+}
+p.globalAlpha=1;
+}
+}
+//draws weapon (broń=weapon), kąt=angle, typ=type, ręka=hand (left or right), lv - level of weapon/shield
+function bron(x,y,kat,typ,rek,lv){
+ switch(typ){
+  case 0:   //swordsman
+   if(rek==0){
+    switch(lv){
+     case 0:
+	if(t.cool>=3){
+	p.strokeStyle="#555";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y-23);
+	p.lineTo(x-Math.cos(kat)*22,y+6);
+	p.stroke();
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-4,y+2);
+	p.lineTo(x-Math.cos(kat)*22+4,y+2);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+	p.strokeStyle="#555";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22+Math.sin(kat)*23,y+2+Math.cos(kat)*11);
+	p.lineTo(x-Math.cos(kat)*22,y+2);
+	p.stroke();
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y-2);
+	p.lineTo(x-Math.cos(kat)*22,y+6);
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;
+     case 1:
+	if(t.cool>=3){
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+2);
+	p.lineTo(x-Math.cos(kat)*22-3,y+2);
+	p.lineTo(x-Math.cos(kat)*22-3,y-20);
+	p.lineTo(x-Math.cos(kat)*22,y-23);
+	p.lineTo(x-Math.cos(kat)*22+3,y-20);
+	p.lineTo(x-Math.cos(kat)*22+3,y+2);
+	p.lineTo(x-Math.cos(kat)*22,y+2);
+	p.lineTo(x-Math.cos(kat)*22,y+7);
+	p.fill();
+	p.stroke();
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-6,y+2);
+	p.lineTo(x-Math.cos(kat)*22+6,y+2);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*2,y-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*2,y-3-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*20,y-3+Math.cos(kat)*20);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*23,y+Math.cos(kat)*23);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*20,y+3+Math.cos(kat)*20);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*2,y+3-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*2,y-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*7,y-Math.cos(kat)*7);
+	p.fill();
+	p.stroke();
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y-4);
+	p.lineTo(x-Math.cos(kat)*22,y+8);
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;
+     case 2:
+	if(t.cool>=3){
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+6);
+	p.lineTo(x-Math.cos(kat)*22,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y-2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y-20);
+	p.lineTo(x-Math.cos(kat)*22,y-26);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*6,y-Math.cos(kat)*6);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*2,y-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y+10+Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*20,y+10+Math.cos(kat)*20);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*26,y+Math.cos(kat)*26);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;
+    }
+   } else {
+    
+   if(rek==1){
+    switch(lv){
+     case 0:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.arc(x+Math.cos(kat)*22, y+2, 8, 0, 2 * Math.PI, false);
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+     case 1:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x+Math.cos(kat)*22-8, y-10);
+	p.lineTo(x+Math.cos(kat)*22+8, y-10);
+	p.lineTo(x+Math.cos(kat)*22+8, y+10);
+	p.lineTo(x+Math.cos(kat)*22-8, y+10);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+     case 2:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x+Math.cos(kat)*22-10, y-12);
+	p.lineTo(x+Math.cos(kat)*22+10, y-12);
+	p.lineTo(x+Math.cos(kat)*22+10, y+8);
+	p.lineTo(x+Math.cos(kat)*22, y+12);
+	p.lineTo(x+Math.cos(kat)*22-10, y+8);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+    }
+   }
+   }
+  break;
+  case 1: //axeman
+   if(rek==0){
+    switch(lv){
+     case 0:
+      
+	if(t.cool>=3){
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+2);
+	p.lineTo(x-Math.cos(kat)*22,y-6);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*13,y-8);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*13,y-16);
+	p.lineTo(x-Math.cos(kat)*22,y-16);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*2,y-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*6,y+Math.cos(kat)*6);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*8,y+13+Math.cos(kat)*8);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*16,y+13+Math.cos(kat)*16);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*16,y+Math.cos(kat)*16);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;
+     case 1:
+      
+	if(t.cool>=3){
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+2);
+	p.lineTo(x-Math.cos(kat)*22,y-6);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*13,y-2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*16,y-10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*13,y-22);
+	p.lineTo(x-Math.cos(kat)*22,y-16);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*2,y-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*6,y+Math.cos(kat)*6);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y+13+Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y+16+Math.cos(kat)*10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*22,y+13+Math.cos(kat)*22);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*16,y+Math.cos(kat)*16);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;
+     case 2:
+      
+	if(t.cool>=3){
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+2);
+	p.lineTo(x-Math.cos(kat)*22,y-6);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y-6);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y+3);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*20,y);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*23,y-10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*20,y-20);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y-23);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y-16);
+	p.lineTo(x-Math.cos(kat)*22,y-16);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*2,y-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*6,y+Math.cos(kat)*6);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*6,y+10+Math.cos(kat)*6);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*3,y+10-Math.cos(kat)*3);
+	p.lineTo(x-Math.cos(kat)*22,y+20);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y+23+Math.cos(kat)*10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*20,y+20+Math.cos(kat)*20);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*23,y+10+Math.cos(kat)*23);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*16,y+10+Math.cos(kat)*16);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*16,y+Math.cos(kat)*16);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;
+    }
+   }
+  break;
+  case 2:  //bowman
+   if(rek==0){
+    switch(lv){
+     case 0:
+
+	if(t.cool>=3){
+	p.strokeStyle="#840";
+	p.fillStyle="#999";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+16);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y+14);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y-10);
+	p.lineTo(x-Math.cos(kat)*22,y-14);
+	p.stroke();
+	p.strokeStyle="#555";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+16);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*15,y+2);
+	p.lineTo(x-Math.cos(kat)*22,y-14);
+	p.stroke();
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*17,y+4);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*15,y+2);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*17,y);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*15,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*7,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*5,y);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*7,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*5,y+4);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#840";
+	p.fillStyle="#999";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+16);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y+14);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y-10);
+	p.lineTo(x-Math.cos(kat)*22,y-14);
+	p.stroke();
+	p.strokeStyle="#555";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+16);
+	p.lineTo(x-Math.cos(kat)*22,y-14);
+	p.stroke();
+        }
+     break;
+     case 1:
+
+	if(t.cool>=3){
+	p.strokeStyle="#840";
+	p.fillStyle="#999";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+22);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*4,y+18);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*4,y-16);
+	p.lineTo(x-Math.cos(kat)*22,y-20);
+	p.stroke();
+	p.strokeStyle="#555";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+22);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*15,y+2);
+	p.lineTo(x-Math.cos(kat)*22,y-20);
+	p.stroke();
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*17,y+4);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*15,y+2);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*17,y);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*15,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*7,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*5,y);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*7,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*5,y+4);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#840";
+	p.fillStyle="#999";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+22);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*4,y+18);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*4,y-16);
+	p.lineTo(x-Math.cos(kat)*22,y-20);
+	p.stroke();
+	p.strokeStyle="#555";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+22);
+	p.lineTo(x-Math.cos(kat)*22,y-20);
+	p.stroke();
+        }
+     break;
+     case 2:
+
+	if(t.cool>=3){
+	p.strokeStyle="#840";
+	p.fillStyle="#999";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+26);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y+24);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y+16);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*6,y+14);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*6,y-10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y-14);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y-22);
+	p.lineTo(x-Math.cos(kat)*22,y-24);
+	p.stroke();
+	p.strokeStyle="#555";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+26);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*15,y+2);
+	p.lineTo(x-Math.cos(kat)*22,y-24);
+	p.stroke();
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*15,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*7,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*5,y);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*7,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*5,y+4);
+	p.stroke();
+	p.lineWidth=5;
+	p.strokeStyle="#6f0";
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22+Math.sin(kat)*16,y+2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*8,y+2);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#840";
+	p.fillStyle="#999";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+26);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y+24);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y+16);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*6,y+14);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*6,y-10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y-14);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*2,y-22);
+	p.lineTo(x-Math.cos(kat)*22,y-24);
+	p.stroke();
+	p.strokeStyle="#555";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+26);
+	p.lineTo(x-Math.cos(kat)*22,y-20);
+	p.stroke();
+        }
+     break;
+    }
+   } else {
+
+   }
+  break;
+  case 3: //crossbowman
+   if(rek==0){
+    switch(lv){
+     case 0:
+      
+
+	if(t.cool>=3){
+	p.strokeStyle="#840";
+	p.fillStyle="#a90";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*24-Math.sin(kat)*4,y+2-Math.cos(kat)*4+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*8,y+2+Math.cos(kat)*8+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*38+Math.sin(kat)*6,y+2+Math.cos(kat)*6+Math.sin(kat)*8);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*8,y+2+Math.cos(kat)*8+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*8,y+2+Math.cos(kat)*8-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*6+Math.sin(kat)*6,y+2+Math.cos(kat)*6-Math.sin(kat)*8);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*8,y+2+Math.cos(kat)*8-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20-Math.sin(kat)*4,y+2-Math.cos(kat)*4-Math.sin(kat)*1);
+        p.closePath();
+	p.stroke();
+	p.fill();
+	p.strokeStyle="#555";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*36+Math.sin(kat)*6,y+2+Math.cos(kat)*6+Math.sin(kat)*7);
+	p.lineTo(x-Math.cos(kat)*24-Math.sin(kat)*4,y+2-Math.cos(kat)*4);
+	p.lineTo(x-Math.cos(kat)*8+Math.sin(kat)*6,y+2+Math.cos(kat)*6-Math.sin(kat)*7);
+   
+	p.stroke();
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*6,y+4-Math.cos(kat)*3);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*4,y+2-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*6,y-Math.cos(kat)*3);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*4,y+2-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y+2+Math.cos(kat)*5);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*8,y+Math.cos(kat)*4);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y+2+Math.cos(kat)*5);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*8,y+4+Math.cos(kat)*4);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#840";
+	p.fillStyle="#a90";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*24-Math.sin(kat)*4,y+2-Math.cos(kat)*4+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*8,y+2+Math.cos(kat)*8+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*38+Math.sin(kat)*6,y+2+Math.cos(kat)*6+Math.sin(kat)*8);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*8,y+2+Math.cos(kat)*8+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*8,y+2+Math.cos(kat)*8-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*6+Math.sin(kat)*6,y+2+Math.cos(kat)*6-Math.sin(kat)*8);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*8,y+2+Math.cos(kat)*8-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20-Math.sin(kat)*4,y+2-Math.cos(kat)*4-Math.sin(kat)*1);
+        p.closePath();
+	p.stroke();
+	p.fill();
+	p.strokeStyle="#555";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*36+Math.sin(kat)*6,y+2+Math.cos(kat)*6+Math.sin(kat)*7);
+	p.lineTo(x-Math.cos(kat)*8+Math.sin(kat)*6,y+2+Math.cos(kat)*6-Math.sin(kat)*7);
+   
+	p.stroke();
+	p.lineWidth=2;
+        }
+     break;
+     case 1:
+      
+
+	if(t.cool>=3){
+	p.strokeStyle="#840";
+	p.fillStyle="#a90";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*24-Math.sin(kat)*8,y+2-Math.cos(kat)*8+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*42+Math.sin(kat)*6,y+2+Math.cos(kat)*6+Math.sin(kat)*10);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*2+Math.sin(kat)*6,y+2+Math.cos(kat)*6-Math.sin(kat)*10);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20-Math.sin(kat)*8,y+2-Math.cos(kat)*8-Math.sin(kat)*1);
+        p.closePath();
+	p.stroke();
+	p.fill();
+	p.strokeStyle="#555";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*42+Math.sin(kat)*8,y+2+Math.cos(kat)*8+Math.sin(kat)*10);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*4,y+2-Math.cos(kat)*4);
+	p.lineTo(x-Math.cos(kat)*2+Math.sin(kat)*8,y+2+Math.cos(kat)*8-Math.sin(kat)*10);
+   
+	p.stroke();
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*6,y+4-Math.cos(kat)*3);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*4,y+2-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*6,y-Math.cos(kat)*3);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*4,y+2-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y+2+Math.cos(kat)*5);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*8,y+Math.cos(kat)*4);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y+2+Math.cos(kat)*5);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*8,y+4+Math.cos(kat)*4);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#840";
+	p.fillStyle="#a90";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*24-Math.sin(kat)*8,y+2-Math.cos(kat)*8+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*42+Math.sin(kat)*6,y+2+Math.cos(kat)*6+Math.sin(kat)*10);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*2+Math.sin(kat)*6,y+2+Math.cos(kat)*6-Math.sin(kat)*10);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20-Math.sin(kat)*8,y+2-Math.cos(kat)*8-Math.sin(kat)*1);
+        p.closePath();
+	p.stroke();
+	p.fill();
+	p.strokeStyle="#555";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*42+Math.sin(kat)*8,y+2+Math.cos(kat)*8+Math.sin(kat)*10);
+	p.lineTo(x-Math.cos(kat)*2+Math.sin(kat)*8,y+2+Math.cos(kat)*8-Math.sin(kat)*10);
+   
+	p.stroke();
+	p.lineWidth=2;
+        }
+     break;
+     case 2:
+      
+
+	if(t.cool>=3){
+	p.strokeStyle="#666";
+	p.fillStyle="#bbb";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*24-Math.sin(kat)*8,y+2-Math.cos(kat)*8+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*46+Math.sin(kat)*6,y+2+Math.cos(kat)*6+Math.sin(kat)*13);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*38+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*6);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*10+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*6);
+	p.lineTo(x+Math.cos(kat)*2+Math.sin(kat)*6,y+2+Math.cos(kat)*6-Math.sin(kat)*13);
+	p.lineTo(x-Math.cos(kat)*10+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*6);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20-Math.sin(kat)*8,y+2-Math.cos(kat)*8-Math.sin(kat)*1);
+        p.closePath();
+	p.stroke();
+	p.fill();
+	p.strokeStyle="#666";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*46+Math.sin(kat)*8,y+2+Math.cos(kat)*8+Math.sin(kat)*13);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*4,y+2-Math.cos(kat)*4);
+	p.lineTo(x+Math.cos(kat)*2+Math.sin(kat)*8,y+2+Math.cos(kat)*8-Math.sin(kat)*13);
+   
+	p.stroke();
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*6,y+4-Math.cos(kat)*3);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*4,y+2-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*6,y-Math.cos(kat)*3);
+	p.lineTo(x-Math.cos(kat)*22-Math.sin(kat)*4,y+2-Math.cos(kat)*2);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*10,y+2+Math.cos(kat)*5);
+	p.stroke();
+	
+	p.lineWidth=2;
+	} else {
+
+	p.strokeStyle="#666";
+	p.fillStyle="#bbb";
+	p.lineWidth=4;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*24-Math.sin(kat)*8,y+2-Math.cos(kat)*8+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*46+Math.sin(kat)*6,y+2+Math.cos(kat)*6+Math.sin(kat)*13);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*38+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*6);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*12,y+2+Math.cos(kat)*12+Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*10+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*6);
+	p.lineTo(x+Math.cos(kat)*2+Math.sin(kat)*6,y+2+Math.cos(kat)*6-Math.sin(kat)*13);
+	p.lineTo(x-Math.cos(kat)*10+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*6);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*12,y+2+Math.cos(kat)*12-Math.sin(kat)*1);
+	p.lineTo(x-Math.cos(kat)*20-Math.sin(kat)*8,y+2-Math.cos(kat)*8-Math.sin(kat)*1);
+        p.closePath();
+	p.stroke();
+	p.fill();
+	p.strokeStyle="#666";
+	p.lineWidth=2;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*46+Math.sin(kat)*8,y+2+Math.cos(kat)*8+Math.sin(kat)*13);
+	p.lineTo(x+Math.cos(kat)*2+Math.sin(kat)*8,y+2+Math.cos(kat)*8-Math.sin(kat)*13);
+   
+	p.stroke();
+	p.lineWidth=2;
+        }
+     break;
+    }
+   } else {
+    switch(lv){
+     case 0:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.arc(x+Math.cos(kat)*22, y+2, 8, 0, 2 * Math.PI, false);
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+     case 1:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x+Math.cos(kat)*22-8, y-10);
+	p.lineTo(x+Math.cos(kat)*22+8, y-10);
+	p.lineTo(x+Math.cos(kat)*22+8, y+10);
+	p.lineTo(x+Math.cos(kat)*22-8, y+10);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+     case 2:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x+Math.cos(kat)*22-10, y-12);
+	p.lineTo(x+Math.cos(kat)*22+10, y-12);
+	p.lineTo(x+Math.cos(kat)*22+10, y+8);
+	p.lineTo(x+Math.cos(kat)*22, y+12);
+	p.lineTo(x+Math.cos(kat)*22-10, y+8);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+    }
+   }
+  break;
+  case 4: //spearman
+   
+   if(rek==0){
+    switch(lv){
+     case 0:
+	if(t.cool>=3){
+	p.strokeStyle="#840";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+12);
+	p.lineTo(x-Math.cos(kat)*22,y-70);
+	p.lineTo(x-Math.cos(kat)*22-2,y-68);
+	p.lineTo(x-Math.cos(kat)*22,y-70);
+	p.lineTo(x-Math.cos(kat)*22+2,y-68);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+	p.strokeStyle="#840";
+	p.lineWidth=3;
+	p.beginPath();
+
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*10,y+2-Math.cos(kat)*10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*72,y+2+Math.cos(kat)*72);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*70,y+2+Math.cos(kat)*70);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*72,y+2+Math.cos(kat)*72);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*70,y+2+Math.cos(kat)*70);
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;
+     case 1:
+	if(t.cool>=3){
+	p.strokeStyle="#555";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+12);
+	p.lineTo(x-Math.cos(kat)*22,y-70);
+	p.lineTo(x-Math.cos(kat)*22-4,y-66);
+	p.lineTo(x-Math.cos(kat)*22,y-70);
+	p.lineTo(x-Math.cos(kat)*22+4,y-66);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+	p.strokeStyle="#555";
+	p.lineWidth=3;
+	p.beginPath();
+
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*10,y+2-Math.cos(kat)*10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*72,y+2+Math.cos(kat)*72);
+	p.lineTo(x-Math.cos(kat)*26+Math.sin(kat)*68,y+2+Math.cos(kat)*68);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*72,y+2+Math.cos(kat)*72);
+	p.lineTo(x-Math.cos(kat)*18+Math.sin(kat)*68,y+2+Math.cos(kat)*68);
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;
+     case 2:
+	if(t.cool>=3){
+	p.strokeStyle="#555";
+	p.fillStyle="#aaa";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+12);
+	p.lineTo(x-Math.cos(kat)*22,y-110);
+	p.stroke();
+	p.beginPath();
+	p.lineTo(x-Math.cos(kat)*26-4,y-106);
+	p.lineTo(x-Math.cos(kat)*22,y-110);
+	p.lineTo(x-Math.cos(kat)*18+4,y-106);
+        p.fill();
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+	p.strokeStyle="#555";
+	p.lineWidth=3;
+	p.beginPath();
+
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*10,y+2-Math.cos(kat)*10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*112,y+2+Math.cos(kat)*112);
+	p.lineTo(x-Math.cos(kat)*26+Math.sin(kat)*108,y+2+Math.cos(kat)*108);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*112,y+2+Math.cos(kat)*112);
+	p.lineTo(x-Math.cos(kat)*18+Math.sin(kat)*108,y+2+Math.cos(kat)*108);
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;
+    }
+   } else {
+    switch(lv){
+     case 0:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.arc(x+Math.cos(kat)*22, y+2, 8, 0, 2 * Math.PI, false);
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+     case 1:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x+Math.cos(kat)*22-8, y-10);
+	p.lineTo(x+Math.cos(kat)*22+8, y-10);
+	p.lineTo(x+Math.cos(kat)*22+8, y+10);
+	p.lineTo(x+Math.cos(kat)*22-8, y+10);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+     case 2:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x+Math.cos(kat)*22-10, y-12);
+	p.lineTo(x+Math.cos(kat)*22+10, y-12);
+	p.lineTo(x+Math.cos(kat)*22+10, y+8);
+	p.lineTo(x+Math.cos(kat)*22, y+12);
+	p.lineTo(x+Math.cos(kat)*22-10, y+8);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+    }
+   }
+  break;
+  case 5: //horseman
+   
+   if(rek==0){
+    switch(lv){
+     case 0:
+	if(t.cool>=3){
+	p.strokeStyle="#840";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+12);
+	p.lineTo(x-Math.cos(kat)*22,y-70);
+	p.lineTo(x-Math.cos(kat)*22-2,y-68);
+	p.lineTo(x-Math.cos(kat)*22,y-70);
+	p.lineTo(x-Math.cos(kat)*22+2,y-68);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+	p.strokeStyle="#840";
+	p.lineWidth=3;
+	p.beginPath();
+
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*10,y+2-Math.cos(kat)*10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*72,y+2+Math.cos(kat)*72);
+	p.lineTo(x-Math.cos(kat)*24+Math.sin(kat)*70,y+2+Math.cos(kat)*70);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*72,y+2+Math.cos(kat)*72);
+	p.lineTo(x-Math.cos(kat)*20+Math.sin(kat)*70,y+2+Math.cos(kat)*70);
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;
+     case 1:
+     case 2:
+	if(t.cool>=3){
+	p.strokeStyle="#555";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+12);
+	p.lineTo(x-Math.cos(kat)*22,y-70);
+	p.lineTo(x-Math.cos(kat)*22-4,y-66);
+	p.lineTo(x-Math.cos(kat)*22,y-70);
+	p.lineTo(x-Math.cos(kat)*22+4,y-66);
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+	p.strokeStyle="#555";
+	p.lineWidth=3;
+	p.beginPath();
+
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*10,y+2-Math.cos(kat)*10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*72,y+2+Math.cos(kat)*72);
+	p.lineTo(x-Math.cos(kat)*26+Math.sin(kat)*68,y+2+Math.cos(kat)*68);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*72,y+2+Math.cos(kat)*72);
+	p.lineTo(x-Math.cos(kat)*18+Math.sin(kat)*68,y+2+Math.cos(kat)*68);
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;/*
+     case 2:
+	if(t.cool>=3){
+	p.strokeStyle="#555";
+	p.fillStyle="#aaa";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x-Math.cos(kat)*22,y+12);
+	p.lineTo(x-Math.cos(kat)*22,y-110);
+	p.stroke();
+	p.beginPath();
+	p.lineTo(x-Math.cos(kat)*26-4,y-106);
+	p.lineTo(x-Math.cos(kat)*22,y-110);
+	p.lineTo(x-Math.cos(kat)*18+4,y-106);
+        p.fill();
+	p.stroke();
+	p.lineWidth=2;
+	} else {
+	p.strokeStyle="#555";
+	p.lineWidth=3;
+	p.beginPath();
+
+	p.moveTo(x-Math.cos(kat)*22-Math.sin(kat)*10,y+2-Math.cos(kat)*10);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*112,y+2+Math.cos(kat)*112);
+	p.lineTo(x-Math.cos(kat)*26+Math.sin(kat)*108,y+2+Math.cos(kat)*108);
+	p.lineTo(x-Math.cos(kat)*22+Math.sin(kat)*112,y+2+Math.cos(kat)*112);
+	p.lineTo(x-Math.cos(kat)*18+Math.sin(kat)*108,y+2+Math.cos(kat)*108);
+	p.stroke();
+	p.lineWidth=2;
+	}
+     break;*/
+    }
+   } else {
+    switch(lv){
+     case 0:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.arc(x+Math.cos(kat)*22, y+2, 8, 0, 2 * Math.PI, false);
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+     case 1:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x+Math.cos(kat)*22-8, y-10);
+	p.lineTo(x+Math.cos(kat)*22+8, y-10);
+	p.lineTo(x+Math.cos(kat)*22+8, y+10);
+	p.lineTo(x+Math.cos(kat)*22-8, y+10);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+     case 2:
+	p.strokeStyle="#555";
+	p.fillStyle="#999";
+	p.lineWidth=3;
+	p.beginPath();
+	p.moveTo(x+Math.cos(kat)*22-10, y-12);
+	p.lineTo(x+Math.cos(kat)*22+10, y-12);
+	p.lineTo(x+Math.cos(kat)*22+10, y+8);
+	p.lineTo(x+Math.cos(kat)*22, y+12);
+	p.lineTo(x+Math.cos(kat)*22-10, y+8);
+	p.closePath();
+	p.fill();
+	p.stroke();
+	p.lineWidth=2;
+     break;
+    }
+   }
+  break;
+ }
+}
+//Draws letters of the title (that big BITEWKA)
+function litera(x,y,ch,k){
+var koller = ["#f00","#ff0","#0f0","#0ff","#00f","#f80","#444"];
+p.strokeStyle = "#444";
+p.fillStyle = koller[k];
+var po = p.font;
+p.font = "bold 120pt Courier New";
+p.fillText(ch, x, y);
+p.lineWidth = 2;
+p.strokeText(ch, x, y);
+p.lineWidth = 1;
+p.font = po;
+}
+//draws digits in vector form
+function liczba(x,y,num,w,g){
+	p.strokeStyle = "#222";
+	p.lineWidth = g;
+	switch(num){
+		case 0:
+		p.beginPath();
+		p.moveTo(x,y);
+		p.lineTo(x,y-w);
+		p.lineTo(x+w/2,y-w);
+		p.lineTo(x+w/2,y);
+		p.closePath();
+		p.stroke();
+		break;
+		case 1:
+		p.beginPath();
+		p.moveTo(x+w/2,y);
+		p.lineTo(x+w/2,y-w);
+		p.lineTo(x+w/4,y-w*3/4);
+		p.stroke();
+		break;
+		case 2:
+		p.beginPath();
+		p.moveTo(x+w/2,y);
+		p.lineTo(x,y);
+		p.lineTo(x+w/2,y-w/2);
+		p.lineTo(x+w/2,y-w);
+		p.lineTo(x,y-w);
+		p.stroke();
+		break;
+		case 3:
+		p.beginPath();
+		p.moveTo(x,y);
+		p.lineTo(x+w/2,y);
+		p.lineTo(x+w/2,y-w/2);
+		p.lineTo(x,y-w/2);
+		p.lineTo(x+w/2,y-w/2);
+		p.lineTo(x+w/2,y-w);
+		p.lineTo(x,y-w);
+		p.stroke();
+		break;
+		case 4:
+		p.beginPath();
+		p.moveTo(x+w/2,y);
+		p.lineTo(x+w/2,y-w*3/4);
+		p.lineTo(x+w/2,y-w/2);
+		p.lineTo(x,y-w/2);
+		p.lineTo(x,y-w);
+		p.stroke();
+		break;
+		case 5:
+		p.beginPath();
+		p.moveTo(x,y);
+		p.lineTo(x+w/2,y);
+		p.lineTo(x+w/2,y-w/2);
+		p.lineTo(x,y-w/2);
+		p.lineTo(x,y-w);
+		p.lineTo(x+w/2,y-w);
+		p.stroke();
+		break;
+		case 6:
+		p.beginPath();
+		p.moveTo(x,y-w/2);
+		p.lineTo(x,y);
+		p.lineTo(x+w/2,y);
+		p.lineTo(x+w/2,y-w/2);
+		p.lineTo(x,y-w/2);
+		p.lineTo(x,y-w);
+		p.lineTo(x+w/2,y-w);
+		p.stroke();
+		break;
+		case 7:
+		p.beginPath();
+		p.moveTo(x,y);
+		p.lineTo(x+w/2,y-w);
+		p.lineTo(x,y-w);
+		p.stroke();
+		break;
+		case 8:
+		p.beginPath();
+		p.moveTo(x,y-w/2);
+		p.lineTo(x,y);
+		p.lineTo(x+w/2,y);
+		p.lineTo(x+w/2,y-w/2);
+		p.lineTo(x,y-w/2);
+		p.lineTo(x,y-w);
+		p.lineTo(x+w/2,y-w);
+		p.lineTo(x+w/2,y-w/2);
+		p.stroke();
+		break;
+		case 9:
+		p.beginPath();
+		p.moveTo(x,y);
+		p.lineTo(x+w/2,y);
+		p.lineTo(x+w/2,y-w/2);
+		p.lineTo(x,y-w/2);
+		p.lineTo(x,y-w);
+		p.lineTo(x+w/2,y-w);
+		p.lineTo(x+w/2,y-w/2);
+		p.stroke();
+		break;
+		case "x":
+		p.beginPath();
+		p.moveTo(x,y);
+		p.lineTo(x+w/2,y-w/2);
+		p.stroke();
+		p.beginPath();
+		p.moveTo(x,y-w/2);
+		p.lineTo(x+w/2,y);
+		p.stroke();
+		break;
+	}
+}
+//fields used in sandbox (pole=field, also Polak=polish man ;P)
+function Polak(x,y,d){
+	t = this;
+	t.x = x;
+	t.y = y;
+	t.d = d;
+	t.xa = 60+280*t.x+t.d*20;
+	t.ya = 160+180*t.y;
+	t.vibor = -1;  //wybór=choice, a chosen type of unit
+	t.ludzi = 16;  //number of soldiers in the unit
+	t.lv1 = 0;
+	t.lv2 = 0;
+	t.rysuj = function(){ //rysować=to draw
+		t = this;
+		p.strokeStyle = "#222";
+		p.fillStyle = "#aaa";
+		p.lineWidth = 2;
+		p.fillRect(60+280*t.x+t.d*20,160+180*t.y,240,178);
+		p.strokeRect(60+280*t.x+t.d*20,160+180*t.y,240,178);
+		if(t.d==-1){
+			p.strokeStyle = naszeg[0];
+			p.fillStyle = nasze[0];
+		} else {
+			p.strokeStyle = ichg[0];
+			p.fillStyle = ich[0];
+		}
+		if(t.vibor==-1){ //if type not selected
+			for(var i=0;i<8;i++){
+				var rx = i%3;
+				var ry = Math.floor(i/3);
+				p.fillRect(t.xa+88*rx+3,t.ya+58*ry+3,57,57);
+				znak(t.xa+88*rx+3+30,t.ya+58*ry+3+30,1.1,p.fillStyle,p.strokeStyle,i,t.lv1,t.lv2);
+				if(t.lok(xx,yy)==i){
+					p.globalAlpha = 0.5;
+					var k = p.fillStyle;
+					p.fillStyle="#fff";
+					p.fillRect(t.xa+88*rx+3,t.ya+58*ry+3,57,57);
+					p.globalAlpha = 1;
+					p.fillStyle = k;
+				}
+				p.strokeRect(t.xa+88*rx+3,t.ya+58*ry+3,57,57);
+			}
+		} else {  //if type selected
+			p.fillRect(t.xa+4,t.ya+4,100,100);
+			znak(t.xa+4+50,t.ya+4+50,2,p.fillStyle,p.strokeStyle,t.vibor,t.lv1,t.lv2);
+			p.strokeRect(t.xa+4,t.ya+4,100,100);
+			liczba(t.xa+120,t.ya+70,"x",60,3);
+			if(t.ludzi>=10){
+				liczba(t.xa+160,t.ya+70,Math.floor(t.ludzi/10),60,3);
+				liczba(t.xa+200,t.ya+70,t.ludzi%10,60,3);
+			} else {
+				liczba(t.xa+160,t.ya+70,t.ludzi,60,3);
+			}
+			p.lineWidth = 2;
+			p.strokeStyle = "#006600";
+			p.fillStyle = "#00cc00";
+			p.fillRect(t.xa+180,t.ya+80,50,25);
+			p.strokeRect(t.xa+180,t.ya+80,50,25);
+			p.beginPath();
+			p.moveTo(t.xa+205,t.ya+92.5-10);
+			p.lineTo(t.xa+205,t.ya+92.5+10);
+			p.stroke();
+			p.beginPath();
+			p.moveTo(t.xa+205-10,t.ya+92.5);
+			p.lineTo(t.xa+205+10,t.ya+92.5);
+			p.stroke();
+			
+			p.fillRect(t.xa+180,t.ya+110,50,25);
+			p.strokeRect(t.xa+180,t.ya+110,50,25);
+			p.beginPath();
+			p.moveTo(t.xa+205-15,t.ya+122.5-10);
+			p.lineTo(t.xa+205-15,t.ya+122.5+10);
+			p.stroke();
+			p.beginPath();
+			p.moveTo(t.xa+205-10-15,t.ya+122.5);
+			p.lineTo(t.xa+205+10-15,t.ya+122.5);
+			p.stroke();
+			
+			p.beginPath();
+			p.moveTo(t.xa+205+10-10,t.ya+122.5-10);
+			p.lineTo(t.xa+205+10-10,t.ya+122.5);
+			p.lineTo(t.xa+205+10+10,t.ya+122.5);
+			p.lineTo(t.xa+205+10+10,t.ya+122.5-5);
+			p.lineTo(t.xa+205+10+10,t.ya+122.5+15);
+			p.stroke();
+			
+			
+			p.strokeStyle = "#660000";
+			p.fillStyle = "#cc0000";
+			p.fillRect(t.xa+120,t.ya+80,50,25);
+			p.strokeRect(t.xa+120,t.ya+80,50,25);
+			p.beginPath();
+			p.moveTo(t.xa+145-10,t.ya+92.5);
+			p.lineTo(t.xa+145+10,t.ya+92.5);
+			p.stroke();
+			
+			p.fillRect(t.xa+120,t.ya+110,50,25);
+			p.strokeRect(t.xa+120,t.ya+110,50,25);
+			p.beginPath();
+			p.moveTo(t.xa+145-10-15,t.ya+122.5);
+			p.lineTo(t.xa+145+10-15,t.ya+122.5);
+			p.stroke();
+			
+			p.beginPath();
+			p.moveTo(t.xa+145+10-10,t.ya+122.5-10);
+			p.lineTo(t.xa+145+10-10,t.ya+122.5);
+			p.lineTo(t.xa+145+10+10,t.ya+122.5);
+			p.lineTo(t.xa+145+10+10,t.ya+122.5-5);
+			p.lineTo(t.xa+145+10+10,t.ya+122.5+15);
+			p.stroke();
+			
+			p.strokeStyle = "#333";
+			p.fillStyle = "#888";
+			p.fillRect(t.xa+115,t.ya+140,60,30);
+			p.strokeRect(t.xa+115,t.ya+140,60,30);
+			
+			p.beginPath();
+			p.moveTo(t.xa+115+3,t.ya+140+27);
+			p.lineTo(t.xa+115+3,t.ya+140+27-25);
+			p.lineTo(t.xa+115+17,t.ya+140+27-25);
+			p.lineTo(t.xa+115+17,t.ya+140+27-12);
+			p.lineTo(t.xa+115+3,t.ya+140+27-12);
+			p.lineTo(t.xa+115+17,t.ya+140+27-12);
+			p.lineTo(t.xa+115+17,t.ya+140+27);
+			p.stroke();
+			p.beginPath();
+			p.moveTo(t.xa+115+23,t.ya+140+27-25);
+			p.lineTo(t.xa+115+23,t.ya+140+27);
+			p.lineTo(t.xa+115+37,t.ya+140+27);
+			p.stroke();
+			p.beginPath();
+			p.moveTo(t.xa+115+43,t.ya+140+27-25);
+			p.lineTo(t.xa+115+43,t.ya+140+27);
+			p.lineTo(t.xa+115+57,t.ya+140+27);
+			p.stroke();
+			
+			p.strokeStyle = "#444";
+			p.fillStyle = "#bbb";
+			
+			
+			p.lineWidth = 2;
+			p.fillRect(t.xa+30-15,t.ya+135+15,30,10);
+			p.strokeRect(t.xa+30-15,t.ya+135+15,30,10);
+			
+			p.beginPath();
+			p.moveTo(t.xa+30-25,t.ya+135+15);
+			p.lineTo(t.xa+30+25,t.ya+135+15);
+			p.lineTo(t.xa+30+20,t.ya+135+15);
+			p.lineTo(t.xa+30+20,t.ya+135-15);
+			p.lineTo(t.xa+30,t.ya+135-25);
+			p.lineTo(t.xa+30-20,t.ya+135-15);
+			p.lineTo(t.xa+30-20,t.ya+135+15);
+			p.lineTo(t.xa+30-25,t.ya+135+15);
+			p.closePath();
+			p.fill();
+			p.stroke();
+			
+			liczba(t.xa+30-5,t.ya+135+8,t.lv1+1,20,2);
+			
+			p.fillStyle = "#888";
+			if(obrtarcza[t.vibor][0]!=obrtarcza[t.vibor][2] || obrtarcza[t.vibor][0]!=obrtarcza[t.vibor][1]){
+			p.beginPath();
+			p.moveTo(t.xa+85-25,t.ya+135-25);
+			p.lineTo(t.xa+85-25,t.ya+135+15);
+			p.lineTo(t.xa+85,t.ya+135+25);
+			p.lineTo(t.xa+85+25,t.ya+135+15);
+			p.lineTo(t.xa+85+25,t.ya+135-25);
+			p.closePath();
+			p.fill();
+			p.stroke();
+			
+			liczba(t.xa+85-5,t.ya+135+8,t.lv2+1,20,2);
+			}
+			
+			p.strokeStyle = "#422";
+			p.fillStyle = "#844";
+			
+			p.lineWidth = 2;
+			p.fillRect(t.xa+180,t.ya+140,50,30);
+			p.strokeRect(t.xa+180,t.ya+140,50,30);
+			p.beginPath();
+			p.moveTo(t.xa+180,t.ya+140);
+			p.lineTo(t.xa+180+50,t.ya+140+30);
+			p.stroke();
+			p.beginPath();
+			p.moveTo(t.xa+180,t.ya+140+30);
+			p.lineTo(t.xa+180+50,t.ya+140);
+			p.stroke();
+		}
+	}
+	//checks if and what the mouse hits
+	t.lok = function(x,y){
+		wyn = -1;
+		t = this;
+		if(t.vibor==-1){
+			if(x>t.xa && x<t.xa+240 && y>t.ya && y<t.ya+180){
+				wn = 0;
+				if(x>t.xa+160){
+					wn+=2;
+				} else if(x>t.xa+80) {
+					wn+=1;
+				}
+				if(y>t.ya+120){
+					wn+=6;
+				} else if(y>t.ya+60) {
+					wn+=3;
+				}
+				if(wn<9){
+					wyn = wn;
+				}
+			}
+		} else {
+			if(x>t.xa && x<t.xa+240 && y>t.ya && y<t.ya+180){
+				if(x-t.xa>115 && x-t.xa<=175){
+					if(y-t.ya>75 && y-t.ya<=105){
+						wyn = 3;
+					} else if(y-t.ya>105 && y-t.ya<=135){
+						wyn = 4;
+					}
+				} else if(x-t.xa>175 && x-t.xa<=235){
+					if(y-t.ya>75 && y-t.ya<=105){
+						wyn = 1;
+					} else if(y-t.ya>105 && y-t.ya<=135){
+						wyn = 2;
+					}
+				}
+				//t.xa+30-25,t.ya+135+15
+				if(x-t.xa>30-25 && x-t.xa<=30+25){
+					if(y-t.ya>135-25 && y-t.ya<=135+25){
+						wyn = 5;
+					}
+				}
+				if(x-t.xa>85-25 && x-t.xa<=85+25){
+					if(y-t.ya>135-25 && y-t.ya<=135+25){
+						wyn = 6;
+					}
+				}
+				if(x-t.xa>115 && x-t.xa<=115+60){
+					if(y-t.ya>140 && y-t.ya<=140+30){
+						wyn = 8;
+					}
+				}
+				if(x-t.xa>180 && x-t.xa<=180+50){
+					if(y-t.ya>140 && y-t.ya<=140+30){
+						wyn = 7;
+					}
+				}
+			}
+		}
+		return wyn;
+	}
+	t.zeruj = function(){
+			t = this;
+			t.vibor = -1;
+			t.ludzi = 0;
+			t.lv1 = 0;
+			t.lv2 = 0;
+		
+	}
+}
+//big gray button
+//nazwa (name) - label, klata - a frame, where the button appears, cel - destination frame after having hit the button
+function Pszycisk(x,y,nazwa,klata,cel){
+	pszycow-=(-1);
+	this.x = x;
+	this.y = y;
+	this.nazwa = nazwa;
+	this.klata = klata;
+	this.cel = cel;
+	this.rysuj = function(){
+		var po = p.font;
+		p.font = "40pt Trebuchet MS";
+		t = this;
+		p.strokeStyle = "#222";
+		p.fillStyle = "#222";
+		p.fillRect(t.x+10,t.y+10,300,120);
+		if(xx>t.x && xx<t.x+300 && yy>t.y && yy<t.y+120){
+			p.fillStyle = "#ccc";
+		} else {
+			p.fillStyle = "#aaa";
+		}
+		p.fillRect(t.x,t.y,300,120);
+		p.strokeRect(t.x,t.y,300,120);
+		p.textAlign = "center";
+		p.fillStyle = "#222";
+		p.fillText(t.nazwa,t.x+150,t.y+75);
+		p.font = po;
+	}
+}
+//counts the number of soldiers of ine of sides (liczyć=to count)
+function zlicz(num){
+	var swoj = 0;
+	var a = 0;
+	while(a<ludn){
+		if(nasze.indexOf(lud[a].kol)!=-1 && lud[a].hp>0 && num==0)
+			swoj++;
+		if(ich.indexOf(lud[a].kol)!=-1 && lud[a].hp>0 && num>0)
+			swoj++;
+		a++;
+	}
+	return swoj;
+}
+//draws all
+function rysuj(){
+switch(klatka){ //klatka=frame
+
+case 0:     //title
+if(zaslona==9){
+	var ya = 0;
+	while(ya<wq.length){
+		yu[ya] = Math.floor(Math.random()*6);
+		if(ya>0 && yu[ya-1]==yu[ya]){
+			yu[ya]=(yu[ya]-1)%6;
+		}
+		ya++;
+	}
+}
+p.fillStyle="#484";
+p.fillRect(0,0,1200,900);
+	var ap = 0;
+	while(ap<wq.length){
+		litera(605+100*(ap-3.5),235,wq.substr(ap,1),6);
+		ap++;
+	}
+	var ap = 0;
+	while(ap<wq.length){
+		litera(600+100*(ap-3.5),230,wq.substr(ap,1),yu[ap]);
+		ap++;
+	}
+
+break;
+case 4:   //battle
+p.fillStyle="#6a6";
+p.fillRect(0,0,1200,900);
+a = 0;
+while(a<krwi){
+	krew[a].rysuj();
+	a++;
+}
+a = 0;
+while(a<40){
+	p.strokeStyle="#383";
+	p.beginPath();
+	p.moveTo(trawax[a]-10, traway[a]-20);
+	p.lineTo(trawax[a], traway[a]);
+	p.lineTo(trawax[a], traway[a]-20);
+	p.lineTo(trawax[a], traway[a]);
+	p.lineTo(trawax[a]+10, traway[a]-20);
+	p.stroke();
+	a++;
+}
+a=0;
+while(a<ludn){
+if(lud[a].zyc>0)
+lud[a].cien();
+a++;
+}
+a=0;
+while(a<ludn){
+if(lud[a].zyc>0)
+lud[a].rys();
+a++;
+}
+a = 0;
+while(a<pejan){
+if(!vitezstvo)
+peja[a].rysuj();
+a++;
+}
+p.fillStyle = "#888";
+if(pauz){
+p.fillRect(20,20,40,80);
+p.fillRect(80,20,40,80);
+
+}
+		p.textAlign = "center";
+		p.font = "14pt Trebuchet MS";
+		p.fillStyle = "#222";
+	if(!vitezstvo){
+		p.fillText("Wciśnij SPACJĘ, by spauzować/odpauzować",600,884);
+	} else {
+		if(nicsieniestalo){
+			p.fillText("PORAŻKA. -.- Wciśnij spację, by zobaczyć statystyki.",600,884);
+		} else {
+			p.fillText("ZWYCIĘSTWO. ^_^ Wciśnij spację, by zobaczyć statystyki.",600,884);
+		}
+		
+	}
+		
+		p.textAlign = "left";
+		p.font = "24pt Trebuchet MS";
+		p.fillText("Nasi  ",40,884);
+		p.font = "20pt Trebuchet MS";
+		p.fillText(zlicz(0),115,884);
+		p.textAlign = "right";
+		p.fillText(zlicz(1),1070,884);
+		p.font = "24pt Trebuchet MS";
+		p.fillText("  Wróg",1160,884);
+
+p.fillStyle = "#0f0";
+break;
+case 11: //sandbox
+for(i = 0;i<16;i++){
+ polaki[i].rysuj();
+}
+break;
+
+case 14:  //statistics in the end
+
+/*
+  Diagram
+*/
+p.strokeStyle="#444";
+p.lineWidth = 2;
+p.beginPath();
+p.moveTo(400,40);
+p.lineTo(400,440);
+p.lineTo(1100,440);
+p.stroke();
+var wys = Math.max(twojsil[0],wrogsil[0]);
+p.strokeStyle=nasze[0];
+p.beginPath();
+p.moveTo(400,440-twojsil[0]/wys*400);
+var f = 1;
+while(f<sekund){
+	p.lineTo(400+f/sekund*700,440-twojsil[f]/wys*400);
+	f++;
+}
+p.stroke();
+p.strokeStyle=ich[0];
+p.beginPath();
+p.moveTo(400,440-wrogsil[0]/wys*400);
+var f = 1;
+while(f<sekund){
+	p.lineTo(400+f/sekund*700,440-wrogsil[f]/wys*400);
+	f++;
+}
+
+/*
+ Table
+*/
+p.stroke();
+p.strokeStyle="#444";
+p.beginPath();
+p.moveTo(500,480);
+p.lineTo(500,870);
+p.stroke();
+p.beginPath();
+p.moveTo(700,480);
+p.lineTo(700,870);
+p.stroke();
+p.beginPath();
+p.moveTo(30,520);
+p.lineTo(1170,520);
+p.stroke();
+wpocz = [0,0,0,0];
+wstrac = [0,0,0,0];
+wniew = [0,0,0,0];
+wobr = [0,0,0,0];
+w0z = [0,0,0,0];
+w1z = [0,0,0,0];
+w2z = [0,0,0,0];
+wnaj = [0,0,0,0];
+
+	var t = 0;
+	while(t<ludn){
+		var gg = lud[t];
+		if(gg.niew && !fakat){
+			statniew[gg.kol][gg.typ]++;
+			if(gg.hp>0)
+				statniew[gg.kol][gg.typ+8]++;
+		}
+		if(!fakat){
+			statobr[gg.kol][gg.typ]+=gg.obraz;
+			if(Math.floor(gg.dyst)>statstrac[gg.kol][gg.typ])
+			statstrac[gg.kol][gg.typ]=Math.floor(gg.dyst);
+			if(gg.hp>0){
+				statpocz[gg.kol][gg.typ+8]++;
+				statobr[gg.kol][gg.typ+8]+=gg.obraz;
+				if(Math.floor(gg.dyst)>statstrac[gg.kol][gg.typ+8])
+					statstrac[gg.kol][gg.typ+8]=Math.floor(gg.dyst);
+			}
+		}
+		if(gg.kol==nasze[0]){
+			if(wstrac[0]<Math.floor(gg.dyst))
+			wstrac[0]=Math.floor(gg.dyst);
+			if(gg.hp>0){
+				if(wstrac[2]<Math.floor(gg.dyst))
+				wstrac[2]=Math.floor(gg.dyst);
+				wobr[2]+=gg.obraz;
+			}
+			
+		}
+		if(gg.kol==ich[0]){
+			if(wstrac[1]<Math.floor(gg.dyst))
+			wstrac[1]=Math.floor(gg.dyst);
+			if(gg.hp>0){
+				if(wstrac[3]<Math.floor(gg.dyst))
+				wstrac[3]=Math.floor(gg.dyst);
+				wobr[3]+=gg.obraz;
+			}
+		}
+		if(gg.hp>0){
+			if(gg.kol==nasze[0]){
+				wpocz[2]++;
+				if(gg.niew)
+					wniew[2]++;
+				
+			}
+			if(gg.kol==ich[0]){
+				wpocz[3]++;
+				if(gg.niew)
+					wniew[3]++;
+			}
+		}
+		if(gg.count==0){
+		    if(!fakat){
+			stat0z[gg.kol][gg.typ]++;
+			if(gg.hp>0)
+			stat0z[gg.kol][gg.typ+8]++;
+			}
+			if(gg.kol==nasze[0]){
+			w0z[0]++;
+			if(gg.hp>0)
+			w0z[2]++;
+			}
+			if(gg.kol==ich[0]){
+			w0z[1]++;
+			if(gg.hp>0)
+			w0z[3]++;
+			}
+		} else if(gg.count==1){
+		    if(!fakat){
+			stat1z[gg.kol][gg.typ]++;
+			if(gg.hp>0)
+			stat1z[gg.kol][gg.typ+8]++;
+			}
+			if(gg.kol==nasze[0]){
+			w1z[0]++;
+			if(gg.hp>0)
+			w1z[2]++;
+			}
+			if(gg.kol==ich[0]){
+			w1z[1]++;
+			if(gg.hp>0)
+			w1z[3]++;
+			}
+		} else if(gg.count>1) {
+		    if(!fakat){
+			stat2z[gg.kol][gg.typ]++;
+			if(gg.hp>0)
+			stat2z[gg.kol][gg.typ+8]++;
+			}
+			if(gg.kol==nasze[0]){
+			w2z[0]++;
+			if(gg.hp>0)
+			w2z[2]++;
+			}
+			if(gg.kol==ich[0]){
+			w2z[1]++;
+			if(gg.hp>0)
+			w2z[3]++;
+			}
+		}
+		
+		if(gg.count>statnaj[gg.kol][gg.typ]){
+			statnaj[gg.kol][gg.typ] = gg.count;
+			if(gg.hp>0 && gg.count>statnaj[gg.kol][gg.typ+8])
+				statnaj[gg.kol][gg.typ+8] = gg.count;
+				
+		}
+		if(gg.kol==nasze[0] && gg.count>wnaj[0])
+			wnaj[0] = gg.count;
+		if(gg.kol==ich[0] && gg.count>wnaj[1])
+			wnaj[1] = gg.count;
+		if(gg.kol==nasze[0] && gg.hp>0 && gg.count>wnaj[2])
+			wnaj[2] = gg.count;
+		if(gg.kol==ich[0] && gg.hp>0 && gg.count>wnaj[3])
+			wnaj[3] = gg.count;
+		t++;
+	}
+	fakat = true;
+
+
+var f = 1;
+while(f<9){
+	p.beginPath();
+	p.moveTo(480-f*450/9,480);
+	p.lineTo(480-f*450/9,870);
+	p.stroke();
+	znak(455-f*450/9,500,0.7,"#444","#444",f-1,0,0);
+	
+	wn = nasze[0];
+	wi = ich[0];
+	p.fillStyle=wn;
+		p.font = "13pt Trebuchet MS";
+		if(statpocz[wn][f-1]>0){
+		p.fillText(statpocz[wn][f-1],455-f*450/9,560-8);
+		p.fillText(statstrac[wn][f-1],455-f*450/9,600-8);
+		p.fillText(statniew[wn][f-1],455-f*450/9,640-8);
+		p.fillText(statobr[wn][f-1],455-f*450/9,680-8);
+		p.fillText(stat0z[wn][f-1],455-f*450/9,720-8);
+		p.fillText(stat1z[wn][f-1],455-f*450/9,760-8);
+		p.fillText(stat2z[wn][f-1],455-f*450/9,800-8);
+		p.fillText(statnaj[wn][f-1],455-f*450/9,840-8);
+		
+		p.fillText("["+statpocz[wn][f-1+8]+"]",455-f*450/9,560+8);
+		p.fillText("["+statstrac[wn][f-1+8]+"]",455-f*450/9,600+8);
+		p.fillText("["+statniew[wn][f-1+8]+"]",455-f*450/9,640+8);
+		p.fillText("["+statobr[wn][f-1+8]+"]",455-f*450/9,680+8);
+		p.fillText("["+stat0z[wn][f-1+8]+"]",455-f*450/9,720+8);
+		p.fillText("["+stat1z[wn][f-1+8]+"]",455-f*450/9,760+8);
+		p.fillText("["+stat2z[wn][f-1+8]+"]",455-f*450/9,800+8);
+		p.fillText("["+statnaj[wn][f-1+8]+"]",455-f*450/9,840+8);
+		//p.fillText(stat0z[wn][f-1],600,800);
+		wpocz[0]+=statpocz[wn][f-1];
+		//wstrac[0]+=statstrac[wn][f-1];
+		wniew[0]+=statniew[wn][f-1];
+		wobr[0]+=statobr[wn][f-1];
+		}
+	
+	
+	p.fillStyle=wi;
+		p.font = "13pt Trebuchet MS";
+		if(statpocz[wi][f-1]>0){
+		p.fillText(statpocz[wi][f-1],745+f*450/9,560-8);
+		p.fillText(statstrac[wi][f-1],745+f*450/9,600-8);
+		p.fillText(statniew[wi][f-1],745+f*450/9,640-8);
+		p.fillText(statobr[wi][f-1],745+f*450/9,680-8);
+		p.fillText(stat0z[wi][f-1],745+f*450/9,720-8);
+		p.fillText(stat1z[wi][f-1],745+f*450/9,760-8);
+		p.fillText(stat2z[wi][f-1],745+f*450/9,800-8);
+		p.fillText(statnaj[wi][f-1],745+f*450/9,840-8);
+		
+		
+		p.fillText("["+statpocz[wi][f-1+8]+"]",745+f*450/9,560+8);
+		p.fillText("["+statstrac[wi][f-1+8]+"]",745+f*450/9,600+8);
+		p.fillText("["+statniew[wi][f-1+8]+"]",745+f*450/9,640+8);
+		p.fillText("["+statobr[wi][f-1+8]+"]",745+f*450/9,680+8);
+		p.fillText("["+stat0z[wi][f-1+8]+"]",745+f*450/9,720+8);
+		p.fillText("["+stat1z[wi][f-1+8]+"]",745+f*450/9,760+8);
+		p.fillText("["+stat2z[wi][f-1+8]+"]",745+f*450/9,800+8);
+		p.fillText("["+statnaj[wi][f-1+8]+"]",745+f*450/9,840+8);
+		/*p.fillText("Najlepsi zabójcy",600,800);*/
+		wpocz[1]+=statpocz[wi][f-1];
+		//wstrac[1]+=statstrac[wi][f-1];
+		wniew[1]+=statniew[wi][f-1];
+		wobr[1]+=statobr[wi][f-1];
+		}
+	p.beginPath();
+	p.moveTo(720+f*450/9,480);
+	p.lineTo(720+f*450/9,870);
+	p.stroke();
+	znak(745+f*450/9,500,0.7,"#444","#444",f-1,0,0);
+	
+	f++;
+}
+	p.fillStyle=wn;
+		p.fillText(wpocz[0],465,560-8);
+		p.fillText(wstrac[0],465,600-8);
+		p.fillText(wniew[0],465,640-8);
+		p.fillText(wobr[0],465,680-8);
+		p.fillText(w0z[0],465,720-8);
+		p.fillText(w1z[0],465,760-8);
+		p.fillText(w2z[0],465,800-8);
+		p.fillText(wnaj[0],465,840-8);
+		/*p.fillText("Najlepsi zabójcy",600,800);*/
+
+	p.fillStyle=wn;
+		p.fillText("["+wpocz[2]+"]",465,560+8);
+		p.fillText("["+wstrac[2]+"]",465,600+8);
+		p.fillText("["+wniew[2]+"]",465,640+8);
+		p.fillText("["+wobr[2]+"]",465,680+8);
+		p.fillText("["+w0z[2]+"]",465,720+8);
+		p.fillText("["+w1z[2]+"]",465,760+8);
+		p.fillText("["+w2z[2]+"]",465,800+8);
+		p.fillText("["+wnaj[2]+"]",465,840+8);
+		
+	p.fillStyle=wi;
+		p.fillText(wpocz[1],735,560-8);
+		p.fillText(wstrac[1],735,600-8);
+		p.fillText(wniew[1],735,640-8);
+		p.fillText(wobr[1],735,680-8);
+		p.fillText(w0z[1],735,720-8);
+		p.fillText(w1z[1],735,760-8);
+		p.fillText(w2z[1],735,800-8);
+		p.fillText(wnaj[1],735,840-8);
+		
+		
+		p.fillText("["+wpocz[3]+"]",735,560+8);
+		p.fillText("["+wstrac[3]+"]",735,600+8);
+		p.fillText("["+wniew[3]+"]",735,640+8);
+		p.fillText("["+wobr[3]+"]",735,680+8);
+		p.fillText("["+w0z[3]+"]",735,720+8);
+		p.fillText("["+w1z[3]+"]",735,760+8);
+		p.fillText("["+w2z[3]+"]",735,800+8);
+		p.fillText("["+wnaj[3]+"]",735,840+8);
+p.fillStyle="#444";
+		p.textAlign = "center";
+		p.fillText("Na początku",600,560);
+		p.fillText("Najdłuższy dystans",600,600);
+		p.fillText("Niewykorzystanych",600,640);
+		p.fillText("Obrażeń zadanych",600,680);
+		p.fillText("0 zabójstw",600,720);
+		p.fillText("1 zabójstwo",600,760);
+		p.fillText("2+ zabójstwa",600,800);
+		p.fillText("Najlepsi zabójcy",600,840);
+break;
+}
+
+//Draws buttons
+f = 0;
+while(f<pszycow){
+	var oo = pszy[f];
+	if(oo.klata==klatka){
+		oo.rysuj();
+	}
+	f++;
+}
+p.fillStyle="#999";
+p.globalAlpha = zaslona/10;
+p.fillRect(0,0,1200,900);
+p.globalAlpha = 1;
+}
+
+//attack, k is attacking soldier, l is defending
+function atk(k,l){
+
+k.kat = Math.atan2(l.x-k.x,l.y-k.y);
+k.cool = 0;
+if(k.atk!="t"){
+al = Math.floor(Math.random()*(k.atak+1));
+} else {
+al = Math.floor(Math.random()*2);
+}
+ol = Math.floor(Math.random()*(l.obrona+1));
+if(k.typ==2 || k.typ==3){
+k.stc = l;
+if(k.atk=="t"){
+k.stt = true;	
+}
+} else {
+if(al>ol){
+	if(k.niew){
+	k.niew=false;
+	}
+	var sp = l.hp;
+l.hp-=al-ol;
+k.obraz+=al-ol;
+if(sp>0 && l.hp<=0){
+	k.count++;
+	//statpocz[l.kol][l.typ-(-8)]--;
+}
+krwiuj(l.x,l.y);
+if(k.atk=="t"){
+l.tru = true;	
+}
+}
+
+}
+
+if(l.cool==l.przelad && odl(k,l)<(l.zasi+k.grub-20)*Math.sqrt(2)){
+atk(l,k);
+}
+}
+
+//animation
+function anim(){
+switch(klatka){ //klatka = frame
+case 0:
+
+break;
+case 4: //battle
+if(!pauz){
+	
+	if(!vitezstvo){
+		klatek++;
+		if(klatek>=5){
+			klatek = 0;
+			twojsil[sekund] = zlicz(0);
+			wrogsil[sekund] = zlicz(1);
+			sekund++;
+		}
+	}
+
+//checks in which part of the canvas the soldiers are placed
+i = 0;
+while(i<obszx){
+	j = 0;
+	while(j<obszy){
+		obszow[i][j] = 0;
+		j++;
+	}
+	i++;
+}
+a = 0;
+while(a<ludn){
+	k = lud[a];
+	wybx = Math.floor(k.x/tede.width*obszx);
+	wyby = Math.floor(k.y/tede.height*obszy);
+	if(wybx>=0 && wybx<obszx && wyby>=0 && wyby<obszy){
+		obsz[wybx][wyby][obszow[wybx][wyby]] = k;
+		k.nalex = wybx;
+		k.naley = wyby;
+		obszow[wybx][wyby]++;
+	} else {
+		k.nalex = -1;
+		k.naley = -1;
+	}
+	a++;
+}
+
+//does action for each soldier in ludn array
+a = 0;
+while(a<ludn){
+if(lud[a].zyc>=10){ //if exists
+if(lud[a].hp<=0){ //if is dead
+lud[a].zyc--;
+lud[a].senior.tasuj();
+}
+var ttx,tty;
+ttx = lud[a].x;
+tty = lud[a].y;
+k = lud[a];
+if(k.nali>0)
+k.nali--;
+k.stop+=k.stopa; //animation of walking
+if(k.stop>2){
+k.stopa=-k.stopa;
+k.stop = 2;
+}
+if(k.stop<-2){
+k.stopa=-k.stopa;
+k.stop = -2;
+}
+k.kier = k.px;
+
+if(k.tru){ //if poisoned
+ k.p = k.szyp/2-cietarcza[k.typ][k.lv2];
+ if(k.atak!="t")
+ k.atak = atamiecz[k.typ][k.lv1]/2;
+ k.obrona = obrtarcza[k.typ][k.lv2]/2;
+}
+
+if(k.cx!=k.x || k.cy!=k.y){ //if not in destination (cx and cy)
+	
+if(Math.abs(k.cx-k.x)>2){
+kat = Math.atan2(k.cx-k.x,k.cy-k.y);
+k.kat = kat;
+k.px = k.p*Math.sin(kat)/2;
+k.py = k.p*Math.cos(kat)/2;
+}
+
+if(Math.abs(k.cx-k.x)>=k.p || Math.abs(k.cy-k.y)>=k.p){ //if is going to reach the destination
+	if(k.cool>=3)
+		if(k.stopa>=0){
+			k.stopa = 1;
+		}
+	} else {
+		k.stopa = 0;
+		k.stop = 0;
+		k.px = 0;
+		k.py = 0;
+		k.x = k.cx;
+		k.y = k.cy;
+		if(vitezstvo)   //if victory 
+			k.randomizuj();
+	}
+}
+if(odl(k,k.senior)<k.zasi && k.senior.cel!=-1){
+} else {
+	k.x+=k.px;
+	k.y+=k.py;
+}
+//soldiers cannot reach borders of the frame
+if(k.x<0)
+	k.x = 0;
+if(k.x>tede.width)
+	k.x = tede.width;
+if(k.y<0)
+	k.y = 0;
+if(k.y>tede.height)
+	k.y = tede.height;
+if(k.cool<k.przelad*2){
+	k.cool++;
+}
+
+	if(k.stc!=-1){  //if bowman of crossbowman
+		k.sto++;
+		if(odl(k,k.stc)<k.sto*100){
+			if(k.atak!="t"){
+				al = Math.floor(Math.random()*(k.atak+1));
+			} else {
+				al = Math.floor(Math.random()*2);
+			}
+			ol = Math.floor(Math.random()*(k.stc.obrona+1));
+			if(al>ol){
+	
+				if(k.niew){
+					k.niew=false;
+				}
+				var sp = k.stc.hp;
+
+				k.stc.hp-=al-ol;
+				k.obraz+=al-ol;
+				if(sp>0 && k.stc.hp<=0){
+					k.count++;
+				}
+				krwiuj(k.stc.x,k.stc.y);
+				if(k.atak=="t"){
+					k.stc.tru = true;
+				}
+			}
+			k.stc = -1;
+			k.sto = 0;
+		}
+	}
+
+najbliz = -1;
+
+//checks which fields can be in range of a soldier
+
+potencjalnych = 0;
+
+i = 0;
+while(i<obszx){
+	j = 0;
+	while(j<obszy){
+	//(k.zasi+l.grub-20)*Math.sqrt(2)
+		if(k.nalex>-1 && k.naley>-1 && Math.sqrt(Math.pow((k.nalex-i),2)+Math.pow((k.naley-j),2))-1<=(k.zasi-20)*Math.sqrt(2)*40/Math.max(tede.width/obszx,tede.height/obszy)){
+			kh = 0;
+			while(kh<obszow[i][j]){
+				potencjalni[potencjalnych] = obsz[i][j][kh];
+				potencjalnych++;
+				kh++;
+			}
+		}
+		j++;
+	}
+	i++;
+}
+
+
+//checks all possible enemies to be hit
+b = 0;
+while(b<potencjalnych){
+var l = potencjalni[b];
+if(l.zyc>=10){
+var zacz = false;
+if(b!=a){
+dotyk = false;  //dotyk=touch
+tep = false;
+if(Math.abs(l.y-k.y)<l.grub+k.grub-10){
+ while(l.x-k.x<l.grub+k.grub && l.x-k.x>(l.grub+k.grub)/2 && !tep){
+  dotyk = true;
+  if(k.px!=0 && k.py!=0){
+  k.x--;
+} else { tep = true; }
+ }
+tep = false;
+ while(l.x-k.x>-l.grub-k.grub && l.x-k.x<-(l.grub+k.grub)/2 && !tep){
+  dotyk = true;
+  if(k.px!=0 && k.py!=0){
+  k.x++;
+} else { tep = true; }
+ }
+}
+if(Math.abs(l.x-k.x)<l.grub+k.grub-10){
+ tep = false;
+ while(l.y-k.y<l.grub+k.grub && l.y-k.y>(l.grub+k.grub)/2 && !tep){
+  dotyk = true;
+  if(k.px!=0 && k.py!=0){
+   k.y--;
+  } else { tep = true; }
+ }
+ tep = false;
+ while(l.y-k.y>-l.grub-k.grub && l.y-k.y<-(l.grub+k.grub)/2 && !tep){
+  dotyk = true;
+  if(k.px!=0 && k.py!=0){
+   k.y++;
+  } else { tep = true; }
+ }
+}
+if(vitezstvo && dotyk){
+k.randomizuj();
+}
+
+//if najbliz won't be -1, it will be the target
+if(odl(k,l)<(k.zasi+l.grub-20)*Math.sqrt(2) && nasz(l.kol)!=nasz(k.kol) && k.cool==k.przelad*2){
+	if(najbliz==-1){
+		najbliz = l.numer;
+	} else if(k.atak=="t"){
+		if(lud[najbliz].tru==true && l.tru == false && l.nali<1){
+			najbliz = l.numer;
+			l.nali = odl(k,l)/100;
+		} else if(lud[najbliz].tru==l.tru && odl(k,l)<odl(k,lud[najbliz])){
+			najbliz = l.numer;
+		}
+	} else if(odl(k,l)<odl(k,lud[najbliz])){
+		najbliz = l.numer;
+	}
+dotyk = true;
+}
+
+}
+}
+b++;
+}
+
+//attack the target
+if(najbliz!=-1){ 
+	atk(k,lud[najbliz]);
+}
+if(!vitezstvo) //measures the distance made by soldier
+lud[a].dyst+=Math.sqrt(Math.pow(ttx-lud[a].x,2)+Math.pow(tty-lud[a].y,2));
+
+} else if(lud[a].zyc>0) { //if dies
+lud[a].zyc--;
+}
+
+a++;
+}
+
+}
+
+//actions for all units (of type Peja)
+a = 0;
+if(!vitezstvo)
+while(a<pejan){
+t = peja[a];
+b = 0;
+while(b<t.liczb){
+ //calculates destination of each soldier in unit
+ lud[t.nal[b]].cx = t.x+pozycj(b,t.liczb,t.kier,t.typ).x;
+ lud[t.nal[b]].cy = t.y+pozycj(b,t.liczb,t.kier,t.typ).y;
+ b++;
+}
+
+a++;
+}
+
+
+//Poorly made AI xP
+ a = 0;
+wroglicz = 0;
+if(!vitezstvo)
+while(a<pejan){
+ peja[a].cel = -1;
+ if(!nasz(peja[a].kol) && peja[a].liczb>0){
+  
+  //attacks the closest unit
+  naj = -1;
+  b = 0;
+  while(b<pejan){
+   if(a!=b){
+    while(b<pejan && (!nasz(peja[b].kol) || peja[b].liczb<=0)){
+     b++;
+    }
+    if(naj==-1 && b<pejan && peja[b].liczb>0)naj=b;
+    if(b<pejan && nasz(peja[b].kol) && peja[b].liczb>0){
+     if(odl(srodak(peja[a]),srodak(peja[b]))<odl(srodak(peja[a]),srodak(peja[naj]))){
+      naj = b;
+     }
+    }
+   }
+   b++;
+  }
+  wroglicz++;
+  if(naj==-1){  //defeat
+   vitezstvo = true;
+   nicsieniestalo = true;
+   b = 0;
+   while(b<ludn){
+    if(lud[b].zyc>=10){
+     lud[b].randomizuj();
+    }
+    b++;
+   }
+  } else if(naj<pejan){
+   peja[a].cel = naj;
+   peja[a].x = srodak(peja[naj]).x;
+   peja[a].y = srodak(peja[naj]).y;
+  }
+ }
+ a++;
+}
+if(wroglicz==0 && !vitezstvo){ //victory
+vitezstvo = true;
+   b = 0;
+   while(b<ludn){
+    if(lud[b].zyc>=10){
+     lud[b].randomizuj();
+    }
+    b++;
+   }
+}
+break;
+}
+		//change of frames, klatka=frame
+			if(klatka==doklatki){
+				if(zaslona>0){  //zaslona=curtain
+					zaslona--;
+				}
+			} else {
+
+				if(zaslona<10){
+					zaslona++;
+				} else {
+					klatka = doklatki;
+					switch(klatka){
+						case 4:
+						pkasetuj();
+peja[0].pejuj(100+100,100+50,16,-1,"#f00","#800",0,0,0);
+peja[1].pejuj(100+100,300+50,16,-1,"#f00","#800",0,0,0);
+peja[2].pejuj(100+100,500+50,16,-1,"#f00","#800",0,0,0);
+peja[3].pejuj(100+100,700+50,16,-1,"#f00","#800",0,0,0);
+peja[4].pejuj(300+100,100+50,16,-1,"#f00","#800",0,0,0);
+peja[5].pejuj(300+100,300+50,16,-1,"#f00","#800",0,0,0);
+peja[6].pejuj(300+100,500+50,16,-1,"#f00","#800",0,0,0);
+peja[7].pejuj(300+100,700+50,16,-1,"#f00","#800",0,0,0);
+
+
+peja[8].pejuj(700+100,100+50,16,1,"#00f","#008",0,0,0);
+peja[9].pejuj(700+100,300+50,16,1,"#00f","#008",0,0,0);
+peja[10].pejuj(700+100,500+50,16,1,"#00f","#008",0,0,0);
+peja[11].pejuj(700+100,700+50,16,1,"#00f","#008",0,0,0);
+peja[12].pejuj(900+100,100+50,16,1,"#00f","#008",0,0,0);
+peja[13].pejuj(900+100,300+50,16,1,"#00f","#008",0,0,0);
+peja[14].pejuj(900+100,500+50,16,1,"#00f","#008",0,0,0);
+peja[15].pejuj(900+100,700+50,16,1,"#00f","#008",0,0,0);
+						kasetuj();
+
+						break;
+						case 5:
+						klatka = 4;  //changes frame to battlefied
+						doklatki = 4;
+						pkasetuj();
+peja[0].pejuj(100+100,100+50,9,-1,"#f00","#800",2,1,0);
+peja[1].pejuj(100+100,300+50,9,-1,"#f00","#800",2,1,0);
+peja[2].pejuj(100+100,500+50,9,-1,"#f00","#800",2,1,0);
+peja[3].pejuj(100+100,700+50,9,-1,"#f00","#800",2,1,0);
+peja[4].pejuj(300+100,100+50,16,-1,"#f00","#800",2,1,1);
+peja[5].pejuj(300+100,300+50,16,-1,"#f00","#800",2,1,1);
+peja[6].pejuj(300+100,500+50,16,-1,"#f00","#800",2,1,1);
+peja[7].pejuj(300+100,700+50,16,-1,"#f00","#800",2,1,1);
+//peja[pejan] = Peja(300,700,16,-1,"#f00","#800",7,0,0);
+
+
+peja[8].pejuj(700+100,100+50,16,1,"#00f","#008",1,1,1);
+peja[9].pejuj(700+100,300+50,16,1,"#00f","#008",1,1,1);
+peja[10].pejuj(700+100,500+50,16,1,"#00f","#008",1,1,1);
+peja[11].pejuj(700+100,700+50,16,1,"#00f","#008",1,1,1);
+peja[12].pejuj(900+100,100+50,16,1,"#00f","#008",1,1,1);
+peja[13].pejuj(900+100,300+50,16,1,"#00f","#008",1,1,1);
+peja[14].pejuj(900+100,500+50,16,1,"#00f","#008",1,1,1);
+peja[15].pejuj(900+100,700+50,16,1,"#00f","#008",1,1,1);
+						kasetuj();
+						break;
+						case 6:
+						klatka = 4;  //changes frame to battlefied
+						doklatki = 4;
+						pkasetuj();
+peja[0].pejuj(-300+100,100+50,0,-1,"#f00","#800",5,2,1);
+peja[1].pejuj(100+100,300+50,9,-1,"#f00","#800",5,1,1);
+peja[2].pejuj(100+100,500+50,9,-1,"#f00","#800",5,1,1);
+peja[3].pejuj(100+100,700+50,9,-1,"#f00","#800",5,1,1);
+peja[4].pejuj(-300+100,100+50,0,-1,"#f00","#800",5,2,2);
+peja[5].pejuj(300+100,300+50,9,-1,"#f00","#800",5,2,1);
+peja[6].pejuj(300+100,500+50,9,-1,"#f00","#800",5,2,1);
+peja[7].pejuj(300+100,700+50,9,-1,"#f00","#800",5,2,1);
+//peja[pejan] = Peja(300,700,16,-1,"#f00","#800",7,0,0);
+
+
+peja[8].pejuj(700+100,100+50,16,1,"#00f","#008",1,2,2);
+peja[9].pejuj(700+100,300+50,16,1,"#00f","#008",1,2,2);
+peja[10].pejuj(700+100,500+50,16,1,"#00f","#008",1,2,2);
+peja[11].pejuj(700+100,700+50,16,1,"#00f","#008",1,2,2);
+peja[12].pejuj(900+100,100+50,16,1,"#00f","#008",2,1,2);
+peja[13].pejuj(900+100,300+50,16,1,"#00f","#008",2,1,2);
+peja[14].pejuj(900+100,500+50,16,1,"#00f","#008",2,1,2);
+peja[15].pejuj(900+100,700+50,16,1,"#00f","#008",2,1,2);
+						kasetuj();
+						break;
+						case 7:
+						klatka = 4;  //changes frame to battlefied
+						doklatki = 4;
+						pkasetuj();
+peja[0].pejuj(100+100,100+50,12,-1,"#f00","#800",2,2,2);
+peja[1].pejuj(100+100,300+50,12,-1,"#f00","#800",2,2,2);
+peja[2].pejuj(100+100,500+50,4,-1,"#f00","#800",6,2,2);
+peja[3].pejuj(100+100,700+50,4,-1,"#f00","#800",6,2,2);
+peja[4].pejuj(300+100,100+50,4,-1,"#f00","#800",6,2,2);
+peja[5].pejuj(300+100,300+50,4,-1,"#f00","#800",6,2,2);
+peja[6].pejuj(-300,500,0,-1,"#f00","#800",5,2,1);
+peja[7].pejuj(-300,700,0,-1,"#f00","#800",5,2,1);
+//peja[pejan] = Peja(300,700,16,-1,"#f00","#800",7,0,0);
+
+
+peja[8].pejuj(700+100,100+50,16,1,"#00f","#008",4,2,2);
+peja[9].pejuj(700+100,300+50,16,1,"#00f","#008",4,2,2);
+peja[10].pejuj(700+100,500+50,16,1,"#00f","#008",4,2,2);
+peja[11].pejuj(700+100,700+50,16,1,"#00f","#008",4,2,2);
+peja[12].pejuj(900+100,100+50,16,1,"#00f","#008",4,2,2);
+peja[13].pejuj(900+100,300+50,16,1,"#00f","#008",4,2,2);
+peja[14].pejuj(900+100,500+50,16,1,"#00f","#008",4,2,2);
+peja[15].pejuj(900+100,700+50,16,1,"#00f","#008",4,2,2);
+						kasetuj();
+						break;
+						case 8:
+						klatka = 4;  //changes frame to battlefied
+						doklatki = 4;
+						pkasetuj();
+peja[0].pejuj(100+100,100+50,16,-1,"#f00","#800",4,1,2);
+peja[1].pejuj(100+100,300+50,16,-1,"#f00","#800",4,1,2);
+peja[2].pejuj(100+100,500+50,16,-1,"#f00","#800",4,1,2);
+peja[3].pejuj(100+100,700+50,16,-1,"#f00","#800",4,1,2);
+peja[4].pejuj(-300,100,0,-1,"#f00","#800",6,2,2);
+peja[5].pejuj(-300,300,0,-1,"#f00","#800",5,2,1);
+peja[6].pejuj(-300,500,0,-1,"#f00","#800",5,2,1);
+peja[7].pejuj(-300,700,0,-1,"#f00","#800",5,2,1);
+//peja[pejan] = Peja(300,700,16,-1,"#f00","#800",7,0,0);
+
+
+peja[8].pejuj(700+100,100+50,16,1,"#00f","#008",0,1,1);
+peja[9].pejuj(700+100,300+50,16,1,"#00f","#008",0,2,1);
+peja[10].pejuj(700+100,500+50,16,1,"#00f","#008",0,1,1);
+peja[11].pejuj(700+100,700+50,16,1,"#00f","#008",0,1,1);
+peja[12].pejuj(900+100,100+50,16,1,"#00f","#008",0,2,1);
+peja[13].pejuj(900+100,300+50,16,1,"#00f","#008",0,1,1);
+peja[14].pejuj(900+100,500+50,16,1,"#00f","#008",0,1,1);
+peja[15].pejuj(900+100,700+50,16,1,"#00f","#008",0,1,1);
+						kasetuj();
+						break;
+						case 9:
+						klatka = 4;  //changes frame to battlefied
+						doklatki = 4;
+						pkasetuj();
+peja[0].pejuj(100+100,100+50,1,-1,"#f00","#800",7,2,2);
+peja[1].pejuj(-300,300,0,-1,"#f00","#800",5,2,2);
+peja[2].pejuj(-300,500,0,-1,"#f00","#800",5,2,2);
+peja[3].pejuj(-300,700,0,-1,"#f00","#800",5,2,2);
+peja[4].pejuj(-300,100,0,-1,"#f00","#800",6,2,2);
+peja[5].pejuj(-300,300,0,-1,"#f00","#800",5,2,1);
+peja[6].pejuj(-300,500,0,-1,"#f00","#800",5,2,1);
+peja[7].pejuj(-300,700,0,-1,"#f00","#800",5,2,1);
+//peja[pejan] = Peja(300,700,16,-1,"#f00","#800",7,0,0);
+
+
+peja[8].pejuj(700+100,100+50,16,1,"#00f","#008",1,2,2);
+peja[9].pejuj(700+100,300+50,16,1,"#00f","#008",1,2,2);
+peja[10].pejuj(700+100,500+50,16,1,"#00f","#008",1,2,2);
+peja[11].pejuj(700+100,700+50,16,1,"#00f","#008",1,2,2);
+peja[12].pejuj(900+100,100+50,16,1,"#00f","#008",1,2,2);
+peja[13].pejuj(900+100,300+50,16,1,"#00f","#008",1,2,2);
+peja[14].pejuj(900+100,500+50,16,1,"#00f","#008",1,2,2);
+peja[15].pejuj(900+100,700+50,16,1,"#00f","#008",1,2,2);
+						kasetuj();
+						break;
+						case 10:
+						klatka = 4;  //changes frame to battlefied
+						doklatki = 4;
+						pkasetuj();
+peja[0].pejuj(100+100,100+50,8,-1,"#f00","#800",5,1,1);
+peja[1].pejuj(100+100,300+50,8,-1,"#f00","#800",5,1,1);
+peja[2].pejuj(100+100,500+50,8,-1,"#f00","#800",5,1,1);
+peja[3].pejuj(100+100,700+50,8,-1,"#f00","#800",5,1,1);
+peja[4].pejuj(300+100,100+50,8,-1,"#f00","#800",5,1,1);
+peja[5].pejuj(300+100,300+50,8,-1,"#f00","#800",5,1,1);
+peja[6].pejuj(300+100,500+50,8,-1,"#f00","#800",5,1,1);
+peja[7].pejuj(300+100,700+50,8,-1,"#f00","#800",5,1,1);
+
+
+peja[8].pejuj(700+100,100+50,16,1,"#00f","#008",3,2,2);
+peja[9].pejuj(700+100,300+50,16,1,"#00f","#008",3,2,2);
+peja[10].pejuj(700+100,500+50,16,1,"#00f","#008",3,2,2);
+peja[11].pejuj(700+100,700+50,16,1,"#00f","#008",3,2,2);
+peja[12].pejuj(900+100,100+50,16,1,"#00f","#008",3,2,0);
+peja[13].pejuj(900+100,300+50,16,1,"#00f","#008",3,2,0);
+peja[14].pejuj(900+100,500+50,16,1,"#00f","#008",3,2,0);
+peja[15].pejuj(900+100,700+50,16,1,"#00f","#008",3,2,0);
+						kasetuj();
+						break;
+						case 12:
+						
+						//sandbox
+						
+						klatka = 4;  //changes frame to battlefied
+						doklatki = 4;
+						pkasetuj();
+zz = 0;
+peja[0].pejuj(200,150,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[1].pejuj(200,350,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[2].pejuj(200,550,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[3].pejuj(200,750,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[4].pejuj(400,150,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[5].pejuj(400,350,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[6].pejuj(400,550,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[7].pejuj(400,750,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+//peja[pejan] = Peja(300,700,16,-1,"#f00","#800",7,0,0);
+
+
+peja[8].pejuj(800,150,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[9].pejuj(800,350,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[10].pejuj(800,550,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[11].pejuj(800,750,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[12].pejuj(1000,150,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[13].pejuj(1000,350,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[14].pejuj(1000,550,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[15].pejuj(1000,750,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+						kasetuj();
+
+zz = 0;     //if 'unit' doesn't have any soldiers
+while(zz<16){
+	if(polaki[zz].ludzi<=0){
+		peja[zz].x = -100;
+		peja[zz].y = -100;
+	}
+	zz++;
+}
+						break;
+						case 15:  //replay
+							
+						klatka = 4;  //changes frame to battlefied
+						doklatki = 4;
+						pkasetuj();
+/*zz = 0;
+peja[0].pejuj(200,150,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[1].pejuj(200,350,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[2].pejuj(200,550,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[3].pejuj(200,750,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[4].pejuj(400,150,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[5].pejuj(400,350,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[6].pejuj(400,550,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[7].pejuj(400,750,polaki[zz].ludzi,-1,"#f00","#800",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+//peja[pejan] = Peja(300,700,16,-1,"#f00","#800",7,0,0);
+
+
+peja[8].pejuj(800,150,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[9].pejuj(800,350,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[10].pejuj(800,550,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[11].pejuj(800,750,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[12].pejuj(1000,150,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[13].pejuj(1000,350,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[14].pejuj(1000,550,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+peja[15].pejuj(1000,750,polaki[zz].ludzi,1,"#00f","#008",polaki[zz].vibor,polaki[zz].lv1,polaki[zz].lv2);zz++;
+*/
+zz = 0;
+while(zz<16){
+	peja[zz].pejuj(zachow[zz].x,zachow[zz].y,zachow[zz].liczb,zachow[zz].kier,zachow[zz].kol,zachow[zz].kolo,zachow[zz].typ,zachow[zz].lv1,zachow[zz].lv2);
+	
+	zz++;
+}
+						kasetuj();
+						break;
+					}
+					if(klatka==4){
+					var oo = 0;
+					while(oo<16){
+						zachow[oo].zachowajcuj(peja[oo].x,peja[oo].y,peja[oo].liczb,peja[oo].kier,peja[oo].kol,peja[oo].kolo,peja[oo].typ,peja[oo].lv1,peja[oo].lv2);
+						oo++;
+					}
+					}
+				}
+				
+			}
+rysuj();
+
+}
+//two functions which saves data about units used in battle
+function pkasetuj(){
+	fakat = false;
+	var t = 0;
+	while(t<ludn){
+		lud[t].hp = 0;
+		lud[t].zyc = 0;
+		lud[t].count = 0;
+		t++;
+	}
+	ludn = 0;
+	pauz = true;
+	krwi = 0;
+}
+
+function kasetuj(){
+	statpocz = [];
+	statstrac = [];
+	statniew = [];
+	statobr = [];
+	stat0z = [];
+	stat1z = [];
+	stat2z = [];
+	statnaj = [];
+	var wn = nasze[0];
+	var wi = ich[0];
+	statpocz[wn] = [];
+	statstrac[wn] = [];
+	statniew[wn] = [];
+	statobr[wn] = [];
+	stat0z[wn] = [];
+	stat1z[wn] = [];
+	stat2z[wn] = [];
+	statnaj[wn] = [];
+	
+	statpocz[wi] = [];
+	statstrac[wi] = [];
+	statniew[wi] = [];
+	statobr[wi] = [];
+	stat0z[wi] = [];
+	stat1z[wi] = [];
+	stat2z[wi] = [];
+	statnaj[wi] = [];
+	var t = 0;
+	while(t<=16){
+		
+	statpocz[wn][t]=0;
+	statstrac[wn][t]=0;
+	statniew[wn][t]=0;
+	statobr[wn][t]=0;
+	stat0z[wn][t]=0;
+	stat1z[wn][t]=0;
+	stat2z[wn][t]=0;
+	statnaj[wn][t]=0;
+	
+	
+		
+	statpocz[wi][t]=0;
+	statstrac[wi][t]=0;
+	statniew[wi][t]=0;
+	statobr[wi][t]=0;
+	stat0z[wi][t]=0;
+	stat1z[wi][t]=0;
+	stat2z[wi][t]=0;
+	statnaj[wi][t]=0;
+		t++;
+	}
+	t = 0;
+	while(t<ludn){
+		lud[t].niew = true;
+		statpocz[lud[t].kol][lud[t].typ]++;
+		//statpocz[lud[t].kol][lud[t].typ+8]++;
+		
+		t++;
+	}
+	vitezstvo = false;
+	nicsieniestalo = false;
+	sekund = 1;
+	klatek = 0;
+	twojsil[0] = zlicz(0);
+	twojsil[2] = zlicz(0);
+	wrogsil[0] = zlicz(1);
+	wrogsil[2] = zlicz(1);
+}
+
+//calculates centre of whole unit
+function srodak(p){
+
+var ai = 0;
+var le,pr,go,dl;
+t = p;
+while(ai<t.liczb){
+n = lud[t.nal[ai]];
+if(ai>0){
+if(n.x<le){
+le = n.x;}
+if(n.x>pr){
+pr = n.x;}
+if(n.y<go){
+go = n.y;}
+if(n.y>dl){
+dl = n.y;}
+
+} else {
+le = n.x;
+pr = n.x;
+go = n.y;
+dl = n.y;
+}
+ai++;
+}
+srx = (le+pr)/2;
+sry = (go+dl)/2;
+return {x:srx,y:sry};
+}
+//calculates distance between two objects containing x and y fields
+function odl(s,t){
+return Math.sqrt(Math.pow(s.x-t.x,2)+Math.pow(s.y-t.y,2));
+}
+//calculates position of cursor
+function gmp(e){
+        var rect = tede.getBoundingClientRect();
+          xx = (e.clientX - rect.left)*1200/(rect.right-rect.left);
+          yy = (e.clientY - rect.top)*900/(rect.bottom-rect.top);
+
+          mx = Math.floor(xx/50);
+          my = Math.floor((400-yy)/50);
+        return {
+          x: Math.floor(xx/50),
+          y: Math.floor(yy/50)
+        };
+
+}
+//three functions used in coding battle configurations
+function lita(lic){
+	if(lic<10){
+		return lic;
+	} else {
+		switch (lic){
+			case 10: return "a"; break;
+			case 11: return "b"; break;
+			case 12: return "c"; break;
+			case 13: return "d"; break;
+			case 14: return "e"; break;
+			case 15: return "f"; break;
+			case 16: return "g"; break;
+		}
+	}
+}
+function dlita(lic){
+	switch (lic){
+		case "0": return 0; break;
+		case "1": return 1; break;
+		case "2": return 2; break;
+		case "3": return 3; break;
+		case "4": return 4; break;
+		case "5": return 5; break;
+		case "6": return 6; break;
+		case "7": return 7; break;
+		case "8": return 8; break;
+		case "9": return 9; break;
+		case "a": return 10; break;
+		case "b": return 11; break;
+		case "c": return 12; break;
+		case "d": return 13; break;
+		case "e": return 14; break;
+		case "f": return 15; break;
+		case "g": return 16; break;
+	}
+}
+function pokod(){
+	var u = "";
+	a=0;
+	while(a<16){
+		t = polaki[a];
+		if(t.vibor==-1){
+			u+=";";	
+		} else {
+			u+=""+t.vibor;
+			u+=lita(t.ludzi);
+			s = t.lv1*3;
+			s-=(-t.lv2);
+			u+=s;
+		}
+		a++;
+	}
+	return u;
+}
+//actions at click
+function klik(){
+
+//reaction to buttons
+var f = 0;
+while(f<pszycow){
+	var o = pszy[f];
+	if(o.klata==klatka){
+		if(xx>o.x && xx<o.x+300 && yy>o.y && yy<o.y+120){
+			doklatki = o.cel;
+			if(doklatki == 11){ //clears sandbox during its initiation
+				a=0;
+				while(a<16){
+					t = polaki[a];
+					t.zeruj();
+					a++;
+				}
+			}
+			if(doklatki == 13){  //code dialog
+				doklatki = klatka;
+				var kot = prompt("By wczytać kod, wklej go w poniższe pole tekstowe i wciśnij OK",pokod());
+				if(kot!=null){
+					b = 0;
+					pnr = 0;
+					while(pnr<16 && b<kot.length){
+						if(kot.substr(b,1)==";"){
+							pnr++;
+						}
+						if(kot.substr(b,1)>=0 && kot.substr(b,1)<8){  //if the data is invalid, the game can crash xP
+							t = polaki[pnr];
+							t.vibor = dlita(kot.substr(b,1));
+							t.ludzi = dlita(kot.substr(b+1,1));
+							c = kot.substr(b+2,1);
+							t.lv2 = c%3;
+							t.lv1 = (c-c%3)/3;
+							pnr++;
+							b+=2;
+						}
+						b++;
+					}
+				}
+			}
+		}
+	}
+	f++;
+}
+
+//click reactions in each frame
+switch(klatka){
+	case 0:
+	
+	break;
+	case 4: //checks if mouse hits label of the unit
+a=pejan-1;
+while(a>=0){
+t = peja[a];
+if(Math.abs(xx-t.x)<30 && Math.abs(yy-t.y)<30 && nasz(t.kol)){
+zaz = a;
+a = 1000000;
+}
+a--;
+}
+	break;
+	case 11: //sandbox
+	a=0;
+	while(a<16){
+		t = polaki[a];
+		if(t.vibor == -1 && t.lok(xx,yy)>-1 && atamiecz[t.lok(xx,yy)]!=undefined){
+			t.vibor = t.lok(xx,yy);
+			t.ludzi = lidzba[t.vibor];
+		} else if(t.vibor>-1){
+			switch(t.lok(xx,yy)){
+				case 1:
+				t.ludzi++;
+				if(t.ludzi>lidzba[t.vibor])
+				 t.ludzi = lidzba[t.vibor];
+				break;
+				case 2:
+				t.ludzi+=4;
+				if(t.ludzi>lidzba[t.vibor])
+				 t.ludzi = lidzba[t.vibor];
+				break;
+				case 3:
+				t.ludzi--;
+				if(t.ludzi<1)
+				 t.ludzi = 1;
+				
+				break;
+				case 4:
+				t.ludzi-=4;
+				if(t.ludzi<1)
+				 t.ludzi = 1;
+				break;
+				case 5:
+				t.lv1++;
+				if(t.lv1>2)
+				 t.lv1 = 0;
+				break;
+				case 6:
+				t.lv2++;
+				if(t.lv2>2)
+				 t.lv2 = 0;
+				break;
+				case 7:
+				t.zeruj();
+				break;
+				case 8:
+					var pludzi,plv1,plv2,pvibor;
+					pludzi = t.ludzi;
+					plv1 = t.lv1;
+					plv2 = t.lv2;
+					pvibor = t.vibor;
+					if(a<8){
+						var p = 0;
+						while(p<8){
+							polaki[p].ludzi = pludzi;
+							polaki[p].lv1 = plv1;
+							polaki[p].lv2 = plv2;
+							polaki[p].vibor = pvibor;
+							p++;
+						}
+					} else {
+						var p = 8;
+						while(p<16){
+							polaki[p].ludzi = pludzi;
+							polaki[p].lv1 = plv1;
+							polaki[p].lv2 = plv2;
+							polaki[p].vibor = pvibor;
+							p++;
+						}
+					}
+				break;
+			}
+		}
+		a++;
+	}
+	break;
+}
+}
+function przen(){  //mouse move
+	
+a = 0;
+while(a<pejan){
+t = peja[a];
+if(zaz==a){
+t.x = xx;
+t.y = yy;
+}
+a++;
+}
+}
+function odklik(){ //mouse up
+zaz = -1;
+}
+function pauzf(){  //pause
+	if(!vitezstvo){
+      if(pauz){
+       pauz = false;
+      } else {
+       pauz = true;
+      } 
+	} else {
+		doklatki = 14;
+	}
+}
+window.addEventListener('keydown', function(event) {  
+  if (event.keyCode==32) { //pause at space
+	pauzf();
+  }
+  if (event.keyCode==68) { //cheat ( ͡° ͜ʖ ͡°)
+    var f = 0;
+	while(f<100){
+		k = Math.floor(Math.random()*(ludn+1));
+		if(!nasz(lud[k].kol)){
+			lud[k].hp = 0;
+			f=100;
+		}
+		f++;
+	}
+  }
+}, false);
+
+</script>
+<style type="text/css">
+body{background-color:black;color:white;padding:0;text-align:center;font-family:Trebuchet MS;overflow:hidden}
+#cal{margin-left:auto;margin-top:0;width:195vh}
+#spacja{height:84vh;width:30vh;float:left;left:-30vh;background-color:#CCCCCC;color:black;font-size:13vh;padding-top:6vh}
+#tede{height:90vh;width:120vh;float:left}
+<!--#kody{position:absolute;margin-left:30vw;padding:5px;background-color:#CCC;border:1px solid #666;display:visible}->
+</style>
+
+</head>
+<body onload="laduj();setInterval('anim()',40);">
+<!--div id="kody"><textarea id="kott" rows="40" cols="80"></textarea><br/><input type="button" value="POBIERZ KOD" onclick="" /><input type="button" value="WCZYTAJ KOD" onclick=""/></div-->
+<div id="cal">
+<div id="spacja" onclick="pauzf();">P<br/>A<br/>U<br/>Z<br/>A</div>
+<canvas id="tede" width="1200" height="900" onmousedown="gmp(event);klik();" onmousemove="gmp(event);przen();" onmouseup="odklik();"></canvas>
+</div>
+</body>
+</html>

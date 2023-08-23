@@ -28,6 +28,13 @@ class GameModel {
         this.elements.push(new Cube("#ffb",0-10,-100+80,0,60,10,50))
         this.elements.push(new Cube("#b92",0,-100,50 ,90,90,10))
         
+        
+        this.elements.push(new Cube("#ffb",0-80,100,0,10,40,40))
+        this.elements.push(new Cube("#ffb",0-40,100,0,10,40,40))
+        
+        this.elements.push(new Cube("#ffb",0-40,200,0,40,10,40))
+        this.elements.push(new Cube("#ffb",0-40,240,0,40,10,40))
+        
         this.elements.push(new Cube("#ffb",0-230,-100,80 ,100,100,20))
         this.elements.push(new Cube("#ffb",0-230,-100,0 ,110,110,5))
         this.elements.push(new Cube("#ffb",0-230,-100,5 ,90,90,5))
@@ -76,83 +83,92 @@ class GameModel {
         //this.elements.push(normalCorrdsCube("#777",150,-270,0,350,-70,400))
         //this.elements.push(normalCorrdsCube("#777",150,-270,380,350,-70,400))
         this.elements.push(normalCorrdsCube("#777",150,-270,0,170,-70,400))
-        this.elements.push(normalCorrdsCube("#777",150,-270,0,350,-250,400))
+        this.elements.push(normalCorrdsCube("#777",170,-270,0,330,-250,400))
         this.elements.push(normalCorrdsCube("#777",330,-270,0,350,-70,400))
-        this.elements.push(normalCorrdsCube("#777",150,-90,40,350,-70,400))
-        this.elements.push(normalCorrdsCube("#777",220,-90,0,350,-70,40))
+        
+        this.elements.push(normalCorrdsCube("#777",170,-90,40,330,-70,110))
+        this.elements.push(normalCorrdsCube("#777",170,-90,140,330,-70,210))
+        this.elements.push(normalCorrdsCube("#777",170,-90,240,330,-70,310))
+        this.elements.push(normalCorrdsCube("#777",170,-90,340,330,-70,400))
+        
+        this.elements.push(normalCorrdsCube("#777",220,-90,0,330,-70,40))
         
         this.elements.push(normalCorrdsCube("#aaa",200,-250,0,220,-220,10))
-        this.elements.push(normalCorrdsCube("#aaa",210,-250,10,230,-220,20))
-        this.elements.push(normalCorrdsCube("#aaa",220,-250,20,240,-220,30))
-        this.elements.push(normalCorrdsCube("#aaa",230,-250,30,250,-220,40))
-        this.elements.push(normalCorrdsCube("#aaa",240,-250,40,250,-220,50))
-        this.elements.push(normalCorrdsCube("#aaa",250,-250,50,260,-220,60))
-        this.elements.push(normalCorrdsCube("#aaa",260,-250,60,270,-220,70))
-        this.elements.push(normalCorrdsCube("#aaa",270,-250,70,280,-220,80))
-        this.elements.push(normalCorrdsCube("#aaa",280,-250,80,290,-220,90))
-        this.elements.push(normalCorrdsCube("#aaa",290,-250,90,350,-220,100))
+        this.elements.push(normalCorrdsCube("#aaa",210,-250,10-5,230,-220,20))
+        this.elements.push(normalCorrdsCube("#aaa",220,-250,20-5,240,-220,30))
+        this.elements.push(normalCorrdsCube("#aaa",230,-250,30-5,250,-220,40))
+        this.elements.push(normalCorrdsCube("#aaa",240,-250,40-5,250,-220,50))
+        this.elements.push(normalCorrdsCube("#aaa",250,-250,50-5,260,-220,60))
+        this.elements.push(normalCorrdsCube("#aaa",260,-250,60-5,270,-220,70))
+        this.elements.push(normalCorrdsCube("#aaa",270,-250,70-5,280,-220,80))
+        this.elements.push(normalCorrdsCube("#aaa",280,-250,80-5,290,-220,90))
+        this.elements.push(normalCorrdsCube("#aaa",290,-250,90-5,330,-220,100))
         
         
-        this.elements.push(normalCorrdsCube("#aaa",150,-250,90,240,-220,100))
-        this.elements.push(normalCorrdsCube("#aaa",150,-220,90,350,-90,100))
+        this.elements.push(normalCorrdsCube("#aaa",170,-250,90,240,-220,100))
+        this.elements.push(normalCorrdsCube("#aaa",170,-220,90,330,-90,100))
         
         this.elements.push(normalCorrdsCube("#aaa",200,-250,0+100,220,-220,10+100))
-        this.elements.push(normalCorrdsCube("#aaa",210,-250,10+100,230,-220,20+100))
-        this.elements.push(normalCorrdsCube("#aaa",220,-250,20+100,240,-220,30+100))
-        this.elements.push(normalCorrdsCube("#aaa",230,-250,30+100,250,-220,40+100))
-        this.elements.push(normalCorrdsCube("#aaa",240,-250,40+100,250,-220,50+100))
-        this.elements.push(normalCorrdsCube("#aaa",250,-250,50+100,260,-220,60+100))
-        this.elements.push(normalCorrdsCube("#aaa",260,-250,60+100,270,-220,70+100))
-        this.elements.push(normalCorrdsCube("#aaa",270,-250,70+100,280,-220,80+100))
-        this.elements.push(normalCorrdsCube("#aaa",280,-250,80+100,290,-220,90+100))
-        this.elements.push(normalCorrdsCube("#aaa",290,-250,90+100,350,-220,100+100))
+        this.elements.push(normalCorrdsCube("#aaa",210,-250,10+100-5,230,-220,20+100))
+        this.elements.push(normalCorrdsCube("#aaa",220,-250,20+100-5,240,-220,30+100))
+        this.elements.push(normalCorrdsCube("#aaa",230,-250,30+100-5,250,-220,40+100))
+        this.elements.push(normalCorrdsCube("#aaa",240,-250,40+100-5,250,-220,50+100))
+        this.elements.push(normalCorrdsCube("#aaa",250,-250,50+100-5,260,-220,60+100))
+        this.elements.push(normalCorrdsCube("#aaa",260,-250,60+100-5,270,-220,70+100))
+        this.elements.push(normalCorrdsCube("#aaa",270,-250,70+100-5,280,-220,80+100))
+        this.elements.push(normalCorrdsCube("#aaa",280,-250,80+100-5,290,-220,90+100))
+        this.elements.push(normalCorrdsCube("#aaa",290,-250,90+100-5,330,-220,100+100))
         
-        this.elements.push(normalCorrdsCube("#aaa",150,-250,90+100,240,-220,100+100))
-        this.elements.push(normalCorrdsCube("#aaa",150,-220,90+100,350,-90,100+100))
+        this.elements.push(normalCorrdsCube("#aaa",170,-250,90+100,240,-220,100+100))
+        this.elements.push(normalCorrdsCube("#aaa",170,-220,90+100,330,-90,100+100))
         
         
         this.elements.push(normalCorrdsCube("#aaa",200,-250,0+200,220,-220,10+200))
-        this.elements.push(normalCorrdsCube("#aaa",210,-250,10+200,230,-220,20+200))
-        this.elements.push(normalCorrdsCube("#aaa",220,-250,20+200,240,-220,30+200))
-        this.elements.push(normalCorrdsCube("#aaa",230,-250,30+200,250,-220,40+200))
-        this.elements.push(normalCorrdsCube("#aaa",240,-250,40+200,250,-220,50+200))
-        this.elements.push(normalCorrdsCube("#aaa",250,-250,50+200,260,-220,60+200))
-        this.elements.push(normalCorrdsCube("#aaa",260,-250,60+200,270,-220,70+200))
-        this.elements.push(normalCorrdsCube("#aaa",270,-250,70+200,280,-220,80+200))
-        this.elements.push(normalCorrdsCube("#aaa",280,-250,80+200,290,-220,90+200))
-        this.elements.push(normalCorrdsCube("#aaa",290,-250,90+200,350,-220,100+200))
+        this.elements.push(normalCorrdsCube("#aaa",210,-250,10+200-5,230,-220,20+200))
+        this.elements.push(normalCorrdsCube("#aaa",220,-250,20+200-5,240,-220,30+200))
+        this.elements.push(normalCorrdsCube("#aaa",230,-250,30+200-5,250,-220,40+200))
+        this.elements.push(normalCorrdsCube("#aaa",240,-250,40+200-5,250,-220,50+200))
+        this.elements.push(normalCorrdsCube("#aaa",250,-250,50+200-5,260,-220,60+200))
+        this.elements.push(normalCorrdsCube("#aaa",260,-250,60+200-5,270,-220,70+200))
+        this.elements.push(normalCorrdsCube("#aaa",270,-250,70+200-5,280,-220,80+200))
+        this.elements.push(normalCorrdsCube("#aaa",280,-250,80+200-5,290,-220,90+200))
+        this.elements.push(normalCorrdsCube("#aaa",290,-250,90+200-5,330,-220,100+200))
     
         this.elements.push(normalCorrdsCube("#aaa",170,-250,90+200,240,-220,100+200))
         this.elements.push(normalCorrdsCube("#aaa",170,-220,90+200,330,-90,100+200))
         
         this.elements.push(normalCorrdsCube("#aaa",200,-250,0+300,220,-220,10+300))
-        this.elements.push(normalCorrdsCube("#aaa",210,-250,10+300,230,-220,20+300))
-        this.elements.push(normalCorrdsCube("#aaa",220,-250,20+300,240,-220,30+300))
-        this.elements.push(normalCorrdsCube("#aaa",230,-250,30+300,250,-220,40+300))
-        this.elements.push(normalCorrdsCube("#aaa",240,-250,40+300,250,-220,50+300))
-        this.elements.push(normalCorrdsCube("#aaa",250,-250,50+300,260,-220,60+300))
-        this.elements.push(normalCorrdsCube("#aaa",260,-250,60+300,270,-220,70+300))
-        this.elements.push(normalCorrdsCube("#aaa",270,-250,70+300,280,-220,80+300))
-        this.elements.push(normalCorrdsCube("#aaa",280,-250,80+300,290,-220,90+300))
+        this.elements.push(normalCorrdsCube("#aaa",210,-250,10+300-5,230,-220,20+300))
+        this.elements.push(normalCorrdsCube("#aaa",220,-250,20+300-5,240,-220,30+300))
+        this.elements.push(normalCorrdsCube("#aaa",230,-250,30+300-5,250,-220,40+300))
+        this.elements.push(normalCorrdsCube("#aaa",240,-250,40+300-5,250,-220,50+300))
+        this.elements.push(normalCorrdsCube("#aaa",250,-250,50+300-5,260,-220,60+300))
+        this.elements.push(normalCorrdsCube("#aaa",260,-250,60+300-5,270,-220,70+300))
+        this.elements.push(normalCorrdsCube("#aaa",270,-250,70+300-5,280,-220,80+300))
+        this.elements.push(normalCorrdsCube("#aaa",280,-250,80+300-5,290,-220,90+300))
+        this.elements.push(normalCorrdsCube("#aaa",290,-250,90+300-5,300,-220,100+300))
         
-        this.elements.push(normalCorrdsCube("#777",290,-270,90+300,350,-220,100+300))
+        this.elements.push(normalCorrdsCube("#777",290,-270,100+300,330,-220,110+300))
     
-        this.elements.push(normalCorrdsCube("#777",170,-270,90+300,240,-220,100+300))
-        this.elements.push(normalCorrdsCube("#777",170,-220,90+300,330,-70,100+300))
+        this.elements.push(normalCorrdsCube("#777",170,-270,100+300,250,-220,110+300))
+        this.elements.push(normalCorrdsCube("#777",170,-220,100+300,330,-70,110+300))
         
         //this.elements.push(new Cube("#777",320,-120,0,50,50,400))
         
-        this.elements.push(new Cube("#0a0",380,120,-1,50,80,6))
+        this.elements.push(new Cube("#0a0",367,120,-1,25,80,6))
         
+        
+        this.elements.push(new ItemIrl(280,-120,300,new Axe()))
         
         this.gamer = new LeGamer(0,0,0)
         this.gamer.setColor("#66f")
         this.elements.push(this.gamer)
+
         for(var i = -400;i<400;i+=20){
             for(var j = -400;j<400;j+=20){
                 if(this.elements.filter(x=>x.solid && Math.abs(x.x-i)<x.getWidthX() && Math.abs(x.y-j)<x.getWidthY()).length == 0)
                     if(Math.random()<3.9*Math.pow(0.8,1+(Math.abs(i)+Math.abs(j))/40)){
-                        var g = new LeGamer(i+Math.random()*8-4,j+Math.random()*8-4,200)
+                        var g = new LeGamer(i+Math.random()*8-4,j+Math.random()*8-4,0)
                         this.elements.push(g)
                         g.thinking = true
                     } else if(Math.random()<0.006){
@@ -444,13 +460,82 @@ class GameObject {
         var objBounds = this.getBounds()
         //[[-this.widthx,-this.widthy,0],[this.widthx,this.widthy,this.height]]
         //this.camera.getAbsoluteY(a.x,a.y,this.bounds)
-        var pts = [
-            [this.x+objBounds[0][0],this.y+objBounds[0][1]],
-            [this.x+objBounds[1][0],this.y+objBounds[0][1]],
-            [this.x+objBounds[0][0],this.y+objBounds[1][1]],
-            [this.x+objBounds[1][0],this.y+objBounds[1][1]]
-        ]
+        var pts
         
+        var pt_w = -objBounds[0][0]+objBounds[1][0]
+        var pt_h = -objBounds[0][1]+objBounds[1][1]
+        
+        if(pt_w > pt_h){
+            var dif = (pt_w-pt_h)/2
+            pts = [
+                [this.x-dif,this.y,this.z],
+                [this.x+dif,this.y,this.z],
+                [this.x-dif,this.y,this.z],
+                [this.x+dif,this.y,this.z],
+            ]
+        } else if(pt_w <= pt_h) {
+            var dif = (pt_h-pt_w)/2
+            pts = [
+                [this.x,this.y-dif,this.z],
+                [this.x,this.y-dif,this.z],
+                [this.x,this.y+dif,this.z],
+                [this.x,this.y+dif,this.z],
+            ]
+            
+        } else {
+            pts = [
+                [this.x,this.y,this.z],
+                [this.x,this.y,this.z],
+                [this.x,this.y,this.z],
+                [this.x,this.y,this.z],
+            ]
+            
+        }
+        
+        var pts2 = [
+            [this.x+objBounds[0][0],this.y+objBounds[0][1],this.z],
+            [this.x+objBounds[1][0],this.y+objBounds[0][1],this.z],
+            [this.x+objBounds[0][0],this.y+objBounds[1][1],this.z],
+            [this.x+objBounds[1][0],this.y+objBounds[1][1],this.z]
+        ]        
+        //degreesToPixels(x,y,bounds,getx,z)
+        
+        var minx = pts[0]
+        var maxx = pts[0]
+        for(var i = 1;i<4;i++){
+            if(camera.degreesToPixels(pts[i][0],pts[i][1],cameraBounds,true,pts[i][2]) < camera.degreesToPixels(minx[0],minx[1],cameraBounds,true,minx[2]))
+                minx = pts[i]
+            if(camera.degreesToPixels(pts[i][0],pts[i][1],cameraBounds,true,pts[i][2]) > camera.degreesToPixels(maxx[0],maxx[1],cameraBounds,true,maxx[2]))
+                maxx = pts[i]
+        }
+        var minx2 = pts2[0]
+        var maxx2 = pts2[0]
+        for(var i = 1;i<4;i++){
+            if(camera.degreesToPixels(pts2[i][0],pts2[i][1],cameraBounds,true,pts2[i][2]) < camera.degreesToPixels(minx2[0],minx2[1],cameraBounds,true,minx2[2]))
+                minx2 = pts2[i]
+            if(camera.degreesToPixels(pts2[i][0],pts2[i][1],cameraBounds,true,pts2[i][2]) > camera.degreesToPixels(maxx2[0],maxx2[1],cameraBounds,true,maxx2[2]))
+                maxx2 = pts2[i]
+        }
+        var minx3 = pts2[0]
+        var maxx3 = pts2[0]
+        for(var i = 1;i<4;i++){
+            if(camera.degreesToPixels(pts2[i][0],pts2[i][1],cameraBounds,false,pts2[i][2]) < camera.degreesToPixels(minx3[0],minx3[1],cameraBounds,false,minx3[2]))
+                minx3 = pts2[i]
+            if(camera.degreesToPixels(pts2[i][0],pts2[i][1],cameraBounds,false,pts2[i][2]) > camera.degreesToPixels(maxx3[0],maxx3[1],cameraBounds,false,maxx3[2]))
+                maxx3 = pts2[i]
+        }
+        
+        return [
+            camera.degreesToPixels(minx[0],minx[1],cameraBounds,true,minx[2]), camera.degreesToPixels(maxx[0],maxx[1],cameraBounds,true,maxx[2]),
+            camera.degreesToPixels(minx[0],minx[1],cameraBounds,false,minx[2]), camera.degreesToPixels(maxx[0],maxx[1],cameraBounds,false,maxx[2]),
+            this.z+objBounds[0][2],this.z+objBounds[1][2],
+            camera.degreesToPixels(minx2[0],minx2[1],cameraBounds,true,minx2[2]), camera.degreesToPixels(maxx2[0],maxx2[1],cameraBounds,true,maxx2[2]),
+            camera.degreesToPixels(minx3[0],minx3[1],cameraBounds,false,minx3[2]), camera.degreesToPixels(maxx3[0],maxx3[1],cameraBounds,false,maxx3[2]), //depth
+            camera.degreesToPixels(minx[0],minx[1],cameraBounds,false,0), camera.degreesToPixels(maxx[0],maxx[1],cameraBounds,false,0),
+            
+        ]
+        /*
+         
         var minx = pts[0]
         var maxx = pts[0]
         for(var i = 1;i<4;i++){
@@ -465,6 +550,7 @@ class GameObject {
             camera.getAbsoluteX(minx[0],minx[1],cameraBounds), camera.getAbsoluteX(maxx[0],maxx[1],cameraBounds),
             this.z+objBounds[0][2],this.z+objBounds[1][2]
         ]
+         * */
     }
     getThing(){
         if(this.cache === null)
@@ -663,7 +749,7 @@ class StaticGameObject extends GameObject {
 class LeGamer extends SolidGameObject {
     constructor(x,y,z){
         super(x,y,z)
-        this.rotation = Math.random()*360
+        this.rotation = 0//Math.random()*360
         this.color = ["#fff","#d80","#740","#ff6"][Math.floor(Math.random()*Math.random()*4*Math.random()*4)]
         this.veloc = 0
         
@@ -671,7 +757,9 @@ class LeGamer extends SolidGameObject {
         this.stateofmind = 0
         this.memory = {}
         
-        this.inventory = []
+        this.inventory = new Inventory(8)
+        this.inventory.items[0] = new Axe()
+        this.hp = 10
         
         this.running = false
         
@@ -694,7 +782,7 @@ class LeGamer extends SolidGameObject {
             //this.rotating = Math.max(0,Math.min(15,this.rotating))
             //this.rotating += 1.2
             
-            this.rotating = 7
+            this.rotating = 10
             
             this.rotation += this.rotating
         }
@@ -702,7 +790,7 @@ class LeGamer extends SolidGameObject {
             //this.rotating = Math.max(-15,Math.min(0,this.rotating))
             //this.rotating -= 1.2
             
-            this.rotating = -7
+            this.rotating = -10
             
             this.rotation += this.rotating
         }
@@ -727,7 +815,7 @@ class LeGamer extends SolidGameObject {
         if(keypressed["ArrowDown"]){
             if(this.stepdirection === 0)
                 this.stepdirection = 1
-            this.veloc = -3
+            this.veloc = -4
         }
         if(!keypressed["ArrowUp"] && !keypressed["ArrowDown"]){
             if(!this.falling())
@@ -984,6 +1072,8 @@ class Fill extends GameObject{
         this.widthx = wx
         this.widthy = wy
         this.height = h
+        
+        this.static = true
     }
     move(){
         

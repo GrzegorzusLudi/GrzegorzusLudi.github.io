@@ -1941,6 +1941,7 @@ class Ai{
                                                 this.gamecontroller.act({type:"pass", move:"pass"})
                                                 //this.gamecontroller.draw()
 					} else if(this.attacking.length>0) {
+                        console.log(this.attacking)
                                             var moveToPlay = this.attacking[0]
                                             var attacked = 0
                                             if(this.gamecontroller.model.currentColor() === moveToPlay.land2.color){
@@ -2232,16 +2233,17 @@ class Ai{
             
             var defendingPlan = {}
             
-            for(var z = 0;z<1;z++){
+            for(var z = 0;z<3;z++){
                 for(var i in edgesByLand){
                     var ebl = edgesByLand[i]
                     var ap = attackingPlan[ebl.land.id]
                     var enms = ebl.enemies.map(x=>x).sort(
                         (x,y)=>(
-                            -Math.min(4,x.potential) + 
-                            Math.min(4,y.potential)
+                            (Math.max(4,x.potential)) + 
+                            -(Math.max(4,y.potential)) + Math.random()/2
                         )
-                    ).filter(x=>x.potential>=-1)
+                    )//.filter(x=>x.potential>=-1)
+                    //enms = enms.map(x => new Object({obj:x,val:Math.random()})).sort((a,b)=>a.val-b.val).map(x=>x.obj)
                     var len = enms.length
                     for(var j in enms){
                         var e = enms[j]
@@ -2249,6 +2251,7 @@ class Ai{
                             defendingPlan[e.land2.id] = {land:e.land2, power: evalDefence(e.land2.pawns, e.land2.dams)}
                         
                     }
+                    var senms = enms.filter(x=>x.land2.color != null)
                     var remaining = null
                     for(var j in enms){
                         var e = enms[j]
@@ -2257,7 +2260,7 @@ class Ai{
                             break
                         }*/
                         
-                        while((defendingPlan[e.land2.id].power>-2 || j==enms.length-1) && ap.plannedPawns+ap.plannedDams > 0){
+                        while((defendingPlan[e.land2.id].power>-2 || senms.length == 1) && ap.plannedPawns+ap.plannedDams > 0){
                         console.log(defendingPlan[e.land2.id].power)
                             if(ap.plannedPawns>0){
                                 e.plannedPawns++
@@ -2295,6 +2298,9 @@ class Ai{
             
             return edgesByLand.map(x=>x.enemies).reduce((x,y)=>x.concat(y),[]).filter(x=>x.plannedPawns+x.plannedDams>0 && evalAttack(x.plannedPawns,x.plannedDams)+2 >= evalDefence(x.land2.pawns,x.land2.dams)/* &&
                 (x.land1.pawns-x.land1.movedPawns+(x.land1.dams-x.land1.movedDams)*3 > 1)*/)
+	}
+	planAttackingDeep(){
+        
 	}
 	//works if turn is 0
 	noSenseInLongerPlay(state){
@@ -2988,6 +2994,7 @@ class MenuPopUp {
     }
 }
 function shuffle(a) {
+    a = a.slice()
     for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [a[i], a[j]] = [a[j], a[i]];

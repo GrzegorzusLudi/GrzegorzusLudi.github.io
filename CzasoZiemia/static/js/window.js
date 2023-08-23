@@ -354,8 +354,8 @@ class PropertyDialogWindow extends DialogWindow {
                 coordsInput.value = this.feature.geometry.coordinates[0]+','+this.feature.geometry.coordinates[1]
                 return
             } else {
-                feature.geometry.coordinates[0] = Number(crs[1])    //N/S (vertical) is usually first
-                feature.geometry.coordinates[1] = Number(crs[0])
+                feature.geometry.coordinates[0] = Number(crs[0])    //N/S (vertical) is usually first
+                feature.geometry.coordinates[1] = Number(crs[1])
             }
         }
         if(this.layerPanel.isSpatiotemporal(this.layerPanel.editing)){
@@ -401,7 +401,7 @@ class PropertyDialogWindow extends DialogWindow {
         }
         
         if(this.layerPanel.isSpatiotemporal(this.layerPanel.editing))
-            this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme)
+            this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme,true)
         this.action(null, false)
     }
     addColumn(){
@@ -423,12 +423,16 @@ class PropertyDialogWindow extends DialogWindow {
             this.action(null,true,this.feature,this.scheme)
         }
     }
-    action(e,display,feature,scheme){
+    action(e,display,feature,scheme,globalDate){
         super.action(e,display)
         if(display){
             this.feature = feature
             this.scheme = scheme
             this.lastFeatureId = feature.id != undefined ? feature.id : null
+            if(globalDate != undefined){
+                this.fromTime.setDate(globalDate)
+                this.toTime.setDate(globalDate)
+            }
         } else {
             this.feature = null
             this.scheme = null
@@ -538,6 +542,12 @@ class LayerPropertyDialogWindow extends DialogWindow {
                 'value': null,
                 'column': null,
             },
+            "pointSignificance": {
+                'input': 'layer-property-input-point-significance',
+                'select': 'layer-property-select-point-significance',
+                'value': null,
+                'column': null,
+            },
         }
         
         this.setOwnConfig(configs)
@@ -575,7 +585,7 @@ class LayerPropertyDialogWindow extends DialogWindow {
             this.layer.styleProperties[prop].column = this.column
         }
         if(this.layerPanel.editing != undefined)
-            this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme)
+            this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme,true)
     }
     /*
     removeColumn(columnName){
@@ -748,7 +758,7 @@ class LayerOperationDialogWindow extends DialogWindow {
             alert("fail")
             console.log("fail")
         }
-        this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme)
+        this.layerPanel.updateLayer(this.layerPanel.editing,this.layerPanel.editing.scheme,true)
         
         return true
     }
@@ -898,6 +908,8 @@ class TimeControl {
         this.inputs['years'].value = czdate.year
         this.inputs['months'].value = czdate.month
         this.inputs['days'].value = czdate.day
+        
+        this.date = czdate
     }
     getDate(){
         return this.nullDate ? this.date.code() : ""

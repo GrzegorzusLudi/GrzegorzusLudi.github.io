@@ -239,12 +239,12 @@ class Model {
             } else if(random2 < 0.7){
                 return new Numer(3)
             } else if(random2 < 0.9){
-                return new Numer(-1)
+                return new Numer(1)
             } else {
-                return new Numer(-2)
+                return new Numer(2)
             } 
         } else {
-            if(random2 < 0.5){
+            if(random2 < 0.5 || true){
                 return new Addition()
             } else {
                 return new Subtraction()

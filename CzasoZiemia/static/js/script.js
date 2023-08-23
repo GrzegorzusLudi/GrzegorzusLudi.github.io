@@ -281,6 +281,7 @@ class AbstractCanvas {
         }
         
         this.setLayer(true)
+        
         this.clear()
         if(this.layerPanel.editing != null){
             this.setStyle({strokeStyle:"#ff0",fillStyle:"#00000000"})
@@ -517,8 +518,12 @@ class AbstractCanvas {
     }
     drawLayerPointText(data,value,degreeBounds){
         var prevColor = this.styles['fillStyle']
-        this.setStyle({fillStyle:"#000",font:"Helvetica",textSize:12,textAlign:"center"})
-        this.drawText(value,data.geometry.coordinates[0],data.geometry.coordinates[1])
+        this.setStyle({fillStyle:"#000",font:"Helvetica",textSize:10,textAlign:"center"})
+        if(data.geometry == undefined){
+            console.log(data)
+            return
+        }
+        this.drawText(value,data.geometry.coordinates[0],data.geometry.coordinates[1],0,-6)
         this.setStyle({fillStyle:prevColor})
     }
 }
@@ -576,23 +581,30 @@ class TwoDCanvas extends AbstractCanvas {
         this.context.stroke()
         this.context.closePath()
     }
-    drawText(text,x,y){
+    drawText(text,x,y,transx,transy){
+        if(transx == undefined)
+            transx = 0
+        if(transy == undefined)
+            transy = 0
+            
         var pointx = this.camera.degreesToPixels(x,y,this.bounds,true)
         var pointy = this.camera.degreesToPixels(x,y,this.bounds,false)
         
-        this.context.fillText(text,pointx,pointy-10)
+        this.context.fillText(text,pointx+transx,pointy+transy)
         
     }
     drawPoint(x,y){
         var pointx = this.camera.degreesToPixels(x,y,this.bounds,true)
         var pointy = this.camera.degreesToPixels(x,y,this.bounds,false)
         
-        var rad = 4
+        var rad = 2
+        this.context.beginPath()
         this.context.moveTo(pointx-rad,pointy-rad)
         this.context.lineTo(pointx-rad,pointy+rad)
         this.context.lineTo(pointx+rad,pointy+rad)
         this.context.lineTo(pointx+rad,pointy-rad)
         this.context.lineTo(pointx-rad,pointy-rad)
+        this.context.closePath()
         this.context.fill()
         this.context.stroke()
         /*
@@ -612,11 +624,13 @@ class TwoDCanvas extends AbstractCanvas {
         var pointy = this.camera.degreesToPixels(x,y,this.bounds,false)
         
         var rad = selected ? 5 : 3
+        this.context.beginPath()
         this.context.moveTo(pointx-rad,pointy-rad)
         this.context.lineTo(pointx-rad,pointy+rad)
         this.context.lineTo(pointx+rad,pointy+rad)
         this.context.lineTo(pointx+rad,pointy-rad)
         this.context.lineTo(pointx-rad,pointy-rad)
+        this.context.closePath()
         if(selected){
             this.context.fill()
         }
@@ -628,11 +642,13 @@ class TwoDCanvas extends AbstractCanvas {
         var pointy = this.camera.degreesToPixels(x,y,this.bounds,false)
         
         var rad = selected ? 5 : 3
+        this.context.beginPath()
         this.context.moveTo(pointx,pointy-rad)
         this.context.lineTo(pointx-rad,pointy)
         this.context.lineTo(pointx,pointy+rad)
         this.context.lineTo(pointx+rad,pointy)
         this.context.lineTo(pointx,pointy-rad)
+        this.context.closePath()
         this.context.stroke()
     }
     drawPolyLine(line, closed){
@@ -814,13 +830,14 @@ function init(){
         editToolbar: "edit-layer-buttons",
         editFeatureToolbar: "edit-feature-buttons",
         editFeatureTimeToolbar: "edit-feature-time-buttons",
-        canvas: canvas
+        timeControl: timeControl
     })
     if(false && detectWebGL()){
         canvas = new WebGLCanvas(canvasElement,stageDiv,layerpanel,canvasElement2,timeControl)
     } else {
         canvas = new TwoDCanvas(canvasElement,stageDiv,layerpanel,canvasElement2,timeControl)
     }
+    layerpanel.setConfig({canvas: canvas})
     let movlist = new Controller(canvas);
     
     let importWindow = new ImportDialogWindow({
