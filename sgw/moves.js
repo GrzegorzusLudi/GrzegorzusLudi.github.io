@@ -2209,12 +2209,14 @@ function wyladuj(uni){
 	dodai(unix[kolej][uni].x,unix[kolej][uni].y,unix[kolej][uni].il,10,0);
 	heks[unix[kolej][uni].x][unix[kolej][uni].y].tasuj();
 }
-function createCity(){
-	var city = heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y];
+function createCity(zazn){
+	if(zazn == undefined)
+		zazn = zaznu
+	var city = heks[unix[kolej][zazn].x][unix[kolej][zazn].y];
 	if(city.z==0){
-		while(unix[kolej][zaznu].il>5){
+		while(unix[kolej][zazn].il>5){
 			city.z++;
-			unix[kolej][zaznu].il-=5;
+			unix[kolej][zazn].il-=5;
 		}
 	}
 	redraw(true);
