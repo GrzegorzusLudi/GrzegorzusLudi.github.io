@@ -315,7 +315,7 @@ function aimachine(ailevel){
                 nodziel = false
                 for(var i = 0;i<hex.unp && !nodziel;i++){
                     var unit1 = unix[kolej][hex.unt[i]]
-                    if(unit1 != undefined && unix[kolej][unit1.id].x != -1 && unit1.rodz == 8 && unit1.rozb > 0)
+                    if(unit1 != undefined && unix[kolej][unit1.id].x != -1 && unit1.rodz == 8 && unit1.rozb > 0 && unit1.rozb < 20 && unit1.il > 20)
                         unit1.rozb = 0
                     if(unit1 != undefined && unix[kolej][unit1.id].x != -1 && unit1.rozb > 0){
                         if(rozboj == -1)
@@ -964,11 +964,22 @@ function aimachine(ailevel){
                     }
                 }
             }
+            for(var unit_id in paths){
+                for(var unit_id_2 in paths){
+                    if(unit_id != unit_id_2){
+                        if(unix[kolej][unit_id].celu == -1 && unix[kolej][unit_id_2].celu != -1 && (!(unit_id_2 in relations) || unit_id_2 in relations && !(relations[unit_id_2].has(unit_id)))){
+                            if(!(unit_id_2 in relations))
+                                relations[unit_id_2] = new Set()
+                            relations[unit_id_2].add(unit_id)
+                        }
+                    }
+                }
+            }
             var porządek = weźSilneSkładowe(relations)
             
             var ruchy_tratw = []
             for(var i=0;i<ruchwkolejcen;i++){
-                if(unix[kolej][ruchwkolejce[i]].szyt == 'w' && zast[unix[kolej][ruchwkolejce[i]]] == 'x')
+                if(unix[kolej][ruchwkolejce[i]].szyt == 'w' && zast[unix[kolej][ruchwkolejce[i]].rodz] == 'x')
                     ruchy_tratw.push(Number(ruchwkolejce[i]))
             }
             
@@ -1281,7 +1292,7 @@ function aimachine(ailevel){
                     for(var i in dm_morze){
                         var hks = dm_morze[i]
                         
-                        if(hks.dist <= 0)
+                        if(hks.dist <= 0 || hks.hex.x == mist[kolejność_miast[miastkol]].x && hks.hex.y == mist[kolejność_miast[miastkol]].y)
                             continue
                         
                         var hdru = hks.hex.d != undefined ? hks.hex.d : hks.hex.dru
@@ -3279,8 +3290,8 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
     var interestingUnits = destinationmap[code] ? destinationmap[code].slice() : []
     
     //console.log(interestingUnits.map(a => 1/Math.pow(2,a.action[0].rucho ? a.action[0].rucho.length : 0)*(a.action[0].il)))
-    interestingUnits.sort((a,b) => (-1/Math.pow(a.action[0].rucho ? a.action[0].rucho.length : 0,1)*(a.action[0].il) + 
-                                     1/Math.pow(b.action[0].rucho ? b.action[0].rucho.length : 0,1)*(b.action[0].il)))
+    interestingUnits.sort((a,b) => (-1/Math.pow(a.action[0].rucho ? a.action[0].rucho.length : 0,2)*(a.action[0].il) + 
+                                     1/Math.pow(b.action[0].rucho ? b.action[0].rucho.length : 0,2)*(b.action[0].il)))
     //interestingUnits.sort((a,b) => (a.action.il - b.action.il))
 
     //interestingUnits1 = interestingUnits.filter(x=>x.action.length == 0 || x.action[0].by == 'real')
@@ -3293,7 +3304,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
     var postęp = 0
     var valuesByTime = dm.distmaps[code].alliegance
     for(var t in valuesByTime){
-        valuesByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2,t+1) : 0 
+        valuesByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0 
     }
     var value = valuesByTime.reduce((a,b) => a+b, 0)
     
@@ -3320,7 +3331,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
         var values2ByTime = dm.distmaps[x+'#'+y].alliegance
         
         for(var t in values2ByTime){
-            values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2,t+1) : 0
+            values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
         }
         value2 = values2ByTime.reduce((a,b) => a+b, 0)
 
@@ -3393,7 +3404,7 @@ function actionsToReal(dm,color,completely_used_passages){
                     continue
                     
                 if(unit.rodz == 8)
-                    tratwa -= unit.il
+                    tratwa -= unit.il + unit.rozb
                 if(unit.actions.length == 1 && unit.actions[0].type == 'move'){
                     var properAction = unit.actions[0]
                     
