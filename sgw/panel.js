@@ -1081,22 +1081,30 @@ function redrawCanvas(rtx){
 			rtx.fillStyle = "#000000";
 			rtx.fillRect(0,0,220,220);
 			rtx.lineWidth = 2;
-			console.log('a')
+
 			var a = 0;
+			var za = 0
 			while(a<ruchwkolejcen){
+				if(unix[kolej][ruchwkolejce[a]] == undefined){
+					a++
+					continue
+				}
+				if(!(unix[kolej][ruchwkolejce[a]].celd in unix)){
+					a++
+					continue
+				}
+				
 				rtx.fillStyle = "#CCCCCC";
-				rtx.fillRect(10,10+a*30,200,30);
+				rtx.fillRect(10,10+za*30,200,30);
 				if(movesToMakeNumber==a){
 					rtx.fillStyle = "#FFFFFF";
 					rtx.globalAlpha = 0.6;
-					rtx.fillRect(10,10+a*30,200,30);
+					rtx.fillRect(10,10+za*30,200,30);
 					rtx.globalAlpha = 1;
 				}
-				if(unix[kolej][ruchwkolejce[a]] == undefined)
-					continue
 					
 				if(unix[kolej][ruchwkolejce[a]].x > -1)
-					rysunicik(32,26+a*30,rtx,a,6,ruchwkolejce[a]);
+					rysunicik(32,26+za*30,rtx,za,6,ruchwkolejce[a]);
 				if(unix[kolej][ruchwkolejce[a]].ruchy > 0 || unix[kolej][ruchwkolejce[a]].celu != -1){
 					rtx.fillStyle = "#00FF00";
 					rtx.strokeStyle = "#666666";
@@ -1124,22 +1132,23 @@ function redrawCanvas(rtx){
 						}
 					}
 					rtx.beginPath()
-					rtx.moveTo(120,15+a*30)
-					rtx.lineTo(120,35+a*30)
-					rtx.lineTo(120+10,25+a*30)
+					rtx.moveTo(120,15+za*30)
+					rtx.lineTo(120,35+za*30)
+					rtx.lineTo(120+10,25+za*30)
 					rtx.closePath()
 					rtx.fill()
 					rtx.stroke()
-					rtx.fillRect(110,20+a*30,5,10);
-					rtx.strokeRect(110,20+a*30,5,10);
+					rtx.fillRect(110,20+za*30,5,10);
+					rtx.strokeRect(110,20+za*30,5,10);
 				}
 				rtx.font = '10pt Trebuchet MS';
 				rtx.fillStyle = "#006666";
 				rtx.textAlign = "right";
-				rtx.fillText(hexFrom,100,28+a*30);
-				rtx.fillText(hexTo,180,28+a*30);
+				rtx.fillText(hexFrom,100,28+za*30);
+				rtx.fillText(hexTo,180,28+za*30);
 				rtx.strokeStyle = "#666666";
-				rtx.strokeRect(10,10+a*30,200,30);
+				rtx.strokeRect(10,10+za*30,200,30);
+				za++
 				a++;
 			}
 		break;

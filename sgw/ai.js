@@ -854,7 +854,6 @@ function aimachine(ailevel){
                         var unit = distmap.hex.units[i]
                         
                         if(possible_coastlines.filter(a=>a.x == distmap.hex.x && a.y == distmap.hex.y).length > 0){
-                            console.log(111)
                             createCity(unit.id)
                         } else if(zast[unit.rodz] == 'm' && unit.actions.length == 0 && unit.rozb < 10){
                             
@@ -2165,15 +2164,17 @@ function calculatePathUntilEmbarking(unitDistMap,hex, unit, action, stopBefore){
             }
             if(he.z == -1){
                 var tratwas = 0
+                var satisf = 0
                 for(var k = 0;k<he.unp;k++){
                     var uu = unix[kolej][he.unt[k]]
                     if(uu == undefined)
                         continue
                     if(zast[uu.rodz] == 'x' && szyt[uu.rodz] == 'w'){
                         tratwas++
+                        satisf += uu.il
                     }
                 }
-                return {x:he.x,y:he.y,hex:hex,turn:Math.ceil(turn),need:unit.il,satisfied:0,possibleMoves:[],addedTratwas:tratwas}
+                return {x:he.x,y:he.y,hex:hex,turn:Math.ceil(turn),need:unit.il,satisfied:satisf,possibleMoves:[],addedTratwas:tratwas}
             }
                 
             if(he == undefined)
@@ -3169,7 +3170,7 @@ function tryMakeDestinationMap(dm,color){
                     if(distmap.hex.z > 0 && properAction.il > unit.il-10 && (j == distmap.hex.units.length-1 || distmap.hex.units.length == 1)){
                         continue
                     }
-                    if(distmap.hex.z > 0 && properAction.il < unit.il-10 && distmap.hex.units.length == 4){
+                    if(distmap.hex.z > 0 && properAction.il < unit.il && distmap.hex.units.length == 4){
                         continue
                     }
                     if(distmap.hex.z <= 0 && properAction.il < unit.il-10){
