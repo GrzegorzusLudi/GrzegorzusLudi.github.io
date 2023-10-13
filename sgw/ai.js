@@ -177,6 +177,7 @@ class Water{
         this.params = params
         this.hexes = []
         this.cities = []
+            
         var thex = {}
         thex[hex.x+','+hex.y] = hex
         var temp1 = [hex]
@@ -366,6 +367,7 @@ function aimachine(ailevel){
         break;
         case 1.1:
             dfrou=distmapsFromUnit()
+            
             simplifieddistmaps=simpledistmaps(dfrou)
             evaluate(dfrou,2)
             
@@ -383,7 +385,7 @@ function aimachine(ailevel){
                 inaccessible_path[i] = {}
                 for(var j = 0;j<scian;j++){
                     inaccessible_path[i][j] = {x:i,y:j,inaccessible:true,coast:-1}
-                    heks[i][j].test = ""
+                    //heks[i][j].test = ""
                 }
             }
             
@@ -403,7 +405,7 @@ function aimachine(ailevel){
             myHexes = 0
             for(var key in dfrou.distmaps){
                 var distmap = dfrou.distmaps[key]
-                heks[distmap.hex.heks.x][distmap.hex.heks.y].test = ""
+               // heks[distmap.hex.heks.x][distmap.hex.heks.y].test = ""
                 
                 /*
                 if(distmap.hex.undr != kolej && (distmap.hex.units.length > 0 || distmap.hex.z > 0) && distmap.frontline){
@@ -557,7 +559,7 @@ function aimachine(ailevel){
                         if(neiii != null && neiii.x < scian && neiii.y < scian && inaccessible_path[i][j].coast == -1 && inaccessible_path[neiii.x][neiii.y].inaccessible && heks[i][j].z == 0){
                             inaccessible_path[i][j].coast = 1
                             coastlines.push(inaccessible_path[i][j])
-                            heks[i][j].test = String(coastTownProfit(i,j,true)/coastTownProfit(i,j,false)).slice(0,4)
+                           // heks[i][j].test = String(coastTownProfit(i,j,true)/coastTownProfit(i,j,false)).slice(0,4)
                         }
                     }
                     //inaccessible_path[j] = {inaccessible:true,coast:false}
@@ -611,7 +613,6 @@ function aimachine(ailevel){
         break
         case 1.3:
             if(possible_targets_ix >= possible_targets.length){
-                
                 if(ulepszyns > 0){
                     ulepszyns--
                     if(overall_score_changed)
@@ -642,8 +643,9 @@ function aimachine(ailevel){
                     //legalActions(newDistmap)
                     
                     var code = tested_target.hex.x+'#'+tested_target.hex.y
-                    if(newDistmap.distmaps[code].alliegance[MAX_TURNS-1] != kolej)
+                    if(newDistmap.distmaps[code].alliegance[MAX_TURNS-1] != kolej){
                         tryPutUnderAttack(newDistmap,tested_target.hex.x,tested_target.hex.y,kolej,i % 2 == 1)
+                    }
 
                     evaluate(newDistmap)
                     
@@ -734,6 +736,7 @@ function aimachine(ailevel){
                             if(code in miejsca_do_wysłania_tratw && miejsca_do_wysłania_tratw[code] != null){
                                 miejsca_do_wysłania_tratw[code].turn = Math.min(miejsca_do_wysłania_tratw[code].turn,result.turn)
                                 miejsca_do_wysłania_tratw[code].need += result.need
+                                //miejsca_do_wysłania_tratw[code].addedTratwas += result.addedTratwas
                                 //miejsca_do_wysłania_tratw[code].addedTratwas++
                             } else {
                                 miejsca_do_wysłania_tratw[code] = result
@@ -759,7 +762,7 @@ function aimachine(ailevel){
                     if(unit.szyt == 'w' && zast[unit.rodz] == 'x'){
                         if(unit.actions.length == 1 && unit.actions[0].type == 'move' && unit.actions[0].by == 'real'){
                             var code = unit.actions[0].destination[0] + '#' + unit.actions[0].destination[1]
-                            if(code in miejsca_do_wysłania_tratw && miejsca_do_wysłania_tratw[code] != null && miejsca_do_wysłania_tratw[code].addedTratwas<2){
+                            if(code in miejsca_do_wysłania_tratw && miejsca_do_wysłania_tratw[code] != null && miejsca_do_wysłania_tratw[code].addedTratwas<3){
                                 miejsca_do_wysłania_tratw[code].satisfied += unit.actions[0].il
                                 miejsca_do_wysłania_tratw[code].addedTratwas++
                                 pole_z_tratwami.addedTratwas--
@@ -781,7 +784,10 @@ function aimachine(ailevel){
                             var ruchk = result.ruchk
                             var rucho = result.rucho
                             
-                            if(pole_z_tratwami.x+'#'+pole_z_tratwami.y == code && miejsca_do_wysłania_tratw[code].satisfied < miejsca_do_wysłania_tratw[code].needed)
+                            if(pole_z_tratwami.x+'#'+pole_z_tratwami.y == code && miejsca_do_wysłania_tratw[code].satisfied > miejsca_do_wysłania_tratw[code].needed)
+                                continue
+                            
+                            if(pole_z_tratwami.x+'#'+pole_z_tratwami.y == code && miejsca_do_wysłania_tratw[code].addedTratwas > 3)
                                 continue
                             
                             var liczba = unit.il
@@ -815,7 +821,7 @@ function aimachine(ailevel){
                 miejsce.possibleMoves.sort((a,b)=>a.turnsToGo-b.turnsToGo)
                 
                 for(var j in miejsce.possibleMoves){
-                    if(miejsce.satisfied > miejsce.need){
+                    if(miejsce.satisfied > miejsce.need || miejsce.addedTratwas > 2){
                         break
                     }
                         
@@ -825,6 +831,7 @@ function aimachine(ailevel){
                         continue
                         
                     miejsce.satisfied += possibleMove.unit.il
+                    miejsce.addedTratwas++
                     possibleMove.unit.actions = [possibleMove.action]
                     
                     użyteTratwy[possibleMove.unit.id] = true
@@ -888,7 +895,7 @@ function aimachine(ailevel){
                             }
                             //console.log([distmap.hex.x,distmap.hex.y,possible_destinations.sort((a,b)=>a.dist-b.dist)])
                             
-                            if(possible_destinations.length > 0 && unit.il > 60){
+                            if(possible_destinations.length > 0 && unit.il >= 55){
                                 var best_dest = possible_destinations.sort((a,b)=>a.dist-b.dist)[0]
                                 
                                 var result = getRuch(map,best_dest)
@@ -1326,6 +1333,8 @@ function aimachine(ailevel){
                     
                     if(morze_needs > lad_needs && morze_needs > 0)
                         needed = 6
+                    
+                    //mist[kolejność_miast[miastkol]].test = lad_needs+'/'+morze_needs
 					/*
                     var wb = waterbodies.filter(a => a.hexes.filter(h => h.x == mist[miastkol].x && h.y == mist[miastkol].y).length > 0)
                     wb = wb.length > 0 ? wb[0] : null
@@ -1357,12 +1366,14 @@ function aimachine(ailevel){
                         //console.log(mist[miastkol].x,mist[miastkol].y,wb)
                     }*/
                     
-                    var enough_units_produced = Math.max(lad_needs,morze_needs) < local_prod * 1.5 && miast_dist[kolejność_miast[miastkol]] > 4
+                    var needednum = 99
+                    var enough_units_produced = Math.max(lad_needs,morze_needs) <= local_prod * 1.5 && miast_dist[kolejność_miast[miastkol]] > 4
                     if(enough_units_produced && possible_coastline != null && sapper_prod <= 20){
                         needed = 11
+                        needednum = 60
                     }
                     
-                    if((!enough_units_produced || needed == 11)){
+                    if(!enough_units_produced || needed == 11){
                         var creat = -1;
                         for(var i = 0;i<mist[kolejność_miast[miastkol]].unp;i++){
                             if(unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].rodz==needed && unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].il<80)
@@ -1371,12 +1382,12 @@ function aimachine(ailevel){
                                 creat = i
                         }
                         if(creat>-1){
-                            unix[kolej][mist[kolejność_miast[miastkol]].unt[creat]].rozb=99-unix[kolej][mist[kolejność_miast[miastkol]].unt[creat]].il;
+                            unix[kolej][mist[kolejność_miast[miastkol]].unt[creat]].rozb=Math.max(needednum-unix[kolej][mist[kolejność_miast[miastkol]].unt[creat]].il, 0);
                         }
                         if(mist[kolejność_miast[miastkol]].unp>=4){
                             
                         } else if(creat==-1 && mist[kolejność_miast[miastkol]].unp > 0) {
-                            dodai(mist[kolejność_miast[miastkol]].x,mist[kolejność_miast[miastkol]].y,0,needed,99);
+                            dodai(mist[kolejność_miast[miastkol]].x,mist[kolejność_miast[miastkol]].y,0,needed,needednum);
                             odzaz(); 
                         }
                     }
@@ -1576,11 +1587,63 @@ function distance(x1,y1,x2,y2){
 
 function copyHexdistmap(hexdistmap,hekstable){
     //{ hex: tocheck[i].border[j], dist: dist, water : waterdist, from: hexfrom  }
-    return hexdistmap.map( x => new Object({ hex: hekstable[x.hex.x][x.hex.y], dist: x.dist, water : x.water, from: x.from == null ? null : hekstable[x.from.x][x.from.y] }))
+    return hexdistmap.map( x => new Object({ hex: hekstable[x.hex.x][x.hex.y], dist: x.dist, water : x.water, from: x.from === null ? null : hekstable[x.from.x][x.from.y], embarking: x.embarking }))
 }
 function copyHexrangemap(hexrangemap,hekstable){
     //{ hex: tocheck[i].border[j], dist: dist, water : waterdist, from: hexfrom  }
     return hexrangemap.map( x => new Object({ hex: hekstable[x.hex.x][x.hex.y], dist: x.dist}))
+}
+
+function populateEmbarkingPossibility(hekstable,checkedGrid,x,y,il){
+    var thex = {}
+    thex[x+','+y] = true
+    var temp1 = [hekstable[x][y]]
+    var temp2 = []
+    checkedGrid[x][y].embarking += il
+    while(temp1.length>0){
+        for(var i in temp1){
+            var g = temp1[i]
+            g.waterbody = this
+            //g.test = il
+            checkedGrid[g.x][g.y].embarking += il
+            
+            for(var j = 0;j<6;j++){
+                var h = g.border[j]
+                if(h != null && (h.x == undefined || not_outside_board(h)) && !(h.x+','+h.y in thex) && (h.z == -1 || h.z>0) && (true || h.undr != undefined && h.undr != kolej || h.dru != undefined && h.dru != kolej)){
+                    thex[h.x+','+h.y] = true
+                    
+                    temp2.push(h)
+                }
+            }
+        }
+        temp1 = temp2
+        temp2 = []
+    }
+}
+function addEmbarkingPossibility(hekstable,checkedGrid){
+
+    for(var i = 0;i<scian;i++){
+        for(var j = 0;j<scian;j++){
+            if('unp' in hekstable[i][j]){
+                for(var k = 0;k<hekstable[i][j].unp;k++){
+                    var unit = unix[hekstable[i][j].undr][hekstable[i][j].unt[k]]
+                    if(unit.d == kolej && szyt[unit.rodz] == 'w' && zast[unit.rodz] == 'x'){
+                        populateEmbarkingPossibility(hekstable,checkedGrid,i,j,unit.il)
+                    }
+                }
+            } else {
+                for(var k = 0;k<hekstable[i][j].units.length;k++){
+                    //console.log(hekstable[i][j])
+                    var unit = hekstable[i][j].units[k]
+                    //console.log(unit.dru,kolej,' ',szyt[unit.rodz],zast[unit.rodz])
+                    if(unit.d == kolej && szyt[unit.rodz] == 'w' && zast[unit.rodz] == 'x'){
+                        populateEmbarkingPossibility(hekstable,checkedGrid,i,j,unit.il)
+                    }
+                }
+            }
+            
+        }
+    }
 }
 
 function hexdistmap(x,y,water,mountain,air,heavy,transporting,hekstable){
@@ -1594,11 +1657,13 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,hekstable){
     for(var i = 0;i<scian;i++){
         checkedGrid[i] = []
         for(var j = 0;j<scian;j++){
-            checkedGrid[i][j] = {dist:-1,water:startwater,range:-1,from:null}
+            checkedGrid[i][j] = {dist:-1,water:startwater,range:-1,from:null,embarking:0}
             
-        }        
+        }
     }
     checkedGrid[x][y].dist = 0
+    
+    addEmbarkingPossibility(hekstable,checkedGrid)
     
     var step = 1
     while(tocheck.length > 0){
@@ -1671,7 +1736,11 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,hekstable){
                                 //if(wieltratw > 0){
                                 //    pluswater = 1
                                 //} else {
+                                if(checkedGrid[hexto.x][hexto.y].embarking > 0){
+                                    pluswater = 1.2
+                                } else {
                                     continue
+                                }
                                 //}
                             }
                         }
@@ -1685,7 +1754,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,hekstable){
                         }
                     }
                     if(checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist == -1 || checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist > checkedGrid[tocheck[i].x][tocheck[i].y].dist + step + pluswater*2){
-                        var dist = checkedGrid[hexfrom.x][hexfrom.y].dist + step + pluswater*5
+                        var dist = checkedGrid[hexfrom.x][hexfrom.y].dist + step + pluswater*2
                         var waterdist = checkedGrid[hexfrom.x][hexfrom.y].water + pluswater
                         
                         if(checkedGrid[hexfrom.x][hexfrom.y].from != undefined && hekstable[tocheck[i].border[j].x][tocheck[i].border[j].y] != undefined && checkedGrid[hexfrom.x][hexfrom.y].from.x == hekstable[tocheck[i].border[j].x][tocheck[i].border[j].y].x && checkedGrid[hexfrom.x][hexfrom.y].from.y == hekstable[tocheck[i].border[j].x][tocheck[i].border[j].y].y)
@@ -1698,8 +1767,16 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,hekstable){
                         checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].water = waterdist
                         checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].from = hexfrom
                         
-                        //if(!water && !mountain && !air && !heavy){
-                        //    heks[tocheck[i].border[j].x][tocheck[i].border[j].y].test = dist+'/'+waterdist    //debug
+                        //if(heks[x][y].unp >= 1 && heks[x][y].z >= 0 && heks[x][y].undr == kolej){
+                            //heks[hexto.x][hexto.y].test = hexfrom != null//(3+j)%6//checkedGrid[hexto.x][hexto.y].embarking
+                            //console.log([hexto.x,hexto.y,checkedGrid[hexto.x][hexto.y].embarking])
+                        //}
+                        
+                        //heks[tocheck[i].border[j].x][tocheck[i].border[j].y].test = waterdist//(3+j) % 6
+                        
+                        //if(heks[x][y].unp >= 1 && heks[x][y].z >= 0 && !water && !mountain && !air && !heavy){
+                        //    heks[tocheck[i].border[j].x][tocheck[i].border[j].y].test = (3+j) % 6// = waterdist
+//                            heks[tocheck[i].border[j].x][tocheck[i].border[j].y].test = dist+'/'+waterdist    //debug
                         //}
                     }
                 }
@@ -1711,9 +1788,17 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,hekstable){
     }
     for(var i = 0;i<scian;i++){
         for(var j = 0;j<scian;j++){
-            checkedList.push( { hex: hekstable[i][j], dist: checkedGrid[i][j].dist, water : checkedGrid[i][j].water, from: checkedGrid[i][j].from } )
+            //if(heks[x][y].unp >= 1 && heks[x][y].z >= 0 && heks[x][y].undr == kolej && !water && !mountain && !air && !heavy && !transporting){
+            //    heks[i][j].test = checkedGrid[i][j].dist//(3+j)%6//checkedGrid[hexto.x][hexto.y].embarking
+            //}
+            //if(!water && !mountain && !air && !transporting)
+            //      heks[i][j].test = checkedGrid[i][j].dist
+            checkedList.push( { hex: hekstable[i][j], dist: checkedGrid[i][j].dist, water : checkedGrid[i][j].water, from: checkedGrid[i][j].from, embarking: checkedGrid[i][j].embarking } )
         }        
     }
+    //if(!water && !mountain && !heavy && !air && !transporting && heks[x][y].unp >= 1 && heks[x][y].z >= 0 && heks[x][y].undr == kolej)
+    //    console.log(x+' '+y,checkedList)
+
     return checkedList
 }
 function hexrangemap(x,y,water,mountain,air,heavy,hekstable){
@@ -2169,7 +2254,7 @@ function calculatePathUntilEmbarking(unitDistMap,hex, unit, action, stopBefore){
                     var uu = unix[kolej][he.unt[k]]
                     if(uu == undefined)
                         continue
-                    if(zast[uu.rodz] == 'x' && szyt[uu.rodz] == 'w'){
+                    if(zast[uu.rodz] == 'x' && szyt[uu.rodz] == 'w' && uu.ruchy == 0){
                         tratwas++
                         satisf += uu.il
                     }
@@ -2467,7 +2552,18 @@ function copyDistmaps(dm){
             //var unit = bhex.units[j]
             //var szybt = szyt[unit.rodz]
             //if(!(szybt in newDistmaps[code].maps)){
-                newDistmaps[code].maps[szybt] = {hexmap:copyHexdistmap(distmaps[code].maps[szybt].hexmap,board), rangemap:copyHexrangemap(distmaps[code].maps[szybt].rangemap,board)}//{hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board)}
+                newDistmaps[code].maps[szybt] = {hexmap:copyHexdistmap(distmaps[code].maps[szybt].hexmap,board), rangemap:copyHexrangemap(distmaps[code].maps[szybt].rangemap,board)}            
+                for(var ks in newDistmaps[code].maps[szybt].hexmap){
+                    
+                    /*
+                    if(newDistmaps[code].maps[szybt].hexmap[ks].water > 0){
+                        alert('a')
+                        console.log(newDistmaps[code].maps[szybt].hexmap[ks])
+                    }*/
+                }
+
+                //console.log(newDistmaps[code].maps[szybt].hexmap.filter(x=>x.embarking > 0).length)
+                //{hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board)}
             //}
         }
     }
@@ -2502,10 +2598,10 @@ function distmapsFromUnit(){
             
         }
         
-        if(distmaps[code].maps['w'] == undefined){
+        if(!('w' in distmaps[code].maps) && (heks[coord[0]][coord[1]].z == -1 || heks[coord[0]][coord[1]].z > 0)){
             distmaps[code].maps['w'] = {hexmap:hexdistmap(bhex.x,bhex.y,true,false,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,true,false,false,false,board)}
         }
-        if(distmaps[code].maps['n'] == undefined){
+        if(!('n' in distmaps[code].maps)){
             distmaps[code].maps['n'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,false,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,false,false,false,board)}
         }/*
         if(distmaps[code].maps['c'] == undefined){
@@ -2631,7 +2727,6 @@ function evaluate(dm,time,potentialMoves){
             }
         }
         var maxdef = Math.max(peoplePotential, productionPotential * 4)// + firepower
-        
         
         for(var t = 0;t<MAX_TURNS;t++){
             for(var i in distmap.hex.units){
@@ -2868,13 +2963,16 @@ function exponentiel(number){
 function getRuch(map_of_movement_type,hex){
     var hToCheck = map_of_movement_type.filter(h => h.hex.x == hex.hex.x && h.hex.y == hex.hex.y)[0]
     var ruchk = []
-    
+        
     var i = scian*10
     while(hToCheck.from != null){
         var hfrom = hToCheck.from
+        //heks[hfrom.x][hfrom.y].test = 'X'
+        
         var goodkier = -1
         for(var k = 0;k<6;k++){
             if(hfrom.border[k] != undefined && hfrom.border[k].x == hToCheck.hex.x && hfrom.border[k].y == hToCheck.hex.y){
+                
                 goodkier = k
                 break
             }
@@ -2882,12 +2980,13 @@ function getRuch(map_of_movement_type,hex){
         ruchk.push(goodkier)
         var hToCheck = map_of_movement_type.filter(h => h.hex.x == hfrom.x && h.hex.y == hfrom.y)[0]
         i--
-        if(i<0)
+        if(i<0){
             break
+        }
     }
     ruchk = ruchk.reverse()
     rucho = ruchk.map(a => 1)
-    
+    //console.log([ruchk,rucho])
     return {ruchk:ruchk,rucho:rucho}
 }
 
@@ -3007,6 +3106,9 @@ function legalActions(dm,simplifieddistmaps){
                             //if(hexkey in distmaps && ( distmaps[hexkey].frontline || distmaps[hexkey].units.length == 0 ||  )){
                                 //unit.legalActions.push({type:'move',rucho:rucho,ruchk:ruchk,destination:leadPath(hex.x,hex.y,ruchk,rucho)})
                                     
+                    if(zast[unit.rodz] == 'x')
+                        continue
+                        
                     var result = getRuch(map_of_movement_type,hex)
                     
                     var ruchk = result.ruchk
@@ -3020,8 +3122,8 @@ function legalActions(dm,simplifieddistmaps){
                         unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
                         if(unit.il > 10 && distmap.hex.units.length <= 3)
                             unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
-                        if(unit.il > 20 && distmap.hex.units.length <= 2 && distmap.frontline)
-                            unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:Math.floor(unit.il/2),from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
+                        //if(unit.il > 20 && distmap.hex.units.length <= 2 && distmap.frontline)
+                        //    unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:Math.floor(unit.il/2),from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
                         
                         if(hex.hex.units.length > 0/* && distmap.frontline*/){
                             if(hex.hex.units.length > 0){
@@ -3330,7 +3432,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
         unitaction.unit.actions = unitaction.action
         evaluate(dm)
         var values2ByTime = dm.distmaps[x+'#'+y].alliegance
-        
+
         for(var t in values2ByTime){
             values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
         }

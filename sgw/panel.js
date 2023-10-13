@@ -2384,7 +2384,8 @@ function terrainChooseClick(){
 }
 function teamChooseClick(){
 	dru[teamChooseNumber]++;
-	if(dru[teamChooseNumber]>6){
+	//if(dru[teamChooseNumber]>6){
+	if(dru[teamChooseNumber]>2){
 		dru[teamChooseNumber] = 0;
 	}
 	teamChooseDraw();
