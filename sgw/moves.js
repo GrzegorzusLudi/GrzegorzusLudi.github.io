@@ -1558,7 +1558,7 @@ function przenies(kierunek){
 				var gv = 0;
 				while(gv<peh.unp){
 					console.log(hexOfUnit(this).unt[gv])
-					if(unix[kolej][peh.unt[gv]].rodz==8 && unix[kolej][hexOfUnit(this).unt[gv]].rozb==0){
+					if(unix[kolej][peh.unt[gv]].rodz==8 && hexOfUnit(this).unt[gv] != -1 && unix[kolej][hexOfUnit(this).unt[gv]].rozb==0){
 						while(nump>0 && unix[kolej][peh.unt[gv]].il>0){
 							nump--;
 							numw++;
