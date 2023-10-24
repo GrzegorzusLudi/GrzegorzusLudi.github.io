@@ -372,7 +372,7 @@ function aimachine(ailevel){
             evaluate(dfrou,2)
             
             legalActions(dfrou,simplifieddistmaps)
-            ulepszyns = 25
+            ulepszyns = 10
             aistan = 1.2
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -469,11 +469,11 @@ function aimachine(ailevel){
                                 var code = obj.hex.heks.x + '#' + obj.hex.heks.y
                                 if(addedHexes[code] == undefined){
                                     addedHexes[code] = obj.dist
-                                    if(true || code in sidima)
+                                    if(code in sidima)
                                         possible_targets.push(obj)
                                 } else if(obj.dist < addedHexes[code]){
                                     addedHexes[code] = obj.dist
-                                    if(true || code in sidima){
+                                    if(code in sidima){
                                         possible_targets = possible_targets.filter(a => a.hex.heks.x != obj.hex.heks.x || a.hex.heks.y != obj.hex.heks.y)
                                         possible_targets.push(obj)
                                     }
@@ -508,7 +508,7 @@ function aimachine(ailevel){
                                 var code = obj.hex.heks.x + '#' + obj.hex.heks.y
                                 if(addedHexes[code] == undefined){
                                     addedHexes[code] = obj.dist
-                                    if(true || code in sidima)
+                                    if(code in sidima)
                                         possible_targets.push(obj)
                                 } else if(obj.dist < addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y]){
                                     addedHexes[obj.hex.heks.x + '#' + obj.hex.heks.y] = obj.dist
@@ -614,11 +614,11 @@ function aimachine(ailevel){
         case 1.3:
             if(possible_targets_ix >= possible_targets.length){
                 if(ulepszyns > 0){
-                    ulepszyns--
-                    if(overall_score_changed)
+                    if(overall_score_changed){
                         overall_score_changed = false
-                    else
-                        ulepszyns = 0
+                    } else {
+                        ulepszyns--
+                    }
                     dfrou = copyDistmaps(dbetter)
                     evaluate(dfrou,2)
                     
@@ -1253,11 +1253,13 @@ function aimachine(ailevel){
 					var dm_morze = dfrou.distmaps[code].maps['w'].hexmap
 					//console.log('l',dm_lad,'m',dm_morze)
 					
+					//miejsca_do_wysłania_tratw[code].satisfied > miejsca_do_wysłania_tratw[code].needed
 					var local_prod = 0
 					var sapper_prod = 0
 					
 					var lad_needs = 0
 					var morze_needs = 0
+					var tratwa_needs = 0
 					for(var i in dm_lad){
                         var hks = dm_lad[i]
                         
@@ -1737,7 +1739,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,hekstable){
                                 //    pluswater = 1
                                 //} else {
                                 if(checkedGrid[hexto.x][hexto.y].embarking > 0){
-                                    pluswater = 1.2
+                                    pluswater = 3
                                 } else {
                                     continue
                                 }
@@ -3021,7 +3023,7 @@ function simpledistmaps(dm){
     for(var i in map){
         for(var j in map[i]){
             for(var k in map){
-                if(k in map && k in map[i] && j in map[k] && map[i][j]-2 > (map[i][k] + map[k][j]) * 0.6 && !(dm.distmaps[i].hex.units.length > 0 && dm.distmaps[k].hex.units.length > 0 && dm.distmaps[i].hex.units[0].dru == dm.distmaps[k].hex.units[0].dru)){
+                if(k in map && k in map[i] && j in map[k] && map[i][j]-2 > (map[i][k] + map[k][j]) * 0.8 && !(dm.distmaps[i].hex.units.length > 0 && dm.distmaps[k].hex.units.length > 0 && dm.distmaps[i].hex.units[0].dru == dm.distmaps[k].hex.units[0].dru)){
                     //console.log('tró')
                     delete map[i][j]
                     delete map[j][i]
