@@ -372,7 +372,7 @@ function aimachine(ailevel){
             evaluate(dfrou,2)
             
             legalActions(dfrou,simplifieddistmaps)
-            ulepszyns = 10
+            ulepszyns = 5
             aistan = 1.2
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -614,7 +614,7 @@ function aimachine(ailevel){
         case 1.3:
             if(possible_targets_ix >= possible_targets.length){
                 if(ulepszyns > 0){
-                    if(overall_score_changed){
+                    if(overall_score_changed && dbetter != null){
                         overall_score_changed = false
                     } else {
                         ulepszyns--
@@ -633,7 +633,7 @@ function aimachine(ailevel){
                     aistan = 1.35
                 }
             } else {
-                for(var ct = 0;ct<12;ct++){
+                for(var ct = 0;ct<6;ct++){
                     var tested_target = possible_targets[possible_targets_ix]
                     var checkedTurn = 1
                     var checkedTurn2 = MAX_TURNS-1
@@ -651,6 +651,7 @@ function aimachine(ailevel){
                     
                     var score1 = {}
                     var score2 = {}
+                    var score3 = {}
                     
                     for(var i in newDistmap.score){
                         score1[i] = {}
@@ -661,13 +662,13 @@ function aimachine(ailevel){
                         for(var j in dbetter.score[i]){
                             score2[i][j] = dbetter.score[i][j]
                         }
-                    }
+                    }/*
                     var fact = 0.8
                     for(var i in score1){
                         for(var j in score1[i]){
                             score1[i][j] = score1[i][j] * Math.pow(fact,i+1) + score2[i][j] * (1 - Math.pow(fact,i+1))
                         }
-                    }
+                    }*/
                     if(dbetter == null)
                         dbetter = newDistmap
                     var maxBetter = 0
@@ -682,7 +683,8 @@ function aimachine(ailevel){
                         
                     if(dbetter == null || score1[checkedTurn][kolej] > score2[checkedTurn][kolej] || score1[checkedTurn][kolej] >= score2[checkedTurn][kolej]*0.8 && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej]){
                         dbetter = newDistmap
-                        overall_score_changed = true
+                        if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej])
+                            overall_score_changed = true
                     }
                         
                     //}
@@ -715,7 +717,7 @@ function aimachine(ailevel){
                     pola_z_tratwami[code] = distmap
                 }
             }
-            var miejsca_do_wysłania_tratw = {}
+            miejsca_do_wysłania_tratw = {}
             for(var key in dfrou.distmaps){
                 var distmap = dfrou.distmaps[key]
                 
@@ -1292,6 +1294,8 @@ function aimachine(ailevel){
                                     lad_needs -= evalUnitAttack(unit,[{il:unit.il + unit.rozb}])
                                 } else if(zast[unit.rodz] == 'm'){
                                     sapper_prod += unit.il+unit.rozb
+                                } else if(zast[unit.rodz] == 'x' && szyt[unit.rodz] == 'w'){
+                                    tratwa_needs -= unit.il
                                 }
                             }
                         }
@@ -1305,6 +1309,9 @@ function aimachine(ailevel){
                         
                         var hdru = hks.hex.d != undefined ? hks.hex.d : hks.hex.dru
                         
+                        var kod = hks.hex.x+'#'+hks.hex.y
+                        if(kod in miejsca_do_wysłania_tratw && miejsca_do_wysłania_tratw[kod].needed > miejsca_do_wysłania_tratw[kod].satisfied)
+                            tratwa_needs += miejsca_do_wysłania_tratw[kod].needed - miejsca_do_wysłania_tratw[kod].satisfied
                         
                         if(hdru != kolej){
                             if(hks.z > 0){
@@ -1326,6 +1333,8 @@ function aimachine(ailevel){
                                 
                                 if(zast[unit.rodz] == 'n' && szyt[unit.rodz] == 'w'){
                                     morze_needs -= evalUnitAttack(unit,[{il:unit.il + unit.rozb}])
+                                } else if(zast[unit.rodz] == 'x' && szyt[unit.rodz] == 'w'){
+                                    tratwa_needs -= unit.il
                                 }
                             }
                         }
@@ -1335,6 +1344,9 @@ function aimachine(ailevel){
                     
                     if(morze_needs > lad_needs && morze_needs > 0)
                         needed = 6
+                        
+                    if(tratwa_needs > morze_needs && tratwa_needs > 0)
+                        needed = 8
                     
                     //mist[kolejność_miast[miastkol]].test = lad_needs+'/'+morze_needs
 					/*
@@ -1393,7 +1405,7 @@ function aimachine(ailevel){
                             odzaz(); 
                         }
                     }
-					mist[kolejność_miast[miastkol]].test = String(Math.max(lad_needs,morze_needs)).split('.')[0]+'/'+String(local_prod).split('.')[0]
+					//mist[kolejność_miast[miastkol]].test = String(Math.max(lad_needs,morze_needs)).split('.')[0]+'/'+String(local_prod).split('.')[0]
 				}
 			}
 			miastkol++;
