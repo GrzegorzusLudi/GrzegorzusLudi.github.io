@@ -383,7 +383,7 @@ function aimachine(ailevel){
             evaluate(dfrou,2)
             
             legalActions(dfrou,simplifieddistmaps)
-            ulepszyns = 10
+            ulepszyns = 6
             aistan = 1.2
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -614,8 +614,10 @@ function aimachine(ailevel){
             //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
             //console.log(possible_targets)
             //possible_targets = possible_targets.filter(x => x.distanceMap)
-            possible_targets = possible_targets.slice(0,15)
+            possible_targetsNew = possible_targets.filter(x=>x.hex.z > 0).slice(0,15)
+            possible_targetsAdditional = possible_targets.filter(x=>x.hex.z <= 0).slice(0,5)
             
+            possible_targets = possible_targetsNew.concat(possible_targetsAdditional)
             
             tryMakeDestinationMap(dbetter,kolej)
             //possible_targets.sort(() => Math.random() - 0.5)
@@ -662,7 +664,6 @@ function aimachine(ailevel){
                     
                     var score1 = {}
                     var score2 = {}
-                    var score3 = {}
                     
                     for(var i in newDistmap.score){
                         score1[i] = {}
