@@ -253,6 +253,17 @@ function ai4(){
 function ai5(){
     aimachine(5)
 }
+
+function evalAlliegance(dmap,obj){
+    var code = obj.hex.heks.x + '#' + obj.hex.heks.y
+    if(code in dmap.distmaps){
+        var alliegance = dmap.distmaps[code].alliegance[MAX_TURNS-1]
+        //if(alliegance != (obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru))
+        //    console.log(alliegance)
+        return alliegance
+    }
+    return obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru
+}
 function aimachine(ailevel){
     //console.log(aistan)
 	switch(aistan){
@@ -372,7 +383,7 @@ function aimachine(ailevel){
             evaluate(dfrou,2)
             
             legalActions(dfrou,simplifieddistmaps)
-            ulepszyns = 5
+            ulepszyns = 10
             aistan = 1.2
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -425,7 +436,7 @@ function aimachine(ailevel){
                         totalUnitSize += unittu.il
                 }
                     
-                var dr = distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
+                var dr = evalAlliegance(dfrou,distmap)//distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
                 if(dr == kolej && distmap.hex.units.length > 0){
                     
                     if(totalUnitSize < 10){
@@ -440,7 +451,7 @@ function aimachine(ailevel){
                         var foundFrontline = false
                         for(var i in dmap){
                             var obj = dmap[i]
-                            var obdr = obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru
+                            var obdr = evalAlliegance(dfrou,obj)//obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru
                             
                             var kodd = obj.hex.heks.x + '#' + obj.hex.heks.y
                             /*
@@ -493,7 +504,7 @@ function aimachine(ailevel){
                         var rmap = rmap.sort((a,b)=>a.dist-b.dist)
                         for(var i in rmap){
                             var obj = rmap[i]
-                            var obdr = obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru
+                            var obdr = evalAlliegance(dfrou,obj)//obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru
 
                             var kodd = obj.hex.heks.x + '#' + obj.hex.heks.y
                             /*
@@ -2925,7 +2936,7 @@ function evaluate(dm,time,potentialMoves){
                 //if(distmap.realtocome[t][d] > 0)
                 //    console.log(distmap.hex.x,distmap.hex.y,d,distmap.potentialtocome[t][d], distmap.realtocome[t][d], distmap.defence[t][d])
                 powers[d] = distmappower(distmap,t,d)
-                if(powers[d] >= biggestpower){
+                if(powers[d] > biggestpower){
                     secondbiggestpower = biggestpower
                     secondbiggestpowercolor = biggestpowercolor
                     biggestpower = powers[d]
