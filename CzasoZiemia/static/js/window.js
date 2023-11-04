@@ -317,6 +317,13 @@ class PropertyDialogWindow extends DialogWindow {
         
         this.setOwnConfig(configs)
     }
+    operationTypeSelectByFeature(feature){
+        if('geometry' in feature){
+            return document.getElementById('feature-temp-operation-type')
+        } else {
+            return document.getElementById('feature-temp-operation-type-nogeometry')
+        }
+    }
     setOwnConfig(configs){
         for(var option in configs){
             let th = this
@@ -346,7 +353,7 @@ class PropertyDialogWindow extends DialogWindow {
         }
     }
     updateFeature(feature,scheme){
-        if(feature.geometry.type == "Point"){
+        if(feature.geometry && feature.geometry.type == "Point"){
             var coordsInput = document.getElementById("coords-table-input")
             var crs = coordsInput.value.split(",")
             if(crs.length != 2 || isNaN(Number(crs[0])) || isNaN(Number(crs[1]))){
@@ -376,7 +383,7 @@ class PropertyDialogWindow extends DialogWindow {
                 //TODO: lock ID field
             }
             this.feature.id = newid
-            var opt = document.getElementById('feature-temp-operation-type')
+            var opt = this.operationTypeSelectByFeature(this.feature)
             this.feature.operation = opt.options[opt.selectedIndex].value
             
             var lastFrom = this.feature.from, lastTo = this.feature.to
@@ -439,14 +446,17 @@ class PropertyDialogWindow extends DialogWindow {
             this.lastFeatureId = null
         }
         let t = this
-        this.coordsTable.style.display = (feature && feature.geometry.type == "Point") ? "block" : "none"
+        this.coordsTable.style.display = (feature && feature.geometry && feature.geometry.type == "Point") ? "block" : "none"
         var coordsInput = document.getElementById("coords-table-input")
         
         if(feature){
             if(this.layerPanel.isSpatiotemporal(this.layerPanel.editing)){
                 this.tempTable.style.display = "block"
                 document.getElementById('feature-id-input').value = this.feature.id
-                var opt = document.getElementById('feature-temp-operation-type')
+                document.getElementById('feature-temp-operation-type').style.display = 'none'
+                document.getElementById('feature-temp-operation-type-nogeometry').style.display = 'none'
+                var opt = this.operationTypeSelectByFeature(feature)
+                opt.style.display = 'block'
                 for (var i = 0; i < opt.options.length; ++i) {
                     if (opt.options[i].text === this.feature.operation)
                         opt.options[i].selected = true
@@ -456,7 +466,7 @@ class PropertyDialogWindow extends DialogWindow {
             } else {
                 this.tempTable.style.display = "none"
             }
-            if(feature.geometry.type == "Point"){
+            if(feature.geometry && feature.geometry.type == "Point"){
                 coordsInput.value = this.feature.geometry.coordinates[0]+','+this.feature.geometry.coordinates[1]
             }
             var innerHtml = "<tr><td></td><td>Names:</td><td></td><td>Values:</td><td>empty?</td></tr>"
@@ -710,7 +720,7 @@ class LayerOperationDialogWindow extends DialogWindow {
         for(var i in selectedLayer.features){
             var child = selectedLayer.features[i]
             
-            if(child.geometry.type != "Polygon" && child.geometry.type != "MultiPolygon" && typeSelect.value != '')
+            if(child.geometry && child.geometry.type != "Polygon" && child.geometry.type != "MultiPolygon" && typeSelect.value != '')
                 continue
                 
             if("bbox" in child && !isNaN(child.bbox[0]) && (

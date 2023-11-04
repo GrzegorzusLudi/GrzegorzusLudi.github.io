@@ -33,6 +33,7 @@
                 <span id="edit-feature-time-buttons">
                     <span class="separator"></span>
                     <img id="add-time-version" class="toolbar-button" src="static/img/add-time-version.png" alt="add time version of feature" title="add time version of feature" />
+                    <img id="add-time-property-version" class="toolbar-button" src="static/img/add-time-property-version.png" alt="add time version of feature with only property change" title="add time version of feature with only property change" />
 
                 </span>
                 <div class="right-toolbar">
@@ -47,6 +48,9 @@
                         </a>
                         <a href="#">
                         <img id="button-add-layer" class="menu-img" src="static/img/add-layer.png" alt="add layer" title="add layer" />
+                        </a>
+                        <a href="#">
+                        <img id="button-add-raster-map" class="menu-img" src="static/img/add-raster-map.png" alt="add raster map" title="add raster map" />
                         </a>
                     </div>
                     Layers:
@@ -202,6 +206,15 @@
                     <option value="UNION" name="UNION">UNION</option>
                     <option value="DIFF" name="DIFF">DIFF</option>
                     <option value="INTERSECT" name="INTERSECT">INTERSECT</option>
+                </select>
+                <select id="feature-temp-operation-type-nogeometry">
+                    <option value="PROPERTY_CHANGE" name="PROPERTY_CHANGE">PROPERTY_CHANGE</option>
+                    <option value="NEW_ALL_FEATURES_REF" name="NEW_ALL_FEATURES_REF">NEW_ALL_FEATURES_REF</option>
+                    <option value="NEW_REF" name="NEW_REF">NEW_REF</option>
+                    <option value="UNION_ALL_FEATURES_REF" name="UNION_ALL_FEATURES_REF">UNION_ALL_FEATURES_REF</option>
+                    <option value="UNION_REF" name="UNION_REF">UNION_REF</option>
+                    <option value="DIFF_REF" name="DIFF_REF">DIFF_REF</option>
+                    <option value="INTERSECT_REF" name="INTERSECT_REF">INTERSECT_REF</option>
                 </select>
                 <!--
                 algorithm(date):

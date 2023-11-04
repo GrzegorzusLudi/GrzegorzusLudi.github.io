@@ -339,6 +339,9 @@ class AbstractCanvas {
     drawLayer(layer){
         if(layer.drawable && !layer.hidden){
             this.drawLayerData(layer,layer.rendered)
+            if(layer == this.layerPanel.editing && this.layerPanel.isSpatiotemporal(layer)){
+                this.drawCurrentLayerData(layer,layer.data)
+            }
         }
         for(var i in layer.children){
             this.drawLayer(layer.children[i])
@@ -458,6 +461,49 @@ class AbstractCanvas {
                 break
         }
     }
+    
+    drawCurrentLayerData(topLayer, data, points, degreeBounds){
+        if(data instanceof Object && "bbox" in data && (
+            data.bbox[0] > this.degreeBoundsRight || 
+            data.bbox[1] > this.degreeBoundsBottom || 
+            data.bbox[2] < this.degreeBoundsLeft || 
+            data.bbox[3] < this.degreeBoundsTop
+        ))
+            return
+        if(data == undefined)
+            return
+        switch(data.type){
+            case "Interval":
+                for(var i in data.children){
+                    this.drawCurrentLayerData(topLayer, data.children[i], points, degreeBounds)
+                }
+                break
+            case "FeatureCollection":
+                for(var i in data.features){
+                    this.drawCurrentLayerData(topLayer, data.features[i], points, degreeBounds)
+                }
+                break
+            case "TempFeature":
+                //this.setStyleToFeature(topLayer,data)
+                
+                if(this.layerPanel.checkIfFeatureSelectableInTime(data)){
+                    var strStyle = '#008'
+                    switch(data.operation){
+                        case 'UNION':
+                        case 'UNION_ALL_FEATURES':
+                            strStyle = '#080'
+                            break
+                        case 'DIFF':
+                            strStyle = '#800'
+                            break
+                    }
+                    this.setStyle({lineWidth:2,fillStyle:'#0000',strokeStyle:strStyle,lineDash:[2,3]})
+                    this.drawLayerData(topLayer, data.geometry, points, degreeBounds)
+                    this.setStyle({lineWidth:1,lineDash:[]})
+                }
+                break
+        }
+    }
     drawEditPoints(coords, bounds, selectedPoint){
         
         if(typeof coords[0] == "number"){
@@ -547,6 +593,9 @@ class TwoDCanvas extends AbstractCanvas {
         switch(style){
             case "lineWidth":
                 this.context.lineWidth = this.styles[style]
+                break
+            case "lineDash":
+                this.context.setLineDash(this.styles[style])
                 break
             case "strokeStyle":
                 this.context.strokeStyle = this.styles[style]

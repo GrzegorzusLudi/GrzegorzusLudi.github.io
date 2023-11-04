@@ -69,6 +69,10 @@ class LayerPanel {
     setGlobalDate(date){
         this.globalDate = date
         this.timeControl.setDate(date)
+                
+        if(this.editing && this.editing.selectedFeature != null && !this.checkIfFeatureSelectableInTime(this.editing.selectedFeature)){
+            this.editing.selectedFeature = null
+        }
     }
     
     setConfig(configs){
@@ -183,6 +187,7 @@ class LayerPanel {
     }
     updateLayer(layer,od,keeporiginaldata){
         var newData,transformed
+        
         if(keeporiginaldata){
             transformed = this.validateAndTransformToGeoJson(od, layer.type, true, layer.data)
         } else {
@@ -197,6 +202,7 @@ class LayerPanel {
             }
             transformed = this.validateAndTransformToGeoJson(newData, layer.type)
         }
+        
         
         if(!keeporiginaldata){
             layer.originaldata = transformed["copied"]
@@ -247,7 +253,7 @@ class LayerPanel {
                 }
                 //continue
             }*/
-            var features = featuresGroupedByIds[id].concat(ungroupedFeatures).filter(x => x.geometry != null)
+            var features = featuresGroupedByIds[id].concat(ungroupedFeatures).filter(x => x.type != null)
             features.sort((a,b) => a.timebox_from-b.timebox_from)
 
             if(features.length == 0)
@@ -256,7 +262,7 @@ class LayerPanel {
             this.aggregateFeaturesById(features, layer, bounds, resolution, newRendered)
         }
         if(Object.keys(featuresGroupedByIds).length == 0){
-            var features = ungroupedFeatures.filter(x => x.geometry != null)
+            var features = ungroupedFeatures.filter(x => x.type != null)
             features.sort((a,b) => a.timebox_from-b.timebox_from)
 
             if(features.length > 0)
@@ -266,7 +272,6 @@ class LayerPanel {
         return newRendered
     }
     aggregateFeaturesById(features, layer, bounds, resolution, newRendered){
-
         var newF = features.filter(x => x.operation == 'NEW' || x.operation == 'NEW_ALL_FEATURES')
         var firstFeature
         if(newF.length == 0){
@@ -295,6 +300,9 @@ class LayerPanel {
                 case 'INTERSECT':
                     newGeom = turf.intersect(firstFeature,feature)
                     break
+                case 'PROPERTY_CHANGE':
+                    newGeom = firstFeature
+                    break
                 case 'NEW_ALL_FEATURES':
                 case 'UNION_ALL_FEATURES':
                     if(feature.id == firstFeature.id){
@@ -309,6 +317,12 @@ class LayerPanel {
             if(newGeom == null)
                 continue
             firstFeature.geometry = newGeom.geometry
+            
+            for(var key in feature.properties){
+                var prop = feature.properties[key]
+                
+                firstFeature.properties[key] = prop
+            }
         }
         firstFeature.type = "TempFeature"
         /*if(firstFeature.geometry.type == "Point" && this.getStyleProperties(layer,'pointSignificance',firstFeature) != undefined){
@@ -407,6 +421,9 @@ class LayerPanel {
     checkIfFeatureInTime(feature){
         return (!('timebox_to' in feature) || feature.timebox_to == '' || this.compareDates(feature.timebox_to,this.globalDate) > -1) && (!('timebox_from' in feature) || feature.timebox_from == '' || this.compareDates(feature.timebox_from,this.globalDate) < 1)
     }
+    checkIfFeatureSelectableInTime(feature){
+        return (!('selectable_to' in feature) || feature.selectable_to == '' || this.compareDates(feature.selectable_to,this.globalDate) > -1) && (!('selectable_from' in feature) || feature.selectable_from == '' || this.compareDates(feature.selectable_from,this.globalDate) < 1)
+    }
     
     mapLayerToRendered(layer,rendered,bounds,resolution,featuresGroupedByIds,ungroupedFeatures,topLayer){
         var lastPositionx = null, lastPositiony = null, penultimalPositionx = null, penultimalPositiony = null, notinbounds = null, notadded = false
@@ -417,7 +434,7 @@ class LayerPanel {
                 if(layer instanceof Array && "resolution" in value && value.resolution<resolution*4){
                     break
                 }
-                if((!("operation" in value) || (value.operation != 'INTERSECT' && value.operation != 'NEW' && value.operation != 'NEW_ALL_FEATURES')) && "bbox" in value && (
+                if((!("operation" in value) || (value.operation != 'PROPERTY_CHANGE' && value.operation != 'INTERSECT' && value.operation != 'NEW' && value.operation != 'NEW_ALL_FEATURES')) && "bbox" in value && (
                     value.bbox[0] > bounds.right || 
                     value.bbox[1] > bounds.bottom || 
                     value.bbox[2] < bounds.left || 
@@ -426,14 +443,15 @@ class LayerPanel {
                 )
                     continue
                 
-                if('timebox_to' in value && !this.checkIfFeatureInTime(value))
+                if('timebox_to' in value && !this.checkIfFeatureInTime(value)){
                     continue
+                }
                     
                     
                 var newObject = {}
                 rendered[property] = newObject
                 if(value.type == "TempFeature"){
-                    if(value.geometry.type == "Point" && this.getStyleProperties(topLayer,'pointSignificance',value) != undefined){
+                    if('geometry' in value && value.geometry.type == "Point" && this.getStyleProperties(topLayer,'pointSignificance',value) != undefined){
                         if(!this.pointToLayerPoint(topLayer,value,bounds,resolution))
                             continue
                     }
@@ -442,6 +460,7 @@ class LayerPanel {
                         case "DIFF":
                         case "INTERSECT":
                         case "UNION":
+                        case "PROPERTY_CHANGE":
                             if(featuresGroupedByIds[value.id] == undefined)
                                 featuresGroupedByIds[value.id] = []
                             featuresGroupedByIds[value.id].push(newObject)
@@ -751,6 +770,10 @@ class LayerPanel {
                 addTimeVersionButton.style.border = this.addingAction == "time" ? "2px solid yellow" : ""
                 
                 
+                var addTimePropertyVersionButton = document.getElementById('add-time-property-version')
+                addTimePropertyVersionButton.onclick = (e)=>{th.startAddingTimeProperty();e.preventDefault()}
+                //addTimePropertyVersionButton.style.border = this.addingAction == "time" ? "2px solid yellow" : ""
+                
             } else {
                 this.layerOperationDialogWindow.action(null,false,null)
             }
@@ -792,6 +815,48 @@ class LayerPanel {
     
     actionResultingInOperation(action){
         return action != null && action != "time"
+    }
+    startAddingTimeProperty(){
+        this.editing.previouslySelectedFeature = this.editing.selectedFeature
+        this.addingFeatureId = this.editing.selectedFeature.id
+        
+        this.deletingShapes = false
+        //if(!this.addingDrawing){
+            this.editing.selectedFeature = null
+            this.addingDrawing = true
+            this.reverseAddingDrawing = false
+            //if(this.editing.selectedFeature == null){newCoords
+            var newFeature
+            
+            var id = this.addingFeatureId
+            var from_date = this.globalDate
+            newFeature = {type:"TempFeature",id:id,operation:"PROPERTY_CHANGE",from:from_date,to:"",properties:{},adding:true}
+            this.editing.selectedFeature = newFeature
+            
+            this.editing.data.features.push(newFeature)
+            this.editing.originaldata.features.push(newFeature)
+            delete this.editing.selectedFeature['adding']
+                
+            this.editing.selectedFeature = null
+            this.addingAction = null
+            this.editing.selectedPoint = null
+            this.addingDrawing = false
+            this.addingDrawingType = null
+            this.lastShapeDrawing = null
+            this.lastPointDrawing = null
+            this.operationOnShapes = false
+            this.operationOnShapesType = null
+            
+            this.updateLayer(this.editing,this.editing.originaldata,true)
+                
+            this.propertiesDialogWindow.action(null,true,newFeature,this.editing.scheme)
+            //}
+        //} else {
+        //    this.stopAddingShape()
+        //}
+        this.updateLayerView(this.layers)
+        
+        //////////////
     }
     startAddingShape(shape,action){
         this.addingAction = action ? action : null
@@ -1095,6 +1160,7 @@ class LayerPanel {
             subnodes.append(newNode)
             let ff = feature
             document.getElementById("edit-feature-"+layerId+"-"+id).onclick = (e)=>{
+                console.log(ff)
                 t.editing.selectedFeature = ff
                 t.lastPointDrawing = null
                 t.addingDrawing = false
@@ -1151,6 +1217,7 @@ class LayerPanel {
                         newdata = unoriginaldata
                     }
                     this.addBboxes(newdata)
+                    console.log(newdata)
                     if(type == "tempgeojson")
                         this.addTimeboxes(newdata)
                     drawable = true
@@ -1295,6 +1362,7 @@ class LayerPanel {
                                 case "UNION_ALL_FEATURES":
                                 case "DIFF":
                                 case "INTERSECT":
+                                case "PROPERTY_CHANGE":
                                     feature.timebox_from = feature.from
                                     feature.timebox_to = feature.to
                                     break
@@ -1312,6 +1380,7 @@ class LayerPanel {
                                 case "UNION_ALL_FEATURES":
                                 case "DIFF":
                                 case "INTERSECT":
+                                case "PROPERTY_CHANGE":
                                     var ndi = 0
                                     for(var j = newDates.length-1;j>=0;j--){
                                         if(this.compareDates(newDates[j],feature.from) <= 0){
@@ -1335,6 +1404,25 @@ class LayerPanel {
                                     break
                             }
                         }
+                        
+                        var lastFeatures = []
+                        for(var i in features){
+                            var feature = features[i]
+                            
+                            feature.selectable_from = feature.timebox_from
+                            feature.selectable_to = feature.timebox_to
+                            
+                            if(lastFeatures.length > 0 && this.compareDates(lastFeatures[0].timebox_from,feature.timebox_from) != 0){
+                                for(var j in lastFeatures){
+                                    lastFeatures[j].selectable_to = feature.selectable_from
+                                }
+                                lastFeatures.length = 0
+                                lastFeatures.push(feature)
+                            } else {
+                                lastFeatures.push(feature)
+                            }
+                        }
+                        /*
                         if(features.length > 0){
                             var firstProperties = features[0].properties
                             for(var i = 1;i<features.length;i++){
@@ -1346,7 +1434,7 @@ class LayerPanel {
                             for(var i = 1;i<features.length;i++){
                                 features[i].properties = firstProperties
                             }
-                        }
+                        }*/
                     }
                 }
                 return collected
@@ -1391,7 +1479,11 @@ class LayerPanel {
                 break
             case "TempFeature":
             case "Feature":
-                bbox = this.addBboxes(data.geometry)
+                if(data.type == 'TempFeature' && !('geometry' in data)){
+                    bbox = this.boxFromPoints(0,0)
+                } else {
+                    bbox = this.addBboxes(data.geometry)
+                }
                 break
             case "GeometryCollection":
                 for(var i in data.geometries){
@@ -1736,6 +1828,8 @@ class LayerPanel {
                 }
                 break
             case "TempFeature":
+                if(!this.checkIfFeatureSelectableInTime(layer))
+                    coords = null
             case "Feature":
                     var newCoords = this.getSnapPoint(layer.geometry,lon,lat,degreeBounds,pixelDifference,magnification)
                     coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
@@ -1829,6 +1923,8 @@ class LayerPanel {
                 }
                 break
             case "TempFeature":
+                if(!this.checkIfFeatureSelectableInTime(layer))
+                    return null
             case "Feature":
                 if(this.hitTest(layer.geometry,lon,lat,degreeBounds,pixelDifference,magnification,availableShapes) != null && (availableShapes == undefined || availableShapes.filter(x=>x == layer.geometry.type).length > 0))
                     return layer
