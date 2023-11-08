@@ -669,7 +669,6 @@ function aimachine(ailevel){
                     var checkedTurn2 = MAX_TURNS-1
                     var newDistmap = copyDistmaps(dbetter)
                     console.log('A2')
-                    tryMakeDestinationMap(newDistmap,kolej)
                     
                     console.log('A3')
                     evaluate(newDistmap,2)
@@ -678,6 +677,8 @@ function aimachine(ailevel){
                     
                     var code = tested_target.hex.x+'#'+tested_target.hex.y
                     if(newDistmap.distmaps[code].alliegance[MAX_TURNS-1] != kolej){
+                        tryMakeDestinationMap(newDistmap,kolej)
+                        console.log('A5')
                         tryPutUnderAttack(newDistmap,tested_target.hex.x,tested_target.hex.y,kolej,i % 2 == 1)
                     }
 
@@ -2707,21 +2708,22 @@ function allColors(){
     return result
 }
 szytisn = {szyt:'n'}
-function evalUnitAttack(unit,actions,model){
+function evalUnitAttack(unit,actions,model,oneaction){
     var il = unit.il
-    if(actions != undefined && actions.length > 0 && actions[0].il != undefined)
-        il = actions[0].il
+    var thisaction = oneaction || actions == undefined ? actions : actions[0]
+    if(actions != undefined && (oneaction || actions.length > 0) && thisaction.il != undefined)
+        il = thisaction.il
         
     var terrainFactor = 1
-    if(actions != undefined && actions.length > 0 && actions[0].type == 'move'){
-        origHex = model.board[actions[0].from[0]][actions[0].from[1]]
-        destHex = model.board[actions[0].destination[0]][actions[0].destination[1]]
+    if(actions != undefined && (oneaction || actions.length > 0) && thisaction.type == 'move'){
+        origHex = model.board[thisaction.from[0]][thisaction.from[1]]
+        destHex = model.board[thisaction.destination[0]][thisaction.destination[1]]
         
         terrainFactor = ataz2(unit,szytisn,origHex,destHex,"a")
     }
     
     var fromFar = 1
-    if(actions != undefined && actions[actions.length-1].type == 'aim' && (zast[unit.rodz] == 'n' || zast[unit.rodz] == 'l') && zas[unit.rodz] > 1){
+    if(actions != undefined && !oneaction && actions[actions.length-1].type == 'aim' && (zast[unit.rodz] == 'n' || zast[unit.rodz] == 'l') && zas[unit.rodz] > 1){
         fromFar = 1.1
     }
     return fromFar * at[unit.rodz] * (0.5+obrr[unit.rodz]) * exponentiel(unit.il) * terrainFactor
@@ -2785,6 +2787,8 @@ function evaluate(dm,time,potentialMoves){
         }
     }
     var leadedPaths = {}
+    var eas = {}
+    var ead = {}
     for(var key in distmaps){
         var distmap = distmaps[key]
         
@@ -2802,32 +2806,37 @@ function evaluate(dm,time,potentialMoves){
         }
         var maxdef = Math.max(peoplePotential, productionPotential * 4)// + firepower
         
-        for(var t = 0;t<MAX_TURNS;t++){
-            for(var i in distmap.hex.units){
-                var unit = distmap.hex.units[i]
-                var unitAttackStrength = evalUnitAttack(unit,undefined,dm.model)
-                var unitDefenseStrength = evalUnitDefense(unit)
+        for(var i in distmap.hex.units){
+            var unit = distmap.hex.units[i]
+            var unitAttackStrength = evalUnitAttack(unit,undefined,dm.model)
+            var unitDefenseStrength = evalUnitDefense(unit)
                 
-                distmap.defence[t][unit.d] -= -maxdef * t
+                for(var t = 0;t<MAX_TURNS;t++){
+                    distmap.defence[t][unit.d] -= -maxdef * t
+                }
                 
                 if(unit.actions.length > 0){
                     for(var j in unit.actions){
                         var action = unit.actions[j]
-                        if(action.type == 'move' && action.destination != undefined/* && j == unit.actions.length - 1*/){
+                        if(action.type == 'move' && action.destination != undefined/* && j == unit.actions.length - 1*/ && zast[unit.rodz] != 'x'){
                             var code = action.destination[0]+'#'+action.destination[1]
                             var dist = action.rucho.reduce((a,b)=>a+b,0)
-                            var unitAttackStrength = evalUnitAttack(unit, [action], dm.model)
-                            var path
+                            
                             if(!(distmap.hex.x+'#'+distmap.hex.y+'#'+i in leadedPaths))
                                 leadedPaths[distmap.hex.x+'#'+distmap.hex.y+'#'+i] = getLeadedPath(distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho)
-                            path = leadedPaths[distmap.hex.x+'#'+distmap.hex.y+'#'+i]
+                            var path = leadedPaths[distmap.hex.x+'#'+distmap.hex.y+'#'+i]
                             var losses = 0
                             
                             if(action.il < unit.il){
-                                distmap.realtocome[t][unit.d] -= -Number(evalUnitDefense(unit,unit.il - action.il))
+                                for(var t = 0;t<MAX_TURNS;t++){
+                                    distmap.realtocome[t][unit.d] -= -Number(evalUnitDefense(unit,unit.il - action.il))
+                                }
                             }
                             
-                            var unitAttackStrength2 = evalUnitAttack(unit, [action], dm.model)
+                            if(!(distmap.hex.x+'#'+distmap.hex.y+'#'+i+'#'+j in eas))
+                                eas[distmap.hex.x+'#'+distmap.hex.y+'#'+i+'#'+j] = evalUnitAttack(unit, action, dm.model, true)
+
+                            var unitAttackStrength2 = eas[distmap.hex.x+'#'+distmap.hex.y+'#'+i+'#'+j]
                             
                             for(var k=0;k<path.path.length-1;k++){
                                 
@@ -2839,12 +2848,16 @@ function evaluate(dm,time,potentialMoves){
                                     if(distmaps[code2].alliegance[MAX_TURNS-1] != unit.d){
                                         for(var l in distmaps[code2].hex.units){
                                             var unit2 = distmaps[code2].hex.units[l]
-                                            var evaldefense = evalUnitDefense(unit2)
+                                            if(!(distmaps[code2].hex.x+'#'+distmaps[code2].hex.y+'#'+l) in ead)
+                                                ead[distmaps[code2].hex.x+'#'+distmaps[code2].hex.y+'#'+l] = evalUnitDefense(unit2)
+                                            var evaldefense = ead[distmaps[code2].hex.x+'#'+distmaps[code2].hex.y+'#'+l]
                                             //for(var l in distmaps[code2].realtocome){
-                                                if(t >= turn){
-                                                    distmaps[code2].realtocome[t][unit2.d] -= unitAttackStrength2
-                                                    if(distmaps[code2].realtocome[t][unit2.d] < 0)
-                                                        distmaps[code2].realtocome[t][unit2.d] = 0
+                                                for(var t = 0;t<MAX_TURNS;t++){
+                                                    if(t >= turn){
+                                                        distmaps[code2].realtocome[t][unit2.d] -= unitAttackStrength2
+                                                        if(distmaps[code2].realtocome[t][unit2.d] < 0)
+                                                            distmaps[code2].realtocome[t][unit2.d] = 0
+                                                    }
                                                 }
                                             //}
                                             unitAttackStrength2 -= evaldefense
@@ -2863,25 +2876,34 @@ function evaluate(dm,time,potentialMoves){
                                     break
                             }
                             //if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho,unitAttackStrength))
-                            if(code in distmaps && szy[unit.rodz] * t + (zas[unit.rodz] <= 1 ? 0 : zas[unit.rodz]) >= dist){
-                                //console.log(szy[unit.rodz] * t + zas[unit.rodz], dist, unitAttackStrength)
-                                
-                                distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength2)
+                            for(var t = 0;t<MAX_TURNS;t++){
+                                if(code in distmaps && szy[unit.rodz] * t + (zas[unit.rodz] <= 1 ? 0 : zas[unit.rodz]) >= dist){
+                                    //console.log(szy[unit.rodz] * t + zas[unit.rodz], dist, unitAttackStrength)
+                                    
+                                    distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength2)
+                                }
                             }
                         }
                         if(action.type == 'aim'){
                             var code = unix[action.celd][action.celu].x + '#' + unix[action.celd][action.celu].y//action.hex_x + '#'+ action.hex_y
-                            distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength)
+                            
+                            for(var t = 0;t<MAX_TURNS;t++){
+                                distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength)
+                            }
                         }
                         if(action.type == 'stay' || action.type == 'build' || action.type == 'aim' && unit.actions[0].type != 'move'){
-                            distmap.realtocome[t][unit.d] -= -Number(unitDefenseStrength)
+                            
+                            for(var t = 0;t<MAX_TURNS;t++){
+                                distmap.realtocome[t][unit.d] -= -Number(unitDefenseStrength)
+                            }
                         }
                     }
 
                 } else {
-                    distmap.realtocome[t][unit.d] -= -Number(unitDefenseStrength)
+                    for(var t = 0;t<MAX_TURNS;t++){
+                        distmap.realtocome[t][unit.d] -= -Number(unitDefenseStrength)
+                    }
                 }
-            }
         }
 
         for(var movement_type in distmap.maps){
