@@ -60,6 +60,14 @@ class LayerPanel {
             updateButton: "layer-operation-update",
             select: "layer-operation-layer"
         })
+        this.copyToLayerDialogWindow = new CopyToLayerWindow({
+            element: "copy-to-layer-window",
+            canvas: t.canvas,
+            layerpanel: t,
+            updateButton: "copy-to-layer-update",
+            select: "copy-to-layer-layer",
+            tempTable: "copy-to-layer-table"
+        })
         
         
         this.counter = 0
@@ -764,11 +772,13 @@ class LayerPanel {
                 var operateFeatureToLayerButton = document.getElementById('operate-feature-to-layer')
                 operateFeatureToLayerButton.onclick = (e)=>{th.operationOnLayer(e);e.preventDefault()}
                 
+                var copyToLayerButton = document.getElementById('copy-to-layer')
+                copyToLayerButton.onclick = (e)=>{th.copyToLayerWindow(e);e.preventDefault()}
+                
                 
                 var addTimeVersionButton = document.getElementById('add-time-version')
                 addTimeVersionButton.onclick = (e)=>{th.startAddingShape("Polygon","time");e.preventDefault()}
                 addTimeVersionButton.style.border = this.addingAction == "time" ? "2px solid yellow" : ""
-                
                 
                 var addTimePropertyVersionButton = document.getElementById('add-time-property-version')
                 addTimePropertyVersionButton.onclick = (e)=>{th.startAddingTimeProperty();e.preventDefault()}
@@ -785,6 +795,13 @@ class LayerPanel {
     operationOnLayer(e){
         if(!this.addingDrawing)
             this.layerOperationDialogWindow.action(e,true,this.editing.selectedFeature)
+        else
+            alert("Stop drawing first!")
+    }
+    
+    copyToLayerWindow(e){
+        if(!this.addingDrawing)
+            this.copyToLayerDialogWindow.action(e,true,this.editing.selectedFeature)
         else
             alert("Stop drawing first!")
     }
@@ -1279,6 +1296,8 @@ class LayerPanel {
         }
     }
     mergeBoxes(bbox1,bbox2){
+        if((bbox1 == null || isNaN(bbox1.left)) && (bbox2 == null || isNaN(bbox2.left)))
+            return null
         if(bbox1 == null || isNaN(bbox1.left))
             return {
                 left: bbox2.left, 

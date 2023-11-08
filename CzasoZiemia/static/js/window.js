@@ -792,6 +792,80 @@ class LayerOperationDialogWindow extends DialogWindow {
         }
     }
 }
+
+
+class CopyToLayerWindow extends DialogWindow {
+    
+    constructor(configs){
+        super(configs)
+        
+        this.data = null
+        this.fileName = null
+        this.layerPanel = null
+        this.layerSelect = null
+        this.table = null
+        
+        this.feature = null
+        this.scheme = null
+        this.updateButton = null
+        
+        this.setOwnConfig(configs)
+    }
+    setOwnConfig(configs){
+        for(var option in configs){
+            let th = this
+            switch(option){
+                case "updateButton":
+                    this.updateButton = document.getElementById(configs[option])
+                    this.updateButton.onclick = (e)=>{
+                        if(th.tryUpdate())
+                            th.action(null, false)
+                    }
+                    break
+                case "layerpanel":
+                    this.layerPanel = configs[option]
+                    break
+                case "select":
+                    this.layerSelect = document.getElementById(configs[option])
+                    break
+                case "tempTable":
+                    this.tempTable = document.getElementById(configs[option])
+                    
+                    this.fromTime = new TimeControl("copy-to-layer-from-time",false,true)
+                    this.toTime = new TimeControl("copy-to-layer-to-time",false,true)
+                    break
+            }
+        }
+    }
+    tryUpdate(){
+        return false
+    }
+    action(e,display,feature){
+        super.action(e,display)
+        if(display){
+            this.feature = feature
+                        
+            this.layerSelect.innerHTML = '<option value="" name="none">-- NONE --</option>'
+            for(var name in this.layerPanel.layers.children){
+                var value = this.layerPanel.layers.children[name]
+                if(this.layerPanel.editing == value)
+                    continue
+                    
+                var select = document.createElement('option')
+                select.setAttribute('value',name)
+                select.setAttribute('name',name)
+                select.innerHTML = name
+                this.layerSelect.appendChild(select)
+            }
+        } else {
+                
+            this.feature = null
+        }
+    }
+}
+
+
+
 class CzDate{
     constructor(year,month,day,prevDate){
         if(String(year).slice(1).indexOf('-') > -1){
