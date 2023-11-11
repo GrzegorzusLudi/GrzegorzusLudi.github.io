@@ -3532,7 +3532,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
      }
     var interestingUnits = destinationmap[code] ? destinationmap[code].slice() : []
     
-    if(thinkmore){
+    if(true || thinkmore){
         interestingUnits = interestingUnits.filter(x=>x.unit.actions.length == 0 || (x.unit.actions[0].by == 'real' && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'))
     }
     
@@ -3597,20 +3597,31 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
         //    console.log(i,value,value2)
         //}
         //console.log('a',value2,value)
+        var evaluated = false
         if(value2 > value){
-            if(value2 > value){
-                break
-            }
-        }
-            
-        if(value2 < value){/*
             evaluate(dm)
             var values2ByTime = dm.distmaps[x+'#'+y].alliegance
 
             for(var t in values2ByTime){
                 values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
             }
-            value2 = values2ByTime.reduce((a,b) => a+b, 0)*/
+            value2 = values2ByTime.reduce((a,b) => a+b, 0)
+            evaluated = true
+            if(value2 > value){
+                break
+            }
+        }
+            
+        if(value2 < value){
+            if(!evaluated){
+                evaluate(dm)
+                var values2ByTime = dm.distmaps[x+'#'+y].alliegance
+
+                for(var t in values2ByTime){
+                    values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
+                }
+                value2 = values2ByTime.reduce((a,b) => a+b, 0)
+            }
             if(value2 < value){
                 unitaction.unit.actions = oldaction
                 break
