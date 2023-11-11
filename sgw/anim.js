@@ -253,7 +253,7 @@ function anim(){
 		throw e
 		return
 	}
-    setTimeout(()=>anim(),25)
+    setTimeout(()=>anim(),aistan == 1.3 ? 5 : 25)
 }
 function nastepnyoddzial(){
     while(uniwy<ruchwkolejcen && (unix[kolej][ruchwkolejce[uniwy]]==null || unix[kolej][ruchwkolejce[uniwy]].kosz || (unix[kolej][ruchwkolejce[uniwy]].ruchy<=0 && unix[kolej][ruchwkolejce[uniwy]].celd==-1))){
