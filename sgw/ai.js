@@ -679,7 +679,7 @@ function aimachine(ailevel){
                     var code = tested_target.hex.x+'#'+tested_target.hex.y
                     if(newDistmap.distmaps[code].alliegance[MAX_TURNS-1] != kolej){
                         tryMakeDestinationMap(newDistmap,kolej)
-                        tryPutUnderAttack(newDistmap,tested_target.hex.x,tested_target.hex.y,kolej,ct % 2 == 11)
+                        tryPutUnderAttack(newDistmap,tested_target.hex.x,tested_target.hex.y,kolej,ct % 2 == 1)
                     }
 
                     evaluate(newDistmap)
@@ -3603,7 +3603,14 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
             }
         }
             
-        if(value2 < value){
+        if(value2 < value){/*
+            evaluate(dm)
+            var values2ByTime = dm.distmaps[x+'#'+y].alliegance
+
+            for(var t in values2ByTime){
+                values2ByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
+            }
+            value2 = values2ByTime.reduce((a,b) => a+b, 0)*/
             if(value2 < value){
                 unitaction.unit.actions = oldaction
                 break
