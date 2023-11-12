@@ -1362,18 +1362,22 @@ function klik(){
 						}
 						changeState(5);
 						cityName.value = heks[zaznx][zazny].nazwa;
-					} else if(podswu==zaznu && podswd==kolej && heks[okox][okoy].unp>1){
+					} else if(podswu==zaznu && podswd==kolej){
 
-						//changing between units from one field
-						if(zaznx!=-1)
-							odzaznam(0);
-						heks[okox][okoy].tasuj();
-						odzaznaj();
-						aktdroguj(kolej,zaznu);
-						cursormove();
-						zaznu = podswu;
-						zaznx = -1;zazny = -1;
-						zaznaj(zaznu);
+						if(heks[okox][okoy].unp>1){
+							//changing between units from one field
+							if(zaznx!=-1)
+								odzaznam(0);
+							heks[okox][okoy].tasuj();
+							odzaznaj();
+							aktdroguj(kolej,zaznu);
+							cursormove();
+							zaznu = podswu;
+							zaznx = -1;zazny = -1;
+							zaznaj(zaznu);
+						} else {
+							divideUnit(zaznu,10)
+						}
 					} else if(podswd!=-1){
 						//unit another than selected
 

@@ -459,9 +459,9 @@ function aimachine(ailevel){
                         continue
                     }
                     
-                    heks[distmap.hex.heks.x][distmap.hex.heks.y].test = "X"
-                    if(dr != -1)
-                        heks[distmap.hex.heks.x][distmap.hex.heks.y].testColor = kolox(dr,0)
+                    //heks[distmap.hex.heks.x][distmap.hex.heks.y].test = "X"
+                    //if(dr != -1)
+                    //    heks[distmap.hex.heks.x][distmap.hex.heks.y].testColor = kolox(dr,0)
                     myHexes++
                     for(var movement_type in distmap.maps){
                         var dmap = distmap.maps[movement_type].hexmap.filter(x=>x.dist != -1)
@@ -3532,9 +3532,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
      }
     var interestingUnits = destinationmap[code] ? destinationmap[code].slice() : []
     
-    if(true || thinkmore){
-        interestingUnits = interestingUnits.filter(x=>x.unit.actions.length == 0 || (x.unit.actions[0].by == 'real' && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'))
-    }
+    interestingUnits = interestingUnits.filter(x=>x.unit.actions.length == 0 || (x.unit.actions[0].by == 'real' && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'))
     
     //console.log(interestingUnits.map(a => 1/Math.pow(2,a.action[0].rucho ? a.action[0].rucho.length : 0)*(a.action[0].il)))
     
