@@ -451,6 +451,7 @@
             </div>
             <div class="dialog-window-row" id="copy-to-layer-temp-controls">
             
+            
                 <table class="layer-property-table" id="copy-to-layer-table">
                     <tr>
                         <td>
@@ -458,6 +459,21 @@
                         </td>
                         <td>
                         <input type="text" class="table-input" id="copy-to-layer-id-input" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                        Operation:
+                        </td>
+                        <td>
+                            <select id="copy-to-layer-temp-operation-type">
+                                <option value="NEW_ALL_FEATURES" name="NEW_ALL_FEATURES">NEW_ALL_FEATURES</option>
+                                <option value="NEW" name="NEW">NEW</option>
+                                <option value="UNION_ALL_FEATURES" name="UNION_ALL_FEATURES">UNION_ALL_FEATURES</option>
+                                <option value="UNION" name="UNION">UNION</option>
+                                <option value="DIFF" name="DIFF">DIFF</option>
+                                <option value="INTERSECT" name="INTERSECT">INTERSECT</option>
+                            </select>
                         </td>
                     </tr>
                     <tr>

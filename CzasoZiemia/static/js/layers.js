@@ -66,7 +66,7 @@ class LayerPanel {
             layerpanel: t,
             updateButton: "copy-to-layer-update",
             select: "copy-to-layer-layer",
-            tempTable: "copy-to-layer-table"
+            tempControls: "copy-to-layer-temp-controls"
         })
         
         
@@ -957,17 +957,18 @@ class LayerPanel {
         switch(selectedFeature.type){
             case "TempFeature":
             case "Feature":
-                let index = this.editing.originaldata.features.indexOf(selectedFeature);
+                let index = this.editing.data.features.indexOf(selectedFeature)
+                let index2 = this.editing.originaldata.features.indexOf(selectedFeature)
                 if(index !== -1) {
-                    this.editing.originaldata.features.splice(index, 1);
+                    this.editing.data.features.splice(index, 1);
+                    this.editing.originaldata.features.splice(index2, 1);
                     this.editing.selectedFeature = null
-                } else {
-                    return
                 }
                 break
         }
 
-        this.updateLayer(this.editing,this.editing.originaldata,true)
+        this.updateLayer(this.editing,this.editing.data,true)
+        this.updateLayerView(this.layers)
     }
     
     detectUpdate(){
@@ -1350,10 +1351,21 @@ class LayerPanel {
         switch(data.type){
             case "FeatureCollection":
             case "Interval":
-                var collected = []
-                for(var i in data.features){
-                    collected = collected.concat(this.addTimeboxes(data.features[i]))
+                switch(data.type){
+                    case "FeatureCollection":
+                        var collected = []
+                        for(var i in data.features){
+                            collected = collected.concat(this.addTimeboxes(data.features[i]))
+                        }
+                    break
+                    case "Interval":
+                        var collected = []
+                        for(var i in data.children){
+                            collected = collected.concat(this.addTimeboxes(data.children[i]))
+                        }
+                    break
                 }
+                console.log(collected)
                 if(data.type == "FeatureCollection"){
                     var dividedByIds = {}
                     for(var i in collected){

@@ -881,6 +881,7 @@ function init(){
         editFeatureTimeToolbar: "edit-feature-time-buttons",
         timeControl: timeControl
     })
+    window.layerpanel = layerpanel
     if(false && detectWebGL()){
         canvas = new WebGLCanvas(canvasElement,stageDiv,layerpanel,canvasElement2,timeControl)
     } else {

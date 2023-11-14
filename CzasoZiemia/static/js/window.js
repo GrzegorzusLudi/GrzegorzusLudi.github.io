@@ -803,6 +803,8 @@ class CopyToLayerWindow extends DialogWindow {
         this.fileName = null
         this.layerPanel = null
         this.layerSelect = null
+        this.operationSelect = null
+        this.idInput = null
         this.table = null
         
         this.feature = null
@@ -828,17 +830,47 @@ class CopyToLayerWindow extends DialogWindow {
                 case "select":
                     this.layerSelect = document.getElementById(configs[option])
                     break
-                case "tempTable":
-                    this.tempTable = document.getElementById(configs[option])
+                case "tempControls":
+                    this.tempControls = document.getElementById(configs[option])
+                    this.operationSelect = document.getElementById('copy-to-layer-temp-operation-type')
+                    
+                    this.idInput = document.getElementById('copy-to-layer-id-input')
                     
                     this.fromTime = new TimeControl("copy-to-layer-from-time",false,true)
                     this.toTime = new TimeControl("copy-to-layer-to-time",false,true)
+                    this.afterLayerSelectChanged()
                     break
             }
         }
     }
     tryUpdate(){
-        return false
+        if(!(this.layerSelect.value in this.layerPanel.layers.children))
+            return false
+            
+        var layer = this.layerPanel.layers.children[this.layerSelect.value]
+        
+        var copiedGeometry = JSON.parse(JSON.stringify(this.feature.geometry))
+        var newFeature
+        if(this.layerPanel.isSpatiotemporal(layer)){
+            var id = this.idInput.value
+            var operation = this.operationSelect.value
+            var from_date = this.fromTime.getDate()
+            var to_date = this.toTime.getDate()
+            
+            newFeature = {type:"TempFeature",geometry:copiedGeometry,id:id,operation:operation,from:from_date,to:to_date,properties:{}}
+
+        } else {
+            
+            newFeature = {type:"Feature",geometry:copiedGeometry,properties:{}}
+        }
+        layer.originaldata.features.push(newFeature)
+        this.layerPanel.updateLayer(layer,layer.scheme,true)
+
+        
+        return true
+    }
+    afterLayerSelectChanged(e){
+        this.tempControls.style.display = this.layerSelect.value in this.layerPanel.layers.children && this.layerPanel.isSpatiotemporal(this.layerPanel.layers.children[this.layerSelect.value]) ? 'block' : 'none'
     }
     action(e,display,feature){
         super.action(e,display)
@@ -848,8 +880,8 @@ class CopyToLayerWindow extends DialogWindow {
             this.layerSelect.innerHTML = '<option value="" name="none">-- NONE --</option>'
             for(var name in this.layerPanel.layers.children){
                 var value = this.layerPanel.layers.children[name]
-                if(this.layerPanel.editing == value)
-                    continue
+                //if(this.layerPanel.editing == value)
+                //    continue
                     
                 var select = document.createElement('option')
                 select.setAttribute('value',name)
@@ -857,6 +889,8 @@ class CopyToLayerWindow extends DialogWindow {
                 select.innerHTML = name
                 this.layerSelect.appendChild(select)
             }
+            let t = this
+            this.layerSelect.onchange = e => {t.afterLayerSelectChanged(e)}
         } else {
                 
             this.feature = null
