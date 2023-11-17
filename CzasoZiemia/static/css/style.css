@@ -194,6 +194,9 @@ tr {
     color:#080
     
 }
+.preview-canvas { 
+    border:1px solid black;
+}
 div {
     /*border: 1px solid red; /*TEMPORARY
     */box-sizing: border-box;

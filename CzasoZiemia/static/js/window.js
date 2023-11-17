@@ -55,20 +55,27 @@ class LayerDialogWindow extends DialogWindow {
         this.typeSelect = null
         
     }    
-    setData(data, filename){
+    setData(data, filename, checkTempgeojson){
         
         this.fileName = filename
         this.data = data
         
-        var type = this.determineType(data, filename)
+        var type = this.determineType(data, filename, checkTempgeojson)
         
-        this.changeType(type, true)
+        if(checkTempgeojson)
+            this.changeType(type, true)
     }
-    determineType(data, filename){
+    determineType(data, filename, checkTempgeojson){
         var datatypes = {
             '.tempgeojson': 'tempgeojson',
             '.geojson': 'geojson',
             '.json': 'geojson',
+            ".png": 'image',
+            ".jpg": 'image',
+            ".jpeg": 'image',
+            ".gif": 'image',
+            ".tiff": 'image',
+            ".bmp": 'image',
         }
         var extension = filename.match('[.][A-z0-9]+$')
         extension = extension == undefined || extension.length == 0 ? '' : extension[0]
@@ -79,19 +86,19 @@ class LayerDialogWindow extends DialogWindow {
         for(var i in types){
             var type = types[i]
             
-            if(this.validateType(data, type)){
+            if(this.validateType(data, type, checkTempgeojson)){
                 return type
             }
         }
         return 'text'
     }
-    validateType(data, type){
+    validateType(data, type, checkTempgeojson){
         if(data === null)
             return type === "null"
             
         switch(type){
             case 'tempgeojson':
-                if(this.typeSelect.value != 'tempgeojson')
+                if(checkTempgeojson && this.typeSelect.value != 'tempgeojson')
                     return false
             case 'geojson':
                 if(this.predictGeoJson(data))
@@ -173,7 +180,7 @@ class ImportDialogWindow extends LayerDialogWindow {
         var th = this
         reader.addEventListener('load', (event) => {
             document.getElementById("layer-import-tab2").style.display = "block"
-            th.setData(event.target.result, file.name)
+            th.setData(event.target.result, file.name, true)
             th.addFileLoaded(th.type)
         });
         reader.readAsText(file);
@@ -242,11 +249,11 @@ class AddLayerDialogWindow extends LayerDialogWindow {
             case "tempgeojson":
             case "geojson":
                 var data = `{"type": "FeatureCollection","name": "`+this.layername()+`","features": []}`
-                this.setData(data, name)
+                this.setData(data, name, true)
                 break
             case "text":
                 var data = ""
-                this.setData(data, name)
+                this.setData(data, name, true)
                 break
         }
     }
@@ -268,6 +275,130 @@ class AddLayerDialogWindow extends LayerDialogWindow {
             this.layerpanel.addLayer([], layerName, this.typeSelect.value, this.data, bounds, pixelSize)
             this.action(null, false)
             this.canvas.draw()
+        }
+    }
+}
+
+/*
+ 
+    let newLayerWindow = new AddRasterMapDialogWindow({
+        button: "button-add-raster-map",
+        element: "raster-map-add",
+        canvas: canvas,
+        layerprojection: "raster-map-projection",
+        addlayer: "dialog-window-raster-map-add",
+        layerpanel: layerpanel,
+        layernameinput: "raster-map-add-layer-name",
+    })
+ */
+class AddRasterMapDialogWindow extends LayerDialogWindow {
+    constructor(configs){
+        super(configs)
+        this.typeHint = null
+        this.fileSelect = null
+        this.previewCanvas = null
+        this.previewCanvasCtx = null
+        this.image = null
+        this.setOwnConfig(configs)
+    }
+    setOwnConfig(configs){
+        let th = this
+        for(var option in configs){
+            switch(option){
+                case "layerprojection":
+                    this.projectionSelect = document.getElementById(configs[option])
+                    this.projectionSelect.addEventListener("change", (e)=>{/*th.changeType(e.target.value, false)*/})
+                    break;
+                case "layer-add-hint":
+                    this.typeHint = document.getElementById(configs[option])
+                    break;
+                case "addlayer":
+                    var addLayer = document.getElementById(configs[option])
+                    addLayer.addEventListener("click", (e)=>{th.addLayer(e)})
+                    break
+                case "layerpanel":
+                    this.layerpanel = configs[option]
+                    break
+                case "file":
+                    var fileSelect = document.getElementById(configs[option])
+                    fileSelect.addEventListener("change", (e)=>{th.loadFile(e)})
+                    break
+                case "preview":
+                    this.previewCanvas = document.getElementById(configs[option])
+                    console.log(this.previewCanvas)
+                    this.previewCanvasCtx = this.previewCanvas.getContext('2d')
+                    break
+            }
+        }
+    }
+    changeProjection(type, update){
+        this.projectionSelect.value = type
+    }
+    /*
+     * 
+     * 
+        var file = e.target.files[0]
+        const reader = new FileReader();
+        
+        var th = this
+        reader.addEventListener('load', (event) => {
+            document.getElementById("layer-import-tab2").style.display = "block"
+            th.setData(event.target.result, file.name, true)
+            th.addFileLoaded(th.type)
+        });
+        reader.readAsText(file);
+     */
+    loadFile(e){
+        var file = e.target.files[0]
+        const reader = new FileReader();
+        
+        var th = this
+        reader.addEventListener('load', (event) => {
+            //document.getElementById("layer-import-tab2").style.display = "block"
+            th.setData(event.target.result, file.name)
+            th.addFileLoaded(th.type)
+            th.loadImage(file)
+            th.showData()
+        });
+        reader.readAsText(file);
+    }
+    
+    addFileLoaded(){
+        document.getElementById("raster-map-add-file-loaded").style.display = "block"
+    }
+    removeFileLoaded(){
+        this.data = null
+        this.fileName = null
+        document.getElementById("raster-map-add-file-loaded").style.display = "none"
+    }
+    loadImage(file){
+        const blobURL = URL.createObjectURL(file);
+        const img     = new Image();
+        img.src       = blobURL;
+
+        img.onerror = function () {
+            URL.revokeObjectURL(this.src);
+            // Handle the failure properly
+            alert("Cannot load image");
+        };
+        let th = this
+        img.onload = function () {
+            th.image = img
+            th.showData()
+        };
+    }
+    showData(){
+        this.previewCanvasCtx.drawImage(this.image,0,0)
+    }
+    
+    addLayer(e){
+        if(this.data !== null){
+            var bounds = this.canvas.getDegreeBounds()
+            var pixelSize = this.canvas.camera.getPixelSize()
+            //this.layerpanel.addLayer([], this.fileName, this.typeSelect.value, this.data, bounds, pixelSize)
+            this.action(null, false)
+            this.canvas.draw()
+            this.removeFileLoaded()
         }
     }
 }
@@ -1007,6 +1138,7 @@ class TimeControl {
         
         this.date = new CzDate(2020,1,1)
         this.setDate(this.date)
+        this.lastDateYearChangeAmount = 1
     }
     setListener(listener){
         this.listener = listener
@@ -1028,9 +1160,18 @@ class TimeControl {
         this.inputs['days'].value = czdate.day
         
         this.date = czdate
+        
     }
     getDate(){
         return this.nullDate ? this.date.code() : ""
+    }
+    moveLastNYears(){
+        var actionName = this.lastDateYearChangeAmount + 'yback'
+        this.action(null,actionName)
+    }
+    moveNextNYears(){
+        var actionName = this.lastDateYearChangeAmount + 'yfor'
+        this.action(null,actionName)
     }
     action(e,action){
         switch(action){
@@ -1064,28 +1205,34 @@ class TimeControl {
             case '1yback':
                 this.date.addYear(-1)
                 this.setDate(this.date)
+                this.lastDateYearChangeAmount = 1
                 break
             case '1yfor':
                 this.date.addYear(1)
                 this.setDate(this.date)
+                this.lastDateYearChangeAmount = 1
                 break
                 
             case '10yback':
                 this.date.addYear(-10)
                 this.setDate(this.date)
+                this.lastDateYearChangeAmount = 10
                 break
             case '10yfor':
                 this.date.addYear(10)
                 this.setDate(this.date)
+                this.lastDateYearChangeAmount = 10
                 break
                 
             case '100yback':
                 this.date.addYear(-100)
                 this.setDate(this.date)
+                this.lastDateYearChangeAmount = 100
                 break
             case '100yfor':
                 this.date.addYear(100)
                 this.setDate(this.date)
+                this.lastDateYearChangeAmount = 100
                 break
         }
         
@@ -1094,7 +1241,7 @@ class TimeControl {
                 clearTimeout(this.listenerTimeout)
             }
             var th = this
-            this.listenerTimeout = setTimeout(() => {th.listener(this.getDate())},300)
+            this.listenerTimeout = setTimeout(() => {th.listener(this.getDate())},200)
         }
     }
     setNull(state){

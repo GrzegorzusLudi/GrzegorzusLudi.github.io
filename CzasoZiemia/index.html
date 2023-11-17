@@ -138,6 +138,34 @@
                 <input type="button" id="dialog-window-add-add" value="ADD TO STAGE" />
             </div>
         </div>
+        <div class="dialog-window" id="raster-map-add">
+            <div class="window-closer">X</div>
+            <h4>New raster map/schema</h4>
+            <div class="dialog-window-title">Choose projection:</div>
+            <div class="dialog-window-row">
+                File: <input type="file" id="add-raster-map-import-file" />
+            </div>
+            <div class="dialog-window-row">
+                Projection:
+                <select id="raster-map-projection">
+                    <option value="null" name="null">-- choose --</option>
+                    <option value="equirectangular" name="equirectangular">equirectangular</option>
+                </select>
+            
+            </div>
+            <div id="raster-map-add-file-loaded" class="dialog-window-row hidden">
+                <p class="little-padding">
+                    <b>File loaded :)</b>
+                </p>
+                <p class="little-padding">
+                    <canvas width="500" height="350" id="raster-map-preview" class="preview-canvas"></canvas>
+                </p>
+                <p class="little-padding">
+                
+                </p>
+                <input type="button" id="dialog-window-raster-map-add" value="ADD TO STAGE" />
+            </div>
+        </div>
         <div class="dialog-window" id="feature-properties">
             <div class="window-closer">X</div>
             <h4>Feature properties</h4>

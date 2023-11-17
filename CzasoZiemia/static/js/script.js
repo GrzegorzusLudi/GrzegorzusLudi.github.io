@@ -908,6 +908,16 @@ function init(){
         layerpanel: layerpanel,
         layernameinput: "layer-add-layer-name",
     })
+    let newRasterMapWindow = new AddRasterMapDialogWindow({
+        button: "button-add-raster-map",
+        element: "raster-map-add",
+        canvas: canvas,
+        layerprojection: "raster-map-projection",
+        addlayer: "dialog-window-raster-map-add",
+        layerpanel: layerpanel,
+        file: "add-raster-map-import-file",
+        preview: "raster-map-preview"
+    })
     /*
     let propertyWindow = new PropertyDialogWindow({
         element: "feature-properties",

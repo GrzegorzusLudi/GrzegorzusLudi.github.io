@@ -2187,9 +2187,16 @@ class LayerPanel {
     }
     
     notifyKeyPress(key){
+        console.log(key)
         switch(key){
             case "Backspace":
                 return this.notifyBackspace()
+                break
+            case "ArrowLeft":
+                return this.timeControl.moveLastNYears()
+                break
+            case "ArrowRight":
+                return this.timeControl.moveNextNYears()
                 break
         }
         return false
