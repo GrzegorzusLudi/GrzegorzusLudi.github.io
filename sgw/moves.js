@@ -764,7 +764,7 @@ function celuj(xhh,yhh,dru,uni,changeTheState){
 			wiazka[wiah.x] = wiah.y;
 		}
 		wiah = heks[unix[dru][uni].x][unix[dru][uni].y];
-		while((wiah.x!=unix[kolej][zaznu].sebix || wiah.y!=unix[kolej][zaznu].sebiy)){
+		while((wiah.x!=unix[kolej][zaznu].sebix || wiah.y!=unix[kolej][zaznu].sebiy) && wiah != null){
 			if(wiah.x==unix[kolej][zaznu].sebix){
 				if(wiah.y>=unix[kolej][zaznu].sebiy){
 					kiera = 0;
@@ -810,7 +810,6 @@ function celuj(xhh,yhh,dru,uni,changeTheState){
 			wiah.ktodro[uni] = wiah.drogn;
 			wiah.zmiana++;
 			wiah.drogn++;
-
 
 		}
 			unix[kolej][zaznu].rozb = 0;
@@ -1407,20 +1406,22 @@ function koloruj(){
 	var gor = false;
 	var gorn = false;
 	while(ag<this.unp){
-		if(unix[this.undr][this.unt[ag]].szyt=="g"){
-			gorn = true;
-		}
-		if(unix[this.undr][this.unt[ag]].szyt=="w"){
-			wod = true;
-		}
-		if(unix[this.undr][this.unt[ag]].szyt!="w" && unix[this.undr][this.unt[ag]].szyt!="l"){
-			lad = true;
-			if(unix[this.undr][this.unt[ag]].szyt!="c"){
-				gor = true;
+		if(this.unt[ag] in unix[this.undr]){
+			if(unix[this.undr][this.unt[ag]].szyt=="g"){
+				gorn = true;
 			}
-		}
-		if(unix[this.undr][this.unt[ag]].szy>=najj && unix[this.undr][this.unt[ag]].szyt!="l"){
-			najj = unix[this.undr][this.unt[ag]].szy;
+			if(unix[this.undr][this.unt[ag]].szyt=="w"){
+				wod = true;
+			}
+			if(unix[this.undr][this.unt[ag]].szyt!="w" && unix[this.undr][this.unt[ag]].szyt!="l"){
+				lad = true;
+				if(unix[this.undr][this.unt[ag]].szyt!="c"){
+					gor = true;
+				}
+			}
+			if(unix[this.undr][this.unt[ag]].szy>=najj && unix[this.undr][this.unt[ag]].szyt!="l"){
+				najj = unix[this.undr][this.unt[ag]].szy;
+			}
 		}
 		ag++;
 	}
@@ -1540,9 +1541,9 @@ function przenies(kierunek){
 
 			var numw = 0;
 			var nump = this.il;
-			var gv = 0;
-			while(gv<hexOfUnit(this).unp){
-				if(unix[kolej][hexOfUnit(this).unt[gv]].rodz==8 && unix[kolej][hexOfUnit(this).unt[gv]].rozb==0){
+			var gv = hexOfUnit(this).unp-1;
+			while(gv>=0){
+				if(szyt[unix[kolej][hexOfUnit(this).unt[gv]].rodz]=='w' && zast[unix[kolej][hexOfUnit(this).unt[gv]].rodz]=='x' && unix[kolej][hexOfUnit(this).unt[gv]].rozb==0){
 					while(nump>0 && unix[kolej][hexOfUnit(this).unt[gv]].il>0){
 						nump--;
 						numw++;
@@ -1552,13 +1553,13 @@ function przenies(kierunek){
 						hexOfUnit(this).usun(gv);
 					}
 				}
-				gv++;
+				gv--;
 			}
 			if(peh.unp>0 && peh.undr==kolej){
-				var gv = 0;
-				while(gv<peh.unp){
+				var gv = peh.unp-1;
+				while(gv>=0){
 					console.log(hexOfUnit(this).unt[gv])
-					if(unix[kolej][peh.unt[gv]].rodz==8 && hexOfUnit(this).unt[gv] != -1 && unix[kolej][hexOfUnit(this).unt[gv]].rozb==0){
+					if(szyt[unix[kolej][peh.unt[gv]].rodz]=='w' && zast[unix[kolej][peh.unt[gv]].rodz]=='x' && hexOfUnit(this).unt[gv] != -1 && unix[kolej][hexOfUnit(this).unt[gv]].rozb==0){
 						while(nump>0 && unix[kolej][peh.unt[gv]].il>0){
 							nump--;
 							numw++;
@@ -1568,7 +1569,7 @@ function przenies(kierunek){
 							peh.usun(gv);
 						}
 					}
-					gv++;
+					gv--;
 				}
 			}
 			if(nump>0 && numw>0){

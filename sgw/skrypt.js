@@ -1615,18 +1615,23 @@ function redraw(all){
 	}
 }
 function removeUnits(){
-	equaUnitDistribution = false;
+	equaUnitDistribution = false;/*
 	cc = 0;
 	while(cc<12){
 		oddid[cc] = 0;
 		cc++;
-	}
+	}*/
 	a = 0;
 	while(a<scian){
 		b = 0;
 		while(b<scian){
  			eu = 0;
  			while(eu<4){
+				if(heks[a][b].unt[eu] > -1){
+					unix[heks[a][b].undr][heks[a][b].unt[eu]].kosz = true
+					unix[heks[a][b].undr][heks[a][b].unt[eu]].x = -1
+					unix[heks[a][b].undr][heks[a][b].unt[eu]].y = -1
+				}
  				heks[a][b].unt[eu] = -1;
  				eu++;
 			}

@@ -156,6 +156,8 @@ function anim(){
 					a++;
 				}
 				changeState(2);
+				if(tx != -1)
+					odzaznaj();
 
 			}
 
