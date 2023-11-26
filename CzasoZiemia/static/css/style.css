@@ -80,6 +80,10 @@ p {
     width: 50vw;
     top: 10vh;
 }
+.dialog-window-wider {
+    left: 12.5vw;
+    width:75vw;
+}
 .shown-debug{
     display:block;
 }
@@ -94,6 +98,18 @@ p {
     text-align:left;
     font-size:12px;
     margin-top:10px;
+}
+
+.dialog-window-split-wider {
+    width:65%;
+    display: inline-block;
+    float:left;
+}
+.dialog-window-split-narrower {
+    width:28%;
+    display: inline-block;
+    float:left;
+    margin-left:3%;
 }
 #layer-import {
     /*height: 70vh;*/

@@ -138,32 +138,67 @@
                 <input type="button" id="dialog-window-add-add" value="ADD TO STAGE" />
             </div>
         </div>
-        <div class="dialog-window" id="raster-map-add">
+        <div class="dialog-window dialog-window-wider" id="raster-map-add">
             <div class="window-closer">X</div>
             <h4>New raster map/schema</h4>
-            <div class="dialog-window-title">Choose projection:</div>
-            <div class="dialog-window-row">
-                File: <input type="file" id="add-raster-map-import-file" />
-            </div>
-            <div class="dialog-window-row">
-                Projection:
-                <select id="raster-map-projection">
-                    <option value="null" name="null">-- choose --</option>
-                    <option value="equirectangular" name="equirectangular">equirectangular</option>
-                </select>
-            
-            </div>
-            <div id="raster-map-add-file-loaded" class="dialog-window-row hidden">
-                <p class="little-padding">
-                    <b>File loaded :)</b>
-                </p>
-                <p class="little-padding">
-                    <canvas width="500" height="350" id="raster-map-preview" class="preview-canvas"></canvas>
-                </p>
-                <p class="little-padding">
-                
-                </p>
-                <input type="button" id="dialog-window-raster-map-add" value="ADD TO STAGE" />
+            <div class="dialog-window-split-over">
+                <div class="dialog-window-split-wider">
+                    <div class="dialog-window-row">
+                        File: <input type="file" id="add-raster-map-import-file" />
+                    </div>
+                    <div class="dialog-window-row">
+                        Projection:
+                        <select id="raster-map-projection">
+                            <option value="null" name="null">-- choose --</option>
+                            <option value="equirectangular" name="equirectangular">equirectangular</option>
+                        </select>
+                    
+                    </div>
+                    <div id="raster-map-add-file-loaded" class="dialog-window-row hidden">
+                        <p class="little-padding">
+                            <canvas width="500" height="350" id="raster-map-preview" class="preview-canvas"></canvas>
+                        </p>
+                        <!--p class="little-padding">
+                        
+                        </p-->
+                    </div>
+                </div>
+                <div class="dialog-window-split-narrower">
+                    <div class="dialog-window-row">
+                        <table class="feature-table" id="projection-coord-table">
+                        <!--
+                            <tr>
+                            <td>
+                                c1:
+                            </td>
+                            <td>
+                                <input type="text" class="table-input" id="projection-coord-table-lon-1" />
+                            </td>
+                            <td>
+                                <input type="text" class="table-input" id="projection-coord-table-lat-1" />
+                            </td>
+                            <td>
+                                <input type="button" class="table-input" value="set" id="projection-coord-table-coord-edit-1" />
+                            </td>
+                            </tr>
+                            -->
+                        </table>
+                        
+                    
+                    </div>
+                    
+                    <div class="dialog-window-row">
+                        <!--
+                        <input type="button" value="ADD TO MAP" id="projection-coord-add-to-map-button" />
+                        -->
+                        <div id="dialog-window-errormessage"></div>
+                        <p class="little-padding">
+                        
+                        </p>
+                        <input type="button" id="dialog-window-raster-map-add" value="ADD TO STAGE" />
+                    </div>
+                    
+                </div>
             </div>
         </div>
         <div class="dialog-window" id="feature-properties">

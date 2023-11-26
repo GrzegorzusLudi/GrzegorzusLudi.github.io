@@ -338,9 +338,13 @@ class AbstractCanvas {
     }
     drawLayer(layer){
         if(layer.drawable && !layer.hidden){
-            this.drawLayerData(layer,layer.rendered)
-            if(layer == this.layerPanel.editing && this.layerPanel.isSpatiotemporal(layer)){
-                this.drawCurrentLayerData(layer,layer.data)
+            if(layer.type == 'raster'){
+                this.drawRasterLayerData(layer,layer.rendered.renderedImage)
+            } else {
+                this.drawLayerData(layer,layer.rendered)
+                if(layer == this.layerPanel.editing && this.layerPanel.isSpatiotemporal(layer)){
+                    this.drawCurrentLayerData(layer,layer.data)
+                }
             }
         }
         for(var i in layer.children){
@@ -377,6 +381,25 @@ class AbstractCanvas {
         }
         
         this.setStyle({lineWidth:1})
+    }
+    drawRasterLayerData(topLayer, data){
+        this.drawImageData(data,0,0)
+    }
+    prepareBitmap(canvasBitmap,mydata,cwidth,cheight,projectionFunction,projectionCoordData){
+        for(var i = 0;i<cwidth;i++){
+            for(var j = 0;j<cheight;j++){
+                if(i < canvasBitmap.width && j < canvasBitmap.height){
+                    var degX = this.camera.pixelsToDegrees(i,j,this.bounds,true)
+                    var degY = this.camera.pixelsToDegrees(i,j,this.bounds,false)
+                    var newX = Math.floor(projectionFunction(degX,degY,projectionCoordData,true))
+                    var newY = Math.floor(projectionFunction(degX,degY,projectionCoordData,false))
+                    canvasBitmap.data[(i + j * canvasBitmap.width) * 4]     = mydata.data[(newX + newY * mydata.width) * 4]
+                    canvasBitmap.data[(i + j * canvasBitmap.width) * 4 + 1] = mydata.data[(newX + newY * mydata.width) * 4 + 1]
+                    canvasBitmap.data[(i + j * canvasBitmap.width) * 4 + 2] = mydata.data[(newX + newY * mydata.width) * 4 + 2]
+                    canvasBitmap.data[(i + j * canvasBitmap.width) * 4 + 3] = mydata.data[(newX + newY * mydata.width) * 4 + 3]
+                }
+            }
+        }
     }
     drawLayerData(topLayer, data, points, degreeBounds){
         if(data instanceof Object && "bbox" in data && (
@@ -789,6 +812,10 @@ class TwoDCanvas extends AbstractCanvas {
             this.context.stroke()
         }
     }
+    drawImageData(data,x,y){
+        console.log(data)
+        this.context.putImageData(data,x,y)
+    }
 }
 class Controller {
     constructor(canvas){
@@ -916,7 +943,8 @@ function init(){
         addlayer: "dialog-window-raster-map-add",
         layerpanel: layerpanel,
         file: "add-raster-map-import-file",
-        preview: "raster-map-preview"
+        preview: "raster-map-preview",
+        table: "projection-coord-table",
     })
     /*
     let propertyWindow = new PropertyDialogWindow({

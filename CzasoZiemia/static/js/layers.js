@@ -193,6 +193,33 @@ class LayerPanel {
         this.render(realpath.children[testname], bounds, resolution)
         this.updateLayerView(path)
     }
+    addRasterMapLayer(path, name, type, initialData, bounds, resolution){
+        var realpath = this.layers
+        for(var i in path){
+            var pathpart = path[i]
+            realpath = realpath.children[pathpart]
+        }
+        
+        var testname = name
+        var number = 2
+        while(testname in realpath.children){
+            testname = name + " (" + number + ")"
+            number++
+        }
+        realpath.children[testname] = {
+            type: type,
+            name: testname,
+            originaldata: initialData,
+            data: initialData,
+            drawable: initialData,
+            hidden: false,
+            rendered: null,
+            edited: false,
+            number: this.counter++,
+        }
+        this.renderRasterMapLayer(realpath.children[testname], bounds, resolution)
+        this.updateLayerView(path)
+    }
     updateLayer(layer,od,keeporiginaldata){
         var newData,transformed
         
@@ -232,6 +259,10 @@ class LayerPanel {
     }
     
     render(layer, bounds, resolution){
+        
+        if(layer.type == 'raster'){
+            return this.renderRasterMapLayer(layer,bounds,resolution)
+        }
         layer.rendered = {}
         
         if(bounds != null)
@@ -251,6 +282,36 @@ class LayerPanel {
         }
     }
 
+    renderRasterMapLayer(layer, bounds, resolution){
+        
+        layer.rendered = null
+        
+        if(bounds != null)
+            this.lastbounds = bounds
+        else
+            bounds = this.lastbounds
+        if(resolution != null)
+            this.lastresolution = resolution
+        else
+            resolution = this.lastresolution
+            
+        var cwidth = this.canvas.canvasElement.width
+        var cheight = this.canvas.canvasElement.height
+            
+        var canvasBitmap = this.canvas.context.getImageData(0,0,cwidth,cheight)
+        
+        var tempCanvas = document.createElement('canvas');
+        var context = tempCanvas.getContext('2d');
+        var img = layer.originaldata.image
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        context.drawImage(img, 0, 0 );
+        var mydata = context.getImageData(0, 0, img.width, img.height)
+        
+        this.canvas.prepareBitmap(canvasBitmap,mydata,cwidth,cheight,layer.originaldata.projectionFunction,layer.originaldata.projectionCoordData)
+        
+        layer.rendered = {renderedImage:canvasBitmap,projection:layer.originaldata.projection,width:layer.originaldata.width,height:layer.originaldata.height}
+    }
     
     aggregateFeatures(featuresGroupedByIds,ungroupedFeatures, layer, bounds, resolution){
         var newRendered = []
@@ -601,9 +662,14 @@ class LayerPanel {
     }
     
     startEditingLayer(e,layerName,layerTreeElement){
-        this.editing = this.layers.children[layerName]
-        this.editing.edited = true
-        this.updateLayerView(this.layers)
+        var layer = this.layers.children[layerName]
+        if(layer.type == 'raster'){
+            
+        } else {
+            this.editing = this.layers.children[layerName]
+            this.editing.edited = true
+            this.updateLayerView(this.layers)
+        }
     }
     
     stopEditingLayer(e,layerName,layerTreeElement){

@@ -298,7 +298,35 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
         this.fileSelect = null
         this.previewCanvas = null
         this.previewCanvasCtx = null
+        this.previewCanvasBounds = null
         this.image = null
+        this.imageBounds = null
+        this.table = null
+        this.errorMessageSpan = null
+        
+        this.projections = {
+            '': {
+                pointsNeeded:0
+            },
+            'null': {
+                pointsNeeded:0
+            },
+            'equirectangular': {
+                pointsNeeded:2,
+                func:(lon,lat,projectionCoordData,pointX)=>{
+                    
+                    if(pointX){
+                        return (lon - projectionCoordData.point1_lon) / (projectionCoordData.point2_lon - projectionCoordData.point1_lon) * (projectionCoordData.point2_x - projectionCoordData.point1_x) + projectionCoordData.point1_x
+                    } else {
+                        return (lat - projectionCoordData.point1_lat) / (projectionCoordData.point2_lat - projectionCoordData.point1_lat) * (projectionCoordData.point2_y - projectionCoordData.point1_y) + projectionCoordData.point1_y
+                    }
+                }
+            }
+        }
+        this.adding = null
+        
+        this.projectionCoordTable = {}
+        
         this.setOwnConfig(configs)
     }
     setOwnConfig(configs){
@@ -307,7 +335,7 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
             switch(option){
                 case "layerprojection":
                     this.projectionSelect = document.getElementById(configs[option])
-                    this.projectionSelect.addEventListener("change", (e)=>{/*th.changeType(e.target.value, false)*/})
+                    this.projectionSelect.addEventListener("change", (e)=>{th.changeProjection(e.target.value, false)})
                     break;
                 case "layer-add-hint":
                     this.typeHint = document.getElementById(configs[option])
@@ -315,6 +343,7 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
                 case "addlayer":
                     var addLayer = document.getElementById(configs[option])
                     addLayer.addEventListener("click", (e)=>{th.addLayer(e)})
+                    this.errorMessageSpan = document.getElementById('dialog-window-errormessage')
                     break
                 case "layerpanel":
                     this.layerpanel = configs[option]
@@ -325,14 +354,100 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
                     break
                 case "preview":
                     this.previewCanvas = document.getElementById(configs[option])
-                    console.log(this.previewCanvas)
+                    this.previewCanvasBounds = [0,0,this.previewCanvas.width,this.previewCanvas.height]
                     this.previewCanvasCtx = this.previewCanvas.getContext('2d')
+                    
+                    this.previewCanvas.onmousedown = (e)=>{th.canvasMouseDown(e)}
+                    this.previewCanvas.onmousemove = (e)=>{th.canvasMouseMove(e)}
+                    break
+                case "table":
+                    this.table = document.getElementById(configs[option])
+                    this.changeProjection(this.table.value, false)
                     break
             }
         }
     }
+    getProjection(){
+        return this.projectionSelect.value
+    }
+    clickAddingPoint(num){
+        this.stopAdding()
+        if(this.adding == num){
+            this.adding = null
+        } else {
+            this.adding = num
+            this.projectionCoordTable[num].button.style.backgroundColor = '#ff0'
+            this.projectionCoordTable[num].pointX = null
+            this.projectionCoordTable[num].pointY = null
+        }
+    }
+    stopAdding(){
+        var pointsNeeded = this.projections[this.projectionSelect.value].pointsNeeded
+
+        for(var i = 1;i<=pointsNeeded;i++){
+            this.projectionCoordTable[i].button.style.backgroundColor = null
+        }
+    }
+    canvasMouseDown(e){
+        var bounds = this.previewCanvas.getBoundingClientRect()
+        
+        var x = e.clientX - bounds.left
+        var y = e.clientY - bounds.top
+        
+        if(this.adding != null){
+            this.projectionCoordTable[this.adding].pointX = x
+            this.projectionCoordTable[this.adding].pointY = y
+            this.stopAdding()
+            this.adding = null
+            this.showData()
+        }
+    }
+    canvasMouseMove(e){
+        
+    }
     changeProjection(type, update){
+        this.projectionCoordTable = []
         this.projectionSelect.value = type
+        
+        let t = this
+        
+        if(type == undefined)
+            return
+        
+        this.table.innerHTML = ''
+        var pointsNeeded = this.projections[type].pointsNeeded
+        
+        var innerHTML = ''
+        for(var i = 1;i<=pointsNeeded;i++){
+            var newRow = `
+                            <tr>
+                            <td>
+                                c${i}:
+                            </td>
+                            <td>
+                                <input type="text" class="table-input" id="projection-coord-table-lon-${i}" />
+                            </td>
+                            <td>
+                                <input type="text" class="table-input" id="projection-coord-table-lat-${i}" />
+                            </td>
+                            <td>
+                                <input type="button" class="table-input" value="set" id="projection-coord-table-coord-edit-${i}" />
+                            </td>
+                            </tr>`
+            innerHTML += newRow
+        }
+        this.table.innerHTML = innerHTML
+        for(var i = 1;i<=pointsNeeded;i++){
+            let j = i
+            this.projectionCoordTable[i] = {
+                lon:    document.getElementById('projection-coord-table-lon-'+i),
+                lat:    document.getElementById('projection-coord-table-lat-'+i),
+                button: document.getElementById('projection-coord-table-coord-edit-'+i),
+                pointX: null,
+                pointY: null
+            }
+            this.projectionCoordTable[i].button.onclick = e => {t.clickAddingPoint(j)}
+        }
     }
     /*
      * 
@@ -388,21 +503,67 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
         };
     }
     showData(){
-        this.previewCanvasCtx.drawImage(this.image,0,0)
+        this.previewCanvasCtx.clearRect(this.previewCanvasBounds[0],this.previewCanvasBounds[1],this.previewCanvasBounds[2],this.previewCanvasBounds[3])
+        this.previewCanvasCtx.drawImage(this.image,this.previewCanvasBounds[0],this.previewCanvasBounds[1],this.previewCanvasBounds[2],this.previewCanvasBounds[3])
+        
+        var pointsNeeded = this.projections[this.projectionSelect.value].pointsNeeded
+
+        for(var i = 1;i<=pointsNeeded;i++){
+            if(this.projectionCoordTable[i].pointX != null){
+                this.previewCanvasCtx.strokeStyle = '#000'
+                this.previewCanvasCtx.fillStyle = '#ff0'
+                
+                this.previewCanvasCtx.fillRect(this.projectionCoordTable[i].pointX-2.5,this.projectionCoordTable[i].pointY-2.5,5,5)
+                this.previewCanvasCtx.strokeRect(this.projectionCoordTable[i].pointX-2.5,this.projectionCoordTable[i].pointY-2.5,5,5)
+            }
+        }
     }
     
     addLayer(e){
+        this.errorMessageSpan.innerHTML = ''
+
         if(this.data !== null){
             var bounds = this.canvas.getDegreeBounds()
             var pixelSize = this.canvas.camera.getPixelSize()
-            //this.layerpanel.addLayer([], this.fileName, this.typeSelect.value, this.data, bounds, pixelSize)
+            
+            if(this.getProjection() == '' || this.getProjection() == 'null'){
+                this.errorMessageSpan.innerHTML = 'First, select the map projection!'
+                return
+            }
+            
+            var pointsNeeded = this.projections[this.projectionSelect.value].pointsNeeded
+
+            for(var i = 1;i<=pointsNeeded;i++){
+                if(!this.checkNumber(this.projectionCoordTable[i].pointX) || !this.checkNumber(this.projectionCoordTable[i].pointY) || !this.checkNumber(this.projectionCoordTable[i].lat.value) || !this.checkNumber(this.projectionCoordTable[i].lon.value)){
+                    this.errorMessageSpan.innerHTML = 'Set coordinates of all points!'
+
+                    return
+                }
+            }
+            var projectionCoordData = {
+                point1_lon : this.projectionCoordTable[1].lon.value,
+                point1_lat : this.projectionCoordTable[1].lat.value,
+                point2_lon : this.projectionCoordTable[2].lon.value,
+                point2_lat : this.projectionCoordTable[2].lat.value,
+                
+                point1_x : this.projectionCoordTable[1].pointX / this.previewCanvas.width * this.image.width,
+                point1_y : this.projectionCoordTable[1].pointY / this.previewCanvas.height * this.image.height,
+                point2_x : this.projectionCoordTable[2].pointX / this.previewCanvas.width * this.image.width,
+                point2_y : this.projectionCoordTable[2].pointY / this.previewCanvas.height * this.image.height
+            }
+            var data = {image:this.image,projection:this.getProjection(),projectionCoordData:projectionCoordData,projectionFunction:this.projections[this.getProjection()].func,width:this.image.width,height:this.image.height}
+            this.layerpanel.addRasterMapLayer([], this.fileName, 'raster', data, bounds, pixelSize)
+            
             this.action(null, false)
             this.canvas.draw()
             this.removeFileLoaded()
         }
     }
+    
+    checkNumber(number){
+        return Number.isFinite(Number(number)) && number !== '' && number != null
+    }
 }
-
 class YesNoDialogWindow extends DialogWindow {
     constructor(configs){
         super(configs)
