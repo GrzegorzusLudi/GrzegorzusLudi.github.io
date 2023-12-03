@@ -293,6 +293,8 @@ function aimachine(ailevel){
 				mistdefval[a] = [];
 				for(var b = 0;b<scian;b++){
 					if(heks[a][b].z>0){
+                        heks[a][b].test = ""
+                    
                         /*
                         heks[a][b].test = Number( 
                             ( heks[a][b].z/8 - heks[a][b].hutn - heks[a][b].prod ) / 15
@@ -324,71 +326,73 @@ function aimachine(ailevel){
 		break;
         case 1:
             //console.log(spojx,spojy)
-            while((heks[spojx][spojy].unp == 0 || heks[spojx][spojy].undr != kolej) && spojx < scian-1){
+            for(var k = 0;k<10;k++){
+                while((heks[spojx][spojy].unp == 0 || heks[spojx][spojy].undr != kolej) && spojx < scian-1){
+                    spojy++
+                    if(spojy >= scian){
+                        spojy = 0
+                        spojx++
+                    }
+                }
+                if(spojx >= scian){
+                    aistan = 1.1
+                    return
+                }
+                var hex = heks[spojx][spojy]
+                var nodziel = true
+                var uht = 10
+                while(nodziel && uht > 0){
+                    var rozboj = -1
+                    nodziel = false
+                    for(var i = 0;i<hex.unp && !nodziel;i++){
+                        var unit1 = unix[kolej][hex.unt[i]]
+                        //if(unit1 != undefined && unix[kolej][unit1.id].x != -1 && unit1.rodz == 8 && unit1.rozb > 0 && unit1.rozb < 20 && unit1.il > 20)
+                        //    unit1.rozb = 0
+                        if(unit1 != undefined && unix[kolej][unit1.id].x != -1 && unit1.rozb > 0){
+                            if(rozboj == -1)
+                                rozboj = unit1.id
+                            else
+                                unit1.rozb = 0
+                        }
+                            
+                        for(var j = 0;j<i;j++){
+                            var unit2 = unix[kolej][hex.unt[j]]
+                            if(unit1 == undefined || unit2 == undefined || hex.unt[i] == -1 || hex.unt[j] == -1 || unix[kolej][unit1.id].x == -1 || unix[kolej][unit2.id].x== -1)
+                                continue
+                                
+                            if(unit1.rodz == unit2.rodz && (unit1.rozb == 0 || unit2.il > 60) && (unit2.rozb == 0 || unit2.il > 60) && unit1.il < 99 && unit2.il < 99){
+                                zespoj(unit2.id,unit1.id,false)
+                                if(unit2.rozb + unit2.il > 99)
+                                    unit2.rozb = 99-unit2.il
+                                if(unit1.rozb + unit1.il > 99)
+                                    unit1.rozb = 99-unit1.il
+                                if(zaznu > -1){
+                                    odzaznaj(false)
+                                    zaznu = -1
+                                }
+                                nodziel = true
+                                break
+                            }
+                        }
+                    }
+                    uht--
+                }
+                for(var i = 0;i<hex.unp;i++){
+                    if(hex.unt[i] == -1)
+                        continue
+                    var unit = unix[kolej][hex.unt[i]]
+                    if(unit != undefined && pathIsThroughCrowdedCity(null,hex.x,hex.y,unit.ruchk,unit.rucho)){
+                        odceluj(hex.unt[i],kolej);
+                        if(unix[kolej][hex.unt[i]] != undefined && unix[kolej][hex.unt[i]].x != undefined && unix[kolej][hex.unt[i]].x != -1){
+                            oddroguj(hex.unt[i],kolej,false);
+                        }
+                    }
+                }
                 spojy++
                 if(spojy >= scian){
                     spojy = 0
                     spojx++
                 }
-            }
-            if(spojx >= scian){
-                aistan = 1.1
-                return
-            }
-            var hex = heks[spojx][spojy]
-            var nodziel = true
-            var uht = 10
-            while(nodziel && uht > 0){
-                var rozboj = -1
-                nodziel = false
-                for(var i = 0;i<hex.unp && !nodziel;i++){
-                    var unit1 = unix[kolej][hex.unt[i]]
-                    //if(unit1 != undefined && unix[kolej][unit1.id].x != -1 && unit1.rodz == 8 && unit1.rozb > 0 && unit1.rozb < 20 && unit1.il > 20)
-                    //    unit1.rozb = 0
-                    if(unit1 != undefined && unix[kolej][unit1.id].x != -1 && unit1.rozb > 0){
-                        if(rozboj == -1)
-                            rozboj = unit1.id
-                        else
-                            unit1.rozb = 0
-                    }
-                        
-                    for(var j = 0;j<i;j++){
-                        var unit2 = unix[kolej][hex.unt[j]]
-                        if(unit1 == undefined || unit2 == undefined || hex.unt[i] == -1 || hex.unt[j] == -1 || unix[kolej][unit1.id].x == -1 || unix[kolej][unit2.id].x== -1)
-                            continue
-                            
-                        if(unit1.rodz == unit2.rodz && (unit1.rozb == 0 || unit2.il > 60) && (unit2.rozb == 0 || unit2.il > 60) && unit1.il < 99 && unit2.il < 99){
-                            zespoj(unit2.id,unit1.id,false)
-                            if(unit2.rozb + unit2.il > 99)
-                                unit2.rozb = 99-unit2.il
-                            if(unit1.rozb + unit1.il > 99)
-                                unit1.rozb = 99-unit1.il
-                            if(zaznu > -1){
-                                odzaznaj(false)
-                                zaznu = -1
-                            }
-                            nodziel = true
-                            break
-                        }
-                    }
-                }
-                uht--
-            }
-            for(var i = 0;i<hex.unp;i++){
-                if(hex.unt[i] == -1)
-                    continue
-                var unit = unix[kolej][hex.unt[i]]
-                if(unit != undefined && pathIsThroughCrowdedCity(null,hex.x,hex.y,unit.ruchk,unit.rucho)){
-                    odceluj(hex.unt[i],kolej);
-                    if(unix[kolej][hex.unt[i]] != undefined && unix[kolej][hex.unt[i]].x != undefined && unix[kolej][hex.unt[i]].x != -1){
-                        oddroguj(hex.unt[i],kolej,false);
-                    }
-                }
-            }
-            spojy++
-            if(spojy >= scian){
-                spojy = 0
-                spojx++
             }
             
         break;
@@ -400,10 +404,14 @@ function aimachine(ailevel){
             
             legalActions(dfrou,simplifieddistmaps)
             ulepszyns = 8
-            aistan = 1.2
+            aistan = 1.15
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
             //generate_areas(mist,params)
+        break
+        case 1.15:
+            
+            aistan = 1.2
         break
         case 1.2:
             
@@ -432,7 +440,6 @@ function aimachine(ailevel){
             myHexes = 0
             for(var key in dfrou.distmaps){
                 var distmap = dfrou.distmaps[key]
-                heks[distmap.hex.heks.x][distmap.hex.heks.y].test = ""
                 
                 /*
                 if(distmap.hex.undr != kolej && (distmap.hex.units.length > 0 || distmap.hex.z > 0) && distmap.frontline){
@@ -581,7 +588,6 @@ function aimachine(ailevel){
             for(var i = 0;i<scian;i++){
                 for(var j = 0;j<scian;j++){
                     var gkk = heks[i][j]
-                    
                     if(inaccessible_path[i][j].inaccessible)
                         continue
                         
@@ -631,8 +637,8 @@ function aimachine(ailevel){
             
             //possible_targets = possible_targets2
             //possible_targets.sort((x,y)=>-(x.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0)-x.hex.il) * Math.pow(0.5,x.dist) + (y.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0) - y.hex.il) * Math.pow(0.5,y.dist))
-            possible_targets.sort((a,b)=>a.dist - b.dist)
-            //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
+            //possible_targets.sort((a,b)=>a.dist - b.dist)
+            possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(1.4,a.dist) + (b.hex.z+2)/Math.pow(1.4,b.dist)))
             //console.log(possible_targets)
             //possible_targets = possible_targets.filter(x => x.distanceMap)
             possible_targetsNew = possible_targets.filter(x=>x.hex.z > 0).slice(0,15)
@@ -870,6 +876,7 @@ function aimachine(ailevel){
             var użyteTratwy = {}
             
             completely_used_passages = {}
+            /*
             if(false){
             //var miejsca = Object.values(miejsca_do_wysłania_tratw).sort((a,b)=>a.turn/a.need-b.turn/b.need)
             var miejsca = Object.values(miejsca_do_wysłania_tratw).sort((a,b)=>a.turn-b.turn)
@@ -913,39 +920,39 @@ function aimachine(ailevel){
                         completely_used_passages[miejsce.x+'#'+miejsce.y] = true
                     }
                 //}
-                /*
-                for(var j in miejsce.possibleMoves){
-                    //if(totalTratwas > miejsce.need || miejsce.addedTratwas > 2){
-                    //    break
-                    //}
-                        
-                    var possibleMove = miejsce.possibleMoves[j]
-                    
-                    if(użyteTratwy[possibleMove.unit.id])
-                        continue
-                    tratwas_to_be_added.push(possibleMove)
-                    totalTratwas += possibleMove.action.il
-                }
-                if(totalTratwas > miejsce.need-20 && miejsce.need >= 10){
-                    for(var j in tratwas_to_be_added){
-                        if(miejsce.satisfied > miejsce.need || miejsce.addedTratwas > 2){
-                            break
-                        }
-                        var possibleMove = tratwas_to_be_added[j]
-                            
-                        miejsce.satisfied += possibleMove.action.il
-                        miejsce.addedTratwas++
-                        possibleMove.unit.actions = [possibleMove.action]
-                        
-                        użyteTratwy[possibleMove.unit.id] = true
-                    }
-                    
-                    if(miejsce.satisfied > miejsce.need){
-                        completely_used_passages[miejsce.x+'#'+miejsce.y] = true
-                    }
-                }*/
+                
+//                 for(var j in miejsce.possibleMoves){
+//                     //if(totalTratwas > miejsce.need || miejsce.addedTratwas > 2){
+//                     //    break
+//                     //}
+//                         
+//                     var possibleMove = miejsce.possibleMoves[j]
+//                     
+//                     if(użyteTratwy[possibleMove.unit.id])
+//                         continue
+//                     tratwas_to_be_added.push(possibleMove)
+//                     totalTratwas += possibleMove.action.il
+//                 }
+//                 if(totalTratwas > miejsce.need-20 && miejsce.need >= 10){
+//                     for(var j in tratwas_to_be_added){
+//                         if(miejsce.satisfied > miejsce.need || miejsce.addedTratwas > 2){
+//                             break
+//                         }
+//                         var possibleMove = tratwas_to_be_added[j]
+//                             
+//                         miejsce.satisfied += possibleMove.action.il
+//                         miejsce.addedTratwas++
+//                         possibleMove.unit.actions = [possibleMove.action]
+//                         
+//                         użyteTratwy[possibleMove.unit.id] = true
+//                     }
+//                     
+//                     if(miejsce.satisfied > miejsce.need){
+//                         completely_used_passages[miejsce.x+'#'+miejsce.y] = true
+//                     }
+//                 }
             }
-            }
+            }*/
             
             aistan = 1.36
         break
@@ -1437,8 +1444,8 @@ function aimachine(ailevel){
                             var hdru = hks.hex.d != undefined ? hks.hex.d : hks.hex.dru
                             
                             var kod = hks.hex.x+'#'+hks.hex.y
-                            if(kod in miejsca_do_wysłania_tratw && miejsca_do_wysłania_tratw[kod].needed > miejsca_do_wysłania_tratw[kod].satisfied)
-                                tratwa_needs += miejsca_do_wysłania_tratw[kod].needed - miejsca_do_wysłania_tratw[kod].satisfied
+                            //if(kod in miejsca_do_wysłania_tratw && miejsca_do_wysłania_tratw[kod].needed > miejsca_do_wysłania_tratw[kod].satisfied)
+                            //    tratwa_needs += miejsca_do_wysłania_tratw[kod].needed - miejsca_do_wysłania_tratw[kod].satisfied
                             
                             if(hdru != kolej){
                                 if(hks.z > 0){
@@ -1879,14 +1886,14 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                                 //if(wieltratw > 0){
                                 //    pluswater = 1
                                 //} else {
-                                    pluswater = 1
+                                    pluswater = 3
                                 //}
                             } else if(hexfrom.z != -1){
                                 //if(wieltratw > 0){
                                 //    pluswater = 1
                                 //} else {
                                 if(checkedGrid[hexto.x][hexto.y].embarking > 0){
-                                    pluswater = 1
+                                    pluswater = 3
                                     step += 5
                                 } else if(bridgemaking) {
                                     step *= 2
@@ -2583,7 +2590,7 @@ function embarkingPointFromLeadedPath(x,y,ruchk,rucho,stopBefore){
             if(he == undefined)
                 return undefined
         }
-        if(he.z < -1)
+        if(he.z == -1)
             return {x:he.x,y:he.y}
     }
     return null
@@ -2718,8 +2725,8 @@ function copyDistmaps(dm){
     for(var i in hexesWithUnits){
         var coord = hexesWithUnits[i]
         var bhex = board[coord[0]][coord[1]]
-        var code = coord[0]+'#'+coord[1]
-        newDistmaps[code] = {maps:{}, hex:bhex, potentialEmbarkings:Object.assign({}, dm.distmaps[code].potentialEmbarkings), potentialtocome:[], realtocome:[], defence:[],alliegance:allTurns(),fromenemy:allMoves(),fromally:allMoves(),frontline:false}
+        var code = coord[0]+'#'+coord[1]    //distmap:key, dru:unit.d, embarking:hexkey, unitIndex:j, turn:turn, move:move
+        newDistmaps[code] = {maps:{}, hex:bhex, potentialEmbarkings:dm.distmaps[code].potentialEmbarkings, potentialtocome:[], realtocome:[], defence:[],alliegance:allTurns(),fromenemy:allMoves(),fromally:allMoves(),frontline:false}
 
         for(var szybt in distmaps[code].maps){
             //var unit = bhex.units[j]
@@ -2758,7 +2765,7 @@ function distmapsFromUnit(){
         var coord = hexesWithUnits[i]
         var bhex = board[coord[0]][coord[1]]
         var code = coord[0]+'#'+coord[1]
-        distmaps[code] = {maps:{}, hex:bhex, potentialEmbarkings:{}, potentialtocome:[], realtocome:[], defence:[],alliegance:allTurns(),fromenemy:allMoves(),fromally:allMoves(),frontline:false}
+        distmaps[code] = {maps:{}, hex:bhex, potentialEmbarkings:[], potentialtocome:[], realtocome:[], defence:[],alliegance:allTurns(),fromenemy:allMoves(),fromally:allMoves(),frontline:false}
         for(var j in bhex.units){
             var unit = bhex.units[j]
             var szybt = szyt[unit.rodz]
@@ -2790,6 +2797,7 @@ function distmapsFromUnit(){
             distmaps[code].maps['g'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,true,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,true,false,false,board)}
         }*/
     }
+    /*
     for(var code in distmaps){
         var distmap = distmaps[code]
         if('n' in distmaps[code].maps && 'w' in distmaps[code].maps){
@@ -2814,7 +2822,7 @@ function distmapsFromUnit(){
                 //}
             }
         }
-    }
+    }*/
     
     return {distmaps:distmaps,score:null,model:model}
 }
@@ -2833,6 +2841,14 @@ function allColors(){
     
     for(var i = 0;i<12;i++){
         result[i] = 0
+    }
+    return result
+}
+function allColorTables(){
+    var result = {}
+    
+    for(var i = 0;i<12;i++){
+        result[i] = {}
     }
     return result
 }
@@ -2928,7 +2944,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
         for(var key in distmaps){
             //if(!(interestingAction == undefined || interestingAction.hex.x+'#'+interestingAction.hex.y == key))
             //    continue
-            if(alreadyAttacking != undefined && !(key in alreadyAttacking))
+            if(alreadyAttacking != undefined && !(key in alreadyAttacking) && key != destiny)
                 continue
                 
             var distmap = distmaps[key]
@@ -2937,6 +2953,66 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
             var peoplePotential = hex.z / ced[0]    //produkcja piechoty
             var productionPotential = Math.min(hex.z / ced[1], Math.min(hex.prod / ces[1], hex.hutn / ces[1]))    //produkcja czougów
             
+            var maxdef = Math.max(peoplePotential, productionPotential * 4)// + firepower
+        
+            for(var i in distmap.hex.units){
+                var unit = distmap.hex.units[i]
+                
+                  
+                if(alreadyAttacking != undefined && !(key in alreadyAttacking && alreadyAttacking[key].unit == unit))
+                    continue
+                  
+                var unitAttackStrength = evalUnitAttack(unit,undefined,dm.model)
+                var unitDefenseStrength = evalUnitDefense(unit)
+                
+                for(var t = 0;t<MAX_TURNS;t++){
+                    if(alreadyAttacking == undefined)
+                        distmap.defence[t][unit.d] -= -maxdef * t
+                        
+                    distmap.defence[t][unit.d] = Math.min(distmap.defence[t][unit.d], 99*8)
+                }
+                
+                if(unit.actions.length > 0){
+                    var movingDelay = 0
+                    for(var j in unit.actions){
+                        var action = unit.actions[j]
+                        if(action.type == 'move' && action.destination != undefined && zast[unit.rodz] == 'x'){
+                            if(szyt[unit.rodz] == 'w'){
+                                
+                            }
+                        }
+                        
+                        if(action.type == 'stay' || action.type == 'build' || (unit.actions[0].type != 'move' && unit.actions[0].il < unit.il-10)){
+                            if(alreadyAttacking != null)
+                                continue
+                            for(var t = 0;t<MAX_TURNS;t++){
+                                distmap.realtocome[t][unit.d] -= -Number(unitDefenseStrength)
+                            }
+                        }
+                    }
+                    
+                } else {
+                    if(alreadyAttacking != null)
+                        continue
+                    for(var t = 0;t<MAX_TURNS;t++){
+                        distmap.realtocome[t][unit.d] -= -Number(unitDefenseStrength)
+                    }
+                }
+                
+            }
+        }
+        for(var key in distmaps){
+            //if(!(interestingAction == undefined || interestingAction.hex.x+'#'+interestingAction.hex.y == key))
+            //    continue
+            if(alreadyAttacking != undefined && !(key in alreadyAttacking))
+                continue
+                
+            var distmap = distmaps[key]
+            
+            var hex = distmap.hex
+            var peoplePotential = hex.z / ced[0]    //produkcja piechoty
+            var productionPotential = Math.min(hex.z / ced[1], Math.min(hex.prod / ces[1], hex.hutn / ces[1]))    //produkcja czougów
+            /*
             var firepower = 0
             for(var i in distmap.hex.units){
                 var unit = distmap.hex.units[i]
@@ -2944,7 +3020,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                 if(unit.szyt == szyt[unit.rodz] && zas[unit.rodz] > 1){
                     firepower += at[unit.rodz] * unit.il * (zas[unit.rodz]-1)/2
                 }
-            }
+            }*/
             var maxdef = Math.max(peoplePotential, productionPotential * 4)// + firepower
         
             for(var i in distmap.hex.units){
@@ -2959,11 +3035,12 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                 var unitAttackStrength = evalUnitAttack(unit,undefined,dm.model)
                 var unitDefenseStrength = evalUnitDefense(unit)
                 
+                /*
                 for(var t = 0;t<MAX_TURNS;t++){
                     if(alreadyAttacking == undefined)
                         distmap.defence[t][unit.d] -= -maxdef * t
                     distmap.defence[t][unit.d] = Math.min(distmap.defence[t][unit.d], 99*8)
-                }
+                }*/
                 
                 if(unit.actions.length > 0){
                     var movingDelay = 0
@@ -3055,6 +3132,8 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                     var oldEmbarking = embarkingPossible
                                     var kod = embarkingOnPlace && lastField != null ? lastField.x+'#'+lastField.y : code2
                                     
+                                    var bestpoe = null
+                                    var best = null
                                     heks[lastField.x][lastField.y].test = 'X'
                                     if(kod in distmaps){
                                         for(var l in distmaps[kod].hex.units){
@@ -3064,6 +3143,17 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                                 embarkingPossible = Math.min(unit.il,embarkingPossible+unit2.il)
                                                 unitAttackStrength2 = origUnitAttackStrength2 * (1 - embarkingPossible/unit.il)
                                                 break
+                                            } else if(distmap.potentialEmbarkings.length > 0){
+                                                for(var s in distmap.potentialEmbarkings){
+                                                    var poe = distmap.potentialEmbarkings[s]
+                                                    bestpoe = poe
+                                                    if(poe.embarking == kod){
+                                                        best = poe.move[0].il
+                                                    }
+                                                }
+                                                if(best != null){
+                                                    embarkingPossible = Math.min(unit.il,embarkingPossible+best)
+                                                }
                                             }
                                         }
                                     }
@@ -3073,6 +3163,11 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                             embarkingDelay = Math.ceil(unit.il / heks[lastField.x][lastField.y].z * ced[8])
                                         } else {
                                             embarkingDelay = Infinity
+                                        }
+                                        if(bestpoe != null){
+                                            newEmbarkingDelay = Math.ceil(Math.min(k, bestpoe.turn))
+                                            if(newEmbarkingDelay < embarkingDelay)
+                                                embarkingDelay = newEmbarkingDelay
                                         }
                                     }
                                     //console.log(embarkingDelay)
@@ -3097,22 +3192,8 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                 distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength)
                             }
                         }
-                        if(action.type == 'stay' || action.type == 'build' || action.type == 'aim' && unit.actions[0].type != 'move'){                            
-                            if(alreadyAttacking != null)
-                                continue
-                            for(var t = 0;t<MAX_TURNS;t++){
-                                distmap.realtocome[t][unit.d] -= -Number(unitDefenseStrength)
-                            }
-                        }
                     }
 
-                } else {
-                    
-                    if(alreadyAttacking != null)
-                        continue
-                    for(var t = 0;t<MAX_TURNS;t++){
-                        distmap.realtocome[t][unit.d] -= -Number(unitDefenseStrength)
-                    }
                 }
             }
         }
@@ -3354,6 +3435,7 @@ function legalActions(dm,simplifieddistmaps){
         //if(distmap.hex.z <= 0 && distmap.hex.units.map(x=>evalUnitAttack(x)).reduce((a,b) => a+b,0) < 20)
         //    continue
        
+       distmap.potentialEmbarkings.length = 0
        for(var movement_type in distmap.maps){
             var map_of_movement_type = distmap.maps[movement_type].hexmap
 
@@ -3376,6 +3458,7 @@ function legalActions(dm,simplifieddistmaps){
             }
        }
     }
+    var possibleEmbarkings = allColorTables()
     for(var key in distmaps){
         var distmap = distmaps[key]
         //if(distmap.hex.z <= 0 && distmap.hex.units.map(x=>evalUnitAttack(x)).reduce((a,b) => a+b,0) < 20)
@@ -3412,7 +3495,7 @@ function legalActions(dm,simplifieddistmaps){
                         if(!(key in simplifieddistmaps && hexkey in simplifieddistmaps[key]))
                             continue
                         */
-                        if(hex.hex.units.length == 0 && hex.hex.z <= 0)
+                        if(hex.hex.units.length == 0 && hex.hex.z <= 0 && (hex.from == null || !(hex.hex.z == -1 && hex.from.z != -1)))
                             continue
                         
                         //if(!distmaps[hexkey].frontline)
@@ -3431,15 +3514,30 @@ function legalActions(dm,simplifieddistmaps){
                         
                         var ruchk = result.ruchk
                         var rucho = result.rucho
+                        
                         //console.log([hex.hex.x,hex.hex.y,ruchk,rucho])
                         
                         //if(movement_type != 'w' && movement_type != 'l' && hex.water > 0 && (unit.d != undefined && (unit.d == -1 || unit.d != kolej) || unit.dru != undefined && (unit.dru == -1 || unit.dru != kolej)))
                         //    continue
                         
+                        if(szyt[unit.rodz] != 'w' && szyt[unit.rodz] != 'l'){
+                            var embarking = embarkingPointFromLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
+                            if(embarking != null){
+                                var kod = embarking.x + '#' + embarking.y
+                                if(!(kod in possibleEmbarkings[unit.d]))
+                                    possibleEmbarkings[unit.d][kod] = []
+                                if(!possibleEmbarkings[unit.d][kod].includes(key)){
+                                    possibleEmbarkings[unit.d][kod].push(key)
+                                    heks[embarking.x][embarking.y].test = 'Q'
+                                }
+                            }
+                        }
+                        
+                        
                         if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,ruchk,rucho)){
-                            unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho),embarking:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
+                            unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho),embarking:embarking}])
                             if(unit.il > 10 && distmap.hex.units.length <= 3)
-                                unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho),embarking:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
+                                unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho),embarking:embarking}])
                             //if(unit.il > 20 && distmap.hex.units.length <= 2 && distmap.frontline)
                             //    unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:Math.floor(unit.il/2),from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
                             
@@ -3452,16 +3550,25 @@ function legalActions(dm,simplifieddistmaps){
                                         ruchk2 = ruchk.slice(0,ruchk.length - zas[unit.rodz] - 1)
                                         
                                         var lp = leadPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)
-                                        var embarking = leadPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)
+                                        var embarking2 = embarkingPointFromLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)
+                                        /*
+                                        if(embarking2 != null){
+                                            var kod = embarking2.x + '#' + embarking2.y
+                                            if(!(kod in possibleEmbarkings[unit.d]))
+                                                possibleEmbarkings[unit.d][kod] = {hexesfrom:[], barks:[]}
+                                            possibleEmbarkings[unit.d][kod].hexesfrom.push(key)
+                                        }*/
+                        
+
                                         var ds = distance(lp[0],lp[1],hex.hex.x,hex.hex.y)
                                         if(ds != undefined && ds <= zas[unit.rodz]){
                                             unit.legalActions.push([
-                                                {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking},  //not a real situation, but it solves some problem
+                                                {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2},  //not a real situation, but it solves some problem
                                                 {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,destination:[hex.hex.x,hex.hex.y],hex_x:hex.hex.x,hex_y:hex.hex.y},
                                             ])
                                             if(unit.il > 10 && distmap.hex.units.length <= 3)
                                                 unit.legalActions.push([
-                                                    {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking},
+                                                    {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2},
                                                     {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il-10,destination:[hex.hex.x,hex.hex.y]},
                                                 ])
                                         }
@@ -3514,6 +3621,90 @@ function legalActions(dm,simplifieddistmaps){
                 
             }
             
+        }
+    }
+    for(var key in distmaps){
+        var distmap = distmaps[key]
+        
+        if(!('x' in distmap.maps))
+            continue
+            
+        var map_of_movement_type = distmap.maps['x'].hexmap
+
+        var mapmapmap = mapmap(map_of_movement_type,'hex')
+        
+        var hexesToCheck = map_of_movement_type//.filter(x => x)
+        
+        var range_map_of_movement_type = distmap.maps['x'].rangemap
+
+
+        /*
+        var unitDistDict = {}
+        for(var i in map_of_movement_type){
+            var elem = map_of_movement_type[i]
+            unitDistDict[elem.hex.x+'#'+elem.hex.y] = elem
+        }*/
+        for(var j in distmap.hex.units){
+            var unit = distmap.hex.units[j]
+            
+            if(szyt[unit.rodz] != 'w' || zast[unit.rodz] != 'x'/* || unit.actions.length > 0*/)
+                continue
+            //if(unit.rucho.length > 0)
+            //    continue
+                
+            for(var i in hexesToCheck){
+                var hex = hexesToCheck[i]
+                
+                //if(hex.hex.z > 0 || hex.hex.units.length > 0){
+                    var hexkey = hex.hex.x + '#' + hex.hex.y
+                    /*==
+                    if(!(key in simplifieddistmaps && hexkey in simplifieddistmaps[key]))
+                        continue
+                    */
+                    //if(hex.hex.units.length == 0 && hex.hex.z <= 0)
+                    //    continue
+                    
+                    //if(!distmaps[hexkey].frontline)
+                    //    continue
+                    
+                    var potential = 0
+                    //for(var t = 0;t<MAX_TURNS;t++){
+                        //if(szy[unit.rodz] * t + (zas[unit.rodz] <= 1 || t == 0 ? 0 : zas[unit.rodz]) >= hex.dist){
+                            //if(hexkey in distmaps && ( distmaps[hexkey].frontline || distmaps[hexkey].units.length == 0 ||  )){
+                                //unit.legalActions.push({type:'move',rucho:rucho,ruchk:ruchk,destination:leadPath(hex.x,hex.y,ruchk,rucho)})
+                    
+                    if(hexkey in possibleEmbarkings[unit.d]){
+                        
+                        var result = getRuch(mapmapmap,hex)
+                        
+                        var ruchk = result.ruchk
+                        var rucho = result.rucho
+                        
+                        var il = distmap.hex.units.length <= 1 ? unit.il-10 : unit.il
+                        if(il < 10)
+                            continue
+                        var move = [{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho),embarking:null}]
+                        
+                        var turn = rucho.length / szy[unit.rodz]
+                        
+                        var pemb = {distmap:key, dru:unit.d, embarking:hexkey, unitIndex:j, turn:turn, move:move}
+                        
+                        for(var ix in possibleEmbarkings[unit.d][hexkey]){
+                            distmaps[possibleEmbarkings[unit.d][hexkey][ix]].potentialEmbarkings.push(pemb)
+                            /*
+                            for(var k in distmap.hex.units){
+                                console.log(distmap.hex.units[k])
+                            }*/
+                        }
+                        //unit.legalActions.push(move)
+                        //console.log([hex.hex.x,hex.hex.y,ruchk,rucho])
+                        
+                        //if(movement_type != 'w' && movement_type != 'l' && hex.water > 0 && (unit.d != undefined && (unit.d == -1 || unit.d != kolej) || unit.dru != undefined && (unit.dru == -1 || unit.dru != kolej)))
+                        //    continue
+                        
+                    }
+                //}
+            }
         }
     }
 }
@@ -3624,7 +3815,7 @@ function tryMakeDestinationMap(dm,color){
                     if(!(dest_code in destinationmap))
                         destinationmap[dest_code] = []
                         
-                    destinationmap[dest_code].push({unit:unit, action:bestAction[dest_code], hex:distmap.hex})
+                    destinationmap[dest_code].push({unit:unit, action:bestAction[dest_code], hex:distmap.hex, potentialEmbarkings: distmap.potentialEmbarkings})
                 }
             }
         }
@@ -3744,8 +3935,8 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
     
     //interestingUnits = interestingUnits1.concat(interestingUnits2)
     
-    interestingUnits.sort((a,b) => (-1/Math.pow(a.action[0].rucho ? a.action[0].rucho.length : 0,1)*(a.action[0].il) + 
-                                     1/Math.pow(b.action[0].rucho ? b.action[0].rucho.length : 0,1)*(b.action[0].il)))
+    interestingUnits.sort((a,b) => (-1/Math.pow(a.action[0].rucho ? a.action[0].rucho.length : scian*scian,1)*(a.action[0].il) + 
+                                     1/Math.pow(b.action[0].rucho ? b.action[0].rucho.length : scian*scian,1)*(b.action[0].il)))
 
 
     //interestingUnits = interestingUnits.slice(0,10)
@@ -3773,16 +3964,37 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
     for(var i in interestingUnits){
         var unitaction = interestingUnits[i]
         
+        //console.log(unitaction.potentialEmbarkings)
+        
         if((unitaction.unit.actions.length > 0 && unitaction.unit.actions[0].by == 'speculation2' && (unitaction.unit.actions[0].type == 'aim' || unitaction.unit.actions[0].type == 'move')))
             continue
             
+        //console.log(unitaction.potentialEmbarkings)
         var oldaction = unitaction.unit.actions
+        var bark = null
+        var oldEmbarkingAction = null
         
         unitaction.unit.actions = unitaction.action
+        
+        if(unitaction.action[0].embarking != null){
+            var embarkingcode = unitaction.action[0].embarking.x + '#' + unitaction.action[0].embarking.y
+            
+            var goodEmbarkings = unitaction.potentialEmbarkings.filter(x=>x.embarking == embarkingcode)
+            var betterEmbarkings = goodEmbarkings.filter(x => /*x.move[0].il > 10 && x.move[0].il >= unitaction.unit.il - 10 && */x.distmap in dm.distmaps && dm.distmaps[x.distmap].hex.units[x.unitIndex].actions.length == 0).sort((a,b)=>a.turn-b.turn)
+
+            if(betterEmbarkings.length > 0){
+                bark = dm.distmaps[betterEmbarkings[0].distmap].hex.units[betterEmbarkings[0].unitIndex]
+                oldEmbarkingAction = bark.actions
+                bark.actions = betterEmbarkings[0].move
+                
+                oldActionArrayUnits.push(bark)
+                oldActionArrayActions.push(oldEmbarkingAction)
+            }
+        }
         //alreadyAttacking[unitaction.hex.x+'#'+unitaction.hex.y] = true
         var alreadyAttacking = {}
         alreadyAttacking[unitaction.hex.x+'#'+unitaction.hex.y] = unitaction
-        evaluate(dm,null,alreadyAttacking,x+'#'+y)
+        evaluate(dm)//,null,alreadyAttacking,x+'#'+y)
         var values2ByTime = dm.distmaps[x+'#'+y].alliegance
 
         for(var t in values2ByTime){
@@ -3821,6 +4033,8 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
             }
             if(value2 < value){
                 unitaction.unit.actions = oldaction
+                if(bark != null)
+                    bark.actions = oldEmbarkingAction
                 break
             }
             
@@ -3840,6 +4054,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore){
         for(var i in oldActionArrayUnits){
             oldActionArrayUnits[i].actions = oldActionArrayActions[i]
         }
+        evaluate(dm)
         return []
     }
         
@@ -3901,9 +4116,15 @@ function actionsToReal(dm,color,completely_used_passages){
                         if(unid == -1)
                             continue
                     }
+                                        //var pemb = {distmap:key, dru:unit.d, embarking:hexkey, unitIndex:j, turn:turn, move:move}
+
                     var dodajTratwe = putPath(unid,properAction.destination[0],properAction.destination[1],undefined,completely_used_passages)
-                    if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l')
-                        tratwa += properAction.il
+                    if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l'){
+                        if(distmap.potentialEmbarkings.filter(x=>x.embarking == properAction.embarking.x+'#'+properAction.embarking.y &&  x.move[0].il > 10 && x.move[0].il > unit.il - 10 && x.distmap in dm.distmaps).length == 0)
+                            tratwa -= -properAction.il
+                        else
+                            console.log('bbbbbbb')
+                    }
                     unix[kolej][unid].rozb = 0
 
                 } else if(unit.actions.length == 1 && unit.actions[0].type == 'aim'){
@@ -3953,8 +4174,10 @@ function actionsToReal(dm,color,completely_used_passages){
                         stopBefore = zas[unit.rodz]
                         
                     var dodajTratwe = putPath(unid,action1.destination[0],action1.destination[1],stopBefore,completely_used_passages)
-                    if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l')
-                        tratwa += action1.il
+                    
+
+                    if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l'/* && !(action1.embarking != null && action1.embarking.x+'#'+action1.embarking.y in distmap.potentialEmbarkings)*/)
+                        tratwa -= -action1.il
                         
                     //{type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,destination:[distmap.hex.x,distmap.hex.y]},
 
@@ -3986,6 +4209,8 @@ function actionsToReal(dm,color,completely_used_passages){
                 changeState(2)
             }
             if(tratwa > 0){
+                //function dodai(unx,uny,ilo,typ,rosn){
+                console.log('tratwa:',tratwa)
                 dodai(distmap.hex.x,distmap.hex.y,0,8,Math.min(Math.floor(tratwa),99))
             }
         }
