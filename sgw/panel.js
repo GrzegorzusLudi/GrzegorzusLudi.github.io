@@ -456,6 +456,7 @@ function pokap(){
 	redrawCanvas(klepsydraPreviewCanvasCtx);
 	teamName.value = defdr[kolej];
 	teamName2.innerHTML = defdr[kolej];
+	teamName4.innerHTML = defdr[kolej];
 	if(dru[kolej]==1)
 		endturn.disabled = false;
 	else
