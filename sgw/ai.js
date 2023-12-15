@@ -3271,6 +3271,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                                             distmaps[code2].realtocome[t][unit2.d] -= unitAttackStrength2
                                                             if(distmaps[code2].realtocome[t][unit2.d] < 0)
                                                                 distmaps[code2].realtocome[t][unit2.d] = 0
+                                                                
                                                         }
                                                     }
                                                     //}
