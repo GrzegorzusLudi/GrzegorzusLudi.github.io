@@ -918,6 +918,7 @@ function droguj(xhh,yhh,uni){
 		hph = tph;
 		tph = tph.border[kier];
 
+		console.log([tph.x,tph.y,kier])
 		tph.drogp[tph.drogn] = (kier+3)%6;
 		dloh++;
 		unix[kolej][uni].ruchh++;
@@ -2099,6 +2100,12 @@ function zespoj(uni,unic,changeTheState){
 		}
 	}
 	unichex.zmiana++;
+	if(unix[kolej][unic].il + unix[kolej][unic].rozb > 99){
+		unix[kolej][unic].rozb = 99 - unix[kolej][unic].il
+	}
+	if(unix[kolej][uni].il + unix[kolej][uni].rozb > 99){
+		unix[kolej][uni].rozb = 99 - unix[kolej][uni].il
+	}
 	unix[kolej][uni].celd = -1;
 	unix[kolej][uni].celu = -1;
 	unix[kolej][uni].celk = -1;
