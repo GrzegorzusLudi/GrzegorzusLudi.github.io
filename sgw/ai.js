@@ -3267,11 +3267,11 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                                     var evaldefense = evalUnitDefense(unit2)
                                                     //for(var l in distmaps[code2].realtocome){
                                                     for(var t = turn;t<MAX_TURNS;t++){
-                                                        //if(t >= turn){
+                                                        if(t < MAX_TURNS){
                                                             distmaps[code2].realtocome[t][unit2.d] -= unitAttackStrength2
                                                             if(distmaps[code2].realtocome[t][unit2.d] < 0)
                                                                 distmaps[code2].realtocome[t][unit2.d] = 0
-                                                        //}
+                                                        }
                                                     }
                                                     //}
                                                     
