@@ -364,7 +364,7 @@ function aimachine(ailevel){
                             if(unit1 == undefined || unit2 == undefined || hex.unt[i] == -1 || hex.unt[j] == -1 || unix[kolej][unit1.id].x == -1 || unix[kolej][unit2.id].x== -1)
                                 continue
                                 
-                            if(unit1.rodz == unit2.rodz && (unit1.rozb == 0 || unit2.il > 60) && (unit2.rozb == 0 || unit2.il > 60) && unit1.il < 99 && unit2.il < 99){
+                            if(unit1.rodz == unit2.rodz/* && (unit1.rozb == 0 || unit2.il > 60) && (unit2.rozb == 0 || unit2.il > 60)*/ && unit1.il < 99 && unit2.il < 99){
                                 zespoj(unit2.id,unit1.id,false)
                                 if(unit2.rozb + unit2.il > 99)
                                     unit2.rozb = 99-unit2.il
@@ -387,9 +387,9 @@ function aimachine(ailevel){
                     var unit = unix[kolej][hex.unt[i]]
                     if(unit != undefined && pathIsThroughCrowdedCity(null,hex.x,hex.y,unit.ruchk,unit.rucho)){
                         odceluj(hex.unt[i],kolej);
-                        if(unix[kolej][hex.unt[i]] != undefined && unix[kolej][hex.unt[i]].x != undefined && unix[kolej][hex.unt[i]].x != -1){
+                        //if(unix[kolej][hex.unt[i]] != undefined && unix[kolej][hex.unt[i]].x != undefined && unix[kolej][hex.unt[i]].x != -1){
                             oddroguj(hex.unt[i],kolej,false);
-                        }
+                        //}
                     }
                 }
                 spojy++
@@ -407,7 +407,7 @@ function aimachine(ailevel){
             evaluate(dfrou,2)
             
             legalActions(dfrou,simplifieddistmaps)
-            ulepszyns = 8
+            ulepszyns = 4
             aistan = 1.15
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -687,7 +687,7 @@ function aimachine(ailevel){
                 } else {
                     dfrou = dbetter
                     
-                    aistan = 1.35
+                    aistan = 1.34
                 }
             } else {
                 for(var ct = 0;ct<12;ct++){
@@ -735,6 +735,15 @@ function aimachine(ailevel){
                         dbetter = newDistmap
                     var maxBetter = 0
                     var minBetter = 0
+                    
+                    var score_1 = 0
+                    var score_2 = 0
+                    
+                    for(var t in newDistmap.score){
+                        score_1 += newDistmap.score[t][kolej] / Math.pow(2.1,t)
+                        score_2 += dbetter.score[t][kolej] / Math.pow(2.1,t)
+                    }
+                    
                     /*for(var t = 0;t<MAX_TURNS;t++){
                         if(Math.max(0,-score2[t][kolej] + score1[t][kolej]) > maxBetter){
                             maxBetter = Math.max(0,score2[t][kolej] - score1[t][kolej])
@@ -743,12 +752,17 @@ function aimachine(ailevel){
                             minBetter = Math.max(0,-score2[t][kolej] + score1[t][kolej])
                         }*/
                         
+                    /*
                     if(dbetter == null || score1[checkedTurn][kolej] > score2[checkedTurn][kolej] || score1[checkedTurn][kolej] >= score2[checkedTurn][kolej]*0.8 && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej]){
                         dbetter = newDistmap
                         if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej])
                             overall_score_changed = true
+                    }*/
+                    if(score_1 > score_2){
+                        dbetter = newDistmap
+                        if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej])
+                            overall_score_changed = true
                     }
-                        
                     //}
                     //if(maxBetter > minBetter)
                     //    dbetter = newDistmap
@@ -776,6 +790,91 @@ function aimachine(ailevel){
                 }
             }
         break
+        case 1.34:
+            var cele_tratw = {}
+            
+            legalActions(dfrou,simplifieddistmaps)
+
+            for(var key in dfrou.distmaps){
+                var distmap = dfrou.distmaps[key]
+                
+                if(distmap.hex.dru != kolej)
+                    continue
+                    
+                /*
+                if(distmap.hex.undr != kolej && (distmap.hex.units.length > 0 || distmap.hex.z > 0) && distmap.frontline){
+                    possible_targets.push(distmap.hex)
+                }*/
+                for(var i in distmap.hex.units){
+                    var unit = distmap.hex.units[i]
+                    
+                    if(unit.szyt == 'w' && zast[unit.rodz] == 'x'){
+                        var code = distmap.hex.x+'#'+distmap.hex.y
+                        var il = unit.il
+                        if(unit.actions.length > 0 && unit.actions[0].type == 'move'){
+                            code = unit.actions[0].destination[0]+'#'+unit.actions[0].destination[1]
+                            il = unit.actions[0].il
+                        }
+                        if(!(code in cele_tratw))
+                            cele_tratw[code] = 0
+                        cele_tratw[code] -= -il
+                    }
+                }
+                
+            }
+            
+            for(var key in dfrou.distmaps){
+                
+                var distmap = dfrou.distmaps[key]
+                
+                if(distmap.hex.dru != kolej)
+                    continue
+                    
+                for(var i in distmap.hex.units){
+                    var unit = distmap.hex.units[i]
+                    
+                    if(zast[unit.rodz] != 'x'){
+                        var code = distmap.hex.x+'#'+distmap.hex.y
+                        var il = unit.il
+                        if(unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].embarking != null){
+                            var embark = unit.actions[0].embarking.x + '#' + unit.actions[0].embarking.y
+                            if(embark in cele_tratw){
+                                cele_tratw[embark] -= unit.actions[0].il
+                            }
+                        }
+                    }
+                }
+            }
+            for(var key in dfrou.distmaps){
+                
+                var distmap = dfrou.distmaps[key]
+                
+                if(distmap.hex.dru != kolej)
+                    continue
+                var embarkingTargets = getEmbarkingTargets(dfrou,kolej)
+                    
+                for(var i in distmap.hex.units){
+                    var unit = distmap.hex.units[i]
+                    
+                    if(zast[unit.rodz] != 'x'){
+                        var code = distmap.hex.x+'#'+distmap.hex.y
+                        var il = unit.il
+                        if(unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].embarking != null){
+                            var embark = unit.actions[0].embarking.x + '#' + unit.actions[0].embarking.y
+                            if(!(embark in cele_tratw) || cele_tratw[embark] > 9){
+                                var unitaction = {unit:unit, action:unit.actions, hex:distmap.hex, potentialEmbarkings: distmap.potentialEmbarkings}
+                                //console.log(distmap.potentialEmbarkings)
+
+                                addEmbarking(unitaction,embarkingTargets,dfrou.distmaps,key,dfrou,[],[],[])
+                                if(embark in cele_tratw)
+                                    cele_tratw[embark] -= unit.actions[0].il
+                            }
+                        }
+                    }
+                }
+            }
+            
+            aistan = 1.35
         case 1.35:
             pola_z_tratwami = {}
             
@@ -836,7 +935,7 @@ function aimachine(ailevel){
             for(var i in pola_z_tratwami){
                 var pole_z_tratwami = pola_z_tratwami[i]
                 
-                var map = pole_z_tratwami.maps['w'].hexmap
+                var map = pole_z_tratwami.maps['x'].hexmap
                 var mapmapmap = mapmap(map,'hex')
                 
                 for(var j in pole_z_tratwami.hex.units){
@@ -1434,13 +1533,16 @@ function aimachine(ailevel){
                     for(var i = 0;i<mist[kolejność_miast[miastkol]].unp;i++){
                         if(unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].ruchy == 0 && unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].celu == -1){
                             okej = i
+                        }
+                        if(unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].rozb > 0){
+                            okej = -1
                             break
                         }
                     }
                     //console.log(okej)
                     if(okej == -1){
                         miastkol++
-                        return
+                        continue
                     } else if(unix[kolej][mist[kolejność_miast[miastkol]].unt[mist[kolejność_miast[miastkol]].unp-1]].ruchy != 0 || unix[kolej][mist[kolejność_miast[miastkol]].unt[mist[kolejność_miast[miastkol]].unp-1]].celu != -1) {
                         mist[kolejność_miast[miastkol]].tasuj()
                     }
@@ -1462,6 +1564,7 @@ function aimachine(ailevel){
                         
                         var lad_needsByTurn = []
                         var morze_needsByTurn = []
+                        
                         for(var i = 0;i<MAX_TURNS;i++){
                             lad_needsByTurn[i] = 0
                             morze_needsByTurn[i] = 0
@@ -1480,7 +1583,7 @@ function aimachine(ailevel){
                                         if(hdru != -1){
                                             lad_needsByTurn[j] -= -Number(hks.hex.z / 8 * hks.dist / 2)
                                         }
-                                        //lad_needsByTurn[j] -= -Math.max(10,Number(hks.hex.z * (1-hks.dist/scian) ))
+                                        lad_needsByTurn[j] -= -Math.max(10,Number(hks.hex.z * (1-hks.dist/scian) ))
                                     }
                                 }
                                 for(var j in hks.hex.units){
@@ -1503,7 +1606,7 @@ function aimachine(ailevel){
                                             lad_needsByTurn[j] -= Number(hks.hex.z / 8 * hks.dist / 2)
                                         }
                                     }
-                                    //local_prod += Math.max(10,Number(hks.hex.z * (1-hks.dist/scian) ))
+                                    local_prod += Math.max(10,Number(hks.hex.z * (1-hks.dist/scian) ))
                                 }
                                 for(var j in hks.hex.units){
                                     var unit = hks.hex.units[j]
@@ -1517,7 +1620,7 @@ function aimachine(ailevel){
                                     } else if(zast[unit.rodz] == 'm'){
                                         sapper_prod += unit.il+unit.rozb
                                     } else if(zast[unit.rodz] == 'x' && szyt[unit.rodz] == 'w'){
-                                        tratwa_needs -= unit.il
+                                        //tratwa_needs -= unit.il
                                     }
                                 }
                             }
@@ -1532,16 +1635,17 @@ function aimachine(ailevel){
                             var hdru = hks.hex.d != undefined ? hks.hex.d : hks.hex.dru
                             
                             var kod = hks.hex.x+'#'+hks.hex.y
-                            if(kod in miejsca_do_wysłania_tratw && miejsca_do_wysłania_tratw[kod].needed > miejsca_do_wysłania_tratw[kod].satisfied)
-                                tratwa_needs += miejsca_do_wysłania_tratw[kod].needed - miejsca_do_wysłania_tratw[kod].satisfied
+                            //if(kod in miejsca_do_wysłania_tratw && miejsca_do_wysłania_tratw[kod].needed > miejsca_do_wysłania_tratw[kod].satisfied)
+                            //    tratwa_needs += miejsca_do_wysłania_tratw[kod].needed - miejsca_do_wysłania_tratw[kod].satisfied
                             
+                            //if(dfrou.distmaps[code])
                             if(hdru != kolej){
                                 if(hks.z > 0){
                                     for(var j = 0;j<MAX_TURNS;j++){
                                         if(hdru != -1){
                                             morze_needsByTurn[j] -= -Number(hks.hex.z / 12 * hks.dist / 3)
                                         }
-                                        //morze_needsByTurn[j] -= -Math.max(10,Number(hks.hex.z * (1-hks.dist/scian) ))
+                                        morze_needsByTurn[j] -= -Math.max(10,Number(hks.hex.z * (1-hks.dist/scian) ))
                                     }
                                 }
                                 for(var j in hks.hex.units){
@@ -1575,6 +1679,8 @@ function aimachine(ailevel){
                                         }
                                     } else if(zast[unit.rodz] == 'x' && szyt[unit.rodz] == 'w'){
                                         tratwa_needs -= unit.il
+                                    } else if(szyt[unit.rodz] != 'w' && szyt[unit.rodz] != 'l' && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].embarking != null){
+                                        tratwa_needs += unit.il
                                     }
                                 }
                             }
@@ -1590,7 +1696,7 @@ function aimachine(ailevel){
                         if(morze_needs > lad_needs+10 && morze_needs > 0)
                             needed = 6
                             
-                        if(tratwa_needs > morze_needs+10 && tratwa_needs > 0)
+                        if(tratwa_needs > morze_needs*2 && tratwa_needs > 0)
                             needed = 8
                         
                         //mist[kolejność_miast[miastkol]].test = lad_needs+'/'+morze_needs
@@ -1626,13 +1732,13 @@ function aimachine(ailevel){
                         }*/
                         
                         var needednum = 99
-                        var enough_units_produced = Math.max(lad_needs,morze_needs) < local_prod// && miast_dist[kolejność_miast[miastkol]] > 0
+                        var enough_units_produced = Math.max(lad_needs,morze_needs) <= local_prod// && miast_dist[kolejność_miast[miastkol]] > 0
                         if(enough_units_produced && possible_coastline != null && sapper_prod <= 20){
                             needed = 11
                             needednum = 60
                         }
                         
-                        if(!enough_units_produced || needed == 11){
+                        //if(!enough_units_produced || needed == 11){
                             var creat = -1;
                             for(var i = 0;i<mist[kolejność_miast[miastkol]].unp;i++){
                                 if(unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].rodz==needed){
@@ -1642,7 +1748,7 @@ function aimachine(ailevel){
                                         creat = i
                                 }
                             }
-                            if(creat>-1){
+                            if(creat>-1 && unix[kolej][mist[kolejność_miast[miastkol]].unt[creat]].ruchy == 0 && unix[kolej][mist[kolejność_miast[miastkol]].unt[creat]].celu == -1){
                                 unix[kolej][mist[kolejność_miast[miastkol]].unt[creat]].rozb=Math.max(needednum-unix[kolej][mist[kolejność_miast[miastkol]].unt[creat]].il, 0);
                             }
                             if(mist[kolejność_miast[miastkol]].unp>=4){
@@ -1651,7 +1757,7 @@ function aimachine(ailevel){
                                 dodai(mist[kolejność_miast[miastkol]].x,mist[kolejność_miast[miastkol]].y,0,needed,needednum);
                                 odzaz(); 
                             }
-                        }
+                        //}
                         //mist[kolejność_miast[miastkol]].test = String(Math.max(lad_needs,morze_needs)).split('.')[0]+'/'+String(local_prod).split('.')[0]
                     }
                 }
@@ -1830,7 +1936,7 @@ function contains(tab,tabn,obj){
 }
 function odzaz(){
     if(zaznu > 0)
-        odzaznaj()
+        odzaznaj(false)
 	odzaznam(0);
 	zaznx = -1;
 	zazny = -1;
@@ -1850,7 +1956,7 @@ function zazmiasto(hex,hey){
 	zaznx = hex;
 	zazny = hey;
 	if(zaznu!=-1){
-		odzaznaj();
+		odzaznaj(false);
 		zaznu = -1;
 	}
 	cityName.value = heks[zaznx][zazny].nazwa;
@@ -2497,31 +2603,37 @@ function putPath(uni, distmap, hex_x, hex_y, stopBefore, completely_used_passage
     
     if(zaznu != -1){
         odzaznaj(false)
+        aktdroguj(kolej,zaznu)
         unit.sebix = unit.x
         unit.sebiy = unit.y
         zaznu = -1
+        /*
+        zaznx = -1
+        zazny = -1
+        tx = -1
+        ty = -1*/
     }
         
+    unix[kolej][uni].sebix = unix[kolej][uni].x
+    unix[kolej][uni].sebiy = unix[kolej][uni].y
+    tx = -1
+    ty = -1
+    zaznu = -1
     zaznu = uni
     zaznaj(uni,false)
     odceluj(uni,kolej);
     oddroguj(uni,kolej,false);
     for(var i in path){
-        if(i >= path.length - stopBefore)
+        if(i >= path.length - stopBefore){
             break
+        }
         var p = path[i]
         unix[kolej][uni].rozb = 0
+        
         droguj(p.x,p.y,uni)
         zaznaj(uni,false)
     }
     if(stopBefore == undefined){
-        odzaznaj(false)
-        aktdroguj(kolej,zaznu)
-        unit.sebix = unit.x
-        unit.sebiy = unit.y
-        zaznu = -1
-        tx = -1
-        ty = -1
     }
     
     return path.length > 0 && unit.szyt != 'w' && unit.szyt != 'l' && heks[unit.x][unit.y].z > 0 && heks[path[0].x][path[0].y].z == -1 && !(path[0].x+'#'+path[0].y in completely_used_passages)
@@ -2915,10 +3027,10 @@ function distmapsFromUnit(){
             var unit = bhex.units[j]
             var szybt = szyt[unit.rodz]
             if(szybt == 'w' && zast[unit.rodz] == 'x')
-                szybt == 'x'
+                szybt = 'x'
             
             if(szybt == 'n' && zast[unit.rodz] == 'm')
-                szybt == 'm'
+                szybt = 'm'
             
             if(!(szybt in distmaps[code])){
                 distmaps[code].maps[szybt] = {hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w' || szybt == 'x',szybt == 'g',szybt == 'l',szybt == 'c',szybt == 'x',szybt == 'm',board),rangemap:hexrangemap(bhex.x,bhex.y,szybt == 'w',szybt == 'g',szybt == 'l',szybt == 'c',board)}
@@ -3024,6 +3136,7 @@ function evalUnitDefense(unit,il){
     return at[unit.rodz] * (0.5+obrr[unit.rodz]) * exponentiel(il)
 }
 MAX_TURNS = 10
+SMALL_FRACTION = 0.0000001
 function allTurns(){
     var tr = []
     for(var i = 0;i<MAX_TURNS;i++){
@@ -3086,6 +3199,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
     }
     //for(var t = 0;t<MAX_TURNS;t++){
     
+    var leadedPaths = [null,null,null,null]
         for(var key in distmaps){
             //if(!(interestingAction == undefined || interestingAction.hex.x+'#'+interestingAction.hex.y == key))
             //    continue
@@ -3159,6 +3273,11 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
 
         
         calculateAlliegance(dm)
+        
+        var embapo = 0
+        var bembapo = 0
+        var embapot = {}
+        var addedembapo = {}
         for(var ownunit=false,b2=false;!b2;(b2=ownunit) | (ownunit=true)){
             for(var key in distmaps){
                 //if(!(interestingAction == undefined || interestingAction.hex.x+'#'+interestingAction.hex.y == key))
@@ -3167,6 +3286,13 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                     continue
                     
                 var distmap = distmaps[key]
+                var embars = {}
+                
+                for(var s in distmap.potentialEmbarkings){
+                    var poe = distmap.potentialEmbarkings[s]
+                    
+                    embars[poe.embarking] = poe
+                }
                 var notownunit = !ownunit
                 
                 if(distmap.dru == -1 || (notownunit && distmap.dru != kolej) || (!notownunit && distmap.dru == kolej))
@@ -3186,6 +3312,112 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                 }*/
                 var maxdef = Math.max(peoplePotential, productionPotential * 4)// + firepower
             
+                if(ownunit)
+                for(var i in distmap.hex.units){
+                    var unit = distmap.hex.units[i]
+                    
+                    if(alreadyAttacking != undefined && !(key in alreadyAttacking && alreadyAttacking[key].unit == unit))
+                        continue
+                        
+                    if(unit.actions.length > 0){
+                        for(var j in unit.actions){
+                            var action = unit.actions[j]
+                            if(action.type == 'move' && action.destination != undefined/* && j == unit.actions.length - 1*/ && zast[unit.rodz] != 'x'){
+                                var code = action.destination[0]+'#'+action.destination[1]
+                                
+                                if(alreadyAttacking != null && code != destiny)
+                                    continue
+                                
+                                var dist = action.rucho.reduce((a,b)=>a+b,0)
+                                
+                                var path = getLeadedPath(distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho)
+                                leadedPaths[j] = path
+                                var losses = 0
+                                
+                                var embarkingDelay = 0
+                                var onland = hex.z != -1
+                                var embarkingPossible = 0
+                                var lastFieldX = distmap.hex.x
+                                var lastFieldY = distmap.hex.y
+                                var addEmbarkingPossibility = false
+                                var embarkingOnPlace = false
+                                
+                                for(var k=0;k<path.path.length-1;k++){
+                                    
+                                    var field = path.path[k]
+                                    var code2 = field.x+'#'+field.y
+                                    
+                                    addEmbarkingPossibility = false
+                                    embarkingOnPlace = false
+                                    
+                                    if(onland && heks[lastFieldX][lastFieldY].z != -1 && heks[field.x][field.y].z == -1){
+                                        onland = false
+                                        addEmbarkingPossibility = true
+                                        
+                                        if(heks[lastFieldX][lastFieldY].z > 0 && heks[field.x][field.y].z == -1){
+                                            embarkingOnPlace = true
+                                        }
+                                    }
+                                    if(!onland && heks[lastFieldX][lastFieldY].z == -1 && heks[field.x][field.y].z != -1)
+                                        onland = true
+                                        
+                                        
+                                    if(addEmbarkingPossibility){
+                                        addedembapo[i+'#'+k] = true
+                                        var kod = embarkingOnPlace && lastFieldX != null ? lastFieldX+'#'+lastFieldY : code2
+                                        
+                                        var bestpoe = null
+                                        var best = null
+                                        //heks[lastField.x][lastField.y].test = 'X'
+                                        if(kod in distmaps){
+                                            for(var l in distmaps[kod].hex.units){
+                                                var unit2 = distmaps[kod].hex.units[l]
+                                                
+                                                if(szyt[unit2.rodz] == 'w' && zast[unit2.rodz] == 'x'){
+                                                    
+                                                    embapo += unit.il
+                                                    bembapo += unit.il
+                                                    if(!(i+'#'+k) in embapot)
+                                                        embapot[i+'#'+k] = 0
+                                                    embapot[i+'#'+k] += unit.rozb
+                                                    
+                                                    break
+                                                } else if(distmap.potentialEmbarkings.length > 0){/*
+                                                    for(var s in distmap.potentialEmbarkings){
+                                                        var poe = distmap.potentialEmbarkings[s]
+                                                        bestpoe = poe
+                                                        if(poe.embarking == kod){
+                                                            best = poe.move[0].il
+                                                        }
+                                                    }*/
+                                                    if(kod in embars){
+                                                        bestpoe = embars[kod]
+                                                        best = bestpoe.move[0].il
+                                                    }
+                                                    if(best != null){
+                                                        embapo += best
+                                                        addedembapo[i+'#'+k] = bestpoe
+                                                    } else {
+                                                        delete addedembapo[i+'#'+k]
+                                                    }
+                                                } else if(unit2.rozb > 0){
+                                                    embapot[i+'#'+k] -= unit.rozb
+                                                }
+                                            }
+                                        }
+                                        //console.log(embarkingDelay)
+                                    }
+                                        
+                                    lastFieldX = field == null ? null : field.x
+                                    lastFieldY = field == null ? null : field.y
+                                }
+                                
+
+                            }
+                        }
+                    }
+                    
+                }
                 for(var i in distmap.hex.units){
                     var unit = distmap.hex.units[i]
                     
@@ -3217,7 +3449,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                     
                                 var dist = action.rucho.reduce((a,b)=>a+b,0)
                                 
-                                var path = getLeadedPath(distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho)
+                                var path = leadedPaths[j]
                                 var losses = 0
                                 
                                 if(alreadyAttacking != null)
@@ -3227,34 +3459,95 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                         }
                                     }
                                 
-                                var unitAttackStrength2 = evalUnitAttack(unit, action, dm.model, true)
+                                var unitAttackStrength2 = action.destination[0] in dm.model.board ? evalUnitAttack(unit, action, dm.model, true) : 0
                                 var origUnitAttackStrength2 = unitAttackStrength2
 
                                 var embarkingDelay = 0
                                 var onland = hex.z != -1
-                                var lastField = {x:distmap.hex.x,y:distmap.hex.y}
+                                var embarkingPossible = 0
+                                var lastFieldX = distmap.hex.x
+                                var lastFieldY = distmap.hex.y
                                 var addEmbarkingPossibility = false
                                 var embarkingOnPlace = false
-                                var embarkingPossible = 0
                                 for(var k=0;k<path.path.length-1;k++){
                                     
+                                    if(unitAttackStrength2 <= 0)
+                                        break
                                     var field = path.path[k]
                                     var code2 = field.x+'#'+field.y
                                     
                                     addEmbarkingPossibility = false
                                     embarkingOnPlace = false
                                     
-                                    if(onland && heks[lastField.x][lastField.y].z != -1 && heks[field.x][field.y].z == -1){
+                                    if(onland && heks[lastFieldX][lastFieldY].z != -1 && heks[field.x][field.y].z == -1){
                                         onland = false
                                         addEmbarkingPossibility = true
                                         
-                                        if(heks[lastField.x][lastField.y].z > 0 && heks[field.x][field.y].z == -1){
+                                        if(heks[lastFieldX][lastFieldY].z > 0 && heks[field.x][field.y].z == -1){
                                             embarkingOnPlace = true
                                         }
                                     }
-                                    if(!onland && heks[lastField.x][lastField.y].z == -1 && heks[field.x][field.y].z != -1)
+                                    if(!onland && heks[lastFieldX][lastFieldY].z == -1 && heks[field.x][field.y].z != -1)
                                         onland = true
                                         
+                                        
+                                    
+                                    if(addedembapo[i+'#'+k]){
+                                        //embarkingDelay = Infinity
+                                        /*
+                                        var kod = embarkingOnPlace && lastFieldX != null ? lastFieldX+'#'+lastFieldY : code2
+                                        
+                                        var bestpoe = null
+                                        var best = null
+                                        //heks[lastField.x][lastField.y].test = 'X'
+                                        if(kod in distmaps){
+                                            for(var l in distmaps[kod].hex.units){
+                                                var unit2 = distmaps[kod].hex.units[l]
+                                                
+                                                if(szyt[unit2.rodz] == 'w' && zast[unit2.rodz] == 'x'){
+                                                    embarkingPossible = Math.min(unit.il,embarkingPossible+unit2.il)
+                                                    
+                                                    break
+                                                } else if(distmap.potentialEmbarkings.length > 0){
+                                                    for(var s in distmap.potentialEmbarkings){
+                                                        var poe = distmap.potentialEmbarkings[s]
+                                                        bestpoe = poe
+                                                        if(poe.embarking == kod){
+                                                            best = poe.move[0].il
+                                                        }
+                                                    }
+                                                    if(best != null){
+                                                        embarkingPossible = Math.min(unit.il,embarkingPossible+best)
+                                                    }
+                                                }
+                                            }
+                                        }*/
+                                        unitAttackStrength2 = origUnitAttackStrength2 * (1 - embarkingPossible/unit.il)
+                                        if(embapo >= unit.il * 0.7){
+                                            if(heks[lastFieldX][lastFieldX].z > 0 && bembapo >= unit.il * 0.7){
+                                                
+                                                var il = unit.il
+                                                if(i+'#'+k in embapot)
+                                                    il -= embapot[i+'#'+k]
+                                                embarkingDelay = Math.ceil(il / heks[lastFieldX][lastFieldY].z * ced[8])
+                                                embapo -= unit.il
+                                                bembapo -= unit.il
+                                            } else {
+                                                embarkingDelay = Infinity
+                                            }
+                                            if(addedembapo[i+'#'+k] instanceof Object){
+                                                newEmbarkingDelay = Math.ceil(Math.min(k, addedembapo[i+'#'+k].turn))
+                                                if(newEmbarkingDelay < embarkingDelay){
+                                                    embarkingDelay = newEmbarkingDelay
+                                                    embapo -= unit.il
+                                                }
+                                            }
+                                        }
+                                        //console.log(embarkingDelay)
+                                        
+                                    }
+                                    lastFieldX = field == null ? null : field.x
+                                    lastFieldY = field == null ? null : field.y
                                     var turn = Math.ceil((k - (zas[unit.rodz] <= 1 ? 0 : zas[unit.rodz])) / szy[unit.rodz]) + embarkingDelay
 
                                     if(turn < MAX_TURNS && code2 in distmaps && distmaps[code2].hex.units.length > 0 && distmaps[code2].hex.units[0].d != unit.d){
@@ -3293,68 +3586,21 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                             
                                         }
                                     }
-                                    if(unitAttackStrength2 <= 0)
-                                        break
-                                        
-                                    if(addEmbarkingPossibility){
-                                        var oldEmbarking = embarkingPossible
-                                        var kod = embarkingOnPlace && lastField != null ? lastField.x+'#'+lastField.y : code2
-                                        
-                                        var bestpoe = null
-                                        var best = null
-                                        //heks[lastField.x][lastField.y].test = 'X'
-                                        if(kod in distmaps){
-                                            for(var l in distmaps[kod].hex.units){
-                                                var unit2 = distmaps[kod].hex.units[l]
-                                                
-                                                if(szyt[unit2.rodz] == 'w' && zast[unit2.rodz] == 'x'){
-                                                    embarkingPossible = Math.min(unit.il,embarkingPossible+unit2.il)
-                                                    unitAttackStrength2 = origUnitAttackStrength2 * (1 - embarkingPossible/unit.il)
-                                                    break
-                                                } else if(distmap.potentialEmbarkings.length > 0){
-                                                    for(var s in distmap.potentialEmbarkings){
-                                                        var poe = distmap.potentialEmbarkings[s]
-                                                        bestpoe = poe
-                                                        if(poe.embarking == kod){
-                                                            best = poe.move[0].il
-                                                        }
-                                                    }
-                                                    if(best != null){
-                                                        embarkingPossible = Math.min(unit.il,embarkingPossible+best)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        
-                                        if(embarkingPossible == 0){
-                                            if(heks[lastField.x][lastField.y].z > 0){
-                                                embarkingDelay = Math.ceil(unit.il / heks[lastField.x][lastField.y].z * ced[8])
-                                            } else {
-                                                embarkingDelay = Infinity
-                                            }
-                                            if(bestpoe != null){
-                                                newEmbarkingDelay = Math.ceil(Math.min(k, bestpoe.turn))
-                                                if(newEmbarkingDelay < embarkingDelay)
-                                                    embarkingDelay = newEmbarkingDelay
-                                            }
-                                        }
-                                        //console.log(embarkingDelay)
-                                    }
-                                    lastField = field
                                 }
                                 //if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho,unitAttackStrength))
-                                for(var t = 0;t<MAX_TURNS;t++){
-                                    if(code in distmaps && szy[unit.rodz] * (t - embarkingDelay) + (zas[unit.rodz] <= 1 ? 0 : zas[unit.rodz]) >= dist){
-                                    //console.log(szy[unit.rodz] * t + zas[unit.rodz], dist, unitAttackStrength)
-                                        if(movingDelay == 0)
-                                            movingDelay = t
-                                        distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength2)
-                                    }
+                                if(unitAttackStrength2 > 0)
+                                    for(var t = 0;t<MAX_TURNS;t++){
+                                        if(code in distmaps && szy[unit.rodz] * (t - embarkingDelay) + (zas[unit.rodz] <= 1 || unit.szyt != szyt[unit.rodz] ? 0 : zas[unit.rodz]) >= dist){
+                                        //console.log(szy[unit.rodz] * t + zas[unit.rodz], dist, unitAttackStrength)
+                                            if(movingDelay == 0)
+                                                movingDelay = t
+                                            distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength2)
+                                        }
+                                        
+                                        if(alreadyAttacking != null)
+                                            distmap.realtocome[t][unit.d] -= Number(unitDefenseStrength)
                                     
-                                    if(alreadyAttacking != null)
-                                        distmap.realtocome[t][unit.d] -= Number(unitDefenseStrength)
-                                
-                                }
+                                    }
                             }
                             if(action.type == 'aim'){                          
                                 if(alreadyAttacking != null && action.hex_x+'#'+action.hex_y != destiny)
@@ -3535,6 +3781,14 @@ function calculateAlliegance(dm){
             if(biggestpowercolor > -1){
                 //var factor = distmap.frontline ? 1 : 1
                 dm.score[t][biggestpowercolor] += distmap.hex.z + (distmap.hex.stali + Math.min(distmap.hex.prod,distmap.hex.stali)) * 2// * factor
+                if(biggestpowercolor != -1){
+                    for(var d = 0;d<12;d++){
+                        if(d != biggestpowercolor){
+                            dm.score[t][d] -= SMALL_FRACTION
+                        }
+                    }
+                }
+                
             }
             
             //heks[area.x][area.y].test = level+'#'+(maxeval * 2 - allAreaValues)
@@ -3749,7 +4003,7 @@ function legalActions(dm,simplifieddistmaps){
                         //if(movement_type != 'w' && movement_type != 'l' && hex.water > 0 && (unit.d != undefined && (unit.d == -1 || unit.d != kolej) || unit.dru != undefined && (unit.dru == -1 || unit.dru != kolej)))
                         //    continue
                         
-                        if(szyt[unit.rodz] != 'w' && szyt[unit.rodz] != 'l'){
+                        if(szyt[unit.rodz] != 'w' && szyt[unit.rodz] != 'l'/* && unit.actions.length == 0*/){
                             var embarking = embarkingPointFromLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
                             if(embarking != null){
                                 var kod = embarking.x + '#' + embarking.y
@@ -3799,7 +4053,7 @@ function legalActions(dm,simplifieddistmaps){
                                             if(unit.il > 10 && distmap.hex.units.length <= 3)
                                                 unit.legalActions.push([
                                                     {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2},
-                                                    {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il-10,destination:[hex.hex.x,hex.hex.y]},
+                                                    {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il-10,destination:[hex.hex.x,hex.hex.y],hex_x:hex.hex.x,hex_y:hex.hex.y},
                                                 ])
                                         }
 
@@ -3856,16 +4110,16 @@ function legalActions(dm,simplifieddistmaps){
     for(var key in distmaps){
         var distmap = distmaps[key]
         
-        if(!('w' in distmap.maps))
+        if(!('x' in distmap.maps))
             continue
             
-        var map_of_movement_type = distmap.maps['w'].hexmap
+        var map_of_movement_type = distmap.maps['x'].hexmap
 
         var mapmapmap = mapmap(map_of_movement_type,'hex')
         
         var hexesToCheck = map_of_movement_type//.filter(x => x)
         
-        var range_map_of_movement_type = distmap.maps['w'].rangemap
+        var range_map_of_movement_type = distmap.maps['x'].rangemap
 
 
         /*
@@ -4223,66 +4477,14 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets){
         unitaction.unit.actions = unitaction.action
         
         if(unitaction.action[0].embarking != null){
-            var embarkingcode = unitaction.action[0].embarking.x + '#' + unitaction.action[0].embarking.y
-        
-            if(embarkingcode in embarkingTargets && embarkingTargets[embarkingcode] > 2){
+            var obj = addEmbarking(unitaction,embarkingTargets,distmaps,hexcod,dm,oldActionArrayUnits,oldActionArrayActions,addedEmbarkigns,bark,oldEmbarkingCode,oldEmbarkingAction)
+            if(obj == null){
+                unitaction.unit.actions = oldaction
                 continue
-            }
-            
-            var waiting = Infinity
-            if(hexcod in distmaps && distmaps[hexcod].hex.heks.z > 0){                
-                var unitNeeded = unitaction.unit.il
-                var satisfied = 0
-                for(var j = 0;j<distmaps[hexcod].hex.units.length;j++){
-                    var unit = distmaps[hexcod].hex.units[j]
-                    if(szyt[unit.rodz] == 'w' && zast[unit.rodz] == 'x' && unit.rozb > 0){
-                        unitNeeded -= unit.il
-                        satisfied += unit.rozb + unit.il
-                    }
-                }
-                
-                if(satisfied >= unit.il - 10){
-                    waiting = Math.max( 0, Math.ceil( unitNeeded / (distmaps[hexcod].hex.heks.z / 15) ) )
-                }
-            }
-            var goodEmbarkings = unitaction.potentialEmbarkings.filter(x=>x.embarking == embarkingcode && x.distmap in dm.distmaps && (dm.distmaps[x.distmap].hex.units[x.unitIndex].actions.length == 0 || !(dm.distmaps[x.distmap].hex.units[x.unitIndex].actions[0].embarking in embarkingTargets)) && x.turn < waiting)
-            var betterEmbarkings = goodEmbarkings.filter(x=>x.move[0].il >  unitaction.action[0].il-20).sort((a,b)=>a.turn-b.turn) 
-                          .concat( goodEmbarkings.filter(x=>x.move[0].il <= unitaction.action[0].il-20).sort((a,b)=>a.turn-b.turn) )
-                          
-            var betterEmbarkings2 = []
-            for(var j in betterEmbarkings){
-                if(betterEmbarkings[j].distmap in dm.distmaps){
-                    var units = dm.distmaps[betterEmbarkings[j].distmap].hex.units
-                    var ok = true
-                    for(var k in units){
-                        var unit = units[k]
-                        if(k != betterEmbarkings[j].unitIndex && (szyt[unit.rodz] != 'w' || zast[unit.rodz] != 'x') && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].embarking != null){
-                            ok = false 
-                            break
-                        }
-                    }
-                    if(ok)
-                        betterEmbarkings2.push(betterEmbarkings[j])
-                }
-            }
-            betterEmbarkings = betterEmbarkings2
-
-
-            if(betterEmbarkings.length > 0){
-                bark = dm.distmaps[betterEmbarkings[0].distmap].hex.units[betterEmbarkings[0].unitIndex]
-                oldEmbarkingAction = bark.actions
-                oldEmbarkingCode = embarkingcode
-                bark.actions = betterEmbarkings[0].move
-                betterEmbarkings[0].move.il = unitaction.action[0].il
-                
-                if(!(embarkingcode in embarkingTargets)){
-                    embarkingTargets[embarkingcode]++
-                }
-                
-                oldActionArrayUnits.push(bark)
-                oldActionArrayActions.push(oldEmbarkingAction)
-                
-                addedEmbarkigns.push(bark)
+            } else {
+                bark = obj.bark
+                oldEmbarkingCode = obj.oldEmbarkingCode
+                oldEmbarkingAction = obj.oldEmbarkingAction
             }
         }
         
@@ -4365,6 +4567,81 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets){
         
     return interestingUnits
     
+}
+
+function addEmbarking(unitaction,embarkingTargets,distmaps,hexcod,dm,oldActionArrayUnits,oldActionArrayActions,addedEmbarkigns,bark,oldEmbarkingCode,oldEmbarkingAction){
+    var embarkingcode = unitaction.action[0].embarking.x + '#' + unitaction.action[0].embarking.y
+
+    if(embarkingcode in embarkingTargets && embarkingTargets[embarkingcode] > 2){
+        return null
+    }
+    
+    var waiting = Infinity
+    if(hexcod in distmaps && distmaps[hexcod].hex.heks.z > 0){ 
+        var unitNeeded = unitaction.unit.il
+        var satisfied = 0
+        for(var j = 0;j<distmaps[hexcod].hex.units.length;j++){
+            var unit = distmaps[hexcod].hex.units[j]
+            if(szyt[unit.rodz] == 'w' && zast[unit.rodz] == 'x' && unit.rozb > 0){
+                unitNeeded -= unit.il
+                satisfied += unit.rozb + unit.il
+            }
+        }
+        
+        if(satisfied >= unit.il - 10){
+            waiting = Math.max( 0, Math.ceil( unitNeeded / (distmaps[hexcod].hex.heks.z / 15) ) )
+        }
+        //if(Math.abs(unitNeeded) + Math.abs(satisfied) + Math.abs(waiting) > 0)
+        //    console.log(unitNeeded, satisfied, waiting)
+
+    }
+    var goodEmbarkings = unitaction.potentialEmbarkings.filter(x=>x.embarking == embarkingcode && x.distmap in dm.distmaps && (dm.distmaps[x.distmap].hex.units[x.unitIndex].actions.length == 0 /*|| !(dm.distmaps[x.distmap].hex.units[x.unitIndex].actions[0].embarking in embarkingTargets)*/) && x.turn < waiting)
+    
+    //if(oldEmbarkingCode === undefined){
+    //    console.log(hexcod)
+    //    console.log(unitaction.potentialEmbarkings)
+    //}
+    var betterEmbarkings = goodEmbarkings.filter(x=>x.move[0].il >  unitaction.action[0].il-20).sort((a,b)=>a.turn-b.turn) 
+                    .concat( goodEmbarkings.filter(x=>x.move[0].il <= unitaction.action[0].il-20).sort((a,b)=>a.turn-b.turn) )
+                    
+    var betterEmbarkings2 = []
+    for(var j in betterEmbarkings){
+        if(betterEmbarkings[j].distmap in dm.distmaps){
+            var units = dm.distmaps[betterEmbarkings[j].distmap].hex.units
+            var ok = true
+            for(var k in units){
+                var unit = units[k]
+                if(k != betterEmbarkings[j].unitIndex && (szyt[unit.rodz] != 'w' || zast[unit.rodz] != 'x') && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].embarking != null){
+                    ok = false 
+                    break
+                }
+            }
+            if(ok)
+                betterEmbarkings2.push(betterEmbarkings[j])
+        }
+    }
+    betterEmbarkings = betterEmbarkings2
+
+
+    if(betterEmbarkings.length > 0){
+        bark = dm.distmaps[betterEmbarkings[0].distmap].hex.units[betterEmbarkings[0].unitIndex]
+        oldEmbarkingAction = bark.actions
+        oldEmbarkingCode = embarkingcode
+        bark.actions = betterEmbarkings[0].move
+        if(oldEmbarkingAction == undefined)
+            console.log('added')
+        betterEmbarkings[0].move.il = unitaction.action[0].il
+        
+        if(!(embarkingcode in embarkingTargets)){
+            embarkingTargets[embarkingcode]++
+        }
+        
+        oldActionArrayUnits.push(bark)
+        oldActionArrayActions.push(oldEmbarkingAction)
+        
+        addedEmbarkigns.push(bark)
+    }
+    return {bark:bark,oldEmbarkingCode:oldEmbarkingCode,oldEmbarkingAction:oldEmbarkingAction}
 }
 function tryRemoveUnnecessaryPaths(dm,color){
     
@@ -4492,7 +4769,8 @@ function actionsToReal(dm,color,completely_used_passages){
                         unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
                         tx = unix[kolej][zaznu].x;
                         ty = unix[kolej][zaznu].y;
-                        odzaznaj();
+                        odzaznaj(false);
+                        aktdroguj(kolej,zaznu);
                         zaznu = -1
                     }
                     zaznx = -1;zazny = -1;
@@ -4526,37 +4804,68 @@ function actionsToReal(dm,color,completely_used_passages){
                     if(dodajTratwe !== null){
                         zaznu = unid
                         var cords = leadPath(distmap.hex.x,distmap.hex.y,action1.ruchk,action1.rucho,stopBefore)
-                        tx = cords[0]
-                        ty = cords[1]
+                        tx = unix[kolej][zaznu].sebix
+                        ty = unix[kolej][zaznu].sebiy
                         
-                        celuj(cords[0],cords[1],action2.celd,action2.celu,false);
-                        
-                        if(zaznu!=-1){
-                            heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].zmiana++;
-                            unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
-                            unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
-                            tx = cords[0]
-                            ty = cords[1]
-                            odzaznaj();
-                            zaznu = -1
+                        if(distance(unix[kolej][zaznu].sebix,unix[kolej][zaznu].sebiy,unix[action2.celd][action2.celu].x,unix[action2.celd][action2.celu].y) <= zas[unix[kolej][zaznu].rodz]){
+                            
+                            if(zaznu!=-1){
+                                celuj(unix[kolej][zaznu].sebix,unix[kolej][zaznu].sebiy,action2.celd,action2.celu,false);
+                                
+                                heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].zmiana++;
+                                unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
+                                unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
+                                if(tx != -1)
+                                    odzaznaj(false);
+                                aktdroguj(kolej,zaznu);
+                                zaznu = -1
+                                zaznx = -1
+                                zazny = -1
+                                tx = -1
+                                ty = -1
+                            }
+                            unix[kolej][unid].rozb = 0
                         }
-                        unix[kolej][unid].rozb = 0
+                        
                     }
                 }
                 if(unit.actions.length == 0){
                     putPath(unit.id,distmap,unit.x,unit.y)
                     unix[kolej][unit.id].rozb = 0
                 }
+                if(tx != -1)
+                odzaznaj(false)
                 zaznu = -1;
                 zaznx = -1;zazny = -1;
                 tx = -1
                 ty = -1
+                unit.sebix = unit.x
+                unit.sebiy = unit.y
+                aktdroguj(kolej,zaznu)
                 changeState(2)
             }
             if(tratwa > 0){
                 //function dodai(unx,uny,ilo,typ,rosn){
                 console.log('tratwa:',tratwa)
-                dodai(distmap.hex.x,distmap.hex.y,0,8,Math.min(Math.floor(tratwa),99))
+                var kv = -1
+                for(var i = 0;i<distmap.hex.unp;i++){
+                    if(unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rodz != 8 && unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].il == 0 && unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rozb > 0){
+                        kv = i
+                        unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rozb = 0
+                    }
+                }
+                if(kv != -1)
+                    heks[distmap.hex.x][distmap.hex.y].usun[kv]
+                //if(tdistmap.hex.z >= 50){
+                    const sustainable_tratwa_growth = 99//Math.min(99, Math.floor(distmap.hex.z * 2 / 4))
+                    dodai(distmap.hex.x,distmap.hex.y,0,8,Math.min(Math.floor(tratwa),sustainable_tratwa_growth))
+                /*}/* else {
+                    for(var i = 0;i<distmap.hex.unp;i++){
+                        unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rozb = 0
+                    }
+                    heks[distmap.hex.x][distmap.hex.y].zpl = 50 - distmap.hex.z
+                    kupuj(distmap.hex.x,distmap.hex.y)
+                }*/
             }
         }
         

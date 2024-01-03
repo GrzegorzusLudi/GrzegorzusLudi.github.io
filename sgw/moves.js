@@ -823,7 +823,7 @@ function celuj(xhh,yhh,dru,uni,changeTheState){
 			if(dru==kolej)
 			oddroguj(uni,dru,false);
 
-			unix[dru][uni].rozb = false;
+			//unix[dru][uni].rozb = false;
 			unix[dru][uni].celed[unix[dru][uni].celen] = kolej;
 			unix[dru][uni].celeu[unix[dru][uni].celen] = zaznu;
 			unix[dru][uni].celen++;
@@ -918,7 +918,6 @@ function droguj(xhh,yhh,uni){
 		hph = tph;
 		tph = tph.border[kier];
 
-		console.log([tph.x,tph.y,kier])
 		tph.drogp[tph.drogn] = (kier+3)%6;
 		dloh++;
 		unix[kolej][uni].ruchh++;
@@ -1023,6 +1022,7 @@ function oddroguj(uni,koloj,odc){
 	while(ajk<unix[koloj][uni].ruchy){
 		bjk = 0;
 		while(bjk<unix[koloj][uni].rucho[ajk]){
+			console.log(tph.x+'#'+tph.y)
 			tph = tph.border[unix[koloj][uni].ruchk[ajk]];
 			czyscc(uni,tph.x,tph.y,koloj);
 			tph.zmiana++;
@@ -1703,6 +1703,7 @@ function aktdroguj(kolejk,uni){
 	while(ajk<unix[kolejk][uni].ruchy){
 		bjk = 0;
 		while(bjk<unix[kolejk][uni].rucho[ajk]){
+			console.log(tph.x+'#'+tph.y+'#'+unix[kolejk][uni].ruchk[ajk])
 			tph = hexOfUnit(tph).border[unix[kolejk][uni].ruchk[ajk]];
 			if(tph == undefined)
 				break
