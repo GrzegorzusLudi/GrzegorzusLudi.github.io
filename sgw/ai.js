@@ -424,7 +424,16 @@ function aimachine(ailevel){
                 inaccessible_path[i] = {}
                 for(var j = 0;j<scian;j++){
                     inaccessible_path[i][j] = {x:i,y:j,inaccessible:true,coast:-1}
-                    //heks[i][j].test = ""
+                    heks[i][j].test = ""
+                }
+            }
+            
+            
+            large_map = {}
+            for(var i = 0;i<scian;i++){
+                large_map[i] = {}
+                for(var j = 0;j<scian;j++){
+                    large_map[i][j] = {x:i,y:j,color:heks[i][j].undr,dmap:{},closestelem:null,dist:Infinity}
                 }
             }
             
@@ -462,8 +471,28 @@ function aimachine(ailevel){
                     if(unittu.rozb <= 10 || unittu.il >= 40)
                         totalUnitSize += unittu.il
                 }
-                    
+                
+                
+                var drur = distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
                 var dr = evalAlliegance(dfrou,distmap)//distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
+                
+                for(var movement_type in distmap.maps){
+                    var dmap = distmap.maps[movement_type].hexmap.filter(x=>x.dist != -1)
+                    
+                    if(movement_type == 'n' || movement_type == 'w'){
+                        dmap.sort((a,b)=>a.dist-b.dist)
+
+                        for(var i in dmap){
+                            var obj = dmap[i]        
+                            
+                            if(( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj.dist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )){
+                                large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.dist,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
+                            }
+                        }
+                    }
+                }
+                    
+                large_map[distmap.hex.heks.x][distmap.hex.heks.y].color = dr
                 if(dr == kolej && distmap.hex.units.length > 0){
                     
                     if(totalUnitSize < 10 && distmap.hex.heks.z <= 0){
@@ -477,11 +506,12 @@ function aimachine(ailevel){
                     for(var movement_type in distmap.maps){
                         var dmap = distmap.maps[movement_type].hexmap.filter(x=>x.dist != -1)
 
-                        var dmap = dmap.sort((a,b)=>a.dist-b.dist)
+                        dmap = dmap.sort((a,b)=>a.dist-b.dist)
                         var lvlok = 2
                         var foundFrontline = false
                         for(var i in dmap){
                             var obj = dmap[i]
+                            
                             
                             var obdrreal = obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru
                             var obdr = evalAlliegance(dfrou,obj)//obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru
@@ -491,6 +521,8 @@ function aimachine(ailevel){
                             }
                             
                             var kodd = obj.hex.heks.x + '#' + obj.hex.heks.y
+                            
+                            
                             /*
                             if(false && kodd in dfrou.distmaps){
                                 alli = dfrou.distmaps[kodd].alliegance[MAX_TURNS-1]
@@ -616,6 +648,80 @@ function aimachine(ailevel){
             sorted_coastlines = coastlines.map(a=>[a,coastTownProfit(a.x,a.y,true)/coastTownProfit(a.x,a.y,false)]).filter(a => a[1] >= 1.5).sort((a,b)=>a[1]-b[1]).map(a => a[0])
             possible_coastline = sorted_coastlines.length == 0 ? null : sorted_coastlines[0]
             
+            
+            for(var i = 0;i<scian;i++){
+                for(var j = 0;j<scian;j++){
+                    //{dist:Infinity,color:heks[i][j].undr,dmap:{}}
+                    heks[i][j].test = ''
+                    var lmap = large_map[i][j]
+                    
+                    var closest = Infinity
+                    var closestElem = null
+                    
+                    if(lmap.color == kolej){
+                        closest = 0
+                        closestElem = lmap
+                    } else {
+                        for(var k in lmap.dmap){
+                            //{dist:obj.dist,color:obdr}
+                            var dmapelem = lmap.dmap[k]
+                            
+                            if(dmapelem.color == kolej && dmapelem.dist < closest){
+                                closest = dmapelem.dist
+                                closestElem = dmapelem
+                            }
+                        }
+                    }
+                    //heks[i][j].test = Math.floor(closest*100)/100
+                    lmap.closestelem = closestElem
+                    lmap.dist = closest
+                }
+            }
+            
+            var dist_layers = {}
+            var curr_hexes = []
+            for(var key in dfrou.distmaps){
+                if(dfrou.distmaps[key].hex.dru != kolej){
+                    var coords = key.split('#')
+                    curr_hexes.push(large_map[coords[0]][coords[1]])
+                }
+            }
+            
+            var stop = false
+            var nearest_hexes = []
+            while(!stop){
+                var curr_hexes2 = []
+                for(var i = 0;i < curr_hexes.length;i++){
+                    var ok = true
+                    var clos = curr_hexes[i].closestelem
+                    if(clos != null){
+                        var closcode = clos.x+'#'+clos.y
+                        var closelem = large_map[clos.x][clos.y]
+                        for(var j = 0;j < curr_hexes.length;j++){
+                            if(i != j){
+                                //if(curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap)
+                                //    console.log([curr_hexes[i].dmap[closcode].dist, curr_hexes[j].dmap[closcode].dist, curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist])
+                                    
+                                if(closcode in curr_hexes[i].dmap && closcode in curr_hexes[j].dmap && curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap && 
+                                    curr_hexes[i].dmap[closcode].dist-1 > (curr_hexes[j].dmap[closcode].dist + curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)*0.7 ){
+                                    ok = false
+                                    break
+                                }
+                            }
+                        }
+                        if(!ok){
+                            curr_hexes2.push(curr_hexes[i])
+                            heks[curr_hexes[i].x][curr_hexes[i].y].test = Math.floor(closest*100)/100
+                        } else {
+                            nearest_hexes.push(curr_hexes[i])
+                        }
+                    }
+                }
+                curr_hexes = curr_hexes2
+                stop = true
+            }
+            //console.log(curr_hexes)
+            //redraw(true)
             /*
             var coastlines2 = []
             var townexists = false
@@ -647,6 +753,8 @@ function aimachine(ailevel){
             //possible_targets = possible_targets2
             //possible_targets.sort((x,y)=>-(x.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0)-x.hex.il) * Math.pow(0.5,x.dist) + (y.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0) - y.hex.il) * Math.pow(0.5,y.dist))
             //possible_targets.sort((a,b)=>a.dist - b.dist)
+            possible_targets = nearest_hexes.map(a => new Object({hex:{x:a.x, y:a.y, z:heks[a.x][a.y].z},dist:a.dist}))
+            console.log(possible_targets)
             possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
             //console.log(possible_targets)
             //possible_targets = possible_targets.filter(x => x.distanceMap)
@@ -654,6 +762,11 @@ function aimachine(ailevel){
             possible_targetsAdditional = possible_targets.filter(x=>x.hex.z <= 0).slice(0,5)
             
             possible_targets = possible_targetsNew.concat(possible_targetsAdditional)
+            
+            for(var i in possible_targets){
+                var targ = possible_targets[i]
+                //heks[targ.hex.x][targ.hex.y].test = 'X'
+            }
                         
             tryMakeDestinationMap(dbetter,kolej)
             //possible_targets.sort(() => Math.random() - 0.5)
@@ -1689,7 +1802,7 @@ function aimachine(ailevel){
                         lad_needs = lad_needsByTurn.reduce((a,b)=>Math.max(a,b),0)
                         morze_needs = morze_needsByTurn.reduce((a,b)=>Math.max(a,b),0)
 
-                        mist[miastkol].test = Math.floor(lad_needs) + '/' + Math.floor(morze_needs)
+                        //mist[miastkol].test = Math.floor(lad_needs) + '/' + Math.floor(morze_needs)
                         
                         //console.log(lad_needsByTurn, morze_needsByTurn)
                         

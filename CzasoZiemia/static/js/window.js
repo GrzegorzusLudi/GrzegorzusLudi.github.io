@@ -321,6 +321,83 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
                         return (lat - projectionCoordData.point1_lat) / (projectionCoordData.point2_lat - projectionCoordData.point1_lat) * (projectionCoordData.point2_y - projectionCoordData.point1_y) + projectionCoordData.point1_y
                     }
                 }
+            },
+            'azimuthal': {
+                pointsNeeded:3,
+                func:(lon,lat,pcd,pointX)=>{
+                    var cos = x => Math.cos(x*Math.PI/180)
+                    var sin = x => Math.sin(x*Math.PI/180)
+                    var lambda_0 = Math.atan(( cos(pcd.point1_lat)*sin(pcd.point1_lon)*(pcd.point2_x - pcd.point3_x) +
+                                     cos(pcd.point2_lat)*sin(pcd.point2_lon)*(pcd.point3_x - pcd.point1_x) +
+                                     cos(pcd.point3_lat)*sin(pcd.point3_lon)*(pcd.point1_x - pcd.point2_x) )
+                                    /
+                                    ( cos(pcd.point1_lat)*cos(pcd.point1_lon)*(pcd.point2_x - pcd.point3_x) +
+                                      cos(pcd.point2_lat)*cos(pcd.point2_lon)*(pcd.point3_x - pcd.point1_x) +
+                                      cos(pcd.point3_lat)*cos(pcd.point3_lon)*(pcd.point1_x - pcd.point2_x) )) / Math.PI*180
+                                    
+                    if(pointX){
+                        var A1 = cos(pcd.point1_lat)*sin(pcd.point1_lon-lambda_0), A2 = cos(pcd.point2_lat)*sin(pcd.point2_lon-lambda_0),A3
+                        var a_x,k_x
+                            if(A1 - A2 != 0){
+                                a_x = ( A1 * pcd.point2_x - A2 * pcd.point1_x ) / ( A1 - A2 ) 
+                            } else if(A1 - A3 != 0){
+                                A3 = cos(pcd.point3_lat)*sin(pcd.point3_lon-lambda_0)
+                                a_x = ( A1 * pcd.point3_x - A3 * pcd.point1_x ) / ( A1 - A3 ) 
+                            } else {
+                                A3 = cos(pcd.point3_lat)*sin(pcd.point3_lon-lambda_0)
+                                a_x = ( A2 * pcd.point1_x - A3 * pcd.point3_x ) / ( A3 - A2 ) 
+                            }
+                        var k_x
+                            if(pcd.point1_lon-lambda_0 != 0){
+                                k_x = ( pcd.point1_x - a_x ) / cos(pcd.point1_lat)/sin(pcd.point1_lon-lambda_0)
+                            } else if(pcd.point2_lon-lambda_0 != 0){
+                                k_x = ( pcd.point2_x - a_x ) / cos(pcd.point2_lat)/sin(pcd.point2_lon-lambda_0)
+                            } else {
+                                k_x = ( pcd.point3_x - a_x ) / cos(pcd.point3_lat)/sin(pcd.point3_lon-lambda_0)
+                            }
+                    
+                        return a_x + k_x * cos(lat) * sin(lon-lambda_0)
+                        
+                        /*
+                        return (lon - projectionCoordData.point1_lon) / (projectionCoordData.point2_lon - projectionCoordData.point1_lon) * (projectionCoordData.point2_x - projectionCoordData.point1_x) + projectionCoordData.point1_x*/
+                    } else {
+                        
+                        var phi_0 = Math.atan(( sin(pcd.point1_lat)*(pcd.point3_y - pcd.point2_y) +
+                                     sin(pcd.point2_lat)*(pcd.point1_y - pcd.point3_y) +
+                                     sin(pcd.point3_lat)*(pcd.point2_y - pcd.point1_y) )
+                                    /
+                                    ( cos(pcd.point1_lat)*cos(pcd.point1_lon - lambda_0)*(pcd.point3_y - pcd.point2_y) +
+                                      cos(pcd.point2_lat)*cos(pcd.point2_lon - lambda_0)*(pcd.point1_y - pcd.point3_y) +
+                                      cos(pcd.point3_lat)*cos(pcd.point3_lon - lambda_0)*(pcd.point2_y - pcd.point1_y) )) / Math.PI*180
+                                    
+                        var B1 = cos(phi_0) * sin(pcd.point1_lat) - sin(phi_0) * cos(pcd.point1_lat) * cos(pcd.point1_lon - lambda_0),
+                            B2 = cos(phi_0) * sin(pcd.point2_lat) - sin(phi_0) * cos(pcd.point2_lat) * cos(pcd.point2_lon - lambda_0),
+                            B3
+                            
+                        var a_y
+                        if(B1 - B2 != 0){
+                            a_y = (B1 * pcd.point2_y - B2 * pcd.point1_y) / (B1 - B2)
+                        } else if(B1 - B3 != 0){
+                            B3 = cos(phi_0) * sin(pcd.point3_lat) - sin(phi_0) * cos(pcd.point3_lat) * cos(pcd.point3_lon - lambda_0)
+                            a_y = (B1 * pcd.point3_y - B3 * pcd.point1_y) / (B1 - B3)
+                        } else {
+                            B3 = cos(phi_0) * sin(pcd.point3_lat) - sin(phi_0) * cos(pcd.point3_lat) * cos(pcd.point3_lon - lambda_0)
+                            a_y = (B2 * pcd.point3_y - B3 * pcd.point2_y) / (B2 - B3)
+                        }
+                        var k_y
+                        if(B1 != 0){
+                            k_y = (pcd.point1_y - a_y) / B1
+                        } else if(B2 != 0){
+                            k_y = (pcd.point2_y - a_y) / B2
+                        } else {
+                            k_y = (pcd.point3_y - a_y) / B3
+                        }
+                        
+                        return a_y + k_y * ( cos(phi_0) * sin(lat) - sin(phi_0) * cos(lat) * cos(lon - lambda_0) )
+                        /*
+                        return (lat - projectionCoordData.point1_lat) / (projectionCoordData.point2_lat - projectionCoordData.point1_lat) * (projectionCoordData.point2_y - projectionCoordData.point1_y) + projectionCoordData.point1_y*/
+                    }
+                }
             }
         }
         this.adding = null
@@ -540,16 +617,14 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
                     return
                 }
             }
-            var projectionCoordData = {
-                point1_lon : this.projectionCoordTable[1].lon.value,
-                point1_lat : this.projectionCoordTable[1].lat.value,
-                point2_lon : this.projectionCoordTable[2].lon.value,
-                point2_lat : this.projectionCoordTable[2].lat.value,
+            var projectionCoordData = {}
+            
+            for(var i = 1;i<=pointsNeeded;i++){
+                projectionCoordData['point'+i+'_lon'] = this.projectionCoordTable[i].lon.value
+                projectionCoordData['point'+i+'_lat'] = this.projectionCoordTable[i].lat.value
                 
-                point1_x : this.projectionCoordTable[1].pointX / this.previewCanvas.width * this.image.width,
-                point1_y : this.projectionCoordTable[1].pointY / this.previewCanvas.height * this.image.height,
-                point2_x : this.projectionCoordTable[2].pointX / this.previewCanvas.width * this.image.width,
-                point2_y : this.projectionCoordTable[2].pointY / this.previewCanvas.height * this.image.height
+                projectionCoordData['point'+i+'_x'] = this.projectionCoordTable[i].pointX / this.previewCanvas.width * this.image.width
+                projectionCoordData['point'+i+'_y'] = this.projectionCoordTable[i].pointY / this.previewCanvas.height * this.image.height
             }
             var data = {image:this.image,projection:this.getProjection(),projectionCoordData:projectionCoordData,projectionFunction:this.projections[this.getProjection()].func,width:this.image.width,height:this.image.height}
             this.layerpanel.addRasterMapLayer([], this.fileName, 'raster', data, bounds, pixelSize)

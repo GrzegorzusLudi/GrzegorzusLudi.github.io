@@ -775,8 +775,10 @@ class TwoDCanvas extends AbstractCanvas {
                     firstPoint = false
                 }
             }
-            if(x1)
+            if(x1){
                 this.context.lineTo(x1,y1)
+                this.context.lineTo(x2,y2)
+            }
         }
         if(x2)
             this.context.lineTo(x2,y2)
@@ -813,7 +815,6 @@ class TwoDCanvas extends AbstractCanvas {
         }
     }
     drawImageData(data,x,y){
-        console.log(data)
         this.context.putImageData(data,x,y)
     }
 }

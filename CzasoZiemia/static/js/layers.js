@@ -1431,7 +1431,7 @@ class LayerPanel {
                         }
                     break
                 }
-                console.log(collected)
+
                 if(data.type == "FeatureCollection"){
                     var dividedByIds = {}
                     for(var i in collected){
@@ -1445,7 +1445,7 @@ class LayerPanel {
                     for(var id in dividedByIds){
                         var features = dividedByIds[id]
                         
-                        features = features.sort((a,b)=>(a.from-b.from))
+                        features = features.sort((a,b)=>this.compareDates(a.from,b.from))
                         var newDates = []
                         for(var i in features){
                             var feature = features[i]
