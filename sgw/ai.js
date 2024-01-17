@@ -297,7 +297,7 @@ function aimachine(ailevel){
 				mistdefval[a] = [];
 				for(var b = 0;b<scian;b++){
 					if(heks[a][b].z>0){
-                        heks[a][b].test = ""
+                        //heks[a][b].test = ""
                     
                         /*
                         heks[a][b].test = Number( 
@@ -476,21 +476,34 @@ function aimachine(ailevel){
                 var drur = distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
                 var dr = evalAlliegance(dfrou,distmap)//distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
                 
-                for(var movement_type in distmap.maps){
-                    var dmap = distmap.maps[movement_type].hexmap.filter(x=>x.dist != -1)
-                    
-                    if(movement_type == 'n' || movement_type == 'w'){
-                        dmap.sort((a,b)=>a.dist-b.dist)
+                //for(var movement_type in distmap.maps){
+                var dmap1 = distmap.maps['n'].hexmap.filter(x=>x.dist != -1)
+                var dmap2 = 'w' in distmap.maps ? distmap.maps['w'].hexmap.filter(x=>x.dist != -1) : null
+                
+                dmap1.sort((a,b)=>a.dist-b.dist)
 
-                        for(var i in dmap){
-                            var obj = dmap[i]        
+                for(var i in dmap1){
+                    var obj = dmap1[i]        
+                    
+                    if(( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj.objdist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )){
+                        large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.objdist,water:obj.water,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
+                        
+
+                    }
+                }
+                if(dmap2 != null){
+                    dmap2.sort((a,b)=>a.dist-b.dist)
+                    for(var i in dmap2){
+                        var obj = dmap2[i]        
+                        
+                        if( !(key in large_map[obj.hex.x][obj.hex.y].dmap)/* || obj.dist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )*/){
+                            large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.objdist,water:obj.water,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
                             
-                            if(( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj.dist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )){
-                                large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.dist,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
-                            }
+
                         }
                     }
                 }
+                //}
                     
                 large_map[distmap.hex.heks.x][distmap.hex.heks.y].color = dr
                 if(dr == kolej && distmap.hex.units.length > 0){
@@ -652,7 +665,7 @@ function aimachine(ailevel){
             for(var i = 0;i<scian;i++){
                 for(var j = 0;j<scian;j++){
                     //{dist:Infinity,color:heks[i][j].undr,dmap:{}}
-                    heks[i][j].test = ''
+                    //heks[i][j].test = ''
                     var lmap = large_map[i][j]
                     
                     var closest = Infinity
@@ -666,7 +679,7 @@ function aimachine(ailevel){
                             //{dist:obj.dist,color:obdr}
                             var dmapelem = lmap.dmap[k]
                             
-                            if(dmapelem.color == kolej && dmapelem.dist < closest){
+                            if(dmapelem.color == kolej && dmapelem.dist < closest && dmapelem.dist >= 0){
                                 closest = dmapelem.dist
                                 closestElem = dmapelem
                             }
@@ -689,11 +702,14 @@ function aimachine(ailevel){
             
             var stop = false
             var nearest_hexes = []
+            
+            var scurr = curr_hexes
             while(!stop){
                 var curr_hexes2 = []
                 for(var i = 0;i < curr_hexes.length;i++){
                     var ok = true
                     var clos = curr_hexes[i].closestelem
+                    console.log('cl',clos)
                     if(clos != null){
                         var closcode = clos.x+'#'+clos.y
                         var closelem = large_map[clos.x][clos.y]
@@ -702,16 +718,24 @@ function aimachine(ailevel){
                                 //if(curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap)
                                 //    console.log([curr_hexes[i].dmap[closcode].dist, curr_hexes[j].dmap[closcode].dist, curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist])
                                     
-                                if(closcode in curr_hexes[i].dmap && closcode in curr_hexes[j].dmap && curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap && 
-                                    curr_hexes[i].dmap[closcode].dist-1 > (curr_hexes[j].dmap[closcode].dist + curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)*0.7 ){
-                                    ok = false
-                                    break
+                                if(closcode in curr_hexes[i].dmap && closcode in curr_hexes[j].dmap && curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap/* && 
+                                    curr_hexes[i].dmap[closcode].dist-1 > (curr_hexes[j].dmap[closcode].dist + curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)*0.7 */){
+                                    
+                                    var d1 = curr_hexes[i].dmap[closcode].dist-1//-1 - curr_hexes[j].dmap[closcode].water*2
+                                    var d2 = curr_hexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
+                                    var d3 = curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
+                                        
+                                    //console.log([d1,d2,d3])
+                                    if(d1 > (d2 + d3)*0.75){
+                                        ok = false
+                                        break
+                                    }
                                 }
                             }
                         }
                         if(!ok){
                             curr_hexes2.push(curr_hexes[i])
-                            heks[curr_hexes[i].x][curr_hexes[i].y].test = Math.floor(closest*100)/100
+                            heks[curr_hexes[i].x][curr_hexes[i].y].test = 'F'
                         } else {
                             nearest_hexes.push(curr_hexes[i])
                         }
@@ -720,7 +744,7 @@ function aimachine(ailevel){
                 curr_hexes = curr_hexes2
                 stop = true
             }
-            //console.log(curr_hexes)
+            
             //redraw(true)
             /*
             var coastlines2 = []
@@ -754,7 +778,8 @@ function aimachine(ailevel){
             //possible_targets.sort((x,y)=>-(x.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0)-x.hex.il) * Math.pow(0.5,x.dist) + (y.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0) - y.hex.il) * Math.pow(0.5,y.dist))
             //possible_targets.sort((a,b)=>a.dist - b.dist)
             possible_targets = nearest_hexes.map(a => new Object({hex:{x:a.x, y:a.y, z:heks[a.x][a.y].z},dist:a.dist}))
-            console.log(possible_targets)
+            //console.log(possible_targets)
+            //console.log(possible_targets)
             possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
             //console.log(possible_targets)
             //possible_targets = possible_targets.filter(x => x.distanceMap)
@@ -763,6 +788,7 @@ function aimachine(ailevel){
             
             possible_targets = possible_targetsNew.concat(possible_targetsAdditional)
             
+            //console.log(possible_targets)
             for(var i in possible_targets){
                 var targ = possible_targets[i]
                 //heks[targ.hex.x][targ.hex.y].test = 'X'
@@ -2097,7 +2123,7 @@ function distance(x1,y1,x2,y2){
 
 function copyHexdistmap(hexdistmap,hekstable){
     //{ hex: tocheck[i].border[j], dist: dist, water : waterdist, from: hexfrom  }
-    return hexdistmap.map( x => new Object({ hex: hekstable[x.hex.x][x.hex.y], dist: x.dist, water : x.water, from: x.from === null ? null : hekstable[x.from.x][x.from.y], embarking: x.embarking }))
+    return hexdistmap.map( x => new Object({ hex: hekstable[x.hex.x][x.hex.y], dist: x.dist, objdist: x.objdist, water : x.water, from: x.from === null ? null : hekstable[x.from.x][x.from.y], embarking: x.embarking }))
 }
 function copyHexrangemap(hexrangemap,hekstable){
     //{ hex: tocheck[i].border[j], dist: dist, water : waterdist, from: hexfrom  }
@@ -2167,11 +2193,12 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
     for(var i = 0;i<scian;i++){
         checkedGrid[i] = []
         for(var j = 0;j<scian;j++){
-            checkedGrid[i][j] = {dist:-1,water:startwater,range:-1,from:null,embarking:0}
+            checkedGrid[i][j] = {dist:-1,objdist:-1,water:startwater,range:-1,from:null,embarking:0}
             
         }
     }
     checkedGrid[x][y].dist = 0
+    checkedGrid[x][y].objdist = 0
     
     addEmbarkingPossibility(hekstable,checkedGrid)
     
@@ -2240,14 +2267,14 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                                 //if(wieltratw > 0){
                                 //    pluswater = 1
                                 //} else {
-                                    pluswater = 3
+                                    pluswater = 1
                                 //}
                             } else if(hexfrom.z != -1){
                                 //if(wieltratw > 0){
                                 //    pluswater = 1
                                 //} else {
                                 if(checkedGrid[hexto.x][hexto.y].embarking > 0){
-                                    pluswater = 3
+                                    pluswater = 1
                                     step += 5
                                 } else if(bridgemaking) {
                                     step *= 2
@@ -2269,6 +2296,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                     if(checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist == -1 || checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist > checkedGrid[tocheck[i].x][tocheck[i].y].dist + step + pluswater*2){
                         var dist = checkedGrid[hexfrom.x][hexfrom.y].dist + step + pluswater*2
                         var waterdist = checkedGrid[hexfrom.x][hexfrom.y].water + pluswater
+                        var objdist = checkedGrid[hexfrom.x][hexfrom.y].objdist - (-1)
                         
                         if(checkedGrid[hexfrom.x][hexfrom.y].from != undefined && hekstable[tocheck[i].border[j].x][tocheck[i].border[j].y] != undefined && checkedGrid[hexfrom.x][hexfrom.y].from.x == hekstable[tocheck[i].border[j].x][tocheck[i].border[j].y].x && checkedGrid[hexfrom.x][hexfrom.y].from.y == hekstable[tocheck[i].border[j].x][tocheck[i].border[j].y].y)
                             continue
@@ -2279,6 +2307,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                         checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].dist = dist
                         checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].water = waterdist
                         checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].from = hexfrom
+                        checkedGrid[tocheck[i].border[j].x][tocheck[i].border[j].y].objdist = objdist
                         
                         //if(heks[x][y].unp >= 1 && heks[x][y].z >= 0 && heks[x][y].undr == kolej){
                             //heks[hexto.x][hexto.y].test = hexfrom != null//(3+j)%6//checkedGrid[hexto.x][hexto.y].embarking
@@ -2306,7 +2335,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
             //}
             //if(!water && !mountain && !air && !transporting)
             //      heks[i][j].test = checkedGrid[i][j].dist
-            checkedList.push( { hex: hekstable[i][j], dist: checkedGrid[i][j].dist, water : checkedGrid[i][j].water, from: checkedGrid[i][j].from, embarking: checkedGrid[i][j].embarking} )
+            checkedList.push( { hex: hekstable[i][j], dist: checkedGrid[i][j].dist, objdist: checkedGrid[i][j].objdist, water : checkedGrid[i][j].water, from: checkedGrid[i][j].from, embarking: checkedGrid[i][j].embarking} )
         }        
     }
     //if(!water && !mountain && !heavy && !air && !transporting && heks[x][y].unp >= 1 && heks[x][y].z >= 0 && heks[x][y].undr == kolej)
