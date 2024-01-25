@@ -714,6 +714,7 @@ function aimachine(ailevel){
                 }
             }
             
+            
             var stop = false
             var nearest_hexes = []
             
