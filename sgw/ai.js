@@ -385,11 +385,16 @@ function aimachine(ailevel){
                     if(hex.unt[i] == -1)
                         continue
                     var unit = unix[kolej][hex.unt[i]]
-                    if(unit != undefined && pathIsThroughCrowdedCity(null,hex.x,hex.y,unit.ruchk,unit.rucho)){
+                    if(unit != undefined && pathIsThroughCrowdedCity(null,hex.x,hex.y,unit.ruchk,unit.rucho,unit)){
+                        zaznu = -1
+                        zaznu = hex.unt[i]
+                        zaznaj(hex.unt[i],false)
                         odceluj(hex.unt[i],kolej);
                         //if(unix[kolej][hex.unt[i]] != undefined && unix[kolej][hex.unt[i]].x != undefined && unix[kolej][hex.unt[i]].x != -1){
                             oddroguj(hex.unt[i],kolej,false);
                         //}
+                        zaznu = -1
+
                     }
                 }
                 spojy++
@@ -694,9 +699,18 @@ function aimachine(ailevel){
             var dist_layers = {}
             var curr_hexes = []
             for(var key in dfrou.distmaps){
-                if(dfrou.distmaps[key].hex.dru != kolej){
-                    var coords = key.split('#')
-                    curr_hexes.push(large_map[coords[0]][coords[1]])
+                if(dfrou.distmaps[key].hex.dru != kolej/* && dfrou.distmaps[key].hex.heks.z > 0*/){
+                    var okoks = dfrou.distmaps[key].hex.heks.z > 0
+                    if(!okoks)
+                        for(var j in dfrou.distmaps[key].hex.units){
+                            var unit = dfrou.distmaps[key].hex.units[j]
+                            if(zast[unit.rodz] != 'x' && zast[unit.rodz] != 'm')
+                                okoks = true
+                        }
+                    if(okoks){
+                        var coords = key.split('#')
+                        curr_hexes.push(large_map[coords[0]][coords[1]])
+                    }
                 }
             }
             
@@ -709,7 +723,7 @@ function aimachine(ailevel){
                 for(var i = 0;i < curr_hexes.length;i++){
                     var ok = true
                     var clos = curr_hexes[i].closestelem
-                    console.log('cl',clos)
+                    //console.log('cl',clos)
                     if(clos != null){
                         var closcode = clos.x+'#'+clos.y
                         var closelem = large_map[clos.x][clos.y]
@@ -723,10 +737,10 @@ function aimachine(ailevel){
                                     
                                     var d1 = curr_hexes[i].dmap[closcode].dist-1//-1 - curr_hexes[j].dmap[closcode].water*2
                                     var d2 = curr_hexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
-                                    var d3 = curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
+                                    var d3 = (curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                         
                                     //console.log([d1,d2,d3])
-                                    if(d1 > (d2 + d3)*0.75){
+                                    if(d1 >= (d2 + d3)*0.675){
                                         ok = false
                                         break
                                     }
@@ -2267,14 +2281,14 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                                 //if(wieltratw > 0){
                                 //    pluswater = 1
                                 //} else {
-                                    pluswater = 1
+                                    pluswater = 3
                                 //}
                             } else if(hexfrom.z != -1){
                                 //if(wieltratw > 0){
                                 //    pluswater = 1
                                 //} else {
                                 if(checkedGrid[hexto.x][hexto.y].embarking > 0){
-                                    pluswater = 1
+                                    pluswater = 3
                                     step += 5
                                 } else if(bridgemaking) {
                                     step *= 2
@@ -2989,7 +3003,7 @@ function embarkingPointFromLeadedPath(x,y,ruchk,rucho,stopBefore){
     }
     return null
 }
-function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho,unitAttackStrength){
+function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho,unitAttackStrength,unit){
     return false
     var orhe = heks[x][y]
     var he = heks[x][y]
@@ -3000,7 +3014,13 @@ function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho,unitAttackStrength){
                 break
             
             var str = he.x+'#'+he.y
-            if(i > 0 && i < ruchk.length-1 && /*(he.dru != undefined && he.dru != kolej || he.d != undefined && he.d != kolej) && */(dm != undefined && str in dm.distmaps && dm.distmaps[str].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp == 4)){
+            if(i > 0 && i <= ruchk.length-1 && /*(he.dru != undefined && he.dru != kolej || he.d != undefined && he.d != kolej) && */(dm != undefined && str in dm.distmaps && dm.distmaps[str].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp == 4)){
+                return true
+            }
+            //if(zast[unit.rodz] == 'x' || zast[unit.rodz] == 'm')
+            //    console.log([he.dru,unit.d])
+            if((zast[unit.rodz] == 'x' || zast[unit.rodz] == 'm') && he.undr != unit.d && heks[he.x][he.y].unp > 0){
+                console.log('usuń!')
                 return true
             }
             /*
@@ -3252,7 +3272,7 @@ function allColorTables(){
     return result
 }
 szytisn = {szyt:'n'}
-function evalUnitAttack(unit,actions,model,oneaction){
+function evalUnitAttack(unit,actions,model,oneaction,path){
     var il = unit.il
     var thisaction = oneaction || actions == undefined ? actions : actions[0]
     if(actions != undefined && (oneaction || actions.length > 0) && thisaction.il != undefined)
@@ -3260,8 +3280,14 @@ function evalUnitAttack(unit,actions,model,oneaction){
         
     var terrainFactor = 1
     if(actions != undefined && (oneaction || actions.length > 0) && thisaction.type == 'move'){
-        origHex = model.board[thisaction.from[0]][thisaction.from[1]]
-        destHex = model.board[thisaction.destination[0]][thisaction.destination[1]]
+        var origHex,destHex
+        if(path != undefined && zas[unit.rodz] > 1 && unit.actions.length - zas[unit.rodz] > path.path.length){
+            origHex = model.board[path.path[unit.actions.length - zas[unit.rodz]].x][path.path[unit.actions.length - zas[unit.rodz]].y]
+            destHex = model.board[thisaction.destination[0]][thisaction.destination[1]]
+        } else {
+            origHex = model.board[thisaction.from[0]][thisaction.from[1]]
+            destHex = model.board[thisaction.destination[0]][thisaction.destination[1]]
+        }
         
         terrainFactor = ataz2(unit,szytisn,origHex,destHex,"a")
     }
@@ -3275,7 +3301,7 @@ function evalUnitAttack(unit,actions,model,oneaction){
 function evalUnitDefense(unit,il){
     if(il == undefined)
         il = unit.il
-    return at[unit.rodz] * (0.5+obrr[unit.rodz]) * exponentiel(il)
+    return (at[unit.rodz]+0.001) * (0.5+obrr[unit.rodz]) * exponentiel(il)
 }
 MAX_TURNS = 10
 SMALL_FRACTION = 0.0000001
@@ -3580,6 +3606,8 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                     }*/
                     
                     if(unit.actions.length > 0){
+                        
+                        var path = null
                         var movingDelay = 0
                         for(var j in unit.actions){
                             var action = unit.actions[j]
@@ -3589,9 +3617,12 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                 if(alreadyAttacking != null && code != destiny)
                                     continue
                                     
+                                if(unit.actions.length > 1 && zas[unit.rodz] > 1 && j > unit.actions.length - zas[unit.rodz])
+                                    break
+                                    
                                 var dist = action.rucho.reduce((a,b)=>a+b,0)
                                 
-                                var path = leadedPaths[j]
+                                path = leadedPaths[j]
                                 var losses = 0
                                 
                                 if(alreadyAttacking != null)
@@ -3601,7 +3632,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                         }
                                     }
                                 
-                                var unitAttackStrength2 = action.destination[0] in dm.model.board ? evalUnitAttack(unit, action, dm.model, true) : 0
+                                var unitAttackStrength2 = action.destination[0] in dm.model.board ? evalUnitAttack(unit, action, dm.model, true, path) : 0
                                 var origUnitAttackStrength2 = unitAttackStrength2
 
                                 var embarkingDelay = 0
@@ -3746,6 +3777,8 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                             }
                             if(action.type == 'aim'){                          
                                 if(alreadyAttacking != null && action.hex_x+'#'+action.hex_y != destiny)
+                                    continue
+                                if(action.celd == -2)
                                     continue
                                 var code = unix[action.celd][action.celu].x + '#' + unix[action.celd][action.celu].y//action.hex_x + '#'+ action.hex_y
                                 for(var t = movingDelay;t<MAX_TURNS;t++){
@@ -4641,6 +4674,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets){
             values2ByTime[t] = values2ByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
         }
         value2 = values2ByTime.reduce((a,b) => a+b, 0)
+        console.log('value1: '+value+' value2: '+value2)
 
         //if(i > 0){
         //    console.log(i,value,value2)
@@ -4661,7 +4695,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets){
             }
         }
         var score2 = 0
-        for(var i = 0;i<MAX_TURNS;i++){ score2 += Math.pow(1/2.1,dm.score[kolej][i]) }
+        for(var j = 0;j<MAX_TURNS;j++){ score2 += Math.pow(1/2.1,dm.score[kolej][j]) }
             
         if(value2 < value || score1 < score2){
             if(!evaluated){
