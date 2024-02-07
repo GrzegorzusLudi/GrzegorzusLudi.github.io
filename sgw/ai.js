@@ -258,7 +258,9 @@ function extractActions(map){
     
 }
 
-function evalAlliegance(dmap,obj){
+function evalAlliegance(dmap,obj,t){
+    if(t == undefined)
+        t = MAX_TURNS-1
     var code = obj.hex.heks.x + '#' + obj.hex.heks.y
     var undr = obj.hex.heks.undr != undefined ? obj.hex.heks.undr : obj.hex.heks.dru
     if(code in dmap.distmaps){
@@ -388,11 +390,11 @@ function aimachine(ailevel){
                     if(unit != undefined && pathIsThroughCrowdedCity(null,hex.x,hex.y,unit.ruchk,unit.rucho,unit)){
                         zaznu = -1
                         zaznu = hex.unt[i]
-                        zaznaj(hex.unt[i],false)
+                        //zaznaj(hex.unt[i],false)
                         odceluj(hex.unt[i],kolej);
-                        //if(unix[kolej][hex.unt[i]] != undefined && unix[kolej][hex.unt[i]].x != undefined && unix[kolej][hex.unt[i]].x != -1){
+                        if(unix[kolej][hex.unt[i]] != undefined && unix[kolej][hex.unt[i]].x != undefined && unix[kolej][hex.unt[i]].x != -1){
                             oddroguj(hex.unt[i],kolej,false);
-                        //}
+                        }
                         zaznu = -1
 
                     }
@@ -412,7 +414,7 @@ function aimachine(ailevel){
             evaluate(dfrou,2)
             
             legalActions(dfrou,simplifieddistmaps)
-            ulepszyns = 4
+            ulepszyns = 6
             aistan = 1.15
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -429,18 +431,12 @@ function aimachine(ailevel){
                 inaccessible_path[i] = {}
                 for(var j = 0;j<scian;j++){
                     inaccessible_path[i][j] = {x:i,y:j,inaccessible:true,coast:-1}
+                    if(ulepszyns == 6)
                     heks[i][j].test = ""
                 }
             }
             
             
-            large_map = {}
-            for(var i = 0;i<scian;i++){
-                large_map[i] = {}
-                for(var j = 0;j<scian;j++){
-                    large_map[i][j] = {x:i,y:j,color:heks[i][j].undr,dmap:{},closestelem:null,dist:Infinity}
-                }
-            }
             
             var sidima = {}
             for(var i in simplifieddistmaps){
@@ -450,6 +446,8 @@ function aimachine(ailevel){
             }
             dbetter = copyDistmaps(dfrou)
             evaluate(dbetter,2)
+            
+            large_map = prepareLargeMap(dfrou)
             
             //legalActions(dbetter)
             possible_targets_ix = 0
@@ -480,7 +478,7 @@ function aimachine(ailevel){
                 
                 var drur = distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
                 var dr = evalAlliegance(dfrou,distmap)//distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
-                
+                /*
                 //for(var movement_type in distmap.maps){
                 var dmap1 = distmap.maps['n'].hexmap.filter(x=>x.dist != -1)
                 var dmap2 = 'w' in distmap.maps ? distmap.maps['w'].hexmap.filter(x=>x.dist != -1) : null
@@ -500,14 +498,15 @@ function aimachine(ailevel){
                     dmap2.sort((a,b)=>a.dist-b.dist)
                     for(var i in dmap2){
                         var obj = dmap2[i]        
-                        
-                        if( !(key in large_map[obj.hex.x][obj.hex.y].dmap)/* || obj.dist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )*/){
+                        if( !(key in large_map[obj.hex.x][obj.hex.y].dmap)
+                            // || obj.dist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )
+                        ){
                             large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.objdist,water:obj.water,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
                             
 
                         }
                     }
-                }
+                }*/
                 //}
                     
                 large_map[distmap.hex.heks.x][distmap.hex.heks.y].color = dr
@@ -667,6 +666,29 @@ function aimachine(ailevel){
             possible_coastline = sorted_coastlines.length == 0 ? null : sorted_coastlines[0]
             
             
+            /*
+             * 
+        var wysortowane = []
+        for(var j = 0;j < other_hexes.length;j++){
+            var code = other_hexes[j].x + '#' + other_hexes[j].y
+            
+            if(code in hexes[i].dmap){
+                wysortowane.push({hex:other_hexes[j],dist:hexes[i].dmap[code].dist})
+            }
+        }
+        wysortowane.sort((a,b) => a.dist - b.dist)
+        
+        var hexDef = summedHexValue(hexes[i].x,hexes[i].y,false)
+        var toOvercome = 0
+        for(var j in wysortowane){
+            toOvercome += summedHexValue(wysortowane[j].hex.x,wysortowane[j].hex.y,true)
+            if(toOvercome > hexDef){
+                dist = wysortowane[j].dist
+                clos = wysortowane[j].hex
+                break
+            }
+        }*/
+            //summedHexValue
             for(var i = 0;i<scian;i++){
                 for(var j = 0;j<scian;j++){
                     //{dist:Infinity,color:heks[i][j].undr,dmap:{}}
@@ -676,19 +698,40 @@ function aimachine(ailevel){
                     var closest = Infinity
                     var closestElem = null
                     
-                    if(lmap.color == kolej){
+                    
+                    if(lmap.color == k){
                         closest = 0
                         closestElem = lmap
                     } else {
+                        
+                        var hexDef = summedHexValue(i,j,false)
+                        var toOvercome = 0
+                        
+                        var wysortowane = []
+                        
                         for(var k in lmap.dmap){
                             //{dist:obj.dist,color:obdr}
                             var dmapelem = lmap.dmap[k]
-                            
-                            if(dmapelem.color == kolej && dmapelem.dist < closest && dmapelem.dist >= 0){
+                            /*
+                            if(dmapelem.color == kolej && dmapelem.x+'#'+dmapelem.y in dfrou.distmaps && dmapelem.dist < closest && dmapelem.dist >= 0){
                                 closest = dmapelem.dist
                                 closestElem = dmapelem
+                            }*/
+                            if(dmapelem.color == kolej && dmapelem.x+'#'+dmapelem.y in dfrou.distmaps && dmapelem.dist >= 0){
+                                wysortowane.push({hex:dmapelem,dist:dmapelem.dist})
                             }
                         }
+                        wysortowane.sort((a,b) => a.dist - b.dist)
+                        
+                        for(var k in wysortowane){
+                            toOvercome += summedHexValue(wysortowane[k].hex.x,wysortowane[k].hex.y,true)
+                            if(toOvercome > hexDef){
+                                closest = wysortowane[k].dist
+                                closestElem = wysortowane[k].hex
+                                break
+                            }
+                        }
+
                     }
                     //heks[i][j].test = Math.floor(closest*100)/100
                     lmap.closestelem = closestElem
@@ -718,6 +761,8 @@ function aimachine(ailevel){
             var stop = false
             var nearest_hexes = []
             
+            var behind = {}
+            
             var scurr = curr_hexes
             while(!stop){
                 var curr_hexes2 = []
@@ -735,30 +780,45 @@ function aimachine(ailevel){
                                     
                                 if(closcode in curr_hexes[i].dmap && closcode in curr_hexes[j].dmap && curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap/* && 
                                     curr_hexes[i].dmap[closcode].dist-1 > (curr_hexes[j].dmap[closcode].dist + curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)*0.7 */){
-                                    
+                                    var d2code = curr_hexes[j].x+'#'+curr_hexes[j].y
                                     var d1 = curr_hexes[i].dmap[closcode].dist-1//-1 - curr_hexes[j].dmap[closcode].water*2
                                     var d2 = curr_hexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
                                     var d3 = (curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                         
                                     //console.log([d1,d2,d3])
-                                    if(d1 >= (d2 + d3)*0.675){
+                                    if(d1 >= (d2 + d3)*0.75){
+                                        if(!(d2code in behind))
+                                            behind[d2code] = {hex:curr_hexes[j],value:0}
+                                        behind[d2code].value += heks[curr_hexes[i].x][curr_hexes[i].y].z
                                         ok = false
-                                        break
                                     }
                                 }
                             }
                         }
                         if(!ok){
                             curr_hexes2.push(curr_hexes[i])
-                            heks[curr_hexes[i].x][curr_hexes[i].y].test = 'F'
+                            //heks[curr_hexes[i].x][curr_hexes[i].y].test = 'F'
                         } else {
                             nearest_hexes.push(curr_hexes[i])
+                            /*
+                            var code = curr_hexes[i].x+'#'+curr_hexes[i].y
+                            if(!(code in behind))
+                                behind[code] = {hex:curr_hexes[i],value:0}
+                            behind[code].value += heks[curr_hexes[i].x][curr_hexes[i].y].z
+                            */
                         }
                     }
                 }
                 curr_hexes = curr_hexes2
                 stop = true
             }
+            
+            
+            /*
+            if(ulepszyns == 6)
+            for(var code in behind){
+                heks[behind[code].hex.x][behind[code].hex.y].test = behind[code].value
+            }*/
             
             //redraw(true)
             /*
@@ -792,16 +852,34 @@ function aimachine(ailevel){
             //possible_targets = possible_targets2
             //possible_targets.sort((x,y)=>-(x.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0)-x.hex.il) * Math.pow(0.5,x.dist) + (y.hex.units.reduce((a,b)=>a+evalUnitDefense(b),0) - y.hex.il) * Math.pow(0.5,y.dist))
             //possible_targets.sort((a,b)=>a.dist - b.dist)
-            possible_targets = nearest_hexes.map(a => new Object({hex:{x:a.x, y:a.y, z:heks[a.x][a.y].z},dist:a.dist}))
+            //possible_targets = nearest_hexes.map(a => new Object({hex:{x:a.x, y:a.y, z:heks[a.x][a.y].z},dist:a.dist}))
+            
+            possible_targets = nearest_hexes.map(a => new Object({hex:{x:a.x, y:a.y, z:heks[a.x][a.y].z},value:0}))
+            for(var i in possible_targets){
+                var targ = possible_targets[i]
+                
+                var modif = {}
+                modif[targ.hex.x+'#'+targ.hex.y] = kolej
+                targ.value = calculateStrategicMapForTeam(large_map, dfrou, kolej, modif)
+            }
+            
+            //calculateStrategicMapForTeam(large_map, dm, color, mod)
             //console.log(possible_targets)
             //console.log(possible_targets)
-            possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
+            //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
+            possible_targets.sort((a,b)=>(-a.value + b.value))
+
+            
+            //possible_targets.sort((a,b) => (a.x+'#'+a.y in behind ? behind[a.x+'#'+a.y].value : 0) - (b.x+'#'+b.y in behind ? behind[b.x+'#'+b.y].value : 0))
+            
             //console.log(possible_targets)
             //possible_targets = possible_targets.filter(x => x.distanceMap)
-            possible_targetsNew = possible_targets.filter(x=>x.hex.z > 0).slice(0,10)
-            possible_targetsAdditional = possible_targets.filter(x=>x.hex.z <= 0).slice(0,5)
             
-            possible_targets = possible_targetsNew.concat(possible_targetsAdditional)
+            //possible_targetsNew = possible_targets.filter(x=>x.hex.z > 0).slice(0,10)
+            //possible_targetsAdditional = possible_targets.filter(x=>x.hex.z <= 0).slice(0,5)
+            
+            //possible_targets = possible_targetsNew.concat(possible_targetsAdditional)
+            possible_targets = possible_targets.slice(0,15)
             
             //console.log(possible_targets)
             for(var i in possible_targets){
@@ -823,9 +901,9 @@ function aimachine(ailevel){
                         ulepszyns--
                     }
                     var score1 = 0
-                    for(var i = 0;i<MAX_TURNS;i++){ score1 += Math.pow(1/2.1,dfrou.score[kolej][i]) }
+                    for(var i = 0;i<MAX_TURNS;i++){ score1 += dfrou.score[kolej][i] * Math.pow(1/2.1,i) }
                     var score2 = 0
-                    for(var i = 0;i<MAX_TURNS;i++){ score2 += Math.pow(1/2.1,dbetter.score[kolej][i]) }
+                    for(var i = 0;i<MAX_TURNS;i++){ score2 += dbetter.score[kolej][i] * Math.pow(1/2.1,i) }
                     if(score2 <= score1){
                         dfrou = copyDistmaps(dbetter)
                         evaluate(dfrou,2)
@@ -890,13 +968,24 @@ function aimachine(ailevel){
                     var maxBetter = 0
                     var minBetter = 0
                     
+                    var score__1 = 0
+                    var score__2 = 0
                     var score_1 = 0
                     var score_2 = 0
                     
                     for(var t in newDistmap.score){
-                        score_1 += newDistmap.score[t][kolej] / Math.pow(2.1,t)
-                        score_2 += dbetter.score[t][kolej] / Math.pow(2.1,t)
+                        score__1 += newDistmap.score[t][kolej] / Math.pow(2.1,t) / 4000
+                        score__2 += dbetter.score[t][kolej] / Math.pow(2.1,t) / 4000
                     }
+                    
+                    var modif = {}
+                    var large_map = prepareLargeMap(dbetter)
+                    //var large_map2 = prepareLargeMap(dbetter)
+                    for(var t in newDistmap.score){
+                        score_1 += calculateStrategicMapForTeam(large_map, newDistmap, kolej, modif, t) / Math.pow(2.1,t)
+                        score_2 += calculateStrategicMapForTeam(large_map, dbetter, kolej, modif, t) / Math.pow(2.1,t)
+                    }
+                    
                     
                     /*for(var t = 0;t<MAX_TURNS;t++){
                         if(Math.max(0,-score2[t][kolej] + score1[t][kolej]) > maxBetter){
@@ -912,7 +1001,7 @@ function aimachine(ailevel){
                         if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej])
                             overall_score_changed = true
                     }*/
-                    if(score_1 > score_2){
+                    if(score_1 > score_2/* && score__1 >= score__2*/){
                         dbetter = newDistmap
                         if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej])
                             overall_score_changed = true
@@ -1948,6 +2037,160 @@ function aimachine(ailevel){
 		break;
 	}
 }
+
+function prepareLargeMap(dm,t){
+    if(t == undefined)
+        t= MAX_TURNS-1
+    var large_map = {}
+    for(var i = 0;i<scian;i++){
+        large_map[i] = {}
+        for(var j = 0;j<scian;j++){
+            var ckolor = key in dm.distmaps ? evalAlliegance(dm,dm.distmaps[key],t) : heks[i][j].undr
+            large_map[i][j] = {x:i,y:j,color:ckolor,dmap:{},closestelem:null,dist:Infinity}
+        }
+    }
+    
+    
+    for(var key in dm.distmaps){
+        var distmap = dm.distmaps[key]
+        
+        
+        var dr = evalAlliegance(dm,distmap)//distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
+        
+        //for(var movement_type in distmap.maps){
+        var dmap1 = distmap.maps['n'].hexmap.filter(x=>x.dist != -1)
+        var dmap2 = 'w' in distmap.maps ? distmap.maps['w'].hexmap.filter(x=>x.dist != -1) : null
+        
+        dmap1.sort((a,b)=>a.dist-b.dist)
+
+        for(var i in dmap1){
+            var obj = dmap1[i]        
+            
+            if(( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj.objdist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )){
+                large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.objdist,water:obj.water,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
+                
+
+            }
+        }
+        if(dmap2 != null){
+            dmap2.sort((a,b)=>a.dist-b.dist)
+            for(var i in dmap2){
+                var obj = dmap2[i]        
+                if( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj.objdist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist ){
+                    if(key in large_map[obj.hex.x][obj.hex.y].dmap){
+                        large_map[obj.hex.x][obj.hex.y].dmap[key].dist = obj.objdist
+                    } else {
+                        large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.objdist,water:obj.water,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
+                    }
+                }
+            }
+        }
+    }
+    return large_map
+}
+
+function calculateStrategicMapForTeam(large_map, dm, color, mod, t){
+    if(t == undefined)
+        t = MAX_TURNS - 1
+    var nearest_hexes = []
+    var other_hexes = []
+    var hexes = []
+    var behind = {}
+    for(var key in dm.distmaps){
+        var okoks = dm.distmaps[key].hex.heks.z > 0
+        if(!okoks)
+            for(var j in dm.distmaps[key].hex.units){
+                var unit = dm.distmaps[key].hex.units[j]
+                if(zast[unit.rodz] != 'x' && zast[unit.rodz] != 'm')
+                    okoks = true
+            }
+        if(okoks){
+            var coords = key.split('#')
+            var druu = dm.distmaps[key].alliegance[t] 
+            if(druu == color && (mod == undefined || !(key in mod) || mod[key] == color) || druu != color && (mod != undefined && key in mod && mod[key] == color)){
+                hexes.push(large_map[coords[0]][coords[1]])
+                behind[key] = {hex:large_map[coords[0]][coords[1]],value:dm.distmaps[key].hex.heks.z}
+
+            } else {
+                other_hexes.push(large_map[coords[0]][coords[1]])
+            }
+        }
+    }
+    for(var i = 0;i < hexes.length;i++){
+        var ok = true
+        var clos = null
+        var dist = Infinity
+        
+        //summedHexValue
+        var wysortowane = []
+        for(var j = 0;j < other_hexes.length;j++){
+            var code = other_hexes[j].x + '#' + other_hexes[j].y
+            
+            /*if(code in hexes[i].dmap && (clos == null || hexes[i].dmap[code].dist < dist)){
+                clos = other_hexes[j]
+                dist = hexes[i].dmap[code].dist
+            }*/
+            if(code in hexes[i].dmap && hexes[i].color != color){
+                wysortowane.push({hex:other_hexes[j],dist:hexes[i].dmap[code].dist})
+            }
+        }
+        wysortowane.sort((a,b) => a.dist - b.dist)
+        
+        var hexDef = summedHexValue(hexes[i].x,hexes[i].y,false)
+        var toOvercome = 0
+        for(var j in wysortowane){
+            toOvercome += summedHexValue(wysortowane[j].hex.x,wysortowane[j].hex.y,true)
+            if(toOvercome > hexDef){
+                dist = wysortowane[j].dist
+                clos = wysortowane[j].hex
+                break
+            }
+        }
+        
+        //console.log('cl',clos)
+        if(clos != null){
+            var closcode = clos.x+'#'+clos.y
+            var closelem = large_map[clos.x][clos.y]
+            for(var j = 0;j < hexes.length;j++){
+                if(i != j){                                    
+                    if(closcode in hexes[i].dmap && closcode in hexes[j].dmap && hexes[j].x+'#'+hexes[j].y in hexes[i].dmap && hexes[j]){
+                        var d2code = hexes[j].x+'#'+hexes[j].y
+                        var d1 = hexes[i].dmap[closcode].dist-1//-1 - curr_hexes[j].dmap[closcode].water*2
+                        var d2 = hexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
+                        var d3 = (hexes[i].dmap[hexes[j].x+'#'+hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
+                            
+                        var condit = d1 >= (d2 + d3)*0.75
+                        //console.log([d1,d2,d3])
+                        if(d1 <= 2 || condit){
+                            if(condit)
+                                behind[d2code].value += heks[hexes[i].x][hexes[i].y].z// - d3/10000
+                            ok = false
+                        }
+                    }
+                }
+            }
+            if(ok){
+                nearest_hexes.push(hexes[i])
+            }
+        }
+    }
+    
+    var totalscore = 0
+    for(var code in behind){
+        //heks[behind[code].hex.x][behind[code].hex.y].test = behind[code].value
+        totalscore += behind[code].value
+    }
+    return totalscore
+}
+function summedHexValue(x,y,att){
+    var summa = 0
+    for(var i = 0;i<heks[x][y].unp;i++){
+        var unit = unix[heks[x][y].undr][heks[x][y].unt[i]]
+        summa += att ? evalUnitAttack(unit) : evalUnitDefense(unit)
+    }
+    return summa
+}
+            
 function dfsStack(v,visited,stack,relations){
     visited[v] = true
     if(!(v in relations))
@@ -3005,8 +3248,7 @@ function embarkingPointFromLeadedPath(x,y,ruchk,rucho,stopBefore){
     return null
 }
 function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho,unitAttackStrength,unit){
-    return false
-    var orhe = heks[x][y]
+//    return false
     var he = heks[x][y]
     for(var i=0;i<ruchk.length;i++){
         for(var j = 0;j<rucho[i];j++){
@@ -3015,12 +3257,12 @@ function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho,unitAttackStrength,unit){
                 break
             
             var str = he.x+'#'+he.y
-            if(i > 0 && i <= ruchk.length-1 && /*(he.dru != undefined && he.dru != kolej || he.d != undefined && he.d != kolej) && */(dm != undefined && str in dm.distmaps && dm.distmaps[str].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp == 4)){
+            if(i > 0 && i <= ruchk.length-1 && /*(he.dru != undefined && he.dru != kolej || he.d != undefined && he.d != kolej) && */(dm != undefined && str in dm.distmaps && dm.distmaps[str].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp >= 4)){
                 return true
             }
             //if(zast[unit.rodz] == 'x' || zast[unit.rodz] == 'm')
             //    console.log([he.dru,unit.d])
-            if((zast[unit.rodz] == 'x' || zast[unit.rodz] == 'm') && he.undr != unit.d && heks[he.x][he.y].unp > 0){
+            if(unit != undefined && (zast[unit.rodz] == 'x' || zast[unit.rodz] == 'm') && heks[he.x][he.y].undr != unit.d && heks[he.x][he.y].undr != -1 && heks[he.x][he.y].unp > 0){
                 console.log('usuń!')
                 return true
             }
@@ -3404,7 +3646,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                 //var unitDefenseStrength = evalUnitDefense(unit)
             }
             if(hasdefense){
-                var st = 1
+                var st = 2
                 var jejgo = 1
                 for(var t = 0;t<MAX_TURNS;t++){
                     if(alreadyAttacking == undefined){
@@ -3667,7 +3909,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                         
                                     
                                     if(addedembapo[i+'#'+k]){
-                                        //embarkingDelay = Infinity
+                                        embarkingDelay = Infinity
                                         /*
                                         var kod = embarkingOnPlace && lastFieldX != null ? lastFieldX+'#'+lastFieldY : code2
                                         
@@ -3697,8 +3939,12 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                             }
                                         }*/
                                         unitAttackStrength2 = origUnitAttackStrength2 * (1 - embarkingPossible/unit.il)
-                                        if(embapo >= unit.il * 0.7){
-                                            if(heks[lastFieldX][lastFieldX].z > 0 && bembapo >= unit.il * 0.7){
+                                        //if(embapo >= unit.il * 0.7){
+                                            /*
+                                            for(var l = 0;l<heks[lastFieldX][lastFieldX].unp;l++){
+                                                
+                                            }*/
+                                            if(heks[lastFieldX][lastFieldX].z > 0 && (bembapo >= unit.il * 0.7 || embapo >= unit.il * 0.7)){
                                                 
                                                 var il = unit.il
                                                 if(i+'#'+k in embapot)
@@ -3716,7 +3962,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                                     embapo -= unit.il
                                                 }
                                             }
-                                        }
+                                        //}
                                         //console.log(embarkingDelay)
                                         
                                     }
@@ -3762,7 +4008,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                     }
                                 }
                                 //if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho,unitAttackStrength))
-                                if(unitAttackStrength2 > 0)
+                                if(unitAttackStrength2 > 0 && embarkingDelay < Infinity)
                                     for(var t = 0;t<MAX_TURNS;t++){
                                         if(code in distmaps && szy[unit.rodz] * (t - embarkingDelay) + (zas[unit.rodz] <= 1 || unit.szyt != szyt[unit.rodz] ? 0 : zas[unit.rodz]) >= dist){
                                         //console.log(szy[unit.rodz] * t + zas[unit.rodz], dist, unitAttackStrength)
@@ -4607,8 +4853,10 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets){
     
     evaluate(dm)
     
+    var modif = {}
     var score1 = 0
     for(var i = 0;i<MAX_TURNS;i++){ score1 += Math.pow(1/2.1,dm.score[kolej][i]) }
+    //score_1 = calculateStrategicMapForTeam(large_map, dm, kolej, modif)
     //var backup = getScoresAndAlliegances(dm)
     var postęp = 0
     var valuesByTime = dm.distmaps[code].alliegance.slice()
@@ -4675,7 +4923,6 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets){
             values2ByTime[t] = values2ByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
         }
         value2 = values2ByTime.reduce((a,b) => a+b, 0)
-        console.log('value1: '+value+' value2: '+value2)
 
         //if(i > 0){
         //    console.log(i,value,value2)
@@ -4697,8 +4944,10 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets){
         }
         var score2 = 0
         for(var j = 0;j<MAX_TURNS;j++){ score2 += Math.pow(1/2.1,dm.score[kolej][j]) }
+        
+        //score_2 = calculateStrategicMapForTeam(large_map, dm, kolej, modif)
             
-        if(value2 < value || score1 < score2){
+        if(value2 < value/* || score1 < score2*/){
             if(!evaluated){
                 evaluate(dm)
                 var values2ByTime = dm.distmaps[x+'#'+y].alliegance.slice()
@@ -5036,6 +5285,7 @@ function actionsToReal(dm,color,completely_used_passages){
                 //if(tdistmap.hex.z >= 50){
                     const sustainable_tratwa_growth = 99//Math.min(99, Math.floor(distmap.hex.z * 2 / 4))
                     dodai(distmap.hex.x,distmap.hex.y,0,8,Math.min(Math.floor(tratwa),sustainable_tratwa_growth))
+                    heks[distmap.hex.x][distmap.hex.y].tasuj()
                 /*}/* else {
                     for(var i = 0;i<distmap.hex.unp;i++){
                         unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rozb = 0
