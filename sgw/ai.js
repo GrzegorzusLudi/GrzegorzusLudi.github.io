@@ -1001,10 +1001,11 @@ function aimachine(ailevel){
                         if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej])
                             overall_score_changed = true
                     }*/
-                    if(score_1 > score_2/* && score__1 >= score__2*/){
+                    if(score_1 > score_2 || score_1 == score_2 && score__1 > score__2){
                         dbetter = newDistmap
-                        if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej])
+                        if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej]){
                             overall_score_changed = true
+                        }
                     }
                     //}
                     //if(maxBetter > minBetter)
@@ -2092,7 +2093,7 @@ function prepareLargeMap(dm,t){
 function calculateStrategicMapForTeam(large_map, dm, color, mod, t){
     if(t == undefined)
         t = MAX_TURNS - 1
-    var nearest_hexes = []
+    //var nearest_hexes = []
     var other_hexes = []
     var hexes = []
     var behind = {}
@@ -2163,14 +2164,11 @@ function calculateStrategicMapForTeam(large_map, dm, color, mod, t){
                         //console.log([d1,d2,d3])
                         if(d1 <= 2 || condit){
                             if(condit)
-                                behind[d2code].value += heks[hexes[i].x][hexes[i].y].z// - d3/10000
+                                behind[d2code].value += heks[hexes[i].x][hexes[i].y].z + d1 / 1000// - d3/10000
                             ok = false
                         }
                     }
                 }
-            }
-            if(ok){
-                nearest_hexes.push(hexes[i])
             }
         }
     }
@@ -4202,6 +4200,7 @@ function calculateAlliegance(dm){
             //}
             if(biggestpowercolor > -1){
                 //var factor = distmap.frontline ? 1 : 1
+                dm.score[t][biggestpowercolor] += SMALL_FRACTION*2
                 dm.score[t][biggestpowercolor] += distmap.hex.z + (distmap.hex.stali + Math.min(distmap.hex.prod,distmap.hex.stali)) * 2// * factor
                 if(biggestpowercolor != -1){
                     for(var d = 0;d<12;d++){
