@@ -857,7 +857,7 @@ function aimachine(ailevel){
                             if(closcode in nearest_hexes[i].dmap && closcode in from_hexes[j].dmap && nearest_hexes[i].x+'#'+nearest_hexes[i].y in from_hexes[j].dmap){
                                 var d1 = from_hexes[j].dmap[closcode].dist//-1 - curr_hexes[j].dmap[closcode].water*2
                                 var d2 = nearest_hexes[i].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
-                                var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)+2// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
+                                var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)+1// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                     
                                 if( d3 >= (d2 + d1)*0.75){
                                     //if(!(d2code in behind))
@@ -4111,7 +4111,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                     var unik = distmaps[code].hex.units[k]
                                     
                                     if(zas[unik.rodz] >= zas[unit.rodz]){
-                                        def -= Number(unitDefenseStrength)
+                                        def -= Number(evalUnitDefense(unik))
                                     }
                                 }
                                 var attak = 0
@@ -4968,8 +4968,8 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets){
     
     //interestingUnits = interestingUnits1.concat(interestingUnits2)
     
-    interestingUnits.sort((a,b) => (-1/Math.pow(1.4,a.action[0].rucho ? (a.action[0].rucho.length) : a.action[0].type == 'aim' ? zas[a.unit.rodz]+1 : scian*scian)*(a.action[0].il) + 
-                                     1/Math.pow(1.4,b.action[0].rucho ? (b.action[0].rucho.length) : b.action[0].type == 'aim' ? zas[b.unit.rodz]+1 : scian*scian)*(b.action[0].il)))
+    interestingUnits.sort((a,b) => (1/Math.pow(1.4,a.action[0].rucho ? (a.action[0].rucho.length)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : scian*scian)*(a.action[0].il) + 
+                                     -1/Math.pow(1.4,b.action[0].rucho ? (b.action[0].rucho.length)/szy[b.unit.rodz] : b.action[0].type == 'aim' ? 0 : scian*scian)*(b.action[0].il)))
 
 
     //interestingUnits = interestingUnits.slice(0,10)
