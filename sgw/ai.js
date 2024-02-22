@@ -702,60 +702,77 @@ function aimachine(ailevel){
                     var closestElem = null
                     
                     
-                    if(lmap.color == k){
+                    if(lmap.color == kolej){
                         closest = 0
                         closestElem = lmap
-                    } else {
+                    }
                         
-                        var hexDef = summedHexValue(i,j,false)
-                        var toOvercome = 0
-                        
-                        var wysortowane = []
-                        
-                        for(var k in lmap.dmap){
-                            //{dist:obj.dist,color:obdr}
-                            var dmapelem = lmap.dmap[k]
-                            /*
-                            if(dmapelem.color == kolej && dmapelem.x+'#'+dmapelem.y in dfrou.distmaps && dmapelem.dist < closest && dmapelem.dist >= 0){
-                                closest = dmapelem.dist
-                                closestElem = dmapelem
-                            }*/
-                            if(dmapelem.color == kolej && dmapelem.x+'#'+dmapelem.y in dfrou.distmaps && dmapelem.dist >= 0){
+                    var hexDef = summedHexValue(i,j,false)
+                    var toOvercome = 0
+                    
+                    var wysortowane = []
+                    
+                    for(var k in lmap.dmap){
+                        //{dist:obj.dist,color:obdr}
+                        var dmapelem = lmap.dmap[k]
+                        /*
+                        if(dmapelem.color == kolej && dmapelem.x+'#'+dmapelem.y in dfrou.distmaps && dmapelem.dist < closest && dmapelem.dist >= 0){
+                            closest = dmapelem.dist
+                            closestElem = dmapelem
+                        }*/
+                        if(dmapelem.x+'#'+dmapelem.y in dfrou.distmaps && dmapelem.dist >= 0){
+                            if(lmap.color == kolej && dmapelem.color == kolej){
+                                wysortowane.push({hex:dmapelem,dist:dmapelem.dist})
+                            } else if(lmap.color != kolej && dmapelem.color == kolej){
                                 wysortowane.push({hex:dmapelem,dist:dmapelem.dist})
                             }
                         }
-                        wysortowane.sort((a,b) => a.dist - b.dist)
-                        
-                        for(var k in wysortowane){
-                            toOvercome += summedHexValue(wysortowane[k].hex.x,wysortowane[k].hex.y,true)
-                            if(toOvercome > hexDef){
-                                closest = wysortowane[k].dist
-                                closestElem = wysortowane[k].hex
-                                break
-                            }
-                        }
-
                     }
+                    wysortowane.sort((a,b) => a.dist - b.dist)
+                    
+                    for(var k in wysortowane){
+                        toOvercome += summedHexValue(wysortowane[k].hex.x,wysortowane[k].hex.y,true)
+                        if(toOvercome > hexDef){
+                            closest = wysortowane[k].dist
+                            closestElem = wysortowane[k].hex
+                            break
+                        }
+                    }
+
                     //heks[i][j].test = Math.floor(closest*100)/100
-                    lmap.closestelem = closestElem
-                    lmap.dist = closest
+                    if(lmap.color != kolej){
+                        lmap.closestelem = closestElem
+                        lmap.dist = closest
+                        lmap.closestenemy = null
+                        lmap.distenemy = Infinity
+                    } else {
+                        lmap.closestelem = lmap
+                        lmap.dist = 0
+                        lmap.closestenemy = closestElem
+                        lmap.distenemy = closest
+                    }
                 }
             }
             
             var dist_layers = {}
             var curr_hexes = []
+            
+            var from_hexes = []
             for(var key in dfrou.distmaps){
-                if(dfrou.distmaps[key].hex.dru != kolej/* && dfrou.distmaps[key].hex.heks.z > 0*/){
-                    var okoks = dfrou.distmaps[key].hex.heks.z > 0
-                    if(!okoks)
-                        for(var j in dfrou.distmaps[key].hex.units){
-                            var unit = dfrou.distmaps[key].hex.units[j]
-                            if(zast[unit.rodz] != 'x' && zast[unit.rodz] != 'm')
-                                okoks = true
-                        }
-                    if(okoks){
-                        var coords = key.split('#')
+                var okoks = dfrou.distmaps[key].hex.heks.z > 0
+                if(!okoks)
+                    for(var j in dfrou.distmaps[key].hex.units){
+                        var unit = dfrou.distmaps[key].hex.units[j]
+                        if(zast[unit.rodz] != 'x' && zast[unit.rodz] != 'm')
+                            okoks = true
+                    }
+                if(okoks){
+                    var coords = key.split('#')
+                    
+                    if(dfrou.distmaps[key].hex.dru != kolej/* && dfrou.distmaps[key].hex.heks.z > 0*/){
                         curr_hexes.push(large_map[coords[0]][coords[1]])
+                    } else {
+                        from_hexes.push(large_map[coords[0]][coords[1]])
                     }
                 }
             }
@@ -784,7 +801,7 @@ function aimachine(ailevel){
                                 if(closcode in curr_hexes[i].dmap && closcode in curr_hexes[j].dmap && curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap/* && 
                                     curr_hexes[i].dmap[closcode].dist-1 > (curr_hexes[j].dmap[closcode].dist + curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)*0.7 */){
                                     var d2code = curr_hexes[j].x+'#'+curr_hexes[j].y
-                                    var d1 = curr_hexes[i].dmap[closcode].dist-1//-1 - curr_hexes[j].dmap[closcode].water*2
+                                    var d1 = curr_hexes[i].dmap[closcode].dist-0.6//-1 - curr_hexes[j].dmap[closcode].water*2
                                     var d2 = curr_hexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
                                     var d3 = (curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                         
@@ -816,6 +833,45 @@ function aimachine(ailevel){
                 stop = true
             }
             
+            
+             // OGARNIJ TO!!!
+             
+            allowPaths = {}
+             
+             
+            for(var i = 0;i < nearest_hexes.length;i++){
+                var d2code = nearest_hexes[i].x+'#'+nearest_hexes[i].y
+
+                var ok = true
+                for(var j = 0;j < from_hexes.length;j++){
+                        //if(curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap)
+                        //    console.log([curr_hexes[i].dmap[closcode].dist, curr_hexes[j].dmap[closcode].dist, curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist])
+                        var d1code = from_hexes[j].x+'#'+from_hexes[j].y
+
+                                
+                        var clos = from_hexes[j].closestenemy
+                        
+                        if(clos != null){
+                            var closcode = clos.x+'#'+clos.y
+                            var closelem = large_map[clos.x][clos.y]
+                            if(closcode in nearest_hexes[i].dmap && closcode in from_hexes[j].dmap && nearest_hexes[i].x+'#'+nearest_hexes[i].y in from_hexes[j].dmap){
+                                var d1 = from_hexes[j].dmap[closcode].dist//-1 - curr_hexes[j].dmap[closcode].water*2
+                                var d2 = nearest_hexes[i].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
+                                var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)+2// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
+                                    
+                                if( d3 >= (d2 + d1)*0.75){
+                                    //if(!(d2code in behind))
+                                    //    behind[d2code] = {hex:from_hexes[j],value:0}
+                                    //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
+                                    ok = false
+                                    
+                                    allowPaths[d1code+'#'+d2code] = true
+                                }
+                            }
+                        }
+                }
+            }
+        
             
             /*
             if(ulepszyns == 6)
@@ -890,7 +946,7 @@ function aimachine(ailevel){
                 //heks[targ.hex.x][targ.hex.y].test = 'X'
             }
                         
-            tryMakeDestinationMap(dbetter,kolej)
+            tryMakeDestinationMap(dbetter,kolej,allowPaths)
             //possible_targets.sort(() => Math.random() - 0.5)
             overall_score_changed = false
             aistan = 1.3
@@ -940,7 +996,7 @@ function aimachine(ailevel){
                     
                     var code = tested_target.hex.x+'#'+tested_target.hex.y
                     if(newDistmap.distmaps[code].alliegance[MAX_TURNS-1] != kolej){
-                        tryMakeDestinationMap(newDistmap,kolej)
+                        tryMakeDestinationMap(newDistmap,kolej,allowPaths)
                         tryPutUnderAttack(newDistmap,tested_target.hex.x,tested_target.hex.y,kolej,ulepszyns % 2 == 1,embarkingTargets)
                         evaluate(newDistmap)
                     }
@@ -1006,9 +1062,9 @@ function aimachine(ailevel){
                     }*/
                     if(score_1 > score_2 || score_1 == score_2 && score__1 > score__2){
                         dbetter = newDistmap
-                        if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej]){
+                        //if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej]){
                             overall_score_changed = true
-                        }
+                        //}
                     }
                     //}
                     //if(maxBetter > minBetter)
@@ -2050,7 +2106,7 @@ function prepareLargeMap(dm,t){
         large_map[i] = {}
         for(var j = 0;j<scian;j++){
             var ckolor = key in dm.distmaps ? evalAlliegance(dm,dm.distmaps[key],t) : heks[i][j].undr
-            large_map[i][j] = {x:i,y:j,color:ckolor,dmap:{},closestelem:null,dist:Infinity}
+            large_map[i][j] = {x:i,y:j,color:ckolor,dmap:{},closestelem:null,dist:Infinity,closestenemy:null,distenemy:Infinity}
         }
     }
     
@@ -2180,13 +2236,13 @@ function calculateStrategicMapForTeam(large_map, dm, color, mod, t){
                 if(i != j){                                    
                     if(closcode in hexes[i].dmap && closcode in hexes[j].dmap && hexes[j].x+'#'+hexes[j].y in hexes[i].dmap && hexes[j]){
                         var d2code = hexes[j].x+'#'+hexes[j].y
-                        var d1 = hexes[i].dmap[closcode].dist-1//-1 - curr_hexes[j].dmap[closcode].water*2
+                        var d1 = hexes[i].dmap[closcode].dist-0.6//-1 - curr_hexes[j].dmap[closcode].water*2
                         var d2 = hexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
                         var d3 = (hexes[i].dmap[hexes[j].x+'#'+hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                             
                         var condit = d1 >= (d2 + d3)*0.75
                         //console.log([d1,d2,d3])
-                        if(d1 <= 2 || condit){
+                        if(/*d1 >= 2 && */condit){
                             if(condit)
                                 behind[d2code].value += heks[hexes[i].x][hexes[i].y].z + d1 / 1000// - d3/10000
                             ok = false
@@ -4048,15 +4104,26 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                 if(alreadyAttacking != null && action.hex_x+'#'+action.hex_y != destiny)
                                     continue
                                 if(action.celd == -2)
-                                    continue
+                                    continue                                    
                                 var code = action.hex_x+'#'+action.hex_y//unix[action.celd][action.celu].x + '#' + unix[action.celd][action.celu].y//action.hex_x + '#'+ action.hex_y
+                                var def = 0
+                                for(var k in distmaps[code].hex.units){
+                                    var unik = distmaps[code].hex.units[k]
+                                    
+                                    if(zas[unik.rodz] >= zas[unit.rodz]){
+                                        def -= Number(unitDefenseStrength)
+                                    }
+                                }
+                                var attak = 0
+                                var str = Number(unitAttackStrength)
                                 for(var t = movingDelay;t<MAX_TURNS;t++){
                                     if(zas[unit.rodz] > 1){
-                                        distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength) * (t - movingDelay + 1)//Math.min(1.5,t-movingDelay+1)
+                                        attak -= -str * (t - movingDelay + 1)//Math.min(1.5,t-movingDelay+1)
                                     } else {
-                                        distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength)//Math.min(1.5,t-movingDelay+1)
-
+                                        attak -= -str//Math.min(1.5,t-movingDelay+1)
                                     }
+                                    str = Math.max(0,str-def)
+                                    distmaps[code].realtocome[t][unit.d] -= -attak
                                 }
                             }/*
                             if(action.type == 'move' && action.destination != undefined && zast[unit.rodz] == 'x'){
@@ -4666,7 +4733,7 @@ function removeAttack(dm, x, y, color){
     
     evaluate(dm)
 }
-function tryMakeDestinationMap(dm,color){
+function tryMakeDestinationMap(dm,color,allowedPaths){
     var distmaps = dm.distmaps
 
     
@@ -4679,6 +4746,10 @@ function tryMakeDestinationMap(dm,color){
         //    continue
         
         //unit,
+        if(distmap.alliegance[MAX_TURNS-1] == color)
+            continue
+            
+        var checked = false
         for(var j in distmap.hex.units){
             var unit = distmap.hex.units[j]
             
@@ -4694,6 +4765,8 @@ function tryMakeDestinationMap(dm,color){
             }*/
             if(susactions)
                 continue
+                
+                
             
             //if(hasunits && (zast[unit.rodz] == 'x' || zast[unit.rodz] == 'm'))
             //    continue
@@ -4706,6 +4779,7 @@ function tryMakeDestinationMap(dm,color){
             //console.log(unit.legalActions.length)
             var bestAction = {}
             var lac = unit.legalActions
+            
 
             for(var i in lac){
                 var legalAction = lac[i].filter(x => x.type != 'build')
@@ -4714,6 +4788,8 @@ function tryMakeDestinationMap(dm,color){
                     
                     var dest_code = legalAction[0].destination ? legalAction[0].destination[0] + '#' + legalAction[0].destination[1] : legalAction[0].hex_x + '#' + legalAction[0].hex_y
                     
+                    if(!allowedPaths[code1+'#'+dest_code])
+                        continue
                     //UBAUBA
                     
                     var properAction = legalAction[0]
@@ -4752,10 +4828,12 @@ function tryMakeDestinationMap(dm,color){
                     if(bestAction[dest_code] == null || 
                         evalUnitAttack(unit,legalAction,dm.model) > evalUnitAttack(unit,bestAction[dest_code],dm.model) || (evalUnitAttack(unit,legalAction,dm.model)*2 > evalUnitAttack(unit,bestAction[dest_code],dm.model) &&
                         legalAction.length == 1 && (bestAction[dest_code].length == 1 || zas[unit.rodz] > 1) && legalAction[0].type == 'aim' && bestAction[dest_code][0].type == 'move' || 
-                        legalAction.length > 1 && bestAction[dest_code].length == 1 && legalAction[1].type == 'aim' && bestAction[dest_code][0].type == 'move')){
+                        legalAction.length > 1 && bestAction[dest_code].length == 1 && zas[unit.rodz] > 1 && legalAction[1].type == 'aim' && bestAction[dest_code][0].type == 'move')){
+                        
                         //if(legalAction.length >= 2)
                         //    console.log('c'+(evalUnitAttack(unit,legalAction) + ',' + evalUnitAttack(unit,bestAction)))
                         bestAction[dest_code] = legalAction
+                        
                     }
                 }
             }
