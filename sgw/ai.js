@@ -809,7 +809,7 @@ function aimachine(ailevel){
                                     var d3 = (curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                         
                                     //console.log([d1,d2,d3])
-                                    if(d1 > 2 && d1 >= (d2 + d3)*0.7){
+                                    if(d1 > 3 && d1 >= (d2 + d3)*0.7){
                                         if(!(d2code in behind))
                                             behind[d2code] = {hex:curr_hexes[j],value:0}
                                         behind[d2code].value += heks[curr_hexes[i].x][curr_hexes[i].y].z
@@ -862,7 +862,7 @@ function aimachine(ailevel){
                                 var d2 = nearest_hexes[i].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
                                 var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)+1// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                     
-                                if(d3 > 2 && d3 >= (d2 + d1)*0.7){
+                                if(d3 <= 3 || d3 >= (d2 + d1)*0.7){
                                     //if(!(d2code in behind))
                                     //    behind[d2code] = {hex:from_hexes[j],value:0}
                                     //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
@@ -2244,7 +2244,7 @@ function calculateStrategicMapForTeam(large_map, dm, color, mod, t){
                             
                         var condit = d1 >= (d2 + d3)*0.75
                         //console.log([d1,d2,d3])
-                        if(d1 > 2 && condit){
+                        if(d1 > 3 && condit){
                             if(condit)
                                 behind[d2code].value += heks[hexes[i].x][hexes[i].y].z + d1 / 1000// - d3/10000
                             ok = false
