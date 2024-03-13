@@ -804,7 +804,7 @@ function aimachine(ailevel){
                                 if(closcode in curr_hexes[i].dmap && closcode in curr_hexes[j].dmap && curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap/* && 
                                     curr_hexes[i].dmap[closcode].dist-1 > (curr_hexes[j].dmap[closcode].dist + curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)*0.7 */){
                                     var d2code = curr_hexes[j].x+'#'+curr_hexes[j].y
-                                    var d1 = curr_hexes[i].dmap[closcode].dist-0.6//-1 - curr_hexes[j].dmap[closcode].water*2
+                                    var d1 = curr_hexes[i].dmap[closcode].dist-1//-1 - curr_hexes[j].dmap[closcode].water*2
                                     var d2 = curr_hexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
                                     var d3 = (curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                         
@@ -847,38 +847,38 @@ function aimachine(ailevel){
                 heks[nearest_hexes[i].x][nearest_hexes[i].y].test = 'G'
 
                 for(var j = 0;j < from_hexes.length;j++){
-                        //if(curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap)
-                        //    console.log([curr_hexes[i].dmap[closcode].dist, curr_hexes[j].dmap[closcode].dist, curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist])
-                        var d1code = from_hexes[j].x+'#'+from_hexes[j].y
+                    //if(curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap)
+                    //    console.log([curr_hexes[i].dmap[closcode].dist, curr_hexes[j].dmap[closcode].dist, curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist])
+                    var d1code = from_hexes[j].x+'#'+from_hexes[j].y
 
-                        if(d1code == d2code)
-                            continue
+                    if(d1code == d2code)
+                        continue
+                            
+                    var clos = from_hexes[j].closestenemy
+                    
+                    var ok = false
+                    if(from_hexes[j].color == -1){
+                        ok = true
+                    } else if(clos != null){
+                        var closcode = clos.x+'#'+clos.y
+                        var closelem = large_map[clos.x][clos.y]
+                        if(closcode in nearest_hexes[i].dmap && closcode in from_hexes[j].dmap && nearest_hexes[i].x+'#'+nearest_hexes[i].y in from_hexes[j].dmap){
+                            var d1 = from_hexes[j].dmap[closcode].dist//-1 - curr_hexes[j].dmap[closcode].water*2
+                            var d2 = nearest_hexes[i].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
+                            var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)+1// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                 
-                        var clos = from_hexes[j].closestenemy
-                        
-                        var ok = false
-                        if(from_hexes[j].color == -1){
-                            ok = true
-                        } else if(clos != null){
-                            var closcode = clos.x+'#'+clos.y
-                            var closelem = large_map[clos.x][clos.y]
-                            if(closcode in nearest_hexes[i].dmap && closcode in from_hexes[j].dmap && nearest_hexes[i].x+'#'+nearest_hexes[i].y in from_hexes[j].dmap){
-                                var d1 = from_hexes[j].dmap[closcode].dist//-1 - curr_hexes[j].dmap[closcode].water*2
-                                var d2 = nearest_hexes[i].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
-                                var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)+1// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
-                                    
-                                if(d3 <= 3 || d2 <= 3 || d3 > (d2 + d1)*0.7){
-                                    //if(!(d2code in behind))
-                                    //    behind[d2code] = {hex:from_hexes[j],value:0}
-                                    //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
-                                    ok = true
-                                }
+                            if(d3 <= 3 || d2 <= 3 || d3 > (d2 + d1)*0.7){
+                                //if(!(d2code in behind))
+                                //    behind[d2code] = {hex:from_hexes[j],value:0}
+                                //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
+                                ok = true
                             }
                         }
-                        if(ok){
-                            allowPaths[d1code+'#'+d2code] = true
-                            heks[nearest_hexes[i].x][nearest_hexes[i].y].test = ''
-                        }
+                    }
+                    if(ok){
+                        allowPaths[d1code+'#'+d2code] = true
+                        heks[nearest_hexes[i].x][nearest_hexes[i].y].test = ''
+                    }
                 }
             }
         
@@ -2143,22 +2143,23 @@ function prepareLargeMap(dm,t){
 
         dmap1.sort((a,b)=>a.dist-b.dist)
 
+        var distproperty = 'objdist'
         for(var i in dmap1){
             var obj = dmap1[i]        
             
-            if(( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj.objdist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )){
-                large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.objdist,water:obj.water,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
+            if(( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj[distproperty] < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )){
+                large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj[distproperty],water:obj.water,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
             }
         }
         if(dmap2 != null){
             dmap2.sort((a,b)=>a.dist-b.dist)
             for(var i in dmap2){
                 var obj = dmap2[i]        
-                if( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj.objdist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist ){
+                if( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj[distproperty] < large_map[obj.hex.x][obj.hex.y].dmap[key].dist ){
                     if(key in large_map[obj.hex.x][obj.hex.y].dmap){
-                        large_map[obj.hex.x][obj.hex.y].dmap[key].dist = obj.objdist
+                        large_map[obj.hex.x][obj.hex.y].dmap[key].dist = obj[distproperty]
                     } else {
-                        large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.objdist,water:obj.water,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
+                        large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj[distproperty],water:obj.water,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
                     }
                 }
             }
@@ -2167,19 +2168,19 @@ function prepareLargeMap(dm,t){
         for(var i in dmap3){
             var obj = dmap3[i]        
             
-            if(( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj.objdist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )){
-                large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.objdist,water:0,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
+            if(( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj[distproperty] < large_map[obj.hex.x][obj.hex.y].dmap[key].dist )){
+                large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj[distproperty],water:0,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
             }
         }
         if(dmap4 != null){
             dmap4.sort((a,b)=>a.dist-b.dist)
             for(var i in dmap4){
                 var obj = dmap4[i]        
-                if( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj.objdist < large_map[obj.hex.x][obj.hex.y].dmap[key].dist ){
+                if( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj[distproperty] < large_map[obj.hex.x][obj.hex.y].dmap[key].dist ){
                     if(key in large_map[obj.hex.x][obj.hex.y].dmap){
-                        large_map[obj.hex.x][obj.hex.y].dmap[key].dist = obj.objdist
+                        large_map[obj.hex.x][obj.hex.y].dmap[key].dist = obj[distproperty]
                     } else {
-                        large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj.objdist,water:0,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
+                        large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj[distproperty],water:0,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
                     }
                 }
             }
@@ -2258,7 +2259,7 @@ function calculateStrategicMapForTeam(large_map, dm, color, mod, t){
                         var d2 = hexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
                         var d3 = (hexes[i].dmap[hexes[j].x+'#'+hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                             
-                        var condit = d1 >= (d2 + d3)*0.75
+                        var condit = d1 >= (d2 + d3)*0.7
                         //console.log([d1,d2,d3])
                         if(d1 > 3 && d2 > 3 && condit){
                             if(condit)
@@ -4140,7 +4141,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                 for(var t = movingDelay;t<MAX_TURNS;t++){
                                     if(zas[unit.rodz] > 1){
                                         attak -= -str * (t - movingDelay + 1)//Math.min(1.5,t-movingDelay+1)
-                                    } else {
+                                    } else if(t == movingDelay) {
                                         attak -= -str//Math.min(1.5,t-movingDelay+1)
                                     }
                                     str = Math.max(0,str-def)
