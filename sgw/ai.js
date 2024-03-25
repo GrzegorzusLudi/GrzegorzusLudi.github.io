@@ -789,7 +789,7 @@ function aimachine(ailevel){
             var scurr = curr_hexes
             for(var i = 0;i < curr_hexes.length;i++){
                 var d2code = curr_hexes[i].x+'#'+curr_hexes[i].y
-                behind_score[d2code] = {hex:curr_hexes[i],value:cityscore(heks[curr_hexes[i].x][curr_hexes[i].y])+1}
+                behind_score[d2code] = {hex:curr_hexes[i],value:/*cityscore(heks[curr_hexes[i].x][curr_hexes[i].y])+*/1}
             }
             while(!stop){
                 var curr_hexes2 = []
@@ -935,7 +935,7 @@ function aimachine(ailevel){
                 
                 var modif = {}
                 modif[code] = kolej
-                targ.value = code in behind_score ? behind_score[code] : cityscore(targ.hex.z)//calculateStrategicMapForTeam(large_map, dfrou, kolej, modif)// + heks[targ.hex.x][targ.hex.y].z
+                targ.value = (code in behind_score ? behind_score[code] : 0) + cityscore(targ.hex.z)//calculateStrategicMapForTeam(large_map, dfrou, kolej, modif)// + heks[targ.hex.x][targ.hex.y].z
             }
             
             //calculateStrategicMapForTeam(large_map, dm, color, mod)
@@ -4834,7 +4834,7 @@ function tryMakeDestinationMap(dm,color,allowedPaths){
             
             //console.log(unit.legalActions.length)
             var bestAction = {}
-            var lac = unit.legalActions
+            var lac = unit.legalActions//.sort((a,b)=>-a.length+b.length)
             
 
             for(var i in lac){
@@ -5067,7 +5067,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         
         //console.log(unitaction.potentialEmbarkings)
         
-        if((unitaction.unit.actions.length > 0 && (unitaction.unit.actions[0].by == 'speculation2' || unitaction.unit.actions[0].by == 'real'/* && !thinkmore*/) && (unitaction.unit.actions[0].type == 'aim' || unitaction.unit.actions[0].type == 'move')))
+        if((unitaction.unit.actions.length > 0 && (unitaction.unit.actions[0].by == 'speculation2'/* || unitaction.unit.actions[0].by == 'real'/* && !thinkmore*/) && (unitaction.unit.actions[0].type == 'aim' || unitaction.unit.actions[0].type == 'move')))
             continue
             
         //console.log(unitaction.potentialEmbarkings)
