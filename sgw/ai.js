@@ -284,7 +284,7 @@ function mapmap(map,subfield){
 laststan = -1
 function aimachine(ailevel){
     if(laststan != aistan){
-        //console.log(aistan)
+        console.log(aistan)
         laststan = aistan
     }
     //console.log(aistan)
@@ -767,7 +767,7 @@ function aimachine(ailevel){
                         if(zast[unit.rodz] != 'x' && zast[unit.rodz] != 'm')
                             okoks = true
                     }
-                if(okoks){
+                if(okoks || true){
                     var coords = key.split('#')
                     
                     var ckolor = evalAlliegance(dfrou,dfrou.distmaps[key],MAX_TURNS-1)
@@ -818,7 +818,7 @@ function aimachine(ailevel){
                                     var d3 = (curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                         
                                     //console.log([d1,d2,d3])
-                                    if(d1 > 3/* && d2 > 2*/ && d1 > (d2 + d3)*0.7){
+                                    if(d1 > 3 && d2 > 2 && d1 > (d2 + d3)*0.7){
                                         //behind_score[d2code].value += cityscore(curr_hexes[i])/2
                                         i_am_behind[d1code].codes.push(d2code)
                                         ok = false
@@ -866,17 +866,17 @@ function aimachine(ailevel){
                     var clos = from_hexes[j].closestenemy
                     
                     var ok = false
-                    if(from_hexes[j].color == -1){
+                    if(nearest_hexes[i].color == -1){
                         ok = true
                     } else if(clos != null){
                         var closcode = clos.x+'#'+clos.y
                         var closelem = large_map[clos.x][clos.y]
                         if(closcode in nearest_hexes[i].dmap && closcode in from_hexes[j].dmap && nearest_hexes[i].x+'#'+nearest_hexes[i].y in from_hexes[j].dmap){
-                            var d1 = from_hexes[j].dmap[closcode].dist-1//-1 - curr_hexes[j].dmap[closcode].water*2
-                            var d2 = nearest_hexes[i].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
-                            var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
+                            var d1 = from_hexes[j].dmap[closcode].dist+1 //+ from_hexes[j].dmap[closcode].water*2
+                            var d2 = nearest_hexes[i].dmap[closcode].dist+1 //+ nearest_hexes[i].dmap[closcode].water*2
+                            var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)-1// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                 
-                            if(d3 <= 3/* || d1 <= 2*/ || d3 < (d2 + d1)*0.7){
+                            if(d3 <= 3/* || d1 <= 2*/ || d3 <= (d2 + d1)*0.7){
                                 //if(!(d2code in behind))
                                 //    behind[d2code] = {hex:from_hexes[j],value:0}
                                 //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
@@ -2154,6 +2154,83 @@ function scoreOfBehinds(dm,color,behind_score){
     }
     return score
 }
+function prepareLargeMapNu(dm,t){
+    if(t == undefined)
+        t= MAX_TURNS-1
+    var large_map = {}
+    for(var i = 0;i<scian;i++){
+        large_map[i] = {}
+        for(var j = 0;j<scian;j++){
+            var ckolor = key in dm.distmaps ? evalAlliegance(dm,dm.distmaps[key],t) : heks[i][j].undr
+            large_map[i][j] = {x:i,y:j,color:ckolor,dmap:{},closestelem:null,dist:Infinity,closestenemy:null,distenemy:Infinity}
+        }
+    }
+    
+    
+    for(var key in dm.distmaps){
+        var distmap = dm.distmaps[key]
+        
+        var dr = evalAlliegance(dm,distmap)//distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
+        
+        //for(var movement_type in distmap.maps){
+        var dmap1 = distmap.maps['n'].hexmap.filter(x=>x.dist != -1)
+        var dmap2 = 'w' in distmap.maps ? distmap.maps['w'].hexmap.filter(x=>x.dist != -1) : null
+        var dmap3 = distmap.maps['n'].rangemap.filter(x=>x.dist != -1)
+        var dmap4 = 'w' in distmap.maps ? distmap.maps['w'].rangemap.filter(x=>x.dist != -1) : null
+
+        dmap1.sort((a,b)=>a.dist-b.dist)
+
+        var distproperty = 'objdist'
+        for(var i in dmap1){
+            var obj = dmap1[i]        
+            
+            var dkey = obj.hex.x + '#' + obj.hex.y
+            
+            if(( !(dkey in large_map[distmap.hex.x][distmap.hex.y].dmap) || obj[distproperty] < large_map[distmap.hex.x][distmap.hex.y].dmap[dkey].dist )){
+                if(Math.random()<0.00001)
+                    console.log(obj[distproperty],obj.water,dr,obj.hex.x,obj.hex.y)
+                large_map[distmap.hex.x][distmap.hex.y].dmap[dkey] = {dist:obj[distproperty],water:obj.water,color:dr,x:obj.hex.x,y:obj.hex.y}
+            }
+        }
+        dmap3.sort((a,b)=>a.dist-b.dist)
+        for(var i in dmap3){
+            var obj = dmap3[i]        
+            
+            var dkey = obj.hex.x + '#' + obj.hex.y
+            
+            if(( !(dkey in large_map[distmap.hex.x][distmap.hex.y].dmap) || obj[distproperty] < large_map[distmap.hex.x][distmap.hex.y].dmap[dkey].dist )){
+                large_map[distmap.hex.x][distmap.hex.y].dmap[dkey] = {dist:obj[distproperty],water:0,color:dr,x:obj.hex.x,y:obj.hex.y}
+            }
+        }/*
+        if(dmap2 != null){
+            dmap2.sort((a,b)=>a.dist-b.dist)
+            for(var i in dmap2){
+                var obj = dmap2[i]        
+                if( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj[distproperty] < large_map[obj.hex.x][obj.hex.y].dmap[key].dist ){
+                    if(key in large_map[obj.hex.x][obj.hex.y].dmap){
+                        large_map[obj.hex.x][obj.hex.y].dmap[key].dist = obj[distproperty]
+                    } else {
+                        large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj[distproperty],water:obj.water,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
+                    }
+                }
+            }
+        }*//*
+        if(dmap4 != null){
+            dmap4.sort((a,b)=>a.dist-b.dist)
+            for(var i in dmap4){
+                var obj = dmap4[i]        
+                if( !(key in large_map[obj.hex.x][obj.hex.y].dmap) || obj[distproperty] < large_map[obj.hex.x][obj.hex.y].dmap[key].dist ){
+                    if(key in large_map[obj.hex.x][obj.hex.y].dmap){
+                        large_map[obj.hex.x][obj.hex.y].dmap[key].dist = obj[distproperty]
+                    } else {
+                        large_map[obj.hex.x][obj.hex.y].dmap[key] = {dist:obj[distproperty],water:0,color:dr,x:distmap.hex.heks.x,y:distmap.hex.heks.y}
+                    }
+                }
+            }
+        }*/
+    }
+    return large_map
+}
 function prepareLargeMap(dm,t){
     if(t == undefined)
         t= MAX_TURNS-1
@@ -2688,8 +2765,8 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                                 //}
                             }
                         }
-                        if(hexfrom.z == -1 && dru_to != -1 && dru_to != kolej)
-                            continue
+                        //if(hexfrom.z == -1 && dru_to != -1 && dru_to != kolej)
+                        //    continue
                         if(unp_to > 3 && unp_from <= 3 && dru_to == kolej/* && checkedGrid[x][y] != -1*/){
                             step *= 10
                         }
@@ -4529,12 +4606,12 @@ function legalActions(dm,simplifieddistmaps){
             }
        }
     }
-    
+    /*
     for(var i = 0;i<scian;i++){
         for(var j = 0;j<scian;j++){
             heks[i][j].test = ''
         }
-    }
+    }*/
     
     var possibleEmbarkings = allColorTables()
     for(var key in distmaps){
@@ -4613,8 +4690,8 @@ function legalActions(dm,simplifieddistmaps){
                         
                         var frontline = hex.hex.dru != -1 && hex.hex.dru != kolej ? getFrontLine(distmap.hex.x,distmap.hex.y,unit,ruchk,rucho) : null
                         
-                        if(frontline != null)
-                            heks[frontline[0]][frontline[1]].test = 'S'
+                        //if(frontline != null)
+                        //    heks[frontline[0]][frontline[1]].test = 'S'
                         
                         if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,ruchk,rucho)){
                             var lnp = leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
@@ -5076,7 +5153,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     
     interestingUnits.sort((a,b) => (-1/Math.pow(1.4,a.action[0].rucho ? (a.action[0].rucho.length)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0)*(a.action[0].il) + 
                                      1/Math.pow(1.4,b.action[0].rucho ? (b.action[0].rucho.length)/szy[b.unit.rodz] : b.action[0].type == 'aim' ? 0 : 0)*(b.action[0].il)))
-
+    
     interestingUnits = interestingUnits.filter(x=>x.action[0].type == 'aim').concat(interestingUnits.filter(x=>x.action[0].type == 'move'))
     //interestingUnits = interestingUnits.slice(0,10)
     var oldEmbarkingTargets = {}
