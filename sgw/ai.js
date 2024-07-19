@@ -1205,7 +1205,8 @@ function aimachine(ailevel){
                 }
             }
             
-            dodawane = 20
+            dodawane = 10
+            failedvvals = {}
             aistan = 1.331
             //aistan=1.34
             dbetter = copyDistmaps(dfrou)
@@ -1225,18 +1226,20 @@ function aimachine(ailevel){
             if(biggestScoreHex != null)
                 realSfKeysSorted.push(biggestScoreHex)
 
+            
             for(var i in realSfKeysSorted){
                 //if(realSfKeysSorted[i].maxPlayerScore > 100 && i < realSfKeysSorted.length-1)
                 //    continue
                     
                 dnew = copyDistmaps(dbetter)
+                var failablevvals = {}
                 
                 var sfKey = realSfKeysSorted[i]
                 if(sfKey != undefined && sfKey.hex != undefined){
                     var newSfKeys = {}
                     newSfKeys[sfKey.hex.x+'#'+sfKey.hex.y] = sfKey
                     //console.log(newSfKeys)
-                    var pUnitActions = tryGetFarUnitsToFront(newSfKeys, farFromFront, allowPaths, dnew)
+                    var pUnitActions = tryGetFarUnitsToFront(newSfKeys, farFromFront, allowPaths, dnew, failedvvals)
                     
                     var vals = Object.values(pUnitActions)
                     if(vals.length > 0){
@@ -1248,23 +1251,33 @@ function aimachine(ailevel){
                             //console.log(firstVal)
                             //console.log(firstVal.action[0])
                             var path = getLeadedPath(firstVal.action[0].from[0],firstVal.action[0].from[1],firstVal.action[0].ruchk,firstVal.action[0].rucho)
+                            
+                            var fcode = firstVal.hex_from+'#'+firstVal.unitIx+'#'+firstVal.action[0].destination[0]+'#'+firstVal.action[0].destination[1]
+                            console.log(fcode)
+                            failablevvals[fcode] = true
+                            if((fcode in failedvvals)){
+                                console.log('a')
+                                continue
+                            }
+                                
                             var oks = true
+                            
                             for(var j in path.path){
                                 var hx = path.path[j]
                                 
-                                if(heks[hx.x][hx.y].unt > 3 && heks[hx.x][hx.y].undr == kolej){
+                                if(j > 0 && j < path.path.length && heks[hx.x][hx.y].unt > 3 && heks[hx.x][hx.y].undr == kolej){
                                     oks = false
                                     break
                                 }
                             }
                             if(!oks)
-                                continue
+                                break
                             
                             var newaction = [cutaction(firstVal.action[0],firstVal.unitrodz)]
                             if(newaction[0].rucho.length > 0){
                                 dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions = newaction
                                 
-                               // console.log('przeniesione')
+                                //console.log(newaction[0].rucho.length)
                             }
                             break
                         }
@@ -1276,6 +1289,10 @@ function aimachine(ailevel){
                 if(score3 > score2){
                     score2 = score3
                     dbetter = dnew
+                } else {
+                    for(var k in failablevvals){
+                        failedvvals[k] = true
+                    }
                 }
             }
             /*
@@ -2142,7 +2159,7 @@ function aimachine(ailevel){
                                     } else if(zast[unit.rodz] == 'm'){
                                         sapper_prod += unit.il+unit.rozb
                                     } else if(zast[unit.rodz] == 'x' && szyt[unit.rodz] == 'w'){
-                                        //tratwa_needs -= unit.il
+                                        tratwa_needs -= unit.il
                                     }
                                 }
                             }
@@ -2719,7 +2736,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             
                             if(realDest != null){
                                 time = Math.ceil(distance(realDest[0],realDest[1],lac[0].destination[0],lac[0].destination[1])/szy[unit.rodz])
-                                time2 = distance(realDest[0],realDest[1],lac[0].destination[0],lac[0].destination[1])/szy[unit.rodz]
+                                time2 = (distance(realDest[0],realDest[1],lac[0].destination[0],lac[0].destination[1])-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz]
                             }
                             mintime = Math.min(time2,mintime)
 
@@ -2756,7 +2773,8 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                     for(var ld in realSfKeys){
                         
                         var disttotown = distance(unit.actions[0].destination[0], unit.actions[0].destination[1], realSfKeys[ld].hex.x, realSfKeys[ld].hex.y)
-                        if((disttotown)/szy[unit.rodz] > 2)
+
+                        if((disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz] > 2)
                             continue
                             
                         var ndist = dist + disttotown
@@ -6115,7 +6133,7 @@ function unitActionDistant(action, unit){
     return time > 2
 }
 
-function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou){
+function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,failedvvals){
     
     var fffdict = {}
     farFromFront.sort((a,b)=>-a.il/Math.pow(a.time)+b.il/Math.pow(2.1,b.time))
@@ -6176,8 +6194,17 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou){
                 if(lac[0].type == 'move' && lac.length == 1 && lac[0].il >= unit.il-10){
                     var dist = lac[0].rucho.length
                     var time = dist/(szy[unit.rodz]+0.1)
+                    
+                    if(unit.actions.length > 0 && unit.actions[0].type == 'move' && dist > unit.actions[0].rucho.length)
+                        continue
 
                     var lade = lac[0].destination[0]+'#'+lac[0].destination[1]
+
+                    var fcode = fff.code+'#'+fff.unitIx+'#'+lade
+                    
+                    if(fcode in failedvvals){
+                        continue
+                    }
 
                     
                     if(warnung(distmap,unit,lac,fff.unitIx))
@@ -6188,6 +6215,12 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou){
                     //    continue
 
                     if(time >= 2 && lade in realSfKeys){
+                        /*
+                        for(var key in realSfKeys){
+                            if(key != lade){
+                                
+                            }
+                        }*/
                         possibleUnitActions[lade].push({hex_from:fff.code,hex_to:lade,unitIx:fff.unitIx,action:lac,time:time,unitrodz:unit.rodz})
                     }
                 }
@@ -6227,10 +6260,12 @@ function cutaction(action,unitrodz){
         newAction[key] = action[key]
     }
     var before = newAction.rucho.length - (Math.floor(newAction.rucho.length / szy[unitrodz] )-1) * szy[unitrodz]
-    before += (zas[unitrodz] > 1 ? zas[unitrodz] : 0)
+    before += (zas[unitrodz] > 1 ? zas[unitrodz]-1 : 0)
     //console.log(before)
-    newAction.rucho = newAction.rucho.slice(0,-before)
-    newAction.ruchk = newAction.ruchk.slice(0,-before)
+    if(before > 0){
+        newAction.rucho = newAction.rucho.slice(0,-before)
+        newAction.ruchk = newAction.ruchk.slice(0,-before)
+    }
     newAction.destination = leadPath(newAction.from[0],newAction.from[1],newAction.ruchk,newAction.rucho)
     return newAction
 }

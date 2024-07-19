@@ -635,7 +635,7 @@
 
 	rst = 0;
 	while(rst<4){
-		if(this.undr >-1 && rst<this.unp){
+		if(this.undr >-1 && rst<this.unp && rst >= 0){
 			//console.log([this.undr,unixdata[this.undr].length,this.unt[rst],unixdata[this.undr][this.unt[rst]]],unixdata)
 			unixdata[this.undr][this.unt[rst]].rysunit(x0-rst*2,y0-rst*2-bu/4,unixdata,kolej_at_time);
 		}
