@@ -1,0 +1,384 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf8">
+<style type="text/css">
+* {border-collapse:collapse;border-collapse:collapse;
+-moz-box-sizing:border-box;
+-webkit-box-sizing:border-box;
+box-sizing:border-box;margin:0px;padding:0px}
+html,body {color:white;background-color:black;font-family:Courier;width:100%; height:100%;}
+#whole {margin:auto}
+@media (max-aspect-ratio: 1/1) {
+    #whole {width:100vw;height:100vw}
+    #menu {width:100vw;height:100vw}
+    #title {font-size:9vw;padding-top:2vw}
+    #start {font-size:4vw;padding-top:1.5vw}
+    .switch {font-size:4vw;padding-top:1.3vw}
+    .fontsmall {font-size:3vw;padding-top:2vw}
+}
+@media (min-aspect-ratio: 1/1) {
+    #whole {width:100vh;height:100vh}
+    #menu {width:100vh;height:100vh}
+    #title {font-size:9vh;padding-top:2vh}
+    #start {font-size:4vh;padding-top:1.5vh}
+    .switch {font-size:4vh;padding-top:1.3vh}
+    .fontsmall {font-size:3vh;padding-top:2vh}
+}
+#popupinside {position:absolute;display:inline-block;width:40%;height:30%;left:30%;top:20%;border:3px solid white;background-color:#aa0000;text-align:center;display:none}
+#canv {border:1px solid white;width:100%;height:100%;display:block}
+#menu {position:absolute;display:inline-block}
+#menupopup {position:absolute;display:none}
+#title {position:absolute;display:inline-block;width:70%;height:15%;left:15%;top:10%;border:3px solid white;background-color:#aa0000;text-align:center}
+#start {position:absolute;display:inline-block;width:20%;height:8%;left:40%;top:82%;border:3px solid white;background-color:#aa0000;text-align:center}
+
+.switch {position:absolute;display:inline-block;width:20%;height:8%;border:2px solid white;text-align:center}
+
+#team0 {left:5%;top:37%;}
+#team1 {left:5%;top:45%;}
+#team2 {left:5%;top:53%;}
+#team3 {left:5%;top:61%;}
+#team4 {left:5%;top:69%;}
+
+#team5 {left:27%;top:37%;}
+#team6 {left:27%;top:45%;}
+#team7 {left:27%;top:53%;}
+#team8 {left:27%;top:61%;}
+#team9 {left:27%;top:69%;}
+
+#teams {left:7%;top:28%;width:38%;height:7%;background-color:#aa0000}
+#lands {left:53%;top:28%;width:38%;height:7%;background-color:#aa0000}
+#lands0 {left:59%;top:37%;background-color:#aa0000;width:25%}
+#placement {left:53%;top:48%;width:38%;height:7%;background-color:#aa0000}
+#placement0 {left:59%;top:57%;background-color:#aa0000;width:25%}
+#placement1 {left:59%;top:66%;background-color:#aa0000;width:25%}
+
+#menuyesbutton {position:relative;height:30%;width:30%;padding:3%;margin-top:10%;text-align:center;background-color:#aa0000}
+#menunobutton {position:relative;height:30%;width:30%;padding:3%;margin-top:10%;text-align:center;background-color:#aa0000}
+</style>
+<script>
+
+class Field {
+    constructor(x,y){
+        this.currentThing = null
+        this.formerThing = null
+        this.animation = 0
+        this.x = x
+        this.y = y
+        this.setRandomValue()
+        this.upgrading = 0
+        this.downgrading = 0
+    }
+    addThing(thing){
+        this.formerThing = this.currentThing
+        this.currentThing = thing
+    }
+    clearThing(thing){
+        this.formerThing = this.currentThing
+        this.currentThing = null
+    }
+    randomValue(){
+        if(Math.random() > 0.5)
+            return 2
+        if(Math.random() > 0.2)
+            return 3
+        return 4
+    }
+    numberColor(){
+        switch(this.value){
+            case 2: return '#f88'; break
+            case 3: return '#fc8'; break
+            case 4: return '#ff8'; break
+            case 5: return '#cf8'; break
+            case 6: return '#8f8'; break
+            case 7: return '#8fc'; break
+            default: '#fff'
+        }
+    }
+    setRandomValue(){
+        this.value = this.randomValue()
+    }
+    draw(ctx, posx, posy, kx, ky, selected, stacking){
+        var fontSize = Math.floor(ky * 0.8 * (0.2 + Math.sqrt(this.value) / 3))
+        if(this.upgrading){
+            fontSize = Math.floor(ky * 1)
+            ctx.fillStyle = "#0ff"
+            ctx.strokeStyle = "#0ff"
+            ctx.lineWidth = 2
+        } else if(this.downgrading){
+            fontSize = Math.floor(ky * 0.6)
+            ctx.fillStyle = "#888"
+            ctx.strokeStyle = "#888"
+            ctx.lineWidth = 2
+        } else if(stacking){
+            if(selected){
+                ctx.fillStyle = "#f80"
+                ctx.strokeStyle = "#f80"
+                ctx.lineWidth = 2
+            } else {
+                ctx.fillStyle = "#f00"
+                ctx.strokeStyle = "#f00"
+                ctx.lineWidth = 1
+            }
+        } else {
+            if(selected){
+                ctx.fillStyle = "#ff0"
+                ctx.strokeStyle = "#ff0"
+                ctx.lineWidth = 2
+            } else {
+                ctx.fillStyle = this.numberColor()
+                ctx.strokeStyle = this.numberColor()
+                ctx.lineWidth = 1
+            }
+        }
+        
+        ctx.font = fontSize + 'px sans serif'
+        ctx.textAlign = 'center'
+        
+        var x = posx + kx / 2
+        var y = posy + ky * 0.9
+        
+        ctx.fillText(this.value, x, y)
+        if(selected){
+            ctx.strokeRect(posx,posy,kx,ky)
+        }
+        this.upgrading = Math.max(0,this.upgrading-1)
+        this.downgrading = Math.max(0,this.downgrading-1)
+    }
+    upgrade(){
+        this.upgrading = 5
+        this.value++
+    }
+    downgrade(){
+        this.downgrading = 5
+        this.setRandomValue()
+    }
+}
+class Model {
+    constructor(){
+        this.init()
+    }
+    init(){
+        this.level = 1
+        this.boardSize = 6
+        this.board = []
+        this.allFields = []
+        for(var i = 0;i<this.boardSize;i++){
+            this.board[i] = []
+            for(var j = 0;j<this.boardSize;j++){
+                var newField = new Field(i,j)
+                this.board[i][j] = newField
+                this.allFields.push(newField)
+            }
+        }
+        this.selectedX = 0
+        this.selectedY = 0
+        
+        this.stack = []
+        
+        this.key = null
+    }
+    setKey(key){
+        this.key = key
+    }
+    stacking(){
+        return this.stack.length > 0
+    }
+    play(){
+        switch(this.key){
+            case "r":
+                this.init()
+            break
+        }
+        if(!this.stacking()){
+            switch(this.key){
+                case "ArrowLeft":
+                    this.selectedX = (this.selectedX+this.boardSize-1)%this.boardSize
+                break
+                case "ArrowRight":
+                    this.selectedX = (this.selectedX+this.boardSize+1)%this.boardSize
+                break
+                case "ArrowUp":
+                    this.selectedY = (this.selectedY+this.boardSize-1)%this.boardSize
+                break
+                case "ArrowDown":
+                    this.selectedY = (this.selectedY+this.boardSize+1)%this.boardSize
+                break
+                case " ":
+                    this.stack = [[this.selectedX,this.selectedY]]
+                break
+            }
+        } else {
+            var f = this.board[this.selectedX][this.selectedY]
+            var fl = this.selectedX > 0 ?                this.board[this.selectedX-1][this.selectedY] : null
+            var fr = this.selectedX < this.boardSize-1 ? this.board[this.selectedX+1][this.selectedY] : null
+            var fu = this.selectedY > 0 ?                this.board[this.selectedX][this.selectedY-1] : null
+            var fd = this.selectedY < this.boardSize-1 ? this.board[this.selectedX][this.selectedY+1] : null
+            var moved = false
+            switch(this.key){
+                case "ArrowLeft":
+                    if(fl != null && fl.value == f.value){
+                        this.selectedX = this.selectedX-1
+                        moved = true
+                    }
+                break
+                case "ArrowRight":
+                    if(fr != null && fr.value == f.value){
+                        this.selectedX = this.selectedX+1
+                        moved = true
+                    }
+                break
+                case "ArrowUp":
+                    if(fu != null && fu.value == f.value){
+                        this.selectedY = this.selectedY-1
+                        moved = true
+                    }
+                break
+                case "ArrowDown":
+                    if(fd != null && fd.value == f.value){
+                        this.selectedY = this.selectedY+1
+                        moved = true
+                    }
+                break
+                case " ":
+                    this.stack = []
+                break
+            }
+            if(moved){
+                this.stack.push([this.selectedX,this.selectedY])
+                if(this.stack.length >= 3 && this.stack[this.stack.length-3][0] == this.stack[this.stack.length-1][0] && this.stack[this.stack.length-3][1] == this.stack[this.stack.length-1][1]){
+                    this.stack = this.stack.slice(0,-2)
+                } else {
+                    var ok = true
+                    for(var i = 0;i<this.stack.length-1;i++){
+                        var s = this.stack[i]
+                        if(s[0] == this.selectedX && s[1] == this.selectedY){
+                            this.selectedX = f.x
+                            this.selectedY = f.y
+                            this.stack.pop()
+                            ok = false
+                        }
+                    }
+                    if(ok && this.stack.length >= this.board[this.stack[0][0]][this.stack[0][1]].value){
+                        
+                        for(var i = 0;i<this.stack.length-1;i++){
+                            var s = this.stack[i]
+                            this.board[s[0]][s[1]].downgrade()
+                        }
+                        this.board[this.selectedX][this.selectedY].upgrade()
+                        this.stack = []
+                    }
+                }
+            }
+        }
+        
+        
+        this.key = null
+    }
+}
+class View {
+    constructor(canv){
+        this.canv = canv
+        this.ctx = canv.getContext('2d')
+        
+        this.cw = 1000
+        this.ch = 1000
+        this.plw = 750
+        this.plh = 1000
+        this.pw = 25
+        this.ph = 150
+    }
+    drawLine(x1,y1,x2,y2){
+        this.ctx.beginPath()
+        this.ctx.moveTo(x1,y1)
+        this.ctx.lineTo(x2,y2)
+        this.ctx.closePath()
+        this.ctx.stroke()
+    }
+    draw(model){
+        this.ctx.clearRect(0,0,this.cw,this.ch)
+        this.ctx.lineWidth = 4
+        
+        this.ctx.strokeStyle = "#fff"
+        
+        for(var i = 0;i<=model.boardSize;i++){
+            var pos = this.pw + i * (this.plw - this.pw * 2) / model.boardSize
+            var top = this.ph
+            var bottom = this.plh - this.ph
+            
+            this.drawLine(pos,top,pos,bottom)
+        }
+        for(var i = 0;i<=model.boardSize;i++){
+            var pos = this.ph + i * (this.plh - this.ph * 2) / model.boardSize
+            var left = this.pw
+            var right = this.plw - this.pw
+            
+            this.drawLine(left,pos,right,pos)
+        }
+        
+        for(var i = 0;i<model.boardSize;i++){
+            for(var j = 0;j<model.boardSize;j++){
+                var field = model.board[i][j]
+                
+                this.drawField(i,j,field,model,false,false)
+            }
+        }
+        this.drawField(model.selectedX,model.selectedY,model.board[model.selectedX][model.selectedY],model,true,model.stacking())
+        for(var i = 0;i<model.stack.length-1;i++){
+            this.drawField(model.stack[i][0],model.stack[i][1],model.board[model.stack[i][0]][model.stack[i][1]],model,false,true)
+        }
+    }
+    drawField(i,j,field,model,selected,stacking){
+        var posx = this.pw + i * (this.plw - this.pw * 2) / model.boardSize
+        var posy = this.ph + j * (this.plh - this.ph * 2) / model.boardSize
+        
+        var kx = (this.plw - this.pw * 2) / model.boardSize
+        var ky = (this.plh - this.ph * 2) / model.boardSize
+            
+        field.draw(this.ctx, posx, posy, kx, ky, selected, stacking)
+        
+    }
+}
+class GameController {
+    constructor(canv){
+        this.canv = canv
+        this.view = new View(canv)
+        
+        this.model = new Model()
+        
+        let th = this
+        window.addEventListener('keydown',(e) => {th.keydown(e.key)})        
+        
+        this.loop()
+    }
+    loop(){
+        this.model.play()
+        this.view.draw(this.model)
+        let th = this
+        setTimeout(()=>{th.loop()},50)
+    }
+    keydown(key){
+        console.log(key)
+        this.model.setKey(key)
+    }
+}
+function init(){
+    var canv = document.getElementById('canv')
+    var gc = new GameController(canv)
+    
+}
+
+</script>
+</head>
+<body>
+<div id="whole">
+
+<canvas id="canv" width="1000" height="1000">
+
+</canvas>
+</div>
+<script>
+	init();
+</script>
+</body>
+</html>
