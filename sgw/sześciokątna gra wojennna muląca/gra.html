@@ -1,0 +1,404 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<script src="skrypt.js"></script>
+<script src="panel.js"></script>
+<script src="moves.js"></script>
+<script src="anim.js"></script>
+<script src="drawing.js"></script>
+<script src="ai.js"></script>
+<script src="history.js"></script>
+<style>
+body {
+	font-family: Trebuchet MS;
+	background-color: black;
+	color: white;
+	font-size: 12pt
+}
+input[type=button] {
+  background-color: #ccc;
+  border: 2px solid #aaa;
+  padding: 5px;
+  font-size: 14px
+}
+input[type=button]:hover {
+  background-color: #eee;
+}
+input[type=button]:active {
+  background-color: #bbb;
+}
+input[type=range]{
+  -webkit-appearance: none;  
+  -moz-appearance: none;
+  height: 30px
+}
+input[type=range]::-webkit-slider-runnable-track {
+  height: 100%;
+  border: 2px solid #aaf
+}
+input[type=range]::-moz-range-track {
+  height: 100%;
+  border: 2px solid #aaf
+}
+input[type=range]::-webkit-slider-thumb {
+  border: 1px solid #000000;
+  height: 30px;
+  width: 15px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  background-color:#aaf;
+  border: 2px solid #000000;
+  height: 30px;
+  width: 15px;
+  cursor: pointer;
+}
+#canv {
+	border: 1px solid white;
+	position: absolute
+}
+#aroundcanv {
+	float: left;
+	width: 800px;
+	height: 800px
+}
+#right {
+	border: 1px solid white;
+	float: left;
+	height: 790px;
+	width: 250px;
+	padding: 5px
+}
+#mountPercentageInputa {
+	float: left
+}
+h3 {
+	margin: 10px 10px 0px 10px
+}
+#controlfield {
+	margin-top: 0px;
+	margin-bottom: 10px
+}
+#controlfieldin {
+	border: 1px solid white;
+	padding: 5px;
+	margin-top: 15px
+}
+#controltitle {
+	position: relative;
+	top: 20px;
+	left: 10px;
+	background-color: black;
+	display: inline-block
+}
+p {
+	margin: 5px
+}
+#codewindow {
+	position: absolute;
+	margin: 50px;
+	padding: 5px;
+	background-color: #CCC;
+	border: 1px solid #666;
+	display: none
+}
+#teamPreview {
+	float: left;
+	margin: 5px
+}
+#teamPreview2 {
+	float: left;
+	margin: 5px
+}
+#teamPreview4 {
+	float: left;
+	margin: 5px
+}
+#klepsydraPreview {
+	float: left;
+	margin: 5px
+}
+#scaleButton {
+	width: 70px;
+	height: 30px;
+	border: 1px solid white;
+	background-color: #999;
+	float: left;
+	text-align: center;
+	padding: 10px;
+	margin: 3px
+}
+#scaleButton:hover {
+	background-color: #CCC
+}
+#steelAmount {
+	margin-top: 0px;
+	margin-bottom: 0px
+}
+</style>
+</head>
+<body onload="initialize();terrainChooseDraw();teamChooseDraw();unitChoiceDraw();unitDivisionDraw();anim()">
+<div id="mountPercentageInputa">
+  <div id="aroundcanv">
+    <canvas id="canv" width="800" height="800" onmousedown="getmouseposition(event);klik();clicked = true;" onmousemove="getmouseposition(event);cursormove()" onmouseup="clicked = false;" onmouseout="clicked = false;"></canvas>
+  </div>
+  <div id="codewindow">
+    <textarea id="codeField" rows="40" cols="80"></textarea>
+    <br/>
+    <input type="button" value="POBIERZ KOD" onclick="getCode();" />
+    <input type="button" value="WCZYTAJ KOD" onclick="readCode();redraw(true);"/>
+  </div>
+  <div id="right">
+    <div id="u1">
+      <h3>Nowa gra &nbsp;&nbsp;<a style="text-decoration:none;color:red" href="instrukcja.html" target="_blank">[INSTRUKCJA]</a></h3>
+      <div id="controlfield" style="margin-bottom:5px">
+        <div id="controltitle">Mapa</div>
+        <div id="controlfieldin">
+          <p> Ilość hexów na boku:
+            <input type="range" id="mapsizerange" min="6" value="20" max="60"  onchange="changeRangeInput(mapsizevalue,mapsizerange.value);redraw(true)" />
+            <span id="mapsizevalue">15</span></p>
+          <p>
+            <input type="button" value="SCAL LĄDY" onclick="smoothenCoastline();redraw(true);" />
+            <br/>
+          </p>
+          <p> Ilość lądu:
+            <input type="range" id="landPercentageInput" min="0" max="100" value="50" onchange="changeRangeInput(landPercentageValue,landPercentageInput.value)" />
+            <span id="landPercentageValue">50</span>%</p>
+          <p> Ilość gór na lądzie:
+            <input type="range" id="mountPercentageInput" min="0" max="100" value="10" onchange="changeRangeInput(mountPercentageValue,mountPercentageInput.value)" />
+            <span id="mountPercentageValue">10</span>%</p>
+          <p> Ilość miast:
+            <input type="range" id="cityPercentageInput" min="0" max="100" value="40" onchange="changeRangeInput(cityPercentageValue,cityPercentageInput.value)" />
+            <span id="cityPercentageValue">25</span></p>
+          <p>
+            <input type="button" value="ROZMIEŚĆ MIASTA OD NOWA" onclick="rearrangeCities(true);redraw(true);" />
+          </p>
+          <p>
+
+          <div id="controlfield">
+            <div id="controltitle">Edycja</div>
+            <div id="controlfieldin">
+              <canvas width="200px" height="50px" id="terrainChooseField" onclick="gmp(terrainChooseField,event);terrainChooseClick();" onmousemove="gmp(terrainChooseField,event);terrainChooseMove();" onmouseout="terrainChooseNumber = -1;terrainChooseDraw()"></canvas>
+              Wielkość miasta:
+              <input type="range" id="citySizeRange" min="39" max="1200" value="100" onchange="changeRangeInput(citySizeValue,citySizeRange.value);terrainChooseDraw();" />
+              <span id="citySizeValue">100</span>
+              </p>
+              <p>
+                <input type="button" value="ZAMIEŃ WSZYSTKO NA WODĘ" onclick="fillAll(0);redraw(true);" />
+              </p>
+              <p>
+                <input type="button" value="ZAMIEŃ WSZYSTKO NA LĄD" onclick="fillAll(1);redraw(true);" />
+              </p>
+            </div>
+          </div>
+          <p>
+            <input type="button" value="GENERUJ" onclick="generateTerrain();redraw(true);" />
+            <input type="button" value="GENERUJ I SCAL" onclick="generateTerrain();smoothenCoastline();smoothenCoastline();redraw(true);" />
+            <input type="button" value="KOD" onclick="showcode();" />
+          </p>
+        </div>
+      </div>
+      <div id="controlfield" style="margin-bottom:5px">
+        <div id="controltitle">Drużyny</div>
+        <div id="controlfieldin">
+          <canvas width="200px" height="150px" id="teamChoose" onclick="gmp(teamChooseCanvas,event);teamChooseClick();" onmousemove="gmp(teamChooseCanvas,event);teamChooseMove();" onmouseout="teamChooseNumber = -1;teamChooseDraw();"></canvas>
+          <br/>
+          <input type="button" value="USTAW ODDZIAŁY" onclick="if(checkTeams()){changeState(1);}" />
+        </div>
+      </div>
+    </div>
+    <div id="u2">
+      <h3>Stawianie oddziałów</h3>
+      <div style="height:60px">
+        <canvas id="teamPreview" width="50" height="50"></canvas>
+        <h3 style="padding:12px;padding-left:0px;float:left">
+          <input type="text" id="teamName" />
+        </h3>
+      </div>
+      <div id="controlfield" style="margin-bottom:5px">
+        <div id="controltitle">Bataliony</div>
+        <div id="controlfieldin">
+          <p id="infoo">Wybierz jednostkę do rozmieszczenia:</p>
+          <canvas width="200" height="200" id="unitChoiceCanvas" onclick="gmp(unitChoiceCanvas,event);unitChoiceClick();" onmousemove="gmp(unitChoiceCanvas,event);unitChoiceMove();" onmouseout="unitChoiceNumber = -1;unitChoiceDraw();"></canvas>
+          <p>Wielkość oddziału:<br/>
+            <input type="range" id="unitSizeRange" min="1" max="99" value="50" onchange="changeRangeInput(unitSizeValue,unitSizeRange.value);unitChoiceDraw();" />
+            <span id="unitSizeValue">50</span></p>
+        </div>
+      </div>
+      <input type="button" value="NASTĘPNA DRUŻYNA" onclick="nextTurn();unitChoiceDraw();" />
+      <br />
+      <input type="checkbox" id="equality"  />
+      Wszystkim po równo
+      <p>
+        <input type="button" value="WRÓĆ DO EDYCJI LĄDU" onclick="removeUnits();changeState(0);redraw(true)" />
+      </p>
+      <p>
+        <input type="button" value="GRAJ!" onclick="changeState(2);gameplay = true;" />
+      </p>
+    </div>
+    <div id="u3">
+      <div style="height:60px">
+        <canvas id="teamPreview2" width="50" height="50"></canvas>
+        <h3 style="padding:15px;padding-left:0px;float:left" id="teamName2">CZERWONI</h3>
+      </div>
+      <p>
+        <input type="button" value="ZAKOŃCZ TURĘ" id="endturn" onclick="changeState(4);" />
+        <input type="button" value="HISTORIA" id="history" onclick="changeState(6);" />
+      </p>
+      <div id="controlfield">
+        <div id="controltitle">Ruchy wojsk</div>
+        <div id="controlfieldin"> 
+            <canvas width="220px" height="140px" id="movesToMakeCanvas" onclick="gmp(movesToMakeCanvas,event);movesToMakeClick();" onmousemove="gmp(movesToMakeCanvas,event);movesToMakeMove();" onmouseout="movesToMakeNumber=-1;redrawCanvas(movesToMakeCanvasCtx)" ></canvas>
+
+        </div>
+      </div>
+    </div>
+    <div id="u4">
+      <div style="height:60px">
+        <canvas id="teamPreview3" width="50" height="50" style="float:left"></canvas>
+        <div style="padding:15px;padding-left:15px;float:left;width:150px;font-size:18px"><span id="teamName3">CZERWONI</span><br/>
+          <span style="font-size:12px" id="unitTypeField">Batalion piechoty</span></div>
+      </div>
+	  <span id="remindField"></span>
+      <div id="controlfield">
+        <div id="controltitle">Akcja</div>
+        <div id="controlfieldin">
+          <p>
+            <input type="button" value="PODZIEL" id="divideButton" onclick="divideUnit(zaznu,unitDivisionValue);" />
+            <input type="button" value="ROZBUDUJ" id="expandButton" onclick="expandUnit(zaznu,unitDivisionValue);" />
+            <input type="button" value="ZOSTAW 10" onclick="divideUnit(zaznu,10);" />
+            <input type="button" value="ROZBUDUJ DO 99" onclick="expandUnit(zaznu,99);" />
+
+            <canvas width="220px" height="90px" id="unitDivisionCanvas" onclick="gmp(unitDivisionCanvas,event);unitDivisionClick();" onmousemove="gmp(unitDivisionCanvas,event);unitDivisionMove();" onmouseout="unitDivisionHighlight=unitDivisionValue;unitDivisionDraw()"></canvas>
+          <div> Połącz z jednostkami z tego samego hexa:<br/>
+            <canvas width="220px" height="110px" id="unitMerge" onclick="gmp(unitMergeCanvas,event);unitMergeClick();" onmousemove="gmp(unitMergeCanvas,event);unitMergeMove();" onmouseout="unitMergeChoice=-1;redrawCanvas(unitMergeCanvasCtx)"></canvas>
+          </div>
+          <div id="placementDisplay" style="display:none">
+            <p> Rozlokowano w mieście <span id="placement" style="font-weight:bold"></span> </p>
+            <p id="cityData"> </p>
+            <input type="button" value="PRZEJDŹ DO MIASTA" onclick="gotoTheCityWhereUnitIsPlaced()" />
+          </div>
+          </p>
+        </div>
+      </div>
+      <span id="engineersField">
+      <div id="controlfield">
+        <div id="controltitle">Zadania dla saperów</div>
+        <div id="controlfieldin">
+          <p>
+            <input type="button" value="ZAŁÓŻ MIASTO" id="createCityButton" onclick="createCity()" /><br/> (1 mieszkaniec - 5 saperów, minimum 10 mieszkańców)
+          </p>
+        </div>
+      </div>
+      </span>
+    </div>
+    <div id="u5">
+      <div style="height:60px">
+        <canvas id="teamPreview4" width="50" height="50"></canvas>
+        <h3 style="padding:15px;padding-left:0px;float:left" id="teamName4">CZERWONI</h3>
+      </div>
+      <p>
+        <input type="button" value="PAUZA" id="pauseanim" onclickno="changeState(4);" />
+        <!--input type="button" value="HISTORIA" disabled="true" id="historyanim" onclick="" /-->
+      </p>
+      <div id="controlfield2">
+        <div id="controltitle2">Ruchy wojsk</div>
+        <div id="controlfieldin2"> 
+            <canvas width="220px" height="140px" id="movesToMakeCanvas2" onclick="gmp(movesToMakeCanvas2,event);movesToMakeClick2();" onmousemove="gmp(movesToMakeCanvas2,event);movesToMakeMove2();" onmouseout="movesToMakeNumber2=-1;redrawCanvas(movesToMakeCanvasCtx2)" ></canvas>
+
+        </div>
+      </div>
+    </div>
+    <div id="u6">
+      <div style="height:60px">
+        <canvas id="cityPreview" width="50" height="50" style="float:left"></canvas>
+        <div style="padding:15px;padding-left:15px;float:left;width:150px;font-size:18px">
+          <input type="text" id="cityName" value="Kaczogród" onchange="changeCityName()" />
+          <br/>
+          <span style="font-size:12px" id="cityTeam">Czerwoni</span></div>
+      </div>
+      <div id="moneyAmount">Pieniędzy: 50gr</div>
+      <div id="steelAmount">Stali: 2t</div>
+      <div>Sprzedaj stal: <br/>
+        <input type="button" value="1 (2$)" onclick="sellSteel(1);" />
+        <input type="button" value="10 (20$)" onclick="sellSteel(10);" />
+        <input type="button" value="100 (200$)" onclick="sellSteel(100);" />
+      </div>
+      <div id="controlfield" style="margin-top:10px">
+        <div id="controltitle">Załoga</div>
+        <div id="controlfieldin">
+          <p>
+            <canvas width="220px" height="140px" id="unitsInCity" onclick="gmp(unitsInCityCanvas,event);unitsInCityClick();" onmousemove="gmp(unitsInCityCanvas,event);unitsInCityMove();" onmouseout="unitsInCityNumber=-1;redrawCanvas(unitsInCityCanvasCtx)" ></canvas>
+          </p>
+        </div>
+      </div>
+      <div id="controlfield">
+        <div id="controltitle">Zadania</div>
+        <div id="controlfieldin">
+          <p>
+          <p><span id="taxValue">Podatek:</span>
+            <input type="range" id="taxRange" min="0" max="100" value="100" onchange="changeRangeInput(taxRangeValue,taxRange.value);"  />
+            <span id="taxRangeValue">23% (SunOfPeru approves)</span></p>
+          <input type="button" value="ZATWIERDŹ" id="zatw" onclick="makeTaxPath()" />
+          <input type="button" value="DAJ 100%" onclick="taxRange.value = 100;makeTaxPath()" />
+          <br/>
+          <p>
+            <canvas width="220px" height="120px" id="createUnitCanvas" onclick="gmp(createUnitCanvas,event);createUnitClick();" onmousemove="gmp(createUnitCanvas,event);createUnitMove();" onmouseout="createUnitNumber=-1;redrawCanvas(createUnitCanvasCtx)" ></canvas>
+            Rozmiar:
+            <input type="range" id="newUnitSizeRange" min="1" max="99" value="99" onchange="changeRangeInput(newUnitSizeValue,newUnitSizeRange.value);" />
+            <span id="newUnitSizeValue">50</span> </p>
+          <p> Inwestycje:
+            <canvas width="220px" height="100px" id="upgradeCityCanvas" onclick="gmp(upgradeCityCanvas,event);upgradeCityClick();" onmousemove="gmp(upgradeCityCanvas,event);upgradeCityMove();" onmouseout="upgradeCityNumber=-1;redrawCanvas(upgradeCityCanvasCtx)" ></canvas>
+            <br/>
+            Wielkość:
+            <input type="range" id="upgradeCityRange" min="1" max="200" value="20" onchange="changeRangeInput(upgradeCityRangeValue,upgradeCityRange.value);" />
+            <span id="upgradeCityRangeValue">50</span> </p>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div id="u7">
+      <div style="height:60px">
+        <canvas id="klepsydraPreview" width="50" height="50"></canvas>
+        <h3 style="padding:15px;padding-left:0px;float:left" id="teamName2">HISTORIA</h3>
+      </div>
+      <p>
+        <input type="button" value="WRÓĆ" id="wroc" onclick="changeState(2);" />
+      </p>
+      <div id="controlfield">
+        <div id="controltitle">Kontrola</div>
+        <div id="controlfieldin"> 
+          <div><b>Tura: </b><span id="historia-tura-span"></span></div>
+          <div><b>Drużyna: </b><span id="historia-druzyna-span"></span></div>
+          <div><b>Ruch: </b><span id="historia-ruch-span"></span></div>
+          <br/>
+          <div>
+            <input type="button" value="&lt;&lt;&lt;" onclick="historyMove(true,false,false,false);" />
+            <input type="button" value="&lt;&lt;" onclick="historyMove(false,true,false,false);" />
+            <input type="button" value="&lt;" onclick="historyMove(false,false,true,false);" />
+            <input type="button" id="historyplej" value="▶" onclick="historyPlay();" />
+            <input type="button" value="&gt;" onclick="historyMove(false,false,true,true);" />
+            <input type="button" value="&gt;&gt;" onclick="historyMove(false,true,false,true);" />
+            <input type="button" value="&gt;&gt;&gt;" onclick="historyMove(true,false,false,true);" />
+            
+          </div>
+        </div>
+      </div>
+      <div id="controlfield">
+        <div id="controltitle">Statystyki</div>
+        <div id="controlfieldin"> 
+        
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div style="float:left;clear:left"><span style="float:left;margin-top:40px">Wymiary planszy:</span>
+  <div id="scaleButton" onclick="changeScreenWidth(600);">600x600</div>
+  <div id="scaleButton" onclick="changeScreenWidth(800);">800x800</div>
+  <div id="scaleButton" onclick="changeScreenWidth(1000);">1000x1000</div>
+  <div id="scaleButton" onclick="changeScreenWidth(1200);">1200x1200 :o</div>
+</div>
+</body>
+</html>
