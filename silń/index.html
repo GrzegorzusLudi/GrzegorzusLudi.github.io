@@ -425,6 +425,7 @@ class GameController {
         this.clicked = true
         if(coords != null)
             this.model.play(coords.x,coords.y)
+        alert(coords.x+' '+coords.y)
     }
     mousemove(e){
         e.preventDefault()
