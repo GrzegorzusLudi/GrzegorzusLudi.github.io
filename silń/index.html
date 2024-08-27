@@ -211,7 +211,7 @@ class Model {
             break
         }
         if(!this.stacking()){
-            if(x == undefined){
+            if(x === undefined){
                 switch(this.key){
                     case "ArrowLeft":
                         this.selectedX = (this.selectedX+this.boardSize-1)%this.boardSize
@@ -244,7 +244,7 @@ class Model {
             var fd = this.selectedY < this.boardSize-1 ? this.board[this.selectedX][this.selectedY+1] : null
             var moved = false
             
-            if(x == undefined){
+            if(x === undefined){
                 switch(this.key){
                     case "ArrowLeft":
                         if(fl != null && fl.value == f.value){
@@ -425,6 +425,8 @@ class GameController {
         this.clicked = true
         if(coords != null)
             this.model.play(coords.x,coords.y)
+        else
+            this.model.play(coords.x,coords.y,true)
     }
     mousemove(e){
         e.preventDefault()
@@ -433,6 +435,8 @@ class GameController {
         if(this.clicked){
             if(coords != null)
                 this.model.play(coords.x,coords.y)
+            else
+                this.model.play(coords.x,coords.y,true)
             if(!this.model.stacking())
                 this.clicked = false
         }
