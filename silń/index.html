@@ -435,8 +435,6 @@ class GameController {
                 this.model.play(coords.x,coords.y)
             if(!this.model.stacking())
                 this.clicked = false
-        } else {
-            alert('bruh')
         }
     }
     mouseup(e){
@@ -446,6 +444,8 @@ class GameController {
         this.clicked = false
         if(coords != null)
             this.model.play(coords.x,coords.y,true)
+        else
+            this.model.play(null,null,true)
     }
     getBoardCoords(e){
         var coords = this.getCoordsFromEvent(e)
