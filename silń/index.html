@@ -423,14 +423,16 @@ class GameController {
         var coords = this.getBoardCoords(e)
         
         this.clicked = true
-        this.model.play(coords.x,coords.y)
+        if(coords != null)
+            this.model.play(coords.x,coords.y)
     }
     mousemove(e){
         e.preventDefault()
         var coords = this.getBoardCoords(e)
         
         if(this.clicked){
-            this.model.play(coords.x,coords.y)
+            if(coords != null)
+                this.model.play(coords.x,coords.y)
             if(!this.model.stacking())
                 this.clicked = false
         }
@@ -440,7 +442,8 @@ class GameController {
         var coords = this.getBoardCoords(e)
         
         this.clicked = false
-        this.model.play(coords.x,coords.y,true)
+        if(coords != null)
+            this.model.play(coords.x,coords.y,true)
     }
     getBoardCoords(e){
         var coords = this.getCoordsFromEvent(e)
@@ -456,7 +459,7 @@ class GameController {
         var rect = this.canv.getBoundingClientRect()
         
         var x,y
-        if(e.touches != null){
+        if(e.touches != undefined && e.touches.length > 0){
             x = (e.touches[0].clientX - rect.left) / rect.width * this.canv.width
             y = (e.touches[0].clientY - rect.top) / rect.height * this.canv.height
         } else {
