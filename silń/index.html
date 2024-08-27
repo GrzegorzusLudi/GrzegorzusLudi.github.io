@@ -204,29 +204,37 @@ class Model {
         return score - this.firstScore
         
     }
-    play(){
+    play(x,y,destack){
         switch(this.key){
             case "r":
                 this.init()
             break
         }
         if(!this.stacking()){
-            switch(this.key){
-                case "ArrowLeft":
-                    this.selectedX = (this.selectedX+this.boardSize-1)%this.boardSize
-                break
-                case "ArrowRight":
-                    this.selectedX = (this.selectedX+this.boardSize+1)%this.boardSize
-                break
-                case "ArrowUp":
-                    this.selectedY = (this.selectedY+this.boardSize-1)%this.boardSize
-                break
-                case "ArrowDown":
-                    this.selectedY = (this.selectedY+this.boardSize+1)%this.boardSize
-                break
-                case " ":
-                    this.stack = [[this.selectedX,this.selectedY]]
-                break
+            if(x == undefined){
+                switch(this.key){
+                    case "ArrowLeft":
+                        this.selectedX = (this.selectedX+this.boardSize-1)%this.boardSize
+                    break
+                    case "ArrowRight":
+                        this.selectedX = (this.selectedX+this.boardSize+1)%this.boardSize
+                    break
+                    case "ArrowUp":
+                        this.selectedY = (this.selectedY+this.boardSize-1)%this.boardSize
+                    break
+                    case "ArrowDown":
+                        this.selectedY = (this.selectedY+this.boardSize+1)%this.boardSize
+                    break
+                    case " ":
+                        this.stack = [[this.selectedX,this.selectedY]]
+                    break
+                }
+            } else {
+                if(destack != true){
+                    this.selectedX = x
+                    this.selectedY = y
+                    this.stack = [[x,y]]
+                }
             }
         } else {
             var f = this.board[this.selectedX][this.selectedY]
@@ -235,34 +243,51 @@ class Model {
             var fu = this.selectedY > 0 ?                this.board[this.selectedX][this.selectedY-1] : null
             var fd = this.selectedY < this.boardSize-1 ? this.board[this.selectedX][this.selectedY+1] : null
             var moved = false
-            switch(this.key){
-                case "ArrowLeft":
-                    if(fl != null && fl.value == f.value){
-                        this.selectedX = this.selectedX-1
+            
+            if(x == undefined){
+                switch(this.key){
+                    case "ArrowLeft":
+                        if(fl != null && fl.value == f.value){
+                            this.selectedX = this.selectedX-1
+                            moved = true
+                        }
+                    break
+                    case "ArrowRight":
+                        if(fr != null && fr.value == f.value){
+                            this.selectedX = this.selectedX+1
+                            moved = true
+                        }
+                    break
+                    case "ArrowUp":
+                        if(fu != null && fu.value == f.value){
+                            this.selectedY = this.selectedY-1
+                            moved = true
+                        }
+                    break
+                    case "ArrowDown":
+                        if(fd != null && fd.value == f.value){
+                            this.selectedY = this.selectedY+1
+                            moved = true
+                        }
+                    break
+                    case " ":
+                        this.stack = []
+                    break
+                }
+            } else {
+                if(destack != true){
+                    var oldvalue = this.board[this.selectedX][this.selectedY].value
+                    var newvalue = this.board[x][y].value
+                    
+//                    console.log(newvalue, oldvalue, Math.abs(x - this.selectedX), Math.abs(y - this.selectedY))
+                    if(newvalue == oldvalue && Math.abs(x - this.selectedX) + Math.abs(y - this.selectedY) == 1){
+                        this.selectedX = x
+                        this.selectedY = y
                         moved = true
                     }
-                break
-                case "ArrowRight":
-                    if(fr != null && fr.value == f.value){
-                        this.selectedX = this.selectedX+1
-                        moved = true
-                    }
-                break
-                case "ArrowUp":
-                    if(fu != null && fu.value == f.value){
-                        this.selectedY = this.selectedY-1
-                        moved = true
-                    }
-                break
-                case "ArrowDown":
-                    if(fd != null && fd.value == f.value){
-                        this.selectedY = this.selectedY+1
-                        moved = true
-                    }
-                break
-                case " ":
+                } else {
                     this.stack = []
-                break
+                }
             }
             if(moved){
                 this.stack.push([this.selectedX,this.selectedY])
@@ -375,8 +400,11 @@ class GameController {
         let th = this
         window.addEventListener('keydown',(e) => {th.keydown(e.key)})
         this.canv.addEventListener('mousedown',(e)=>{th.mousedown(e)})
+        this.canv.addEventListener('mousemove',(e)=>{th.mousemove(e)})
+        this.canv.addEventListener('mouseup',(e)=>{th.mouseup(e)})
         this.canv.addEventListener('touchmove',(e)=>{e.preventDefault()})
         
+        this.clicked = false
         this.loop()
     }
     loop(){
@@ -386,14 +414,41 @@ class GameController {
         setTimeout(()=>{th.loop()},50)
     }
     keydown(key){
-        console.log(key)
         this.model.setKey(key)
     }
     mousedown(e){
         e.preventDefault()
+        var coords = this.getBoardCoords(e)
+        
+        this.clicked = true
+        this.model.play(coords.x,coords.y)
+    }
+    mousemove(e){
+        e.preventDefault()
+        var coords = this.getBoardCoords(e)
+        
+        if(this.clicked){
+            this.model.play(coords.x,coords.y)
+            if(!this.model.stacking())
+                this.clicked = false
+        }
+    }
+    mouseup(e){
+        e.preventDefault()
+        var coords = this.getBoardCoords(e)
+        
+        this.clicked = false
+        this.model.play(coords.x,coords.y,true)
+    }
+    getBoardCoords(e){
         var coords = this.getCoordsFromEvent(e)
         
-        console.log(coords)
+        if(coords.x >= this.view.pw && coords.x < this.view.pw+this.view.plw && coords.y >= this.view.ph && coords.y < this.view.ph+this.view.plh){
+            var nx = Math.floor((coords.x - this.view.pw) / this.view.plw * this.model.boardSize)
+            var ny = Math.floor((coords.y - this.view.ph) / this.view.plh * this.model.boardSize)
+            return {x:nx, y:ny}
+        }
+        return null
     }
     getCoordsFromEvent(e){
         var rect = this.canv.getBoundingClientRect()
