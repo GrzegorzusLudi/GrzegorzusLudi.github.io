@@ -399,10 +399,10 @@ class GameController {
         
         let th = this
         window.addEventListener('keydown',(e) => {th.keydown(e.key)})
-        this.canv.addEventListener('mousedown',(e)=>{th.mousedown(e)})
+        /*this.canv.addEventListener('mousedown',(e)=>{th.mousedown(e)})
         this.canv.addEventListener('mousemove',(e)=>{th.mousemove(e)})
         this.canv.addEventListener('mouseup',(e)=>{th.mouseup(e)})
-        //this.canv.addEventListener('touchstart',(e)=>{th.mousedown(e)})
+        */this.canv.addEventListener('touchstart',(e)=>{th.mousedown(e)})
         this.canv.addEventListener('touchmove',(e)=>{th.mousemove(e)})
         this.canv.addEventListener('touchend',(e)=>{th.mouseup(e)})
         
