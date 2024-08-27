@@ -304,9 +304,9 @@ class View {
         this.cw = 1000
         this.ch = 1000
         this.plw = 750
-        this.plh = 1000
-        this.pw = 25
-        this.ph = 150
+        this.plh = 750
+        this.pw = 100
+        this.ph = 80
     }
     drawLine(x1,y1,x2,y2){
         this.ctx.beginPath()
@@ -322,16 +322,16 @@ class View {
         this.ctx.strokeStyle = "#fff"
         
         for(var i = 0;i<=model.boardSize;i++){
-            var pos = this.pw + i * (this.plw - this.pw * 2) / model.boardSize
+            var pos = this.pw + i * (this.plw) / model.boardSize
             var top = this.ph
-            var bottom = this.plh - this.ph
+            var bottom = this.plh + this.ph
             
             this.drawLine(pos,top,pos,bottom)
         }
         for(var i = 0;i<=model.boardSize;i++){
-            var pos = this.ph + i * (this.plh - this.ph * 2) / model.boardSize
+            var pos = this.ph + i * (this.plh) / model.boardSize
             var left = this.pw
-            var right = this.plw - this.pw
+            var right = this.plw + this.pw
             
             this.drawLine(left,pos,right,pos)
         }
@@ -355,11 +355,11 @@ class View {
         this.ctx.fillText('Score: '+model.score(), 40, this.ch - 60)
     }
     drawField(i,j,field,model,selected,stacking){
-        var posx = this.pw + i * (this.plw - this.pw * 2) / model.boardSize
-        var posy = this.ph + j * (this.plh - this.ph * 2) / model.boardSize
+        var posx = this.pw + i * (this.plw) / model.boardSize
+        var posy = this.ph + j * (this.plh) / model.boardSize
         
-        var kx = (this.plw - this.pw * 2) / model.boardSize
-        var ky = (this.plh - this.ph * 2) / model.boardSize
+        var kx = (this.plw) / model.boardSize
+        var ky = (this.plh) / model.boardSize
             
         field.draw(this.ctx, posx, posy, kx, ky, selected, stacking)
         
@@ -375,6 +375,7 @@ class GameController {
         let th = this
         window.addEventListener('keydown',(e) => {th.keydown(e.key)})
         this.canv.addEventListener('mousedown',(e)=>{th.mousedown(e)})
+        this.canv.addEventListener('touchmove',(e)=>{e.preventDefault()})
         
         this.loop()
     }
