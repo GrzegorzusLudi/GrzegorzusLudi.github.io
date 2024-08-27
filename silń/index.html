@@ -328,10 +328,10 @@ class View {
         
         this.cw = 1000
         this.ch = 1000
-        this.plw = 750
-        this.plh = 750
-        this.pw = 100
-        this.ph = 80
+        this.plw = 900
+        this.plh = 900
+        this.pw = 50
+        this.ph = 25
     }
     drawLine(x1,y1,x2,y2){
         this.ctx.beginPath()
@@ -377,7 +377,7 @@ class View {
         this.ctx.fillStyle = '#fff'
         this.ctx.font = '40px sans serif'
         this.ctx.textAlign = 'left'
-        this.ctx.fillText('Score: '+model.score(), 40, this.ch - 60)
+        this.ctx.fillText('Score: '+model.score(), 40, this.ch - 25)
     }
     drawField(i,j,field,model,selected,stacking){
         var posx = this.pw + i * (this.plw) / model.boardSize
