@@ -402,9 +402,9 @@ class GameController {
         this.canv.addEventListener('mousedown',(e)=>{th.mousedown(e)})
         this.canv.addEventListener('mousemove',(e)=>{th.mousemove(e)})
         this.canv.addEventListener('mouseup',(e)=>{th.mouseup(e)})
-        //this.canv.addEventListener('touchstart',(e)=>{th.mousedown(e)})
-        //this.canv.addEventListener('touchmove',(e)=>{th.mousemove(e)})
-        //this.canv.addEventListener('touchend',(e)=>{th.mouseup(e)})
+        this.canv.addEventListener('touchstart',(e)=>{th.mousedown(e)})
+        this.canv.addEventListener('touchmove',(e)=>{th.mousemove(e)})
+        this.canv.addEventListener('touchend',(e)=>{th.mouseup(e)})
         
         this.clicked = false
         this.loop()
@@ -455,8 +455,14 @@ class GameController {
     getCoordsFromEvent(e){
         var rect = this.canv.getBoundingClientRect()
         
-        var x = (e.clientX - rect.left) / rect.width * this.canv.width
-        var y = (e.clientY - rect.top) / rect.height * this.canv.height
+        var x,y
+        if(e.touches != null){
+            x = (e.touches[0].clientX - rect.left) / rect.width * this.canv.width
+            y = (e.touches[0].clientY - rect.top) / rect.height * this.canv.height
+        } else {
+            x = (e.clientX - rect.left) / rect.width * this.canv.width
+            y = (e.clientY - rect.top) / rect.height * this.canv.height
+        }
         
         return {x:x,y:y}
     }
