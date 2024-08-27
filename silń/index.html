@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
 <style type="text/css">
 * {border-collapse:collapse;border-collapse:collapse;
 -moz-box-sizing:border-box;
@@ -372,7 +373,8 @@ class GameController {
         this.model = new Model()
         
         let th = this
-        window.addEventListener('keydown',(e) => {th.keydown(e.key)})        
+        window.addEventListener('keydown',(e) => {th.keydown(e.key)})
+        this.canv.addEventListener('mousedown',(e)=>{th.mousedown(e)})
         
         this.loop()
     }
@@ -385,6 +387,13 @@ class GameController {
     keydown(key){
         console.log(key)
         this.model.setKey(key)
+    }
+    mousedown(e){
+        console.log(e)
+        var rect = this.canv.getBoundingClientRect()
+        
+        var x = e.clientX - rect.left
+        var y = e.clientY - rect.right
     }
 }
 function init(){
