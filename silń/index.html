@@ -451,7 +451,9 @@ class GameController {
         if(coords.x >= this.view.pw && coords.x < this.view.pw+this.view.plw && coords.y >= this.view.ph && coords.y < this.view.ph+this.view.plh){
             var nx = Math.floor((coords.x - this.view.pw) / this.view.plw * this.model.boardSize)
             var ny = Math.floor((coords.y - this.view.ph) / this.view.plh * this.model.boardSize)
-            return {x:nx, y:ny}
+            
+            if(nx != undefined && ny != undefined && nx >= 0 && nx < this.model.boardSize && ny >= 0 && ny < this.model.boardSize)
+                return {x:nx, y:ny}
         }
         return null
     }
