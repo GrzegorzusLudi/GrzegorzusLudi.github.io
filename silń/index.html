@@ -402,7 +402,9 @@ class GameController {
         this.canv.addEventListener('mousedown',(e)=>{th.mousedown(e)})
         this.canv.addEventListener('mousemove',(e)=>{th.mousemove(e)})
         this.canv.addEventListener('mouseup',(e)=>{th.mouseup(e)})
-        this.canv.addEventListener('touchmove',(e)=>{th.touchmove(e)})
+        this.canv.addEventListener('touchstart',(e)=>{th.mousedown(e)})
+        this.canv.addEventListener('touchmove',(e)=>{th.mousemove(e)})
+        this.canv.addEventListener('touchend',(e)=>{th.mouseup(e)})
         
         this.clicked = false
         this.loop()
@@ -424,16 +426,6 @@ class GameController {
         this.model.play(coords.x,coords.y)
     }
     mousemove(e){
-        e.preventDefault()
-        var coords = this.getBoardCoords(e)
-        
-        if(this.clicked){
-            this.model.play(coords.x,coords.y)
-            if(!this.model.stacking())
-                this.clicked = false
-        }
-    }
-    touchmove(e){
         e.preventDefault()
         var coords = this.getBoardCoords(e)
         
