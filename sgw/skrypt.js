@@ -1736,6 +1736,24 @@ function gotoTheCityWhereUnitIsPlaced(){
 	changeState(5);
 	cityName.value = heks[zaznx][zazny].nazwa;
 }
+function disbanduj(){
+	var _x = unix[kolej][zaznu].x;
+	var _y = unix[kolej][zaznu].y;
+	heks[_x][_y].zmiana++;
+	if(zaznu!=-1){
+		var dozdisbandowania = zaznu
+		odzaznaj();
+		zaznu = -1;
+		
+		for(var j = 0;j<heks[_x][_y].unp;j++){
+			if(heks[_x][_y].unt[j] == dozdisbandowania){
+				heks[_x][_y].usun(j)
+				break
+			}
+		}
+	}
+	changeState(2);
+}
 function ataz(att,obrr,ty){
 	var ae = heks[att.x][att.y];
 	var oe = heks[obrr.x][obrr.y];

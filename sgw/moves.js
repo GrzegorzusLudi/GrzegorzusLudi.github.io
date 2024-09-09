@@ -336,7 +336,7 @@ function miaruj(atki,obri,pole){
 		werd = false;
 	}
 	
-	if((szyt[atki.rodz] != "l" && zast[atki.rodz]!="p") && obri.szyt=="l" && obri.x != undefined && heks[obri.x][obri.y].z<=0){
+	if((szyt[atki.rodz] != "l" && zast[atki.rodz]!="p") && obri.szyt=="l" && pole.z<=0/*obri.x != undefined && heks[obri.x][obri.y].z<=0*/){
 		werd = false;
 	}
 	//if(szyt[atki.rodz] == "l" && obri.szyt != "l" && pole.z == -2){

@@ -274,10 +274,15 @@ p {
           <div> Połącz z jednostkami z tego samego hexa:<br/>
             <canvas width="220px" height="110px" id="unitMerge" onclick="gmp(unitMergeCanvas,event);unitMergeClick();" onmousemove="gmp(unitMergeCanvas,event);unitMergeMove();" onmouseout="unitMergeChoice=-1;redrawCanvas(unitMergeCanvasCtx)"></canvas>
           </div>
+            <p>
+            <input type="button" value="ROZWIĄŻ JEDNOSTKĘ" onclick="disbanduj()" />
+            </p>          
           <div id="placementDisplay" style="display:none">
             <p> Rozlokowano w mieście <span id="placement" style="font-weight:bold"></span> </p>
             <p id="cityData"> </p>
+            <p>
             <input type="button" value="PRZEJDŹ DO MIASTA" onclick="gotoTheCityWhereUnitIsPlaced()" />
+            </p>
           </div>
           </p>
         </div>
