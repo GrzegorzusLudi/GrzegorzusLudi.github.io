@@ -1542,6 +1542,22 @@ function przenies(kierunek){
 
 			var numw = 0;
 			var nump = this.il;
+			if(peh.unp>0 && peh.undr==kolej){
+				var gv = peh.unp-1;
+				while(gv>=0){
+					if(szyt[unix[kolej][peh.unt[gv]].rodz]=='w' && zast[unix[kolej][peh.unt[gv]].rodz]=='x' && peh.unt[gv] != -1 && unix[kolej][peh.unt[gv]].rozb==0){
+						while(nump>0 && unix[kolej][peh.unt[gv]].il>0){
+							nump--;
+							numw++;
+							unix[kolej][peh.unt[gv]].il--;
+						}
+						if(unix[kolej][peh.unt[gv]].il==0){
+							peh.usun(gv);
+						}
+					}
+					gv--;
+				}
+			}
 			var gv = hexOfUnit(this).unp-1;
 			while(gv>=0){
 				if(szyt[unix[kolej][hexOfUnit(this).unt[gv]].rodz]=='w' && zast[unix[kolej][hexOfUnit(this).unt[gv]].rodz]=='x' && unix[kolej][hexOfUnit(this).unt[gv]].rozb==0){
@@ -1555,23 +1571,6 @@ function przenies(kierunek){
 					}
 				}
 				gv--;
-			}
-			if(peh.unp>0 && peh.undr==kolej){
-				var gv = peh.unp-1;
-				while(gv>=0){
-					console.log(hexOfUnit(this).unt[gv])
-					if(szyt[unix[kolej][peh.unt[gv]].rodz]=='w' && zast[unix[kolej][peh.unt[gv]].rodz]=='x' && hexOfUnit(this).unt[gv] != -1 && unix[kolej][hexOfUnit(this).unt[gv]].rozb==0){
-						while(nump>0 && unix[kolej][peh.unt[gv]].il>0){
-							nump--;
-							numw++;
-							unix[kolej][peh.unt[gv]].il--;
-						}
-						if(unix[kolej][peh.unt[gv]].il==0){
-							peh.usun(gv);
-						}
-					}
-					gv--;
-				}
 			}
 			if(nump>0 && numw>0){
 				divideUnit(this.id,numw);
@@ -1615,54 +1614,53 @@ function przenies(kierunek){
 			}
 
 			if(peh.most[(kierunek+3)%6]>0){
-
 				var numw = peh.most[(kierunek+3)%6];
-			var nump = this.il;
-			var gv = 0;
-			while(numw>0 && gv<peh.unp){
-				if(unix[kolej][peh.unt[gv]].szyt!="l" && unix[kolej][peh.unt[gv]].szyt!="w" && unix[kolej][peh.unt[gv]].zast!="m"){
-					var zostao = unix[kolej][peh.unt[gv]].il;
-					while(numw>0 && zostao>0){
-						numw--;
-						zostao--;
+				var nump = this.il;
+				var gv = 0;
+				while(numw>0 && gv<peh.unp){
+					if(unix[kolej][peh.unt[gv]].szyt!="l" && unix[kolej][peh.unt[gv]].szyt!="w" && unix[kolej][peh.unt[gv]].zast!="m"){
+						var zostao = unix[kolej][peh.unt[gv]].il;
+						while(numw>0 && zostao>0){
+							numw--;
+							zostao--;
+						}
 					}
+					gv++;
 				}
-				gv++;
-			}
-			if(numw<this.il && numw>0){
-				divideUnit(this.id,numw);
-			}
-			if(numw>0){
-				while(rer<hexOfUnit(this).unp){
-					if(hexOfUnit(this).unt[rer] == this.id){
-						taik = true;
-						hexOfUnit(this).unp--;
+				if(numw<this.il && numw>0){
+					divideUnit(this.id,numw);
+				}
+				if(numw>0){
+					while(rer<hexOfUnit(this).unp){
+						if(hexOfUnit(this).unt[rer] == this.id){
+							taik = true;
+							hexOfUnit(this).unp--;
+						}
+						if(taik && rer<hexOfUnit(this).unp){
+							hexOfUnit(this).unt[rer] = hexOfUnit(this).unt[rer+1];
+						}
+						rer++;
 					}
-					if(taik && rer<hexOfUnit(this).unp){
-						hexOfUnit(this).unt[rer] = hexOfUnit(this).unt[rer+1];
+					if(hexOfUnit(this).unp == 0){
+						hexOfUnit(this).undr = -1;
+						hexOfUnit(this).unbr = -1;
 					}
-					rer++;
+					tox = this.x;
+					toy = this.y;
+					ton = 1;
+					this.x = peh.x;
+					this.y = peh.y;
+					this.sebix = peh.x;
+					this.sebiy = peh.y;
+					hexOfUnit(this).unt[hexOfUnit(this).unp] = this.id;
+					hexOfUnit(this).unp++;
+					hexOfUnit(this).undr = kolej;
+					hexOfUnit(this).unbr = kolej;
+					heks[tox][toy].koloruj();
+					hexOfUnit(this).koloruj();
+				} else {
+					jesio = -1;
 				}
-				if(hexOfUnit(this).unp == 0){
-					hexOfUnit(this).undr = -1;
-					hexOfUnit(this).unbr = -1;
-				}
-				tox = this.x;
-				toy = this.y;
-				ton = 1;
-				this.x = peh.x;
-				this.y = peh.y;
-				this.sebix = peh.x;
-				this.sebiy = peh.y;
-				hexOfUnit(this).unt[hexOfUnit(this).unp] = this.id;
-				hexOfUnit(this).unp++;
-				hexOfUnit(this).undr = kolej;
-				hexOfUnit(this).unbr = kolej;
-				heks[tox][toy].koloruj();
-				hexOfUnit(this).koloruj();
-			} else {
-				jesio = -1;
-			}
 			}
 		}
 		odceluj(this.id,kolej);

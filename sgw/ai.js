@@ -1233,7 +1233,7 @@ function aimachine(ailevel){
             var score1 = prepareDistTable(realSfKeys, farFromFront, allowPaths, dbetter)
             var score2 = score1
             
-            var realSfKeysSorted = Object.values(realSfKeys).sort((a,b) => a.maxPlayerScore + b.maxPlayerScore)
+            var realSfKeysSorted = Object.values(realSfKeys).sort((a,b) => a.maxPlayerScore - b.maxPlayerScore)
             if(biggestScoreHex != null)
                 realSfKeysSorted.push(biggestScoreHex)
 
@@ -1663,6 +1663,7 @@ function aimachine(ailevel){
                     if(distmap.hex.dru != kolej && distmap.hex.dru != -1)
                         continue
                         
+                    var alreadyDestination = {}
                     var sorted_coastlines_map = {}
                     for(var i in sorted_coastlines2){
                         sorted_coastlines_map[sorted_coastlines2[i].x + '#' + sorted_coastlines2[i].y] = true
@@ -1681,58 +1682,70 @@ function aimachine(ailevel){
                         
                         if(possible_coastlines_map[distmap.hex.x + '#' + distmap.hex.y] && unit.szyt != 'w' && zast[unit.rodz] == 'm' && unit.il > 50){
                             createCity(unit.id)
-                        } else if(zast[unit.rodz] == 'm' && unit.actions.length == 0 && unit.rozb < 10){
+                        } else if(zast[unit.rodz] == 'm' && unit.rozb < 10){
+                            if(unit.actions.length == 0){
                             
-                            var possible_destinations = []
-                            
-                            var map = distmap.maps['n'].hexmap
-                            var mapmapmap = mapmap(map,'hex')
+                                var possible_destinations = []
+                                
+                                var map = distmap.maps['n'].hexmap
+                                var mapmapmap = mapmap(map,'hex')
 
-                            for(var k in map){
-                                var field = map[k]
-                                
-                                var code = field.hex.x+'#'+field.hex.y
-                                
-                                if(sorted_coastlines_map[field.hex.x +'#'+ field.hex.y] && field.dist != -1)
-                                    possible_destinations.push(field)
-                                
-                                /*
-                                if(code in miejsca_do_wysłania_tratw){
-                                                
-                                    var result = getRuch(map,field)
+                                for(var k in map){
+                                    var field = map[k]
+                                    
+                                    var code = field.hex.x+'#'+field.hex.y
+                                    
+                                    if(sorted_coastlines_map[field.hex.x +'#'+ field.hex.y] && field.dist != -1)
+                                        possible_destinations.push(field)
+                                    
+                                    /*
+                                    if(code in miejsca_do_wysłania_tratw){
+                                                    
+                                        var result = getRuch(map,field)
+                                        
+                                        var ruchk = result.ruchk
+                                        var rucho = result.rucho
+                                    
+                                        var action = {type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,from:[pole_z_tratwami.x,pole_z_tratwami.y],destination:leadPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho)}
+                                        
+                                        var turnsToGo = Math.floor(ruchk.length/unit.szy)
+                                        
+                                        var possibleMove = { unit:unit, unitId:unit.id, dru:unit.d, action:action, turnsToGo: turnsToGo }
+
+                                        miejsca_do_wysłania_tratw[code].possibleMoves.push(possibleMove)
+                                    }*/
+                                }
+                                //console.log([distmap.hex.x,distmap.hex.y,possible_destinations.sort((a,b)=>a.dist-b.dist)])
+                                var additil = 0
+                                if(distmap.hex.units.length == 0)
+                                    additil = 10
+                                if(possible_destinations.length > 0 && unit.il >= 55+additil){
+                                    var best_dest = possible_destinations.sort((a,b)=>a.dist-b.dist)[0]
+                                    
+                                    var result = getRuch(mapmapmap,best_dest)
                                     
                                     var ruchk = result.ruchk
                                     var rucho = result.rucho
-                                
-                                    var action = {type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:unit.il,from:[pole_z_tratwami.x,pole_z_tratwami.y],destination:leadPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho)}
-                                    
-                                    var turnsToGo = Math.floor(ruchk.length/unit.szy)
-                                    
-                                    var possibleMove = { unit:unit, unitId:unit.id, dru:unit.d, action:action, turnsToGo: turnsToGo }
+                                    var epo = embarkingPointFromLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
 
-                                    miejsca_do_wysłania_tratw[code].possibleMoves.push(possibleMove)
-                                }*/
-                            }
-                            //console.log([distmap.hex.x,distmap.hex.y,possible_destinations.sort((a,b)=>a.dist-b.dist)])
-                            var additil = 0
-                            if(distmap.hex.units.length == 0)
-                                additil = 10
-                            if(possible_destinations.length > 0 && unit.il >= 55+additil){
-                                var best_dest = possible_destinations.sort((a,b)=>a.dist-b.dist)[0]
                                 
-                                var result = getRuch(mapmapmap,best_dest)
-                                
-                                var ruchk = result.ruchk
-                                var rucho = result.rucho
-                                var epo = embarkingPointFromLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
+                                    if(epo == null){
+                                        var lepa = leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
+                                        var lepakod = lepa[0]+'#'+lepa[1]
+                                        
+                                        if(!(lepakod in alreadyDestination)){
+                                            var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-additil,from:[distmap.hex.x,distmap.hex.y],destination:lepa,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}                               
 
-                            
-                                if(epo == null){
-                                    var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-additil,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho),leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}
-                                                                    
-
-                                    unit.actions = [ action ]
+                                            unit.actions = [ action ]
+                                        }
+                                    }
                                 }
+                            } else if(unit.actions[0].type == 'move') {
+                                var lepa = unit.actions[0].destination
+                                var lepakod = lepa[0]+'#'+lepa[1]
+                                if(!(lepakod in alreadyDestination))
+                                    alreadyDestination[lepakod] = 0
+                                alreadyDestination[lepakod] += unit.il
                             }
                         }
                     }
@@ -2848,7 +2861,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             continue
                         }*/
                         
-                        if((disttotown-Math.max(1,zas[unit.rodz]))/szy[unit.rodz] > 2){
+                        if((disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz] > 2){
                             continue
                         }
                         
@@ -3238,8 +3251,8 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                         }
                     }*/
                     
-                    var dru_to = hexto.dru ? hexto.dru : hexto.undr
-                    var dru_from = hexfrom.dru ? hexfrom.dru : hexfrom.undr
+                    var dru_to = hexto.dru != undefined ? hexto.dru : hexto.undr
+                    var dru_from = hexfrom.dru != undefined ? hexfrom.dru : hexfrom.undr
                     
                     if(air){
                         
@@ -6536,6 +6549,13 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                 continue
                 
             if(unit.actions.length > 0 && unit.actions[0].type == 'move'){
+                
+                var dist = unit.actions[0].rucho.length
+                var time = (dist-zas[unit.rodz]+1)/(szy[unit.rodz])
+                if(time < 2)
+                    continue
+
+                
                 var ok = true
                 for(var key in realSfKeys){
                     var disttime = distance(realSfKeys[key].hex.x,realSfKeys[key].hex.y,unit.actions[0].destination[0],unit.actions[0].destination[1])/szy[unit.rodz]
