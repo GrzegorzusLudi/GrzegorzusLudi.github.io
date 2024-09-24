@@ -920,7 +920,7 @@ function aimachine(ailevel){
                             var d2 = nearest_hexes[i].dmap[closcode].dist //+ nearest_hexes[i].dmap[closcode].water*2
                             var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)-1// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                             
-                            var prsz = d3 < (d2 + d1)*0.7 && !(d2 < (d3 + d1)*0.7)
+                            var prsz = d3 < (d2 + d1)*0.7 || d2 < (d3 + d1)*0.7
                             
                             if(prsz){
                                 ok2 = true
@@ -6504,7 +6504,7 @@ function unitActionDistant(action, unit){
 function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,failedvvals){
     
     var fffdict = {}
-    farFromFront.sort((a,b)=>-a.il/Math.pow(a.time)+b.il/Math.pow(2.1,b.time))
+    farFromFront.sort((a,b)=>a.il/Math.pow(a.time)-b.il/Math.pow(2.1,b.time))
     
     var possibleUnitActions = {}
     for(var key in realSfKeys){
@@ -6560,7 +6560,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                 for(var key in realSfKeys){
                     var disttime = distance(realSfKeys[key].hex.x,realSfKeys[key].hex.y,unit.actions[0].destination[0],unit.actions[0].destination[1])/szy[unit.rodz]
 
-                    if(disttime < 2){
+                    if(disttime < 2 || disttime > time){
                         ok = false
                         break
                     }
