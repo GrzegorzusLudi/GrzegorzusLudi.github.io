@@ -827,7 +827,7 @@ function aimachine(ailevel){
                                     //console.log([d1,d2,d3])
                                     if(d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)){
                                         ok2 = false
-                                        if(d1 > 3 /*&& d2 > 2*/){
+                                        if(d1 > 0 /*&& d2 > 2*/){
                                             i_am_behind[d1code].codes.push(d2code)
                                             ok = false
                                         }
@@ -925,7 +925,7 @@ function aimachine(ailevel){
                             if(prsz){
                                 ok2 = true
                             }
-                            if(d3 <= 3/* || d1 <= 2*/ || prsz){
+                            if(d3 <= 0/* || d1 <= 2*/ || prsz){
                                 //if(!(d2code in behind))
                                 //    behind[d2code] = {hex:from_hexes[j],value:0}
                                 //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
@@ -1645,7 +1645,6 @@ function aimachine(ailevel){
                 
                 var restFulfilled = needsFulfiled - needs
                 
-                console.log(needsFulfiled,needs)
                 if(restFulfilled < -40){
                     coastlines.push(inaccessible_path[empoem.x][empoem.y])
                     possible_coastlines.push(inaccessible_path[empoem.x][empoem.y])
@@ -2193,7 +2192,11 @@ function aimachine(ailevel){
                                                 lad_needsByTurn[j] -= -Number(evalUnitDefense(unit,unit.il+unit.rozb))
                                             }
                                         }
-                                    } else if(zast[unit.rodz] == 'm'){
+                                    }
+                                }
+                                for(var j = 0;j<heks[hks.hex.x][hks.hex.y].unp;j++){
+                                    if(zast[unit.rodz] == 'm'){
+                                        var unit = unix[hdru][heks[hks.hex.x][hks.hex.y].unt[j]]
                                         sapper_prod += unit.il+unit.rozb
                                     }
                                 }
@@ -2219,6 +2222,12 @@ function aimachine(ailevel){
                                         sapper_prod += unit.il+unit.rozb
                                     } else if(zast[unit.rodz] == 'x' && szyt[unit.rodz] == 'w'){
                                         tratwa_needs -= unit.il
+                                    }
+                                }
+                                for(var j = 0;j<heks[hks.hex.x][hks.hex.y].unp;j++){
+                                    if(zast[unit.rodz] == 'm'){
+                                        var unit = unix[kolej][heks[hks.hex.x][hks.hex.y].unt[j]]
+                                        sapper_prod += unit.il+unit.rozb
                                     }
                                 }
                             }
@@ -2332,6 +2341,7 @@ function aimachine(ailevel){
                         var needednum = 99
                         var enough_units_produced = Math.max(lad_needs,morze_needs) <= local_prod// && miast_dist[kolejność_miast[miastkol]] > 0
                         if(enough_units_produced && possible_coastline != null && sapper_prod <= 20){
+                            console.log([enough_units_produced,possible_coastline,sapper_prod])
                             needed = 11
                             needednum = 60
                         }
@@ -5806,7 +5816,7 @@ function tryMakeDestinationMap(dm,color,allowedPaths){
                     //UBAUBA
                     
                     var properAction = legalAction[0]
-                    
+                    /*
                     if(legalAction[0].type == 'move'){
                         var turnPrediction = Math.ceil((legalAction[0].rucho.length - Math.max(zas[unit.rodz]-1,0)) / szy[unit.rodz])
                         if(turnPrediction > 2){
@@ -5814,7 +5824,7 @@ function tryMakeDestinationMap(dm,color,allowedPaths){
                         } else {
                             legalAction[0].distant = false
                         }
-                    }
+                    }*/
                     
                     //console.log(allowedPaths,code1+'#'+dest_code)
                     if(!allowedPaths[code1+'#'+dest_code])
@@ -6504,7 +6514,7 @@ function unitActionDistant(action, unit){
 function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,failedvvals){
     
     var fffdict = {}
-    farFromFront.sort((a,b)=>a.il/Math.pow(a.time)-b.il/Math.pow(2.1,b.time))
+    farFromFront.sort((a,b)=>a.il/Math.pow(2.1,a.time)-b.il/Math.pow(2.1,b.time))
     
     var possibleUnitActions = {}
     for(var key in realSfKeys){
@@ -6570,6 +6580,21 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                 }
             }
                 
+            
+            var possible = {}
+            for(var key1 in realSfKeys){
+                possible[key1] = realSfKeys[key1]
+                for(var key2 in realSfKeys){
+                    var d1 = distmapsearch(dfrou,fff.code,key1,unit.rodz)
+                    var d2 = distmapsearch(dfrou,fff.code,key2,unit.rodz)
+                    var d3 = distmapsearch(dfrou,key1,key2,unit.rodz)
+                    
+                    if(d1 < (d2+d3) * 0.7 && !(d2 < (d1+d3) * 0.7)){
+                        delete possible[key1]
+                        break
+                    }
+                }
+            }
             for(var j in unit.legalActions){
                 var lac = unit.legalActions[j]
                 if(lac[0].type == 'move' && lac.length == 1 && lac[0].il >= unit.il-10){
@@ -6596,7 +6621,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     //if(!allowPaths[fff.code+'#'+lade])
                     //    continue
 
-                    if(time >= 2 && lade in realSfKeys){
+                    if(time >= 2 && lade in possible){
                         /*
                         for(var key in realSfKeys){
                             if(key != lade){
@@ -6634,6 +6659,18 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
         
     //}
     
+}
+
+function distmapsearch(dfrou,key1,key2,unitrodz){
+    var maps = dfrou.distmaps[key1].maps[szyt[unitrodz]].hexmap
+    
+    for(var i in maps){
+        var hx = maps[i].hex
+        if(hx.x+'#'+hx.y == key2){
+            return maps[i].dist
+        }
+    }
+    return null
 }
 
 function cutaction(action,unitrodz){
