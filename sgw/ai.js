@@ -6662,6 +6662,8 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
 }
 
 function distmapsearch(dfrou,key1,key2,unitrodz){
+    if(!(szyt[unitrodz] in dfrou.distmaps[key1].maps))
+        return null
     var maps = dfrou.distmaps[key1].maps[szyt[unitrodz]].hexmap
     
     for(var i in maps){
