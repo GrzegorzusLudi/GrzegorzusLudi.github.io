@@ -448,6 +448,7 @@ function aimachine(ailevel){
             evaluate(dbetter,2)
             
             large_map = prepareLargeMap(dfrou)
+            plargemap = large_map
             //console.log(large_map)
             
             //legalActions(dbetter)
@@ -915,17 +916,20 @@ function aimachine(ailevel){
                         var closcode = clos.x+'#'+clos.y
 
                         var closelem = large_map[clos.x][clos.y]
+                        //console.log([closcode in nearest_hexes[i].dmap, closcode in from_hexes[j].dmap, nearest_hexes[i].x+'#'+nearest_hexes[i].y in from_hexes[j].dmap, from_hexes[j]])
                         if(closcode in nearest_hexes[i].dmap && closcode in from_hexes[j].dmap && nearest_hexes[i].x+'#'+nearest_hexes[i].y in from_hexes[j].dmap){
+                            
                             var d1 = from_hexes[j].dmap[closcode].dist //+ from_hexes[j].dmap[closcode].water*2
                             var d2 = nearest_hexes[i].dmap[closcode].dist //+ nearest_hexes[i].dmap[closcode].water*2
                             var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)-1// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                             
-                            var prsz = d3 < (d2 + d1)*0.7 || d2 < (d3 + d1)*0.7
+                            var prsz = d3 < (d2 + d1)*0.7// && !(d3 >= (d3 + d1)*0.7)
                             
+                            //console.log([d3, (d2 + d1)*0.7,d2,d1])
                             if(prsz){
                                 ok2 = true
                             }
-                            if(d3 <= 0/* || d1 <= 2*/ || prsz){
+                            if(prsz || d3 <= 3 || true){
                                 //if(!(d2code in behind))
                                 //    behind[d2code] = {hex:from_hexes[j],value:0}
                                 //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
@@ -1224,6 +1228,7 @@ function aimachine(ailevel){
             break
         case 1.331:
             
+            dbetter = copyDistmaps(dfrou)
             
 
             
@@ -1286,8 +1291,6 @@ function aimachine(ailevel){
                             var newaction = [cutaction(firstVal.action[0],firstVal.unitrodz)]
                             if(newaction[0].rucho.length > 0){
                                 dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions = newaction
-                                
-                                //console.log(newaction[0].rucho.length)
                             }
                             break
                         }
@@ -2341,7 +2344,7 @@ function aimachine(ailevel){
                         var needednum = 99
                         var enough_units_produced = Math.max(lad_needs,morze_needs) <= local_prod// && miast_dist[kolejność_miast[miastkol]] > 0
                         if(enough_units_produced && possible_coastline != null && sapper_prod <= 20){
-                            console.log([enough_units_produced,possible_coastline,sapper_prod])
+                            //console.log([enough_units_produced,possible_coastline,sapper_prod])
                             needed = 11
                             needednum = 60
                         }
@@ -2532,7 +2535,6 @@ function prepareLargeMap(dm,t){
         
         
         var dr = evalAlliegance(dm,distmap)//distmap.hex.heks.undr != undefined ? distmap.hex.heks.undr : distmap.hex.heks.dru
-        
         //for(var movement_type in distmap.maps){
         var dmap1 = distmap.maps['n'].hexmap.filter(x=>x.dist != -1)
         var dmap2 = 'w' in distmap.maps ? distmap.maps['w'].hexmap.filter(x=>x.dist != -1) : null
@@ -2796,6 +2798,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
             var farFromFrontBool = unit.d == kolej
             var mintime = Infinity
             //if(!(unit.d == kolej && unit.actions.length > 0 && unit.actions[0].type == 'move'))
+            if(unit.d != kolej)
                 for(var la in unit.legalActions){
                     var lac = unit.legalActions[la]
                     if(lac[0].type == 'move' && lac.length == 1 && lac[0].il == unit.il){
@@ -2805,16 +2808,15 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             
                             var time = Math.ceil(dist/szy[unit.rodz])
                             var time2 = dist/szy[unit.rodz]
-                            
+                            /*
                             if(realDest != null){
                                 time = Math.ceil(distance(realDest[0],realDest[1],lac[0].destination[0],lac[0].destination[1])/szy[unit.rodz])
                                 time2 = (distance(realDest[0],realDest[1],lac[0].destination[0],lac[0].destination[1])-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz]
-                            }
-                            time = time2
+                            }*/
+                            //time = time2
                             mintime = Math.min(time2,mintime)
 
-                            //console.log(time)
-                            if(unit.d == kolej && time > 2){
+                            if(unit.d == kolej/* && time > 2*/){
                                 continue
                             }
                             if(time <= 2) {
@@ -2837,7 +2839,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                 var lade = unit.actions[0].destination[0]+'#'+unit.actions[0].destination[1]
                 var dist = unit.actions[0].rucho.reduce((a,b)=>a+b,0)
                 
-                var time = /*Math.ceil(*/(dist-Math.max(zas[unit.rodz],0))/szy[unit.rodz]//)
+                var time = /*Math.ceil(*/(dist/*-Math.max(zas[unit.rodz],0)*/)/szy[unit.rodz]//)
 
                 /*
                 if(unit.actions[0].embarking != null){
@@ -2870,7 +2872,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                         if((disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz] > 2){
                             continue
                         }*/
-                        
+                        //console.log('disttotown:',disttotown,(disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz])
                         if((disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz] > 2){
                             continue
                         }
@@ -2885,7 +2887,6 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             if(!(t in sfkeysToAdd))
                                 sfkeysToAdd[t] = []
                             sfkeysToAdd[t].push(ld)
-                            //console.log('##')
                         }
                     }
                 //}
@@ -2934,10 +2935,12 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
             }
             
             if(scor > maxPlayerScore){
+                secondMaxPlayer = maxPlayer
+                secondMaxPlayerScore = maxPlayerScore
+
                 maxPlayer = i
                 maxPlayerScore = scor
-            }
-            if(scor > secondMaxPlayerScore && scor < maxPlayerScore){
+            } else if(scor > secondMaxPlayerScore && scor < maxPlayerScore){
                 secondMaxPlayer = i
                 secondMaxPlayerScore = scor
             }
@@ -3278,7 +3281,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                         if(unp_to > 3 && unp_from <= 3 && dru_to == (checkedGrid[x][y].dru != undefined ? checkedGrid[x][y].dru : checkedGrid[x][y].undr)/* && checkedGrid[x][y] != -1*/){
                             step *= 10
                         }
-                        if(unp_to == 4 && (dru_to == (checkedGrid[x][y].dru != undefined ? checkedGrid[x][y].dru : checkedGrid[x][y].undr) || dru_to == kolej)){
+                        if(unp_from == 4 && (dru_to == (checkedGrid[x][y].dru != undefined ? checkedGrid[x][y].dru : checkedGrid[x][y].undr) || dru_to == kolej)){
                             continue
                         }
                     } else {
@@ -3314,7 +3317,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                         if(unp_to > 3 && unp_from <= 4 && dru_to == kolej/* && checkedGrid[x][y] != -1*/){
                             step *= 10
                         }
-                        if(unp_to == 4 && dru_to == kolej){
+                        if(unp_from == 4 && dru_to == kolej){
                             continue
                         }
                     }
@@ -6018,7 +6021,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     
     //interestingUnits = interestingUnits1.concat(interestingUnits2)
     
-    interestingUnits.sort((a,b) => (-1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length + (a.action.length > 1 ? 0.5 : 0))/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))*(a.action[0].il) + 
+    interestingUnits.sort((a,b) => -(1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length + (a.action.length > 1 ? 0.5 : 0))/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))*(a.action[0].il) + 
                                      1/Math.pow(1.4,(b.action[0].rucho ? (b.action[0].rucho.length + (b.action.length > 1 ? 0.5 : 0))/szy[b.unit.rodz] : b.action[0].type == 'aim' ? 0 : 0))*(b.action[0].il)
                                     ))
     //console.log(interestingUnits.map((a) => [a.hex.x,a.hex.y,-1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length + a.action.length > 1 ? 0.5 : 0)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))]))
@@ -6143,7 +6146,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         //score_2 = calculateStrategicMapForTeam(large_map, dm, kolej, modif)
             
         //console.log([value2,value],[score2,score1])
-        if(value2 < value || score2 < score1 && value2 <= value){
+        if(value2+1 < value/* || score2 < score1 && value2 <= value*/){
             if(!evaluated){
                 //evaluate(dm)
             }/*
@@ -6514,7 +6517,7 @@ function unitActionDistant(action, unit){
 function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,failedvvals){
     
     var fffdict = {}
-    farFromFront.sort((a,b)=>a.il/Math.pow(2.1,a.time)-b.il/Math.pow(2.1,b.time))
+    farFromFront.sort((a,b)=>-a.il/Math.pow(2.1,a.time)+b.il/Math.pow(2.1,b.time))
     
     var possibleUnitActions = {}
     for(var key in realSfKeys){
