@@ -929,7 +929,7 @@ function aimachine(ailevel){
                             if(prsz){
                                 ok2 = true
                             }
-                            if(prsz || d3 <= 2){
+                            if(prsz/* || d3 <= 2*/){
                                 //if(!(d2code in behind))
                                 //    behind[d2code] = {hex:from_hexes[j],value:0}
                                 //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
@@ -1021,7 +1021,7 @@ function aimachine(ailevel){
             //console.log(possible_targets)
             //console.log(possible_targets)
             //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
-            possible_targets.sort((a,b)=>(-a.value + b.value))
+            possible_targets.sort((a,b)=>(a.value - b.value))
 
             
             //possible_targets.sort((a,b) => (a.x+'#'+a.y in behind ? behind[a.x+'#'+a.y].value : 0) - (b.x+'#'+b.y in behind ? behind[b.x+'#'+b.y].value : 0))
@@ -1175,7 +1175,7 @@ function aimachine(ailevel){
                             overall_score_changed = true
                     }*/
                     //console.log(score_1,score_2)
-                    if(score_1 > score_2/* || score_1 == score_2 && score__1 > score__2*/){
+                    if(score_1 > score_2/* || score_1 == score_2 && score1 > score2*/){
                         dbetter = newDistmap
                         //if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej]){
                             overall_score_changed = true
@@ -1238,9 +1238,9 @@ function aimachine(ailevel){
             var score1 = prepareDistTable(realSfKeys, farFromFront, allowPaths, dbetter)
             var score2 = score1
             
-            var realSfKeysSorted = Object.values(realSfKeys).sort((a,b) => -a.maxPlayerScore + b.maxPlayerScore)
-            if(biggestScoreHex != null)
-                realSfKeysSorted.push(biggestScoreHex)
+            var realSfKeysSorted = Object.values(realSfKeys).sort((a,b) => a.maxPlayerScore - b.maxPlayerScore)
+            //if(biggestScoreHex != null)
+            //    realSfKeysSorted.push(biggestScoreHex)
 
             
             for(var i in realSfKeysSorted){
