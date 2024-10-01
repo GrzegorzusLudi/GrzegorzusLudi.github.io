@@ -6598,7 +6598,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     var d2 = distmapsearch(dfrou,fff.code,key2,unit.rodz)
                     var d3 = distmapsearch(dfrou,key1,key2,unit.rodz)
                     
-                    if(d1 < (d2+d3) * 0.7 && !(d2 < (d1+d3) * 0.7)){
+                    if(d1 > (d2+d3) * 0.7 && !(d2 > (d1+d3) * 0.7)){
                         delete possible[key1]
                         break
                     }
@@ -6627,8 +6627,8 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     }
                         
                         
-                    if(!allowPaths[fff.code+'#'+lade])
-                        continue
+                    //if(!allowPaths[fff.code+'#'+lade])
+                    //    continue
 
                     if(time >= 2 && lade in possible){
                         /*
