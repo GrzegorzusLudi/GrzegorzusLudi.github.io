@@ -6010,7 +6010,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         
     //console.log(interestingUnits)
 
-    interestingUnits = interestingUnits.filter(x=>(x.action[0].type != 'move' || (x.action[0].rucho.length/*-Math.max(0,zas[x.unit.rodz]-1)*/) / szy[x.unit.rodz] <= 2) && (x.unit.actions.length == 0 || (x.unit.actions[0].by != 'speculation2'/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/)))
+    interestingUnits = interestingUnits.filter(x=>(x.action[0].type != 'move' || (x.action[0].rucho.length/*-Math.max(0,zas[x.unit.rodz]-1)*/) / szy[x.unit.rodz] < 2) && (x.unit.actions.length == 0 || (x.unit.actions[0].by != 'speculation2'/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/)))
     
     
     //console.log(interestingUnits.map(a => 1/Math.pow(2,a.action[0].rucho ? a.action[0].rucho.length : 0)*(a.action[0].il)))
@@ -6627,8 +6627,8 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     }
                         
                         
-                    //if(!allowPaths[fff.code+'#'+lade])
-                    //    continue
+                    if(!allowPaths[fff.code+'#'+lade])
+                        continue
 
                     if(time >= 2 && lade in possible){
                         /*
