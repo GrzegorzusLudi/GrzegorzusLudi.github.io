@@ -929,7 +929,7 @@ function aimachine(ailevel){
                             if(prsz){
                                 ok2 = true
                             }
-                            if(prsz || d3 <= 3 || true){
+                            if(prsz || d3 <= 2){
                                 //if(!(d2code in behind))
                                 //    behind[d2code] = {hex:from_hexes[j],value:0}
                                 //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
@@ -1238,7 +1238,7 @@ function aimachine(ailevel){
             var score1 = prepareDistTable(realSfKeys, farFromFront, allowPaths, dbetter)
             var score2 = score1
             
-            var realSfKeysSorted = Object.values(realSfKeys).sort((a,b) => a.maxPlayerScore - b.maxPlayerScore)
+            var realSfKeysSorted = Object.values(realSfKeys).sort((a,b) => -a.maxPlayerScore + b.maxPlayerScore)
             if(biggestScoreHex != null)
                 realSfKeysSorted.push(biggestScoreHex)
 
@@ -1290,7 +1290,10 @@ function aimachine(ailevel){
                             
                             var newaction = [cutaction(firstVal.action[0],firstVal.unitrodz)]
                             if(newaction[0].rucho.length > 0){
+                                var oldaction = dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions
                                 dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions = newaction
+                                
+                                
                             }
                             break
                         }
@@ -2816,11 +2819,11 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             //time = time2
                             mintime = Math.min(time2,mintime)
 
-                            if(unit.d == kolej/* && time > 2*/){
-                                continue
-                            }
                             if(time <= 2) {
                                 farFromFrontBool = false
+                            }
+                            if(unit.d == kolej/* && time > 2*/){
+                                continue
                             }
                             if(infantrytime[lade] == null){
                                 infantrytime[lade] = Math.ceil(dist/szy[unit.rodz])
