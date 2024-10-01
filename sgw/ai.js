@@ -6544,6 +6544,9 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
             if(unit.actions.length > 0 && unit.actions[0].by == 'speculation2'){
                 continue
             }
+            if(unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length / szy[unit.rodz] < 2){
+                continue
+            }
             
             if(distmap.hex.heks.z > 0){
                 var moving = 0
