@@ -2822,7 +2822,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             if(time <= 2) {
                                 farFromFrontBool = false
                             }
-                            if(unit.d == kolej/* && time > 2*/){
+                            if(unit.d == kolej && time > 2){
                                 continue
                             }
                             if(infantrytime[lade] == null){
@@ -2876,20 +2876,19 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             continue
                         }*/
                         //console.log('disttotown:',disttotown,(disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz])
-                        if((disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz] > 2){
-                            continue
-                        }
+                        if((disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz] <= 2){
                         
-                        var ndist = dist + disttotown
-                        if(infantrytime[ld] == null){
-                            infantrytime[ld] = Math.ceil(ndist/szy[unit.rodz])
-                        } else {
-                            infantrytime[ld] = Math.min(infantrytime[ld], Math.ceil(ndist/szy[unit.rodz]))
-                        }
-                        for(var t = Math.ceil(time);t<MAX_TURNS;t++){
-                            if(!(t in sfkeysToAdd))
-                                sfkeysToAdd[t] = []
-                            sfkeysToAdd[t].push(ld)
+                            var ndist = dist + disttotown
+                            if(infantrytime[ld] == null){
+                                infantrytime[ld] = Math.ceil(ndist/szy[unit.rodz])
+                            } else {
+                                infantrytime[ld] = Math.min(infantrytime[ld], Math.ceil(ndist/szy[unit.rodz]))
+                            }
+                            for(var t = Math.ceil(time);t<MAX_TURNS;t++){
+                                if(!(t in sfkeysToAdd))
+                                    sfkeysToAdd[t] = []
+                                sfkeysToAdd[t].push(ld)
+                            }
                         }
                     }
                 //}
