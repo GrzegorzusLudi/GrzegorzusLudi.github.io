@@ -3243,8 +3243,8 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                     var step = 1
                     var pluswater = 0
                     
-                    var unp_to = hexto.units ? hexto.units.length : hexto.unp
-                    var unp_from = hexfrom.units ? hexfrom.units.length : hexfrom.unp
+                    var unp_to = hexto.units ? hexto.units.filter(x=>x.actions.length == 0 || x.actions[0].type == 'move' && (x.actions[0].ruchk[0]-j+6)%6 == 3).length : hexto.unp
+                    var unp_from = hexfrom.units ? hexfrom.units.filter(x=>x.actions.length == 0 || x.actions[0].type == 'move' && (x.actions[0].ruchk[0]-j+6)%6 == 3).length : hexfrom.unp
                     
                     var wieltratw = 0/*
                     if(hexto.units != undefined){
