@@ -826,7 +826,7 @@ function aimachine(ailevel){
                                     var d3 = (curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                         
                                     //console.log([d1,d2,d3])
-                                    if(d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)){
+                                    if(d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7) || d1 <= 1){
                                         ok2 = false
                                         if(d1 > 0 /*&& d2 > 2*/){
                                             i_am_behind[d1code].codes.push(d2code)
@@ -923,7 +923,7 @@ function aimachine(ailevel){
                             var d2 = nearest_hexes[i].dmap[closcode].dist //+ nearest_hexes[i].dmap[closcode].water*2
                             var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)-1// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                             
-                            var prsz = d3 < (d2 + d1)*0.7// && !(d3 >= (d3 + d1)*0.7)
+                            var prsz = d3 < (d2 + d1)*0.7 || d3 <= 1// && !(d3 >= (d3 + d1)*0.7)
                             
                             //console.log([d3, (d2 + d1)*0.7,d2,d1])
                             if(prsz){
@@ -1244,7 +1244,10 @@ function aimachine(ailevel){
 
             
             for(var i in realSfKeysSorted){
-                if(realSfKeysSorted[i].maxPlayerScore > 1500/* && i < realSfKeysSorted.length-1*/)
+                //if(realSfKeysSorted[i].maxPlayerScore > 1500/* && i < realSfKeysSorted.length-1*/)
+                //    continue
+                
+                if(i < realSfKeysSorted.length-1)
                     continue
                      
                 dnew = copyDistmaps(dbetter)
@@ -1260,7 +1263,8 @@ function aimachine(ailevel){
                     var vals = Object.values(pUnitActions)
                     if(vals.length > 0){
                         var vvals = vals[0]
-                        vvals.sort((a,b) => -a.action[0].il/Math.pow(2,a.time)+b.action[0].il/Math.pow(2,b.time))
+                        //vvals.sort((a,b) => -a.action[0].il/Math.pow(2,a.time)+b.action[0].il/Math.pow(2,b.time))
+                        vvals.sort((a,b) => -1/Math.pow(2,a.time)+1/Math.pow(2,b.time))
                         for(k in vvals){
                             var firstVal = vvals[k]
                             
@@ -6550,7 +6554,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
             if(distmap.hex.heks.z > 0){
                 var moving = 0
                 for(var j in distmap.hex.units){
-                    if(j != fff.unitIx && distmap.hex.units[j].actions.length != 0 && distmap.hex.units[j].actions[0].type == 'move'){
+                    if(j != fff.unitIx && distmap.hex.units[j].actions.length != 0 && distmap.hex.units[j].actions[0].type == 'move' && distmap.hex.units[j].actions[0].il >= distmap.hex.units[j].il-10){
                         moving++
                     }
                 }
