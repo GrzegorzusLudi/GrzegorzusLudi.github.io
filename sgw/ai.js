@@ -828,7 +828,7 @@ function aimachine(ailevel){
                                     //console.log([d1,d2,d3])
                                     if(d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)){
                                         ok2 = false
-                                        if(d1 > 2/* && d2 > 2*/){
+                                        if(d1 > 1/* && d2 > 2*/){
                                             i_am_behind[d1code].codes.push(d2code)
                                             ok = false
                                         }
@@ -929,7 +929,7 @@ function aimachine(ailevel){
                             if(prsz){
                                 ok2 = true
                             }
-                            if(prsz || d3 <= 2){
+                            if(prsz || d3 <= 1){
                                 //if(!(d2code in behind))
                                 //    behind[d2code] = {hex:from_hexes[j],value:0}
                                 //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
@@ -1021,7 +1021,7 @@ function aimachine(ailevel){
             //console.log(possible_targets)
             //console.log(possible_targets)
             //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
-            possible_targets.sort((a,b)=>(a.value - b.value))
+            possible_targets.sort((a,b)=>(b.value - a.value))
 
             
             //possible_targets.sort((a,b) => (a.x+'#'+a.y in behind ? behind[a.x+'#'+a.y].value : 0) - (b.x+'#'+b.y in behind ? behind[b.x+'#'+b.y].value : 0))
@@ -6610,6 +6610,41 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     }
                 }
             }
+            spoko = true
+            for(var j in unit.legalActions){
+                var lac = unit.legalActions[j]
+                if(lac[0].type == 'move' && lac.length == 1 && lac[0].il >= unit.il-10){
+                    var dist = lac[0].rucho.length
+                    var time = (dist/*-zas[unit.rodz]+1*/)/(szy[unit.rodz])
+                    
+                    if(unit.actions.length > 0 && unit.actions[0].type == 'move' && dist > unit.actions[0].rucho.length){                        
+                        continue
+                    }
+
+                    var lade = lac[0].destination[0]+'#'+lac[0].destination[1]
+
+                    var fcode = fff.code+'#'+fff.unitIx+'#'+lade
+                    
+                    //if(fcode in failedvvals){
+                    //    continue
+                    //}
+                    
+                    if(warnung(distmap,unit,lac,fff.unitIx)){
+                        continue
+                    }
+                        
+                        
+                    //if(!allowPaths[fff.code+'#'+lade])
+                    //    continue
+
+                    if(time <= 2 && lade in possible){
+                        spoko = false
+                        break
+                    }
+                }
+            }
+            if(!spoko)
+                continue
             for(var j in unit.legalActions){
                 var lac = unit.legalActions[j]
                 if(lac[0].type == 'move' && lac.length == 1 && lac[0].il >= unit.il-10){
