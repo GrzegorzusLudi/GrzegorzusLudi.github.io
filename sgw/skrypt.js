@@ -90,10 +90,16 @@ upgradeCityCanvas=document.getElementById("upgradeCityCanvas");
 upgradeCityCanvasCtx=upgradeCityCanvas.getContext("2d");
 unitMergeCanvas=document.getElementById("unitMerge");
 unitMergeCanvasCtx=unitMergeCanvas.getContext("2d");
-movesToMakeCanvas=document.getElementById("movesToMakeCanvas");
-movesToMakeCanvasCtx=movesToMakeCanvas.getContext("2d");
-movesToMakeCanvas2=document.getElementById("movesToMakeCanvas2");
-movesToMakeCanvasCtx2=movesToMakeCanvas2.getContext("2d");
+//movesToMakeCanvas=document.getElementById("movesToMakeCanvas");
+//movesToMakeCanvasCtx=movesToMakeCanvas.getContext("2d");
+//movesToMakeCanvas2=document.getElementById("movesToMakeCanvas2");
+//movesToMakeCanvasCtx2=movesToMakeCanvas2.getContext("2d");
+statisticsCanvas=document.getElementById("statisticsCanvas");
+statisticsCanvasCtx=statisticsCanvas.getContext("2d");
+statisticsCanvas2=document.getElementById("statisticsCanvas2");
+statisticsCanvasCtx2=statisticsCanvas2.getContext("2d");
+statisticsCanvas3=document.getElementById("statisticsCanvas3");
+statisticsCanvasCtx3=statisticsCanvas3.getContext("2d");
 ctx.mozImageSmoothingEnabled = false;
 ctx.font = "8pt Arial";
 ctx.fillStyle = "white";
@@ -641,8 +647,8 @@ function changeState(newState){
 				a++;
 			}
 		}
-		rescaleMovesToMakeCanvasCts()
-		redrawCanvas(movesToMakeCanvasCtx)
+		//rescaleMovesToMakeCanvasCts()
+		//redrawCanvas(movesToMakeCanvasCtx)
 	}
 	if(stan == 6){
 		historyDex.setShowcaseDataToCurrent()

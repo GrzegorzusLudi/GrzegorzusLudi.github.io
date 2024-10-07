@@ -454,6 +454,9 @@ function pokap(){
 	redrawCanvas(teamPreview2CanvasCtx);
 	redrawCanvas(teamPreviewCanvasCtx);
 	redrawCanvas(klepsydraPreviewCanvasCtx);
+	redrawCanvas(statisticsCanvasCtx);
+	redrawCanvas(statisticsCanvasCtx2);
+	redrawCanvas(statisticsCanvasCtx3);
 	teamName.value = defdr[kolej];
 	teamName2.innerHTML = defdr[kolej];
 	teamName4.innerHTML = defdr[kolej];
@@ -541,7 +544,7 @@ function pokap(){
 	historyPlej.value = playing ? '⏸' : '▶'
 }
 function redrawCanvas(rtx){
-	if(dru[kolej]!=0 || rtx==teamPreviewCanvasCtx || rtx==teamPreview2CanvasCtx || rtx==teamPreview3CanvasCtx || rtx==teamPreview4CanvasCtx || rtx == klepsydraPreviewCanvasCtx || rtx==movesToMakeCanvasCtx){
+	if(dru[kolej]!=0 || rtx==teamPreviewCanvasCtx || rtx==teamPreview2CanvasCtx || rtx==teamPreview3CanvasCtx || rtx==teamPreview4CanvasCtx || rtx == klepsydraPreviewCanvasCtx){
 	dtr = kolej;
 	if(zaznu!=-1){
 		dth = unix[kolej][zaznu].rodz;
@@ -1078,6 +1081,7 @@ function redrawCanvas(rtx){
 				a++;
 			}
 		break;
+		/*
 		case movesToMakeCanvasCtx:
 			rtx.fillStyle = "#000000";
 			rtx.fillRect(0,0,220,220);
@@ -1152,7 +1156,7 @@ function redrawCanvas(rtx){
 				za++
 				a++;
 			}
-		break;
+		break;*/
 		case createUnitCanvasCtx:
 				rtx.fillStyle = "#000000";
 				rtx.fillRect(0,0,220,220);
@@ -1384,6 +1388,103 @@ function redrawCanvas(rtx){
       		rtx.fillText(unitMergeChoice, 10, 10);
 
 		break;
+		case statisticsCanvasCtx:
+		case statisticsCanvasCtx2:
+		case statisticsCanvasCtx3:
+			if(stan >= 2){
+				rtx.clearRect(0,0,220,520)
+				var stats = []
+				var moneystats = []
+				var ironstats = []
+				var productionstats = []
+				for(var i = 0;i<12;i++){
+					stats[i] = []
+					moneystats[i] = 0
+					ironstats[i] = 0
+					productionstats[i] = 0
+					for(var j = 0;j<12;j++){
+						stats[i][j] = 0
+					}
+				}
+				var heksSource = heks
+				var unixSource = unix
+				if(rtx == statisticsCanvasCtx3 && stan == 6){
+					var currentState = historyDex.getCurrentState()
+					heksSource = currentState.heks
+					unixSource = currentState.unix
+				}
+				for(var i = 0;i<scian;i++){
+					for(var j = 0;j<scian;j++){
+						if(heksSource[i][j].undr != -1){
+							var druż = heksSource[i][j].undr
+							if(heksSource[i][j].z > 0){
+								moneystats[druż] += heksSource[i][j].z
+								ironstats[druż] += heksSource[i][j].hutn
+								productionstats[druż] += heksSource[i][j].prod
+							}
+							for(var k = 0;k<heksSource[i][j].unp;k++){
+								var unitik = unixSource[druż][heksSource[i][j].unt[k]]
+								stats[druż][unitik.rodz] -= -unitik.il
+							}
+						}
+					}
+				}
+				var przypisania = []
+				var row = 0
+				var column = 1
+				for(var i = 0;i<12;i++){
+					var óx = 40*column
+					var óy = 10+20*row*16.5+ 70
+					var óy2 = 15+20*row*16.5
+					if(dru[i] > 0){
+						przypisania.push({i:i,dru:dru[i],column:column,row:row})
+						
+						rtx.font = '9pt Calibri';
+						rtx.textAlign = 'right'
+							
+						rtx.strokeStyle = '#fff'
+						rtx.fillStyle = '#000'
+						rysujprodukcję(rtx,20,óy2   ,0,0.5)
+						rysujprodukcję(rtx,20,óy2+20,1,0.5)
+						rysujprodukcję(rtx,20,óy2+40,2,0.5)
+						rtx.fillStyle = '#fff'
+							
+						rtx.fillText(moneystats[i],óx+35,óy2)
+						rtx.fillText(ironstats[i],óx+35,óy2+20)
+						rtx.fillText(productionstats[i],óx+35,óy2+40)
+						
+						rtx.textAlign = 'center'
+						for(var j=0;j<12;j++){
+							if(stats[i][j] <= 0){
+								rtx.strokeStyle = '#aaa'
+								rtx.strokeRect(óx, óy+j*20, 40, 20)
+							} else {
+								rtx.strokeStyle = '#fff'
+								rtx.fillStyle = kolox(i,0)
+								rtx.fillRect(óx, óy+j*20, 40, 20)
+								rtx.strokeRect(óx, óy+j*20, 40, 20)
+								
+								rtx.fillStyle = '#fff'
+								rtx.fillText(stats[i][j],óx+20,óy+15+j*20)
+							}
+						}
+						column++
+						if(column > 4){
+							for(var j=0;j<12;j++){
+								rysbezkolorowyunitek(rtx,25,óy+10+j*20,15,10,j)
+							}
+							column = 1
+							row++
+						}
+					}
+				}
+				if(column > 1){
+					for(var j=0;j<12;j++){
+						rysbezkolorowyunitek(rtx,25,óy+10+j*20,15,10,j)
+					}
+				}
+			}
+		break
 	}
 	}
 }
@@ -1902,6 +2003,311 @@ function rysunitek(x4,y4,zr,nr,wielok){
 			zr.textAlign = "right";
 			zr.fillStyle = "#000000";
       		zr.fillText(ces[nr]+"t", xg+sx, yg+sy*0.9);
+			}
+}
+function rysujprodukcję(rtx,xg,yg,a,scale){
+	switch(a){
+		case 0:
+		xg-=10*scale;
+		var bb = 0;
+		while(bb<3){
+		rtx.beginPath();
+		rtx.arc(xg, yg-15*scale, 5*scale, 0, Math.PI*2, false);
+		rtx.fill();
+		rtx.beginPath();
+		rtx.arc(xg, yg-15*scale, 5*scale, 0, Math.PI*2, false);
+		rtx.moveTo(xg-10*scale,yg-10*scale);
+		rtx.lineTo(xg+10*scale,yg-10*scale);
+		rtx.lineTo(xg,yg-10*scale);
+		rtx.lineTo(xg,yg);
+		rtx.lineTo(xg-10*scale,yg+10*scale);
+		rtx.lineTo(xg,yg);
+		rtx.lineTo(xg+10*scale,yg+10*scale);
+		rtx.stroke();
+		xg+=10*scale;
+		bb++;
+		}
+		xg-=20*scale;
+
+		break;
+		case 1:
+		rtx.strokeRect(xg-20*scale,yg-20*scale,40*scale,30*scale);
+		xg += 5*scale
+		rtx.beginPath();
+		rtx.moveTo(xg-(2+5)*scale,yg-15*scale);
+		rtx.lineTo(xg-(15+5)*scale,yg-15*scale);
+		rtx.lineTo(xg-(15+5)*scale,yg+5*scale);
+		rtx.lineTo(xg-(15+5)*scale,yg-10*scale);
+		rtx.lineTo(xg-(2+5)*scale,yg-10*scale);
+		rtx.stroke();
+		rtx.beginPath();
+		rtx.moveTo(xg+10*scale,yg+5*scale);
+		rtx.lineTo(xg+2*scale,yg+5*scale);
+		rtx.lineTo(xg+2*scale,yg-5*scale);
+		rtx.lineTo(xg+10*scale,yg-5*scale);
+		rtx.lineTo(xg+10*scale,yg);
+		rtx.lineTo(xg+2*scale,yg);
+		rtx.stroke();
+
+		break;
+		case 2:
+		var fisty = rtx.fillStyle
+		rtx.fillStyle=rtx.strokeStyle;
+		rtx.beginPath();
+		rtx.moveTo(xg-15*scale,yg-5*scale);
+		rtx.lineTo(xg-5*scale,yg-10*scale);
+		rtx.lineTo(xg-5*scale,yg-5*scale);
+		rtx.lineTo(xg+5*scale,yg-10*scale);
+		rtx.lineTo(xg+5*scale,yg);
+		rtx.lineTo(xg+7*scale,yg);
+		rtx.lineTo(xg+7*scale,yg-15*scale);
+		rtx.lineTo(xg+10*scale,yg-15*scale);
+		rtx.lineTo(xg+10*scale,yg);
+		rtx.lineTo(xg+15*scale,yg);
+		rtx.lineTo(xg+15*scale,yg+10*scale);
+		rtx.lineTo(xg-15*scale,yg+10*scale);
+		rtx.fill();
+		rtx.beginPath();
+		rtx.arc(xg+5*scale, yg-15*scale, 3*scale, 0, Math.PI*2, false);
+		rtx.fill();
+		rtx.beginPath();
+		rtx.arc(xg, yg-18*scale, 5*scale, 0, Math.PI*2, false);
+		rtx.fill();
+		rtx.fillStyle = fisty
+		break;
+	}
+}
+function rysbezkolorowyunitek(zr,x4,y4,sx,sy,nr){
+	/*ctx.fillStyle = kolox(this.d,1);
+	ctx.strokeStyle = kolox(this.d,0);
+	ctx.fillRect(x4-150/scian,y4-225/scian,300/scian,450/scian);
+	ctx.strokeRect(x4-150/scian,y4-225/scian,300/scian,450/scian);*/
+			dth = nr;
+			xg = x4;
+			yg = y4;
+			zr.lineWidth = 1;
+			
+			zr.fillStyle = "#FFFFFF";
+			
+			zr.strokeStyle = '#444';
+			zr.lineWidth = 1;
+
+			zr.fillRect(xg-sx,yg-sy,sx*2,sy*2);
+			zr.strokeRect(xg-sx,yg-sy,sx*2,sy*2);
+
+			switch(dth){
+				case 0:
+				zr.beginPath();
+				zr.moveTo(xg-sx,yg-sy);
+				zr.lineTo(xg+sx,yg+sy);
+				zr.closePath();
+				zr.stroke();
+				zr.beginPath();
+				zr.moveTo(xg-sx,yg+sy);
+				zr.lineTo(xg+sx,yg-sy);
+				zr.closePath();
+				zr.stroke();
+
+				break;
+				case 1:
+				zr.beginPath();
+				zr.arc(xg-sx/3, yg, sy/2, Math.PI/2, Math.PI*3/2, false);
+				zr.lineTo(xg+sx/3,yg-sy/2);
+				zr.arc(xg+sx/3, yg, sy/2, Math.PI*3/2, Math.PI/2, false);
+				zr.closePath();
+				zr.stroke();
+				break;
+				case 2:
+				zr.beginPath();
+				zr.arc(xg, yg, sy/3, 0, 2*Math.PI, false);
+				zr.closePath();
+				zr.fillStyle = kolox(kolej,0);
+				zr.fill();
+				zr.fillStyle = kolox(kolej,1);
+
+				break;
+				case 3:
+				zr.beginPath();
+				zr.moveTo(xg-sx,yg-sy);
+				zr.lineTo(xg+sx,yg+sy);
+				zr.closePath();
+				zr.stroke();
+				zr.beginPath();
+				zr.moveTo(xg-sx,yg+sy);
+				zr.lineTo(xg+sx,yg-sy);
+				zr.closePath();
+				zr.stroke();
+				zr.beginPath();
+				zr.moveTo(xg,yg+sy);
+				zr.lineTo(xg,yg-sy);
+				zr.closePath();
+				zr.stroke();
+
+				break;
+				case 4:
+				zr.beginPath();
+				zr.moveTo(xg-sx,yg-sy);
+				zr.lineTo(xg+sx,yg+sy);
+				zr.closePath();
+				zr.stroke();
+				zr.beginPath();
+				zr.moveTo(xg-sx,yg+sy);
+				zr.lineTo(xg+sx,yg-sy);
+				zr.closePath();
+				zr.stroke();
+				zr.beginPath();
+				zr.moveTo(xg,yg+sy/3);
+				zr.lineTo(xg-sx/2,yg+sy);
+				zr.lineTo(xg+sx/2,yg+sy);
+				zr.closePath();
+				zr.fillStyle = kolox(kolej,0);
+				zr.fill();
+				zr.fillStyle = kolox(kolej,1);
+
+				break;
+				case 5:
+				zr.beginPath();
+				zr.arc(xg, yg+sx+sy, sx*Math.sqrt(2), Math.PI*1.25, Math.PI*1.75, false);
+				zr.closePath();
+				zr.stroke();
+
+				break;
+				case 6:
+				zr.beginPath();
+				zr.arc(xg, yg-sy*0.25, sy/10, 0, Math.PI*2, false);
+				zr.closePath();
+				zr.stroke();
+
+				zr.beginPath();
+				zr.moveTo(xg,yg-sy*0.15);
+				zr.lineTo(xg,yg-sy*0.1);
+				zr.lineTo(xg-sy*0.15,yg-sy*0.1);
+				zr.lineTo(xg+sy*0.1,yg-sy*0.1);
+				zr.lineTo(xg,yg-sy*0.15);
+				zr.lineTo(xg,yg+sy*0.15);
+				zr.stroke();
+
+				zr.beginPath();
+				zr.arc(xg-sy*0.15, yg+sy*0.15, sy*0.15, 0, Math.PI, false);
+				zr.lineTo(xg-sy*0.3, yg+sy*0.05);
+				zr.stroke();
+
+				zr.beginPath();
+				zr.moveTo(xg-sy*0.3, yg+sy*0.05);
+				zr.lineTo(xg-sy*0.4, yg+sy*0.2);
+				zr.lineTo(xg-sy*0.3, yg+sy*0.05);
+				zr.lineTo(xg-sy*0.2, yg+sy*0.2);
+				zr.stroke();
+
+				zr.beginPath();
+				zr.arc(xg+sy*0.15, yg+sy*0.15, sy*0.15, 0, Math.PI, false);
+				//unitChoiceCanvasCtx.lineTo(xg+sy*0.3, yg+sy*0.05);
+				zr.stroke();
+
+				zr.beginPath();
+				zr.moveTo(xg+sy*0.3, yg+sy*0.05);
+				zr.lineTo(xg+sy*0.2, yg+sy*0.2);
+				zr.lineTo(xg+sy*0.3, yg+sy*0.05);
+				zr.lineTo(xg+sy*0.4, yg+sy*0.2);
+				zr.stroke();
+
+				break;
+				case 7:
+
+				zr.beginPath();
+				zr.arc(xg-sx/3, yg, sy/2, Math.PI/2, Math.PI*3/2, false);
+				zr.lineTo(xg+sx/3,yg-sy/2);
+				zr.arc(xg+sx/3, yg, sy/2, Math.PI*3/2, Math.PI/2, false);
+				zr.closePath();
+				zr.stroke();
+
+				zr.beginPath();
+				zr.arc(xg, yg-sy*0.25, sy/10, 0, Math.PI*2, false);
+				zr.closePath();
+				zr.stroke();
+
+				zr.beginPath();
+				zr.moveTo(xg,yg-sy*0.15);
+				zr.lineTo(xg,yg-sy*0.1);
+				zr.lineTo(xg-sy*0.15,yg-sy*0.1);
+				zr.lineTo(xg+sy*0.1,yg-sy*0.1);
+				zr.lineTo(xg,yg-sy*0.15);
+				zr.lineTo(xg,yg+sy*0.15);
+				zr.stroke();
+
+				zr.beginPath();
+				zr.arc(xg-sy*0.15, yg+sy*0.15, sy*0.15, 0, Math.PI, false);
+				zr.lineTo(xg-sy*0.3, yg+sy*0.05);
+				zr.stroke();
+
+				zr.beginPath();
+				zr.moveTo(xg-sy*0.3, yg+sy*0.05);
+				zr.lineTo(xg-sy*0.4, yg+sy*0.2);
+				zr.lineTo(xg-sy*0.3, yg+sy*0.05);
+				zr.lineTo(xg-sy*0.2, yg+sy*0.2);
+				zr.stroke();
+
+				zr.beginPath();
+				zr.arc(xg+sy*0.15, yg+sy*0.15, sy*0.15, 0, Math.PI, false);
+				//unitChoiceCanvasCtx.lineTo(xg+sy*0.3, yg+sy*0.05);
+				zr.stroke();
+
+				zr.beginPath();
+				zr.moveTo(xg+sy*0.3, yg+sy*0.05);
+				zr.lineTo(xg+sy*0.2, yg+sy*0.2);
+				zr.lineTo(xg+sy*0.3, yg+sy*0.05);
+				zr.lineTo(xg+sy*0.4, yg+sy*0.2);
+				zr.stroke();
+
+
+				break;
+				case 8:
+				zr.beginPath();
+				zr.arc(xg-sx, yg+sy*13/16, sy*3/16, Math.PI/2, 0, true);
+				zr.arc(xg-sx+(sy*3/8), yg+sy*13/16, sy*3/16, Math.PI, Math.PI*2, false);
+				zr.arc(xg-sx+(sy*3/8)*2, yg+sy*13/16, sy*3/16, Math.PI, 0, true);
+				zr.arc(xg-sx+(sy*3/8)*3, yg+sy*13/16, sy*3/16, Math.PI, Math.PI*2, false);
+				zr.arc(xg-sx+(sy*3/8)*4, yg+sy*13/16, sy*3/16, Math.PI, 0, true);
+				zr.arc(xg-sx+(sy*3/8)*5, yg+sy*13/16, sy*3/16, Math.PI, Math.PI*2, false);
+				zr.arc(xg-sx+(sy*3/8)*6, yg+sy*13/16, sy*3/16, Math.PI, 0, true);
+				zr.arc(xg-sx+(sy*3/8)*7, yg+sy*13/16, sy*3/16, Math.PI, Math.PI*2, false);
+				zr.arc(xg-sx+(sy*3/8)*8, yg+sy*13/16, sy*3/16, Math.PI, 0, true);
+
+				zr.stroke();
+
+				break;
+				case 9:
+
+				zr.beginPath();
+				zr.arc(xg-sx/2, yg, sy/3, Math.PI/3, Math.PI*5/3, false);
+				//unitChoiceCanvasCtx.lineTo(xg+sx/3,yg-sy/2);
+				zr.arc(xg+sx/2, yg, sy/3, Math.PI*2/3, Math.PI*4/3, true);
+				zr.closePath();
+				zr.stroke();
+				break;
+				case 10:
+
+				zr.beginPath();
+				zr.moveTo(xg-sx/4,yg-sy*3/4);
+				zr.lineTo(xg,yg-sy/3);
+				zr.lineTo(xg+sx/4,yg-sy*3/4);
+				zr.stroke();
+				break;
+				case 11:
+				zr.beginPath();
+				zr.moveTo(xg-sx/2,yg-sy*3/5);
+				zr.lineTo(xg-sx/3,yg-sy/5);
+				zr.lineTo(xg+sx/3,yg-sy/5);
+				zr.lineTo(xg+sx/2,yg-sy*3/5);
+				zr.stroke();
+				zr.beginPath();
+				zr.moveTo(xg-sx/2,yg+sy*3/5);
+				zr.lineTo(xg-sx/3,yg+sy/5);
+				zr.lineTo(xg+sx/3,yg+sy/5);
+				zr.lineTo(xg+sx/2,yg+sy*3/5);
+				zr.stroke();
+				break;
+
 			}
 }
 function unitChoiceDraw(){

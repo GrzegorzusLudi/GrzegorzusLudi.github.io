@@ -826,7 +826,8 @@ function aimachine(ailevel){
                                     var d3 = (curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                         
                                     //console.log([d1,d2,d3])
-                                    if(d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)){
+                                    var prst = d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)
+                                    if(prst){
                                         ok2 = false
                                         if(d1 > 1/* && d2 > 2*/){
                                             i_am_behind[d1code].codes.push(d2code)
@@ -1014,7 +1015,7 @@ function aimachine(ailevel){
                 
                 var modif = {}
                 modif[code] = kolej
-                targ.value = (code in behind_score ? behind_score[code].value : 0) + cityscore(heks[targ.hex.x][targ.hex.y])//calculateStrategicMapForTeam(large_map, dfrou, kolej, modif)// + heks[targ.hex.x][targ.hex.y].z
+                targ.value = (code in behind_score ? behind_score[code].value : 1) /*+ cityscore(heks[targ.hex.x][targ.hex.y])*///calculateStrategicMapForTeam(large_map, dfrou, kolej, modif)// + heks[targ.hex.x][targ.hex.y].z
             }
             
             //calculateStrategicMapForTeam(large_map, dm, color, mod)
@@ -1072,7 +1073,7 @@ function aimachine(ailevel){
                     }
                     score_1 = scoreOfBehinds(dfrou,kolej,behind_score)
                     score_2 = scoreOfBehinds(dbetter,kolej,behind_score)
-                    if(score_2 <= score_1/* || score_1 == score_2 && score1 > score2*/){
+                    if(score_2 <= score_1 || score_1 == score_2 && score2 < score1){
                         dfrou = copyDistmaps(dbetter)
                         evaluate(dfrou,2)
                     } else {
@@ -6615,7 +6616,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                         }
                     }
                 }
-            }
+            }/*
             for(var key1 in possible){
                 possible[key1] = possible[key1]
                 for(var key2 in possible){
@@ -6629,7 +6630,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                         }
                     }
                 }
-            }
+            }*/
             for(var j in unit.legalActions){
                 var lac = unit.legalActions[j]
                 if(lac[0].type == 'move' && lac.length == 1 && lac[0].il >= unit.il-10){
@@ -6715,7 +6716,7 @@ function cutaction(action,unitrodz){
     for(var key in action){
         newAction[key] = action[key]
     }
-    var before = szy[unitrodz]//newAction.rucho.length - (Math.floor(newAction.rucho.length / szy[unitrodz] )-1) * szy[unitrodz]
+    var before = szy[unitrodz]*2//newAction.rucho.length - (Math.floor(newAction.rucho.length / szy[unitrodz] )-1) * szy[unitrodz]
     before += (zas[unitrodz] > 1 ? zas[unitrodz] : 0)
     //console.log(before)
     if(before > 0){

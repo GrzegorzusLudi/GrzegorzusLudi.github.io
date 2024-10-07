@@ -248,8 +248,12 @@ function anim(){
 			delaj--;
 
 				blokada = false
-				if(nsto)
+				if(nsto){
+					redrawCanvas(statisticsCanvasCtx);
+					redrawCanvas(statisticsCanvasCtx2);
+					//redrawCanvas(statisticsCanvasCtx3);
 					historyDex.zapisz()
+				}
 			}
 
 		} catch(e){

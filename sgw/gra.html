@@ -247,9 +247,9 @@ p {
         <input type="button" value="HISTORIA" id="history" onclick="changeState(6);" />
       </p>
       <div id="controlfield">
-        <div id="controltitle">Ruchy wojsk</div>
+        <div id="controltitle">Statystyki</div>
         <div id="controlfieldin"> 
-            <canvas width="220px" height="140px" id="movesToMakeCanvas" onclick="gmp(movesToMakeCanvas,event);movesToMakeClick();" onmousemove="gmp(movesToMakeCanvas,event);movesToMakeMove();" onmouseout="movesToMakeNumber=-1;redrawCanvas(movesToMakeCanvasCtx)" ></canvas>
+            <canvas width="220px" height="520px" id="statisticsCanvas2" ></canvas>
 
         </div>
       </div>
@@ -307,10 +307,10 @@ p {
         <input type="button" value="PAUZA" id="pauseanim" onclickno="changeState(4);" />
         <!--input type="button" value="HISTORIA" disabled="true" id="historyanim" onclick="" /-->
       </p>
-      <div id="controlfield2">
-        <div id="controltitle2">Ruchy wojsk</div>
-        <div id="controlfieldin2"> 
-            <canvas width="220px" height="140px" id="movesToMakeCanvas2" onclick="gmp(movesToMakeCanvas2,event);movesToMakeClick2();" onmousemove="gmp(movesToMakeCanvas2,event);movesToMakeMove2();" onmouseout="movesToMakeNumber2=-1;redrawCanvas(movesToMakeCanvasCtx2)" ></canvas>
+      <div id="controlfield">
+        <div id="controltitle">Statystyki</div>
+        <div id="controlfieldin"> 
+            <canvas width="220px" height="520px" id="statisticsCanvas" ></canvas>
 
         </div>
       </div>
@@ -393,6 +393,7 @@ p {
       <div id="controlfield">
         <div id="controltitle">Statystyki</div>
         <div id="controlfieldin"> 
+            <canvas width="220px" height="520px" id="statisticsCanvas3" ></canvas>
         
         </div>
       </div>
