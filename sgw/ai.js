@@ -1143,10 +1143,10 @@ function aimachine(ailevel){
                     var score__2 = 0
                     var score_1 = scoreOfBehinds(newDistmap,kolej,behind_score)
                     var score_2 = scoreOfBehinds(dbetter,kolej,behind_score)
-                    
+                    /*
                     for(var i = 0;i<MAX_TURNS;i++){ score__1 += newDistmap.score[kolej][i] * Math.pow(1/2.1,i) }
                     for(var i = 0;i<MAX_TURNS;i++){ score__2 += dbetter.score[kolej][i] * Math.pow(1/2.1,i) }
-                    
+                    */
                     for(var t in newDistmap.score){
                         score__1 += newDistmap.score[t][kolej] / Math.pow(2.1,t) / 4000
                         score__2 += dbetter.score[t][kolej] / Math.pow(2.1,t) / 4000
@@ -1239,7 +1239,7 @@ function aimachine(ailevel){
             var score1 = prepareDistTable(realSfKeys, farFromFront, allowPaths, dbetter)
             var score2 = score1
             
-            var realSfKeysSorted = Object.values(realSfKeys).sort((a,b) => a.maxPlayerScore - b.maxPlayerScore)
+            var realSfKeysSorted = Object.values(realSfKeys).sort((a,b) => -a.maxPlayerScore + b.maxPlayerScore)
             //if(biggestScoreHex != null)
             //    realSfKeysSorted.push(biggestScoreHex)
 
@@ -6555,6 +6555,8 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
             if(unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length / szy[unit.rodz] <= 2){
                 continue
             }
+            if(distmap.hex.units.length == 4 && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].il < unit.il)
+                continue
             
             if(distmap.hex.heks.z > 0){
                 var moving = 0
@@ -6625,43 +6627,6 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                             delete possible[key1]
                             break
                         }
-                    }
-                }
-            }
-            for(var j in unit.legalActions){
-                var lac = unit.legalActions[j]
-                if(lac[0].type == 'move' && lac.length == 1/* && lac[0].il >= unit.il-10*/){
-                    var dist = lac[0].rucho.length
-                    var time = (dist-zas[unit.rodz]+1)/(szy[unit.rodz])
-                    
-                    if(unit.actions.length > 0 && unit.actions[0].type == 'move' && dist > unit.actions[0].rucho.length/0.7){                        
-                        continue
-                    }
-
-                    var lade = lac[0].destination[0]+'#'+lac[0].destination[1]
-
-                    var fcode = fff.code+'#'+fff.unitIx+'#'+lade
-                    
-                    //if(fcode in failedvvals){
-                    //    continue
-                    //}
-                    
-                    if(warnung(distmap,unit,lac,fff.unitIx)){
-                        continue
-                    }
-                        
-                        
-                    //if(!allowPaths[fff.code+'#'+lade])
-                    //    continue
-
-                    if(time <= 2 && lade in possible){
-                        /*
-                        for(var key in realSfKeys){
-                            if(key != lade){
-                                
-                            }
-                        }*/
-                        
                     }
                 }
             }
