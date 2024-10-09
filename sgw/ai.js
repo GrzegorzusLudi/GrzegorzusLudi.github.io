@@ -5817,9 +5817,17 @@ function tryMakeDestinationMap(dm,color,allowedPaths){
             
             //if(hasunits && (zast[unit.rodz] == 'x' || zast[unit.rodz] == 'm'))
             //    continue
-                /*
-            if(unit.actions.length > 0 && unit.actions[0].type == 'move' && distmap.hex.units[0] == unit && unit.actions[0].il > unit.il-10)
-                continue*/
+                
+            if(distmap.hex.heks.z > 0 && unit.actions.length > 0 && unit.actions[0].type == 'move' && distmap.hex.units[0] == unit && unit.actions[0].il > unit.il-10){
+                unit.actions.length = 0
+                continue
+            }
+            var timing = Infinity
+            
+            if(unit.actions.length > 0 && unit.actions[0].type == 'move'){
+                timing = unit.actions[0].rucho.length/szy[unit.rodz]
+            }
+
                 
             var unitcode = code1+'#'+j
             
@@ -5857,6 +5865,15 @@ function tryMakeDestinationMap(dm,color,allowedPaths){
                     //if(properAction.type == 'move'){
                     if(warnung(distmap,unit,legalAction,j)){
                         continue
+                    }
+                    
+                    var timing2 = Infinity
+                    
+                    if(legalAction.length > 0 && legalAction[0].type == 'move'){
+                        timing2 = legalAction[0].rucho.length/szy[unit.rodz]
+                        
+                        if(timing2 > timing && distmaps[dest_code].alliegance[MAX_TURNS] != kolej)
+                            continue
                     }
                         /*
                         if(distmap.hex.z > 0 && properAction.il > unit.il-10 && (j == distmap.hex.units.length-1 || distmap.hex.units.length == 1)){
@@ -6048,7 +6065,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     //console.log(interestingUnits.map((a) => [a.hex.x,a.hex.y,-1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length + a.action.length > 1 ? 0.5 : 0)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))]))
     //console.log(interestingUnits)
 
-    interestingUnits = interestingUnits.filter(x=>x.action[0].type == 'aim' && szy[x.unit.rodz] > 1).concat(interestingUnits.filter(x=>!(x.action[0].type == 'aim' && szy[x.unit.rodz] > 1)))
+    interestingUnits = interestingUnits.filter(x=>x.action[0].type == 'aim' && zas[x.unit.rodz] > 1).concat(interestingUnits.filter(x=>!(x.action[0].type == 'aim' && zas[x.unit.rodz] > 1)))
     //console.log(interestingUnits,x,y)
     
     //interestingUnits = interestingUnits.slice(0,10)
@@ -6570,13 +6587,17 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
             if(unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length / szy[unit.rodz] <= 2){
                 continue
             }*/
+            
             if(distmap.hex.units.length == 4 && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].il < unit.il)
                 continue
             
             if(distmap.hex.heks.z > 0){
+                if(unit.actions.length > 0 && unit.actions[0].type == 'move' && distmap.hex.units[0] == unit && unit.actions[0].il > unit.il-10){
+                    continue
+                }
                 var moving = 0
                 for(var j in distmap.hex.units){
-                    if(j != fff.unitIx && distmap.hex.units[j].actions.length != 0 && distmap.hex.units[j].actions[0].type == 'move' && distmap.hex.units[j].actions[0].il > distmap.hex.units[j].il-10){
+                    if(j != fff.unitIx && distmap.hex.units[j].actions.length != 0 && distmap.hex.units[j].actions[0].type == 'move' && distmap.hex.units[j].actions[0].il >= distmap.hex.units[j].il){
                         moving++
                     }
                 }
