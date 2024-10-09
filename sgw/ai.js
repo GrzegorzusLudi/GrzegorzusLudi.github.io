@@ -1244,13 +1244,12 @@ function aimachine(ailevel){
             //if(biggestScoreHex != null)
             //    realSfKeysSorted.push(biggestScoreHex)
 
-            
             for(var i in realSfKeysSorted){
                 //if(realSfKeysSorted[i].maxPlayerScore > 1500/* && i < realSfKeysSorted.length-1*/)
                 //    continue
                 
-                if(i < realSfKeysSorted.length-1)
-                    continue
+//                if(i < realSfKeysSorted.length-1)
+//                    continue
                      
                 dnew = copyDistmaps(dbetter)
                 var failablevvals = {}
@@ -1292,7 +1291,17 @@ function aimachine(ailevel){
                                 }
                             }
                             if(!oks){
-                                break
+                                continue
+                            }
+                            if(heks[sfKey.hex.x][sfKey.hex.y].z > 0){
+                                var staying = 0
+                                for(var i in dnew.distmaps[firstVal.hex_from].unit){
+                                    if(dnew.distmaps[firstVal.hex_from].unit.actions.length == 0 || dnew.distmaps[firstVal.hex_from].unit.actions[0].type != 'move' || dnew.distmaps[firstVal.hex_from].unit.actions[0].il < dnew.distmaps[firstVal.hex_from].unit.il){
+                                        staying++
+                                    }
+                                }
+                                if(staying <= 1 && firstVal.action[0].type == 'move' && firstVal.action[0].il == dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].il)
+                                    continue
                             }
                             
                             var newaction = [cutaction(firstVal.action[0],firstVal.unitrodz)]
@@ -2831,7 +2840,8 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             if(time <= 2) {
                                 farFromFrontBool = false
                             }
-                            if(unit.d == kolej && time > 2){
+                            if(unit.d == kolej && time > 3){
+                                console.log('onie')
                                 continue
                             }
                             if(infantrytime[lade] == null){
@@ -2885,7 +2895,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             continue
                         }*/
                         //console.log('disttotown:',disttotown,(disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz])
-                        if((disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz] <= 2){
+                        if((disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz] <= 2.5){
                         
                             var ndist = dist + disttotown
                             if(infantrytime[ld] == null){
@@ -4766,7 +4776,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                         
                                     lastFieldX = field == null ? null : field.x
                                     lastFieldY = field == null ? null : field.y
-                                    var turn = Math.ceil((k - (zas[unit.rodz] <= 1 ? 0 : zas[unit.rodz])) / szy[unit.rodz]) + embarkingDelay
+                                    var turn = Math.ceil((1 + k - (zas[unit.rodz] <= 1 ? 0 : zas[unit.rodz]-1)) / szy[unit.rodz]) + embarkingDelay
 
                                     if(turn < MAX_TURNS && code2 in distmaps && distmaps[code2].hex.units.length > 0 && distmaps[code2].hex.units[0].d != unit.d){
                                         //if(k == 0)
@@ -4815,10 +4825,10 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                                 movingDelay = t
                                             distmaps[code].realtocome[t][unit.d] -= -Number(unitAttackStrength2)
                                         }
-                                        
+                                        /*
                                         if(alreadyAttacking != null)
                                             distmap.realtocome[t][unit.d] -= Number(unitDefenseStrength)
-                                    
+                                        */
                                     }
                             }
 
@@ -6082,6 +6092,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     var addedEmbarkigns = []
     var alreadyAttacking = {}
     
+    var lost = false
     for(var i in interestingUnits){
         var unitaction = interestingUnits[i]
         
@@ -6124,11 +6135,14 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         //alreadyAttacking[hexcod] = unitaction//,null,alreadyAttacking,x+'#'+y)
         delete alreadyAttacking[hexcod] 
         var values2ByTime = dm.distmaps[x+'#'+y].alliegance.slice()
+        
+        lost = lost || unitaction.hex.heks.z > 0 && dm.distmaps[unitaction.hex.x+'#'+unitaction.hex.y].alliegance[MAX_TURNS-1] != color
 
         for(var t in values2ByTime){
             values2ByTime[t] = values2ByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
         }
         value2 = values2ByTime.reduce((a,b) => a+b, 0)
+        
 
         //if(i > 0){
         //    console.log(i,value,value2)
@@ -6137,7 +6151,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         var evaluated = false
         //console.log('val: '+value2+' '+value)
         var score2 = scoreOfBehinds(dm,kolej,behind_score)
-        if(value2 > value || score2 > score1 && value2 >= value){
+        if(value2 > value || score2 > score1 && value2 >= value || lost){
             break
             //evaluate(dm)
             /*
@@ -6191,7 +6205,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     }
     value2 = values2ByTime.reduce((a,b) => a+b, 0)
     
-    if(value2 == undefined || value2 <= value){
+    if(value2 == undefined || value2+1 <= value || lost){
         for(var i in oldActionArrayUnits){
             oldActionArrayUnits[i].actions = oldActionArrayActions[i]
         }
@@ -6552,10 +6566,10 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
             
             if(unit.actions.length > 0 && unit.actions[0].by == 'speculation2'){
                 continue
-            }
+            }/*
             if(unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length / szy[unit.rodz] <= 2){
                 continue
-            }
+            }*/
             if(distmap.hex.units.length == 4 && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].il < unit.il)
                 continue
             
@@ -6653,11 +6667,10 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                         continue
                     }
                         
-                        
                     //if(!allowPaths[fff.code+'#'+lade])
                     //    continue
 
-                    if(time > 2 && lade in possible){
+                    if(/*time > 2 && */lade in possible){
                         /*
                         for(var key in realSfKeys){
                             if(key != lade){
@@ -6716,8 +6729,8 @@ function cutaction(action,unitrodz){
     for(var key in action){
         newAction[key] = action[key]
     }
-    var before = szy[unitrodz]*2//newAction.rucho.length - (Math.floor(newAction.rucho.length / szy[unitrodz] )-1) * szy[unitrodz]
-    before += (zas[unitrodz] > 1 ? zas[unitrodz] : 0)
+    var before = szy[unitrodz]//newAction.rucho.length - (Math.floor(newAction.rucho.length / szy[unitrodz] )-1) * szy[unitrodz]
+    before += (zas[unitrodz] > 1 ? zas[unitrodz]-1 : 0)
     //console.log(before)
     if(before > 0){
         newAction.rucho = newAction.rucho.slice(0,-before)
