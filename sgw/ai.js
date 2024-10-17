@@ -4873,7 +4873,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                         
                                     lastFieldX = field == null ? null : field.x
                                     lastFieldY = field == null ? null : field.y
-                                    var turn = Math.ceil((k - (zas[unit.rodz] <= 1 ? 0 : zas[unit.rodz]-1)) / szy[unit.rodz]) + embarkingDelay
+                                    var turn = Math.ceil((k - (zas[unit.rodz] <= 1 ? 0 : zas[unit.rodz])) / szy[unit.rodz]) + embarkingDelay
 
                                     if(turn < MAX_TURNS && code2 in distmaps && distmaps[code2].hex.units.length > 0 && distmaps[code2].hex.units[0].d != unit.d){
                                         //if(k == 0)
@@ -4884,7 +4884,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                                 //if(unit2.actions.length == 0 || unit2.actions[0].type != 'move'){
                                                     var evaldefense = evalUnitDefense(unit2)
                                                     //for(var l in distmaps[code2].realtocome){
-                                                    for(var t = Math.max(0,turn-1);t<MAX_TURNS;t++){
+                                                    for(var t = turn;t<MAX_TURNS;t++){
                                                         if(t < MAX_TURNS && distmaps[code2].realtocome != undefined && t in distmaps[code2].realtocome){
                                                             distmaps[code2].realtocome[t][unit2.d] -= unitAttackStrength2
                                                             if(distmaps[code2].realtocome[t][unit2.d] < 0)
@@ -6716,47 +6716,61 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                 
             if(unit.actions.length > 0 && unit.actions[0].type == 'move'){
                 
-                var dist = unit.actions[0].rucho.length
-                var time = (dist/*-zas[unit.rodz]+1*/)/(szy[unit.rodz])
-                if(unit.actions[0].rucho.length > 0 && time <= 2)
-                    continue
-                    
                 var udistx = unit.actions[0].destination[0]
                 var udisty = unit.actions[0].destination[1]
+                
+                var locked = heks[udistx][udisty].unp >= 4
+                
+                if(!locked){
+                    var dist = unit.actions[0].rucho.length
+                    var time = (dist/*-zas[unit.rodz]+1*/)/(szy[unit.rodz])
+                    if(time <= 2)
+                        continue
+                        
 
-                var ok = true
-                for(var key in realSfKeysOriginal){
-                    //console.log('czyjest',unit.actions[0].destination[0]+'#'+unit.actions[0].destination[1] in dfrou.distmaps)
-                    var disttime = (distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx,udisty)-zas[unit.rodz])/szy[unit.rodz]
+                    var ok = true
+                    for(var key in realSfKeysOriginal){
+                        //console.log('czyjest',unit.actions[0].destination[0]+'#'+unit.actions[0].destination[1] in dfrou.distmaps)
+                        var disttime = (distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx,udisty)-zas[unit.rodz])/szy[unit.rodz]
 
-                    if(/*disttime <= 2 || */disttime-1 > time/* && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length > 0*/){
-                        ok = false
-                        break
+                        if(/*disttime <= 2 || */disttime > time/* && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length > 0*/){
+                            ok = false
+                            break
+                        }
                     }
-                }
-                if(!ok){
-                    continue
+                    if(!ok){
+                        continue
+                    }
                 }
             }
             //}
-                
             
+            var possibleDestinations = {}
+            for(var j in unit.legalActions){
+                var lac = unit.legalActions[j]
+                if(lac[0].type == 'move' && lac.length == 1 && lac[0].il >= unit.il-10){
+                    var dest = lac[0].destination[0]+'#'+lac[0].destination[1]
+                    possibleDestinations[dest] = true
+                }
+            }
             var possible = {}
             for(var key1 in realSfKeysOriginal){
-                possible[key1] = realSfKeysOriginal[key1]
-                for(var key2 in realSfKeysOriginal){
-                    if(key1 != key2){
-                        var d1 = distmapsearch(dfrou,fff.code,key1,unit.rodz)
-                        var d2 = distmapsearch(dfrou,fff.code,key2,unit.rodz)
-                        var d3 = distmapsearch(dfrou,key1,key2,unit.rodz)
+                if(key1 in possibleDestinations){
+                    possible[key1] = realSfKeysOriginal[key1]
+                    for(var key2 in realSfKeysOriginal){
+                        if(key1 != key2){
+                            var d1 = distmapsearch(dfrou,fff.code,key1,unit.rodz)
+                            var d2 = distmapsearch(dfrou,fff.code,key2,unit.rodz)
+                            var d3 = distmapsearch(dfrou,key1,key2,unit.rodz)
 
-                        if(d1 == null){
-                            delete possible[key1]
-                            break
-                        }
-                        if(d2 != null && d3 != null && d1 > szy[unit.rodz]+zas[unit.rodz] && d1 > (d2+d3) * 0.7 && !(d2 > (d1+d3) * 0.7)){
-                            delete possible[key1]
-                            break
+                            if(d1 == null){
+                                delete possible[key1]
+                                break
+                            }
+                            if(d2 != null && d3 != null && d1 > szy[unit.rodz]+zas[unit.rodz] && d1 > (d2+d3) * 0.7 && !(d2 > (d1+d3) * 0.7)){
+                                delete possible[key1]
+                                break
+                            }
                         }
                     }
                 }
@@ -6785,10 +6799,10 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     if(unit.actions.length > 0 && unit.actions[0].type == 'move' && dist > unit.actions[0].rucho.length){     
                         console.log('c6')                   
                         continue
-                    }*/
+                    }*//*
                     if(distmap.hex.units.length == 4 && lac[0].il < unit.il){
                         continue
-                    }
+                    }*/
 
                     var lade = lac[0].destination[0]+'#'+lac[0].destination[1]
 
