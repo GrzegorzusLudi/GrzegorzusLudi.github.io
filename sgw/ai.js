@@ -2931,7 +2931,6 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                                 time2 = (distance(realDest[0],realDest[1],lac[0].destination[0],lac[0].destination[1])-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz]
                             }*/
                             //time = time2
-                            mintime = Math.min(time2,mintime)
 
                             if(time <= 2) {
                                 farFromFrontBool = false
@@ -2939,6 +2938,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             if(unit.d == kolej && time > 2){
                                 continue
                             }
+                            mintime = Math.min(time2,mintime)
                             if(infantrytime[lade] == null){
                                 infantrytime[lade] = Math.ceil(dist/szy[unit.rodz])
                             }
