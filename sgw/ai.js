@@ -286,7 +286,7 @@ function aimachine(ailevel){
     if(laststan != aistan){
         laststan = aistan
     }
-    console.log('aistan:',aistan)
+    //console.log('aistan:',aistan)
 	switch(aistan){
 		case 0:
             var exists = false
@@ -729,7 +729,7 @@ function aimachine(ailevel){
                     wysortowane.sort((a,b) => a.dist - b.dist)
                     for(var k in wysortowane){
                         toOvercome += summedHexValue(wysortowane[k].hex.x,wysortowane[k].hex.y,true)
-                        if(toOvercome > hexDef*0){
+                        if(toOvercome > hexDef){
                             if(wysortowane[k].dist < Infinity && wysortowane[k].dist > closest){
                                 break
                             }
@@ -813,7 +813,7 @@ function aimachine(ailevel){
                     var clos = curr_hexes[i].closestelem
                     
                     var d1code = curr_hexes[i].x+'#'+curr_hexes[i].y
-                    i_am_behind[d1code] = {value:cityscore(curr_hexes[i])/2,codes:[]}
+                    i_am_behind[d1code] = {value:cityscore(curr_hexes[i]),codes:[]}
                     //console.log('cl',[curr_hexes[i].closestelem,curr_hexes[i].closestenemy])
                     for(var ij in clos){
                             
@@ -835,13 +835,13 @@ function aimachine(ailevel){
                                     var d2 = curr_hexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
                                     var d3 = (curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                     
-                                    var prst = d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)
+                                    var prst = d1 > 2 && d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7) && d1 > d2
                                     if(prst){
                                         ok2_ = false
                                         i_am_behind[d1code].codes.push(d2code)
-                                        if(d1 >= 2/* && d2 >= 2*/){
+                                        //if(d1 >= 2/* && d2 >= 2*/){
                                             ok_ = false
-                                        }
+                                        //}
                                     }
                                 }
                             }
@@ -874,7 +874,8 @@ function aimachine(ailevel){
                 }
                 curr_hexes = curr_hexes2
                 stop = true
-            }           
+            }        
+            console.log(nearest_hexes)
             const DISTANCE_FROM_FRONT = 3
             realSfKeys = {}
             var sfkeys = []
@@ -883,7 +884,7 @@ function aimachine(ailevel){
                 sfkeys.push({hex:strictly_forward[key].hex, key:key, score:strictly_forward[key].value})
                 realSfKeys[key] = {hex:strictly_forward[key].hex, distTable:allColorTables(), maxPlayer: -1, maxPlayerScore: 0}
             }
-            sfkeys.sort((a,b)=>-a.score+b.score)
+            sfkeys.sort((a,b)=>a.score-b.score)
             
             for(var i in sfkeys){
                 var sfkey = sfkeys[i]
@@ -1035,14 +1036,15 @@ function aimachine(ailevel){
                 
                 var modif = {}
                 modif[code] = kolej
-                targ.value = (code in behind_score ? behind_score[code].value : 1) + cityscore(heks[targ.hex.x][targ.hex.y])//calculateStrategicMapForTeam(large_map, dfrou, kolej, modif)// + heks[targ.hex.x][targ.hex.y].z
+                targ.value = (code in behind_score ? behind_score[code].value : 1) + cityscore(heks[targ.hex.x][targ.hex.y])/2//calculateStrategicMapForTeam(large_map, dfrou, kolej, modif)// + heks[targ.hex.x][targ.hex.y].z
             }
             
             //calculateStrategicMapForTeam(large_map, dm, color, mod)
             //console.log(possible_targets)
             //console.log(possible_targets)
             //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
-            possible_targets.sort((a,b)=>(-a.value + b.value))
+            //possible_targets.sort((a,b)=>(-a.value + b.value))
+            possible_targets.sort((a,b)=>((a.dist+Math.pow(0.9,1+a.value))-(b.dist+Math.pow(0.9,1+b.value))))
 
             
             //possible_targets.sort((a,b) => (a.x+'#'+a.y in behind ? behind[a.x+'#'+a.y].value : 0) - (b.x+'#'+b.y in behind ? behind[b.x+'#'+b.y].value : 0))
@@ -1093,7 +1095,7 @@ function aimachine(ailevel){
                     }
                     score_1 = scoreOfBehinds(dfrou,kolej,behind_score)
                     score_2 = scoreOfBehinds(dbetter,kolej,behind_score)
-                    if(score_2 >= score_1/* || score_1 == score_2 && score2 < score1*/){
+                    if(score_2 >= score_1 || score_1 == score_2 && score2 > score1){
                         dfrou = copyDistmaps(dbetter)
                         evaluate(dfrou,2)
                         ulepszyns--
@@ -1117,7 +1119,7 @@ function aimachine(ailevel){
                     var checkedTurn = 1
                     var checkedTurn2 = MAX_TURNS-1
                     //var extractedActions = extractActions(dbetter)
-                    var newDistmap = copyDistmaps(dbetter)
+                    var newDistmap = copyDistmaps(dfrou)
                     
                     //evaluate(newDistmap,2)
                     //legalActions(newDistmap)
@@ -1204,7 +1206,7 @@ function aimachine(ailevel){
                     }*/
                     //console.log(score_1,score_2)
                     //console.log(score_1, score_2, score__1, score__2)
-                    if(score_1 > score_2/* || score_1 == score_2 && score__1 > score__2*/){
+                    if(score_1 > score_2 || score_1 == score_2 && score__1 > score__2){
                         dbetter = newDistmap
                         //if(dbetter != null && score1[checkedTurn2][kolej] > score2[checkedTurn2][kolej]){
                             overall_score_changed = true
@@ -1274,6 +1276,7 @@ function aimachine(ailevel){
 
             
             for(var i in realSfKeysSorted){
+                usedvvals = {}
                 //if(realSfKeysSorted[i].maxPlayerScore > 5000 && i < realSfKeysSorted.length-1)
                 //    continue
                 
@@ -1378,6 +1381,7 @@ function aimachine(ailevel){
                 }/*
                 if(i>0)
                     break*/
+                    
             }
             /*
             for(var key in realSfKeys){
@@ -3000,7 +3004,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                 var lade = unit.actions[0].destination[0]+'#'+unit.actions[0].destination[1]
                 var dist = unit.actions[0].rucho.reduce((a,b)=>a+b,0)
                 
-                time = /*Math.ceil(*/(dist/*-Math.max(zas[unit.rodz],0)*/)/szy[unit.rodz]//)
+                time = Math.ceil((dist/*-Math.max(zas[unit.rodz],0)*/)/szy[unit.rodz])
                 
                 destx = unit.actions[0].destination[0]
                 desty = unit.actions[0].destination[1]
@@ -3036,7 +3040,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             continue
                         }*/
                         //console.log('disttotown:',disttotown,(disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz])
-                        if((disttotown-Math.max(0,zas[unit.rodz]))/szy[unit.rodz] <= 2){
+                        if(Math.max(0,(disttotown-Math.max(0,zas[unit.rodz])))/szy[unit.rodz] <= 2){
                         
                             var ndist = dist + disttotown
                             if(infantrytime[ld] == null){
@@ -6197,7 +6201,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         (x.action[0].type != 'move' || 
         (x.action[0].rucho.length/*-zas[x.unit.rodz]*/) / szy[x.unit.rodz] <= 2) && 
         (x.unit.actions.length == 0 || 
-        (/*x.unit.actions[0].by != 'speculation2' && */(x.unit.actions[0].type == 'move' && x.action[0].type == 'move' && (x.action[0].rucho.length <= szy[x.unit.rodz] || x.unit.actions[0].rucho.length+1+zas[x.unit.rodz] > x.action[0].rucho.length)/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/))))
+        (/*x.unit.actions[0].by != 'speculation2' && */(x.unit.actions[0].type == 'move' && x.action[0].type == 'move' && (x.action[0].rucho.length <= szy[x.unit.rodz]+2 || x.unit.actions[0].rucho.length+1+zas[x.unit.rodz] > x.action[0].rucho.length)/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/))))
     
     
     //console.log(interestingUnits.map(a => 1/Math.pow(2,a.action[0].rucho ? a.action[0].rucho.length : 0)*(a.action[0].il)))
@@ -6354,7 +6358,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
             }
             value2 = values2ByTime.reduce((a,b) => a+b, 0)*/
             //if(value2 < value){
-            if(value2 < value/* || score2 < score1 && value2 <= value/* || lost*/){
+            if(value2 < value || score2 < score1 && value2 <= value/* || lost*/){
             console.log('ech2')
                 unitaction.unit.actions = oldaction
                 if(bark != null){
@@ -6757,7 +6761,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                         moving++
                     }
                 }
-                if(moving >= distmap.hex.units.length){
+                if(moving >= distmap.hex.units.length-1){
                     continue
                 }
             }
@@ -6780,7 +6784,6 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                 udistx2 = unit.actions[0].destination[0]
                 udisty2 = unit.actions[0].destination[1]
                 
-            //}
                 var locked = heks[udistx][udisty].unp >= 4 && false
                 
                 if(!locked){
@@ -6796,7 +6799,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                         var disttime = (distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx,udisty)-zas[unit.rodz])/szy[unit.rodz]
                         var disttime2 = (distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx2,udisty2)-zas[unit.rodz])/szy[unit.rodz]
 
-                        if(disttime <= 1 || disttime2 > disttime && dist > 0/* && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length > 0*/){
+                        if(disttime <= 2 || disttime2 > disttime && dist > 0/* && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length > 0*/){
                             ok = false
                             break
                         }
@@ -6829,10 +6832,10 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
 
                             //console.log('uuokb',[d1,d2,d3,(d2+d3)*0.7,(d1+d3)*0.7])
                             if(d1 == null){
-                                delete possible[key1]
-                                break
+                                //delete possible[key1]
+                                //break
                             }
-                            if(d2 != null && d3 != null && d1 > szy[unit.rodz]+zas[unit.rodz] && d1 > (d2+d3) * 0.7 && !(d2 > (d1+d3) * 0.7)){
+                            if(d1 != null && d2 != null && d3 != null && d1 > d2 && d1 > szy[unit.rodz] && d1 > (d2+d3) * 0.7 && !(d2 > (d1+d3) * 0.7)){
                                 delete possible[key1]
                                 break
                             }
