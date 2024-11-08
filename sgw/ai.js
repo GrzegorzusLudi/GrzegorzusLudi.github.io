@@ -786,23 +786,28 @@ function aimachine(ailevel){
             }
             
             var stop = false
-            var nearest_hexes = []
+            var nearest_hexes = {true:[],false:[]}
             
             behind_score = {}
             
-            i_am_behind = {}
+            i_am_behind = {true:{},false:{}}
+            var curr_hexes2 = {true:[],false:[]}
             
-            strictly_forward = {}
+            strictly_forward = {true:{},false:{}}
             
             var scurr = curr_hexes
-            for(var i = 0;i < curr_hexes.length;i++){
-                var d2code = curr_hexes[i].x+'#'+curr_hexes[i].y
-                behind_score[d2code] = {hex:curr_hexes[i],value:cityscore(heks[curr_hexes[i].x][curr_hexes[i].y])+1}
-                strictly_forward[d2code] = {hex:curr_hexes[i],value:behind_score[d2code]}
+            var mountainous = false
+            for(var mountainous = false, swicz = false;!swicz;swicz = mountainous,mountainous = true){
+                for(var i = 0;i < curr_hexes.length;i++){
+                    var d2code = curr_hexes[i].x+'#'+curr_hexes[i].y
+                    behind_score[d2code] = {hex:curr_hexes[i],value:cityscore(heks[curr_hexes[i].x][curr_hexes[i].y])+1}
+                    strictly_forward[mountainous][d2code] = {hex:curr_hexes[i],value:behind_score[d2code]}
+                }
             }
             //console.log('curr',curr_hexes)
-            while(!stop){
-                var curr_hexes2 = []
+            var mountainous = false
+            for(var mountainous = false, swicz = false;!swicz;swicz = mountainous,mountainous = true){
+//                var curr_hexes2 = []
                 for(var i = 0;i < curr_hexes.length;i++){
                     var ok = true
                     var ok2 = true
@@ -813,7 +818,7 @@ function aimachine(ailevel){
                     var clos = curr_hexes[i].closestelem
                     
                     var d1code = curr_hexes[i].x+'#'+curr_hexes[i].y
-                    i_am_behind[d1code] = {value:cityscore(curr_hexes[i]),codes:[]}
+                    i_am_behind[mountainous][d1code] = {value:cityscore(curr_hexes[i]),codes:[]}
                     //console.log('cl',[curr_hexes[i].closestelem,curr_hexes[i].closestenemy])
                     for(var ij in clos){
                             
@@ -824,7 +829,7 @@ function aimachine(ailevel){
                         var closcode = eachclos.x+'#'+eachclos.y
                         var closelem = large_map[eachclos.x][eachclos.y]
                         for(var j = 0;j < curr_hexes.length;j++){
-                            if(i != j && curr_hexes[i].x+'#'+curr_hexes[i].y != closcode && curr_hexes[j].x+'#'+curr_hexes[j].y != closcode/* && curr_hexes[j].color != -1*/){
+                            if(i != j && curr_hexes[i].x+'#'+curr_hexes[i].y != closcode && heks[eachclos.x][eachclos.y].z != -2 && heks[curr_hexes[i].x][curr_hexes[i].y].z != -2 && curr_hexes[j].x+'#'+curr_hexes[j].y != closcode/* && curr_hexes[j].color != -1*/){
                                 //if(curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap)
                                 //    console.log([curr_hexes[i].dmap[closcode].dist, curr_hexes[j].dmap[closcode].dist, curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist])
 
@@ -838,7 +843,7 @@ function aimachine(ailevel){
                                     var prst = d1 > 1 && d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7) && d1-1 > d2
                                     if(prst){
                                         ok2_ = false
-                                        i_am_behind[d1code].codes.push(d2code)
+                                        i_am_behind[mountainous][d1code].codes.push(d2code)
                                         //if(d1 >= 2/* && d2 >= 2*/){
                                             ok_ = false
                                         //}
@@ -856,10 +861,10 @@ function aimachine(ailevel){
                     }
                     ok2 = ok
                         if(!ok){
-                            curr_hexes2.push(curr_hexes[i])
+                            curr_hexes2[mountainous].push(curr_hexes[i])
                             //heks[curr_hexes[i].x][curr_hexes[i].y].test = 'F'
                         } else {
-                            nearest_hexes.push(curr_hexes[i])
+                            nearest_hexes[mountainous].push(curr_hexes[i])
                             /*
                             var code = curr_hexes[i].x+'#'+curr_hexes[i].y
                             if(!(code in behind))
@@ -868,20 +873,23 @@ function aimachine(ailevel){
                             */
                         }
                         if(!ok2){
-                            delete strictly_forward[d1code]
+                            delete strictly_forward[mountainous][d1code]
                         }
                    // }
                 }
                 curr_hexes = curr_hexes2
                 stop = true
             }        
+            curr_hexes = Array.from(new Set(curr_hexes2[true].concat(curr_hexes2[false])))
             const DISTANCE_FROM_FRONT = 3
             realSfKeys = {}
             var sfkeys = []
-            for(var key in strictly_forward){
-                heks[strictly_forward[key].hex.x][strictly_forward[key].hex.y].test = 'H'
-                sfkeys.push({hex:strictly_forward[key].hex, key:key, score:strictly_forward[key].value})
-                realSfKeys[key] = {hex:strictly_forward[key].hex, distTable:allColorTables(), maxPlayer: -1, maxPlayerScore: 0}
+            for(var mountainous = false, swicz = false;!swicz;swicz = mountainous,mountainous = true){
+                for(var key in strictly_forward[mountainous]){
+                    heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
+                    sfkeys.push({hex:strictly_forward[mountainous][key].hex, key:key, score:strictly_forward[mountainous][key].value})
+                    realSfKeys[key] = {hex:strictly_forward[mountainous][key].hex, distTable:allColorTables(), maxPlayer: -1, maxPlayerScore: 0}
+                }
             }
             sfkeys.sort((a,b)=>a.score-b.score)
             
@@ -910,75 +918,81 @@ function aimachine(ailevel){
              
             //console.log(nearest_hexes,from_hexes)
             
-            for(var i = 0;i < nearest_hexes.length;i++){
-                var d2code = nearest_hexes[i].x+'#'+nearest_hexes[i].y
-                
-                //heks[nearest_hexes[i].x][nearest_hexes[i].y].test = 'G'
+            var mountainous = false
+            for(var mountainous = false, swicz = false;!swicz;swicz = mountainous,mountainous = true){
+                for(var i = 0;i < nearest_hexes[mountainous].length;i++){
+                    var d2code = nearest_hexes[mountainous][i].x+'#'+nearest_hexes[mountainous][i].y
+                    
+                    //heks[nearest_hexes[i].x][nearest_hexes[i].y].test = 'G'
 
-                for(var j = 0;j < from_hexes.length;j++){
-                    //if(curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap)
-                    //    console.log([curr_hexes[i].dmap[closcode].dist, curr_hexes[j].dmap[closcode].dist, curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist])
-                    var d1code = from_hexes[j].x+'#'+from_hexes[j].y
+                    for(var j = 0;j < from_hexes.length;j++){
+                        //if(curr_hexes[j].x+'#'+curr_hexes[j].y in curr_hexes[i].dmap)
+                        //    console.log([curr_hexes[i].dmap[closcode].dist, curr_hexes[j].dmap[closcode].dist, curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist])
+                        var d1code = from_hexes[j].x+'#'+from_hexes[j].y
 
-                    if(d1code == d2code)
-                        continue
-                            
-                    var clos = from_hexes[j].closestenemy
+                        if(d1code == d2code)
+                            continue
+                                
+                        var clos = from_hexes[j].closestenemy
 
-                    var ok = false
-                    var ok2 = false
-                    /*if(nearest_hexes[i].color == -1){
-                        ok = true
-                    } else */
-                    for(var ij in clos){
-                        var eachclos = clos[ij]
-                        var closcode = eachclos.x+'#'+eachclos.y
+                        var ok = false
+                        var ok2 = false
+                        /*if(nearest_hexes[i].color == -1){
+                            ok = true
+                        } else */
+                        for(var ij in clos){
+                            var eachclos = clos[ij]
+                            var closcode = eachclos.x+'#'+eachclos.y
 
-                        var closelem = large_map[eachclos.x][eachclos.y]
-                        //console.log([closcode in nearest_hexes[i].dmap, closcode in from_hexes[j].dmap, nearest_hexes[i].x+'#'+nearest_hexes[i].y in from_hexes[j].dmap, from_hexes[j]])
-                        if(closcode in nearest_hexes[i].dmap && closcode in from_hexes[j].dmap && nearest_hexes[i].x+'#'+nearest_hexes[i].y in from_hexes[j].dmap){
-                            
-                            var d1 = from_hexes[j].dmap[closcode].dist //+ from_hexes[j].dmap[closcode].water*2
-                            var d2 = nearest_hexes[i].dmap[closcode].dist //+ nearest_hexes[i].dmap[closcode].water*2
-                            var d3 = (from_hexes[j].dmap[nearest_hexes[i].x+'#'+nearest_hexes[i].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
-                            
-                            var prsz = d1 < (d2 + d3)*0.7// && !(d3 >= (d3 + d1)*0.7)
-                            
-                            //console.log([d1, (d1 + d2)*0.7,d2,d3,from_hexes[j].dmap[closcode],nearest_hexes[i].dmap[closcode]])
-                            if(prsz){
-                                ok2 = true
+                            var closelem = large_map[eachclos.x][eachclos.y]
+                            //console.log([closcode in nearest_hexes[i].dmap, closcode in from_hexes[j].dmap, nearest_hexes[i].x+'#'+nearest_hexes[i].y in from_hexes[j].dmap, from_hexes[j]])
+                            if(closcode in nearest_hexes[mountainous][i].dmap && closcode in from_hexes[j].dmap && nearest_hexes[mountainous][i].x+'#'+nearest_hexes[mountainous][i].y in from_hexes[j].dmap){
+                                
+                                var d1 = from_hexes[j].dmap[closcode].dist //+ from_hexes[j].dmap[closcode].water*2
+                                var d2 = nearest_hexes[mountainous][i].dmap[closcode].dist //+ nearest_hexes[i].dmap[closcode].water*2
+                                var d3 = (from_hexes[j].dmap[nearest_hexes[mountainous][i].x+'#'+nearest_hexes[mountainous][i].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
+                                
+                                var prsz = d1 < (d2 + d3)*0.7// && !(d3 >= (d3 + d1)*0.7)
+                                
+                                //console.log([d1, (d1 + d2)*0.7,d2,d3,from_hexes[j].dmap[closcode],nearest_hexes[i].dmap[closcode]])
+                                if(prsz){
+                                    ok2 = true
+                                }
+                                if(prsz || d2 <= 1){
+                                    //if(!(d2code in behind))
+                                    //    behind[d2code] = {hex:from_hexes[j],value:0}
+                                    //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
+                                    ok = true
+                                }
                             }
-                            if(prsz || d2 <= 1){
-                                //if(!(d2code in behind))
-                                //    behind[d2code] = {hex:from_hexes[j],value:0}
-                                //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
-                                ok = true
-                            }
+                            
                         }
-                        
-                    }
-                    if(clos.length == 0){
-                        ok = true
-                        ok2 = true
-                    }
-                    if(ok){
+                        if(clos.length == 0){
+                            ok = true
+                            ok2 = true
+                        }
+                        if(ok){
 
-                        allowPaths[d1code+'#'+d2code] = true
-                        //heks[nearest_hexes[i].x][nearest_hexes[i].y].test = ''
-                    }
-                    if(!ok2){
-                        delete strictly_forward[d1code]
+                            allowPaths[d1code+'#'+d2code] = true
+                            //heks[nearest_hexes[i].x][nearest_hexes[i].y].test = ''
+                        }
+                        if(!ok2){
+                            delete strictly_forward[d1code]
+                        }
                     }
                 }
             }
         
-            for(var d1code in i_am_behind){
-                var codes = i_am_behind[d1code].codes
-                var value = i_am_behind[d1code].value
-                for(var i in codes){
-                    var d2code = codes[i]
-                    if(allowPaths[d1code+'#'+d2code])
-                        behind_score[d2code].value += value / (codes.length+1)
+            var mountainous = false
+            for(var mountainous = false, swicz = false;!swicz;swicz = mountainous,mountainous = true){
+                for(var d1code in i_am_behind[mountainous]){
+                    var codes = i_am_behind[mountainous][d1code].codes
+                    var value = i_am_behind[mountainous][d1code].value
+                    for(var i in codes){
+                        var d2code = codes[i]
+                        if(allowPaths[d1code+'#'+d2code])
+                            behind_score[d2code].value += value / (codes.length+1)
+                    }
                 }
             }
             
@@ -1027,7 +1041,7 @@ function aimachine(ailevel){
             //possible_targets.sort((a,b)=>a.dist - b.dist)
             //possible_targets = nearest_hexes.map(a => new Object({hex:{x:a.x, y:a.y, z:heks[a.x][a.y].z},dist:a.dist}))
             
-            possible_targets = nearest_hexes.map(a => new Object({hex:{x:a.x, y:a.y, z:heks[a.x][a.y].z},dist:a.dist,value:0}))
+            possible_targets = Array.from(new Set(nearest_hexes[true].concat(nearest_hexes[false]))).map(a => new Object({hex:{x:a.x, y:a.y, z:heks[a.x][a.y].z},dist:a.dist,value:0}))
             for(var i in possible_targets){
                 var targ = possible_targets[i]
                 
@@ -6370,7 +6384,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
             }
             value2 = values2ByTime.reduce((a,b) => a+b, 0)*/
             //if(value2 < value){
-            if(value2 < value || score2 < score1 && value2 <= value/* || lost*/){
+            if(value2 < value/* || score2 < score1 && value2 <= value/* || lost*/){
             console.log('ech2')
                 unitaction.unit.actions = oldaction
                 if(bark != null){
@@ -6848,7 +6862,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     possible[key1] = realSfKeysOriginal[key1]
                     for(var key2 in realSfKeysOriginal){
                         //console.log(key1, key2, dfrou.distmaps[key2].alliegance)
-                        if(key1 != key2 && key2 in dfrou.distmaps/* && dfrou.distmaps[key2].alliegance[MAX_TURNS-1] != -1/* && dfrou.distmaps[fff.code].alliegance[MAX_TURNS-1] != kolej*/){
+                        if((szyt[unit.rodz] != 'c' || heks[realSfKeysOriginal[key2].hex.x][realSfKeysOriginal[key2].hex.y].z != -2) && key1 != key2 && key2 in dfrou.distmaps/* && dfrou.distmaps[key2].alliegance[MAX_TURNS-1] != -1/* && dfrou.distmaps[fff.code].alliegance[MAX_TURNS-1] != kolej*/){
                             var d1 = distmapsearch(dfrou,fff.code,key1,unit.rodz)
                             var d2 = distmapsearch(dfrou,fff.code,key2,unit.rodz)
                             var d3 = distmapsearch(dfrou,key1,key2,unit.rodz)
