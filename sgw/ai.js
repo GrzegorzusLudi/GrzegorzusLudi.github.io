@@ -414,7 +414,7 @@ function aimachine(ailevel){
             evaluate(dfrou,2)
             
             legalActions(dfrou,simplifieddistmaps)
-            ulepszyns = 6
+            ulepszyns = 9
             aistan = 1.15
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -1051,13 +1051,12 @@ function aimachine(ailevel){
                 modif[code] = kolej
                 targ.value = (code in behind_score ? behind_score[code].value : 1) + cityscore(heks[targ.hex.x][targ.hex.y])/2//calculateStrategicMapForTeam(large_map, dfrou, kolej, modif)// + heks[targ.hex.x][targ.hex.y].z
             }
-            
             //calculateStrategicMapForTeam(large_map, dm, color, mod)
             //console.log(possible_targets)
             //console.log(possible_targets)
             //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
             //possible_targets.sort((a,b)=>(-a.value + b.value))
-            possible_targets.sort((a,b)=>((a.dist+Math.pow(0.9,1+a.value))-(b.dist+Math.pow(0.9,1+b.value))))
+            possible_targets.sort((a,b)=>((a.dist+1/(1+a.value))-(b.dist+1/(1+b.value))))
 
             
             //possible_targets.sort((a,b) => (a.x+'#'+a.y in behind ? behind[a.x+'#'+a.y].value : 0) - (b.x+'#'+b.y in behind ? behind[b.x+'#'+b.y].value : 0))
@@ -5937,7 +5936,7 @@ function warnung(distmap,unit,legalAction,j,debug){
         if(debug)console.log(2)
         return true
     }
-    if(distmap.hex.z <= 0 && properAction.il <= unit.il-10){
+    if(distmap.hex.z <= 0 && properAction.il < unit.il-10){
         if(debug)console.log(3)
         return true
     }
@@ -6047,7 +6046,7 @@ function tryMakeDestinationMap(dm,color,allowedPaths){
                         //    continue
                     }
                         
-                        if(distmap.hex.z > 0 && properAction.il > unit.il-10 && (j == 0 || distmap.hex.units.length == 1)){
+                        if(distmap.hex.z > 0 && properAction.il > unit.il-10 && (j == 0/* || distmap.hex.units.length == 1*/)){
                             continue
                         }
                         /*
@@ -6215,14 +6214,15 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     var interestingUnits = destinationmap[code] ? destinationmap[code] : []
     
         
-    //console.log(interestingUnits)
+    //console.log(x,y,interestingUnits)
 
     interestingUnits = interestingUnits.filter(x=>
         (x.action[0].type != 'move' || 
         (x.action[0].rucho.length/*-zas[x.unit.rodz]*/) / szy[x.unit.rodz] <= 2) && 
-        (x.unit.actions.length == 0 || 
-        (/*x.unit.actions[0].by != 'speculation2' && */(x.unit.actions[0].type == 'move' && x.unit.actions[0].by != 'speculation2' && x.action[0].type == 'move' && (true || x.action[0].rucho.length <= szy[x.unit.rodz]+2 || x.unit.actions[0].rucho.length+1+zas[x.unit.rodz] > x.action[0].rucho.length)/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/))))
+        (x.unit.actions.length == 0 || x.unit.actions[0].type == 'build' && x.unit.il > 50 ||
+        (/*x.unit.actions[0].by != 'speculation2' && */(x.unit.actions[0].type == 'move' && x.unit.actions[0].by != 'speculation2' && x.action[0].type == 'move' && (/*x.action[0].rucho.length <= 2*szy[x.unit.rodz]+2 || */x.unit.actions[0].rucho.length > x.action[0].rucho.length)/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/))))
     
+    //console.log('filtered',interestingUnits)
     //console.log(interestingUnits.map(a => 1/Math.pow(2,a.action[0].rucho ? a.action[0].rucho.length : 0)*(a.action[0].il)))
     
     
@@ -6246,7 +6246,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     //console.log(interestingUnits.map((a) => [a.hex.x,a.hex.y,-1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length + a.action.length > 1 ? 0.5 : 0)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))]))
     //console.log(interestingUnits)
 
-    interestingUnits = interestingUnits.filter(x=>x.action[0].type == 'aim' && zas[x.unit.rodz] > 1).concat(interestingUnits.filter(x=>!(x.action[0].type == 'aim' && zas[x.unit.rodz] > 1)))
+    //interestingUnits = interestingUnits.filter(x=>x.action[0].type == 'aim' && zas[x.unit.rodz] > 1).concat(interestingUnits.filter(x=>!(x.action[0].type == 'aim' && zas[x.unit.rodz] > 1)))
     //console.log(interestingUnits)
     //console.log(interestingUnits,x,y)
     
@@ -6771,7 +6771,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
             }
             //console.log('b2',fff.code)
             
-            if(unit.actions.length > 0/* && unit.actions[0].by == 'speculation2'*/){
+            if(unit.actions.length > 0 && unit.actions[0].type == 'move'/* && unit.actions[0].by == 'speculation2'*/){
                 continue
             }/*
             if(unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length / szy[unit.rodz] <= 2){
@@ -6782,7 +6782,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
             var actionil = false
             
             if(distmap.hex.heks.z > 0){
-                if(unit.actions.length > 0 && unit.actions[0].type == 'move' && distmap.hex.units[0] == unit && unit.actions[0].il > unit.il-10 && fff.unitIx == 0){
+                if(unit.actions.length > 0 && unit.actions[0].type == 'move' && distmap.hex.units[0] == unit && unit.actions[0].il > unit.il-10 && fff.unitIx == distmap.hex.units.length-1){
                     //console.log('c3.5',fff.code)
                     continue
                 }
@@ -6829,17 +6829,19 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                         
 
                     var ok = true
+                    var disttime,disttime2
                     for(var key in realSfKeysOriginal){
                         //console.log('czyjest',unit.actions[0].destination[0]+'#'+unit.actions[0].destination[1] in dfrou.distmaps)
-                        var disttime = (distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx,udisty)-zas[unit.rodz])/szy[unit.rodz]
-                        var disttime2 = (distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx2,udisty2)-zas[unit.rodz])/szy[unit.rodz]
+                        var disttime = Math.max(0,distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx,udisty))/szy[unit.rodz]
+                        var disttime2 = Math.max(0,distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx2,udisty2))/szy[unit.rodz]
 
-                        if(disttime <= 2 || disttime2/*-szy[unit.rodz]*/ > disttime && dist > 0/* && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length > 0*/){
+                        if(disttime < 2 || disttime2-szy[unit.rodz] > disttime && dist > 0/* && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length > 0*/){
                             ok = false
                             break
                         }
                     }
                     if(!ok){
+                        console.log('onje', disttime, disttime2)
                         continue
                     }
                 }
@@ -6862,7 +6864,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     possible[key1] = realSfKeysOriginal[key1]
                     for(var key2 in realSfKeysOriginal){
                         //console.log(key1, key2, dfrou.distmaps[key2].alliegance)
-                        if((szyt[unit.rodz] != 'c' || heks[realSfKeysOriginal[key2].hex.x][realSfKeysOriginal[key2].hex.y].z != -2) && key1 != key2 && key2 in dfrou.distmaps/* && dfrou.distmaps[key2].alliegance[MAX_TURNS-1] != -1/* && dfrou.distmaps[fff.code].alliegance[MAX_TURNS-1] != kolej*/){
+                        if((szyt[unit.rodz] != 'c' || (heks[realSfKeysOriginal[key1].hex.x][realSfKeysOriginal[key1].hex.y].z != -2 && heks[realSfKeysOriginal[key2].hex.x][realSfKeysOriginal[key2].hex.y].z != -2)) && key1 != key2 && key2 in dfrou.distmaps/* && dfrou.distmaps[key2].alliegance[MAX_TURNS-1] != -1/* && dfrou.distmaps[fff.code].alliegance[MAX_TURNS-1] != kolej*/){
                             var d1 = distmapsearch(dfrou,fff.code,key1,unit.rodz)
                             var d2 = distmapsearch(dfrou,fff.code,key2,unit.rodz)
                             var d3 = distmapsearch(dfrou,key1,key2,unit.rodz)
@@ -6872,7 +6874,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                                 //delete possible[key1]
                                 //break
                             }
-                            if(d1 != null && d2 != null && d3 != null && d1 - szy[unit.rodz] > d2 && d1 > szy[unit.rodz] && d1 > (d2+d3) * 0.7 && !(d2 > (d1+d3) * 0.7)){
+                            if(d1 != null && d2 != null && d3 != null && d2 != -1 && d3 != -1 && d1 - szy[unit.rodz] > d2 && d1 > szy[unit.rodz] && d1 > (d2+d3) * 0.7 && !(d2 > (d1+d3) * 0.7)){
                                 delete possible[key1]
                                 break
                             }
@@ -6899,7 +6901,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                 var lac = unit.legalActions[j]
                 if(lac[0].type == 'move' && lac.length == 1 && (lac[0].il < unit.il || !actionil)){
                     var dist = lac[0].rucho.length
-                    var time = (dist-zas[unit.rodz])/(szy[unit.rodz])
+                    var time = (dist/*-zas[unit.rodz]*/)/(szy[unit.rodz])
                     /*
                     if(unit.actions.length > 0 && unit.actions[0].type == 'move' && dist > unit.actions[0].rucho.length){     
                         console.log('c6')                   
@@ -6924,7 +6926,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     //if(!allowPaths[fff.code+'#'+lade])
                     //    continue
 
-                    if(time >= 2 && lade in possible){
+                    if(/*time >= 1 && */lade in possible){
                         
                         /*
                         for(var key in realSfKeys){
@@ -6932,9 +6934,11 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                                 
                             }
                         }*/
-                        //console.log(['xle', fff.code, lade])
+                        console.log(['xle', fff.code, lade])
+                        
                         possibleUnitActions[lade].push({hex_from:fff.code,hex_to:lade,unitIx:fff.unitIx,action:lac,time:time,unitrodz:unit.rodz})
                     } else if(lade in possible) {
+                        console.log(['xle2', time, fff.code, lade])
                         //console.log(time,lade,lade in possible)
                     }
                 }
