@@ -45,6 +45,7 @@ class LayerPanel {
             coordsTable: "coords-table",
             updateButton: "feature-properties-update",
             tempTable: "feature-temp-table",
+            coordsTableSwapCoords: "coords-table-swap-coords"
         })
         this.layerPropertiesDialogWindow = new LayerPropertyDialogWindow({
             element: "layer-properties",
@@ -69,10 +70,57 @@ class LayerPanel {
             tempControls: "copy-to-layer-temp-controls"
         })
         
-        
         this.counter = 0
         this.updateLayerView(this.layers,null)
         
+    }
+    addDialogWindows(){
+        
+        let t = this
+        
+        this.importWindow = new ImportDialogWindow({
+            button: "button-import", 
+            element: "layer-import",
+            file: "layer-import-file",
+            datatype: "layer-import-datatype",
+            addlayer: "dialog-window-import-add",
+            layerpanel: this,
+            canvas: t.canvas,
+        })
+        this.newLayerWindow = new AddLayerDialogWindow({
+            button: "button-add-layer",
+            element: "layer-add",
+            canvas: t.canvas,
+            layertype: "layer-add-datatype",
+            addlayer: "dialog-window-add-add",
+            layerpanel: this,
+            layernameinput: "layer-add-layer-name",
+        })
+        this.relationDialogWindow = new RelationDialogWindow({
+            button: 'button-relation-update',
+            element: 'layer-relation',
+            relationSelect: 'layer-relation-relation-select',
+            relationChildFieldSelect: 'layer-relation-relation-select-child-layer'
+        })
+        this.newSchemaWindow = new AddSchemaDialogWindow({
+            button: "button-add-schema",
+            element: "schema-add",
+            canvas: t.canvas,
+            addlayer: "dialog-window-schema-add-add",
+            layerpanel: this,
+            layernameinput: "layer-add-schema-name",
+        })
+        this.newRasterMapWindow = new AddRasterMapDialogWindow({
+            button: "button-add-raster-map",
+            element: "raster-map-add",
+            canvas: t.canvas,
+            layerprojection: "raster-map-projection",
+            addlayer: "dialog-window-raster-map-add",
+            layerpanel: this,
+            file: "add-raster-map-import-file",
+            preview: "raster-map-preview",
+            table: "projection-coord-table",
+        })
     }
     setGlobalDate(date){
         this.globalDate = date
@@ -113,8 +161,10 @@ class LayerPanel {
         }
     }
     
-    layerNameExist(name){
-        return name in this.layers
+    layerNameExist(name,path){
+        var realpath = this.getRealPath(path)
+        
+        return name in realpath.children
     }
     
     getStyleProperties(layer,style,feature){
@@ -127,15 +177,27 @@ class LayerPanel {
             
     }
     
-    //path is array of ids
-    //initial data is written in geojson
-    addLayer(path, name, type, initialData, bounds, resolution){
+    getRealPath(path){
         var realpath = this.layers
         for(var i in path){
             var pathpart = path[i]
             realpath = realpath.children[pathpart]
         }
+        return realpath
+    }
+    //path is array of ids
+    //initial data is written in geojson
+    addLayer(path, name, type, initialData, bounds, resolution){
+        var realpath = this.getRealPath(path)
+        
         var transformed = this.validateAndTransformToGeoJson(initialData, type)
+        
+        if(type == 'schema'){
+            this.addSchema(path, name, initialData, bounds, resolution)
+            return
+        }
+
+        var inSchema = path.length > 0
         
         var testname = name
         var number = 2
@@ -152,7 +214,12 @@ class LayerPanel {
             scheme: transformed["scheme"],
             hidden: false,
             children: {},
+            inSchema: inSchema,
+            relation: null,
+            path:path,
             rendered: null,
+            summed:null,
+            lookup:null,
             edited: false,
             number: this.counter++,
             styleProperties: {
@@ -190,7 +257,7 @@ class LayerPanel {
                 },
             }
         }
-        this.render(realpath.children[testname], bounds, resolution)
+        this.render(realpath.children[testname], bounds, resolution, realpath)
         this.updateLayerView(path)
     }
     addRasterMapLayer(path, name, type, initialData, bounds, resolution){
@@ -219,6 +286,130 @@ class LayerPanel {
         }
         this.renderRasterMapLayer(realpath.children[testname], bounds, resolution)
         this.updateLayerView(path)
+    }
+    updateRasterMapLayer(layer,od,newdata,keeporiginaldata){
+        
+        var newData,transformed
+        
+        if(!keeporiginaldata){
+            newData = layer.originaldata
+        }
+        
+        if(!keeporiginaldata){
+            layer.originaldata = newdata
+            layer.data = newdata
+            layer.drawable = newdata
+        }
+        
+        this.renderRasterMapLayer(layer)
+        this.updateLayerView(this.layers)
+        this.canvas.draw()
+    }
+    updateLayer(layer,od,keeporiginaldata){
+        var newData,transformed
+        
+        if(keeporiginaldata){
+            transformed = this.validateAndTransformToGeoJson(od, layer.type, true, layer.data)
+        } else {
+            switch(layer.type){
+                case "tempgeojson":
+                case "geojson":
+                case "json":
+                    newData = JSON.stringify(layer.originaldata)
+                    break
+                default:
+                    newData = layer.originaldata
+            }
+            transformed = this.validateAndTransformToGeoJson(newData, layer.type)
+        }
+        
+        
+        if(!keeporiginaldata){
+            layer.originaldata = transformed["copied"]
+            layer.data = transformed["data"]
+            layer.drawable = transformed["drawable"]
+        }
+        
+        this.render(layer)
+        this.updateLayerView(this.layers)
+        this.canvas.draw()
+        
+    }
+    /*
+     schemat
+     +ląd
+      -zatoki [a-a]
+       +kontrola [a-a]
+        +uznawane_państwa [kontrola.uznawane<uznawane_państwa.id
+         +jednostki_administracyjne_pierwszego_rzędu [uznawane_państwa.id<jednostki_administracyjne_pierwszego_rzędu.jednostka_nadrzędna]
+     */
+    addSchema(path, name, initialData, bounds, resolution){
+        var realpath = this.layers
+        for(var i in path){
+            var pathpart = path[i]
+            realpath = realpath.children[pathpart]
+        }
+        var transformed = this.validateAndTransformToSchemaJson(initialData)
+        
+        var testname = name
+        var number = 2
+        while(testname in realpath.children){
+            testname = name + " (" + number + ")"
+            number++
+        }
+        console.log(path)
+        realpath.children[testname] = {
+            type: 'schema',
+            name: testname,
+            originaldata: transformed["copied"],
+            data: transformed["data"],
+            scheme: transformed["scheme"],
+            hidden: false,
+            path:path,
+            children: {},
+            rendered: null,
+            edited: false,
+            number: this.counter++,
+        }
+        this.render(realpath.children[testname], bounds, resolution, realpath)
+        this.updateLayerView(path)
+        
+        for(var key in transformed['data'].children){
+            this.addLayerImportedFromSchema(path.concat([testname]),key,transformed['data'].children[key].type,transformed['data'].children[key],bounds,resolution)
+        }
+    }
+    
+    addLayerImportedFromSchema(path, name, type, initialData, bounds, resolution){
+        var realpath = this.getRealPath(path)
+        
+        console.log(path)
+        var transformed = this.validateAndTransformToGeoJson(JSON.stringify(initialData.originaldata), type)
+
+        realpath.children[name] = {
+            type: type,
+            name: name,
+            originaldata: transformed["copied"],
+            data: transformed["data"],
+            drawable: transformed["drawable"],
+            scheme: transformed["scheme"],
+            hidden: initialData.hidden,
+            children: {},
+            inSchema: true,
+            relation: initialData.relation,
+            path:path,
+            rendered: null,
+            summed:null,
+            lookup:null,
+            edited: false,
+            number: this.counter++,
+            styleProperties: initialData.styleProperties
+        }
+        this.render(realpath.children[name], bounds, resolution, realpath)
+        this.updateLayerView(path)
+        
+        for(var key in initialData.children){
+            this.addLayerImportedFromSchema(path.concat([name]),key,initialData.children[key].type,initialData.children[key],bounds,resolution)
+        }
     }
     updateLayer(layer,od,keeporiginaldata){
         var newData,transformed
@@ -254,14 +445,18 @@ class LayerPanel {
     renderLayers(bounds, resolution){
         this.pointrendermap = {}
         for(var i in this.layers.children){
-            this.render(this.layers.children[i], bounds, resolution)
+            this.render(this.layers.children[i], bounds, resolution, this.layers)
         }
     }
     
-    render(layer, bounds, resolution){
-        
-        if(layer.type == 'raster'){
-            return this.renderRasterMapLayer(layer,bounds,resolution)
+    render(layer, bounds, resolution, parentLayer){
+        switch(layer.type){
+            case 'raster':
+                return this.renderRasterMapLayer(layer,bounds,resolution)
+                break
+            case 'schema':
+                return this.renderSchema(layer,bounds,resolution)
+                break
         }
         layer.rendered = {}
         
@@ -276,9 +471,65 @@ class LayerPanel {
             
         var featuresGroupedByIds = {}
         var ungroupedFeatures = []
-        this.mapLayerToRendered(layer.data,layer.rendered,bounds,resolution,featuresGroupedByIds,ungroupedFeatures,layer)
+        this.mapLayerToRendered(layer.data,layer.rendered,bounds,resolution,featuresGroupedByIds,ungroupedFeatures,layer,parentLayer)
         if(this.isSpatiotemporal(layer)){
-            layer.rendered.features = this.aggregateFeatures(featuresGroupedByIds,ungroupedFeatures,layer, bounds, resolution)
+            layer.rendered.features = this.aggregateFeatures(featuresGroupedByIds,ungroupedFeatures,layer, bounds, resolution,parentLayer)
+            layer.lookup = this.makeFeatureLookup(layer.rendered.features)
+        }
+        layer.summed = this.makeSummedFeatures(layer.rendered.features)
+        for(var i in layer.children){
+            this.render(layer.children[i], bounds, resolution, layer)
+        }
+    }
+    
+    makeSummedFeatures(features){
+        var newFeature = {type:"Feature",geometry:null,properties:{},adding:true}
+        
+        var lastFtypeNew = newFeature.type
+        var existing = false
+        newFeature.type = "Feature"
+        for(var i=0;i<features.length;i++){
+            var feature = features[i]
+            var lastFtype = feature.type
+            feature.type = "Feature"
+            var newGeom = null
+
+            if(feature.geometry != null && feature.geometry.type != 'Polygon' && feature.geometry.type != 'MultiPolygon')
+                continue
+                
+            if(newFeature.geometry == null)
+                newGeom = feature
+            else
+                newGeom = turf.union(newFeature,feature)
+
+            feature.type = lastFtype
+            if(newGeom == null || newGeom.geometry == null){
+                existing = existing || false
+            } else {
+                existing = true
+                newFeature.geometry = newGeom.geometry
+                newFeature.bbox = this.addBboxes(newFeature)
+            }
+        }
+        newFeature.type = lastFtypeNew
+        
+        if(!existing)
+            return null
+        return newFeature
+    }
+    makeFeatureLookup(features){
+        var lookup = {}
+        
+        for(var i=0;i<features.length;i++){
+            var feature = features[i]
+            lookup[feature.id] = feature
+        }
+        return lookup
+    }
+    
+    renderSchema(layer, bounds, resolution){
+        for(var i in layer.children){
+            this.render(layer.children[i], bounds, resolution, layer)
         }
     }
 
@@ -308,12 +559,13 @@ class LayerPanel {
         context.drawImage(img, 0, 0 );
         var mydata = context.getImageData(0, 0, img.width, img.height)
         
-        this.canvas.prepareBitmap(canvasBitmap,mydata,cwidth,cheight,layer.originaldata.projectionFunction,layer.originaldata.projectionCoordData)
+        this.canvas.prepareBitmap(canvasBitmap,mydata,cwidth,cheight,layer.originaldata.projectionFunction,layer.originaldata.projectionPrecalcFunction,layer.originaldata.projectionCoordData)
         
         layer.rendered = {renderedImage:canvasBitmap,projection:layer.originaldata.projection,width:layer.originaldata.width,height:layer.originaldata.height}
     }
     
-    aggregateFeatures(featuresGroupedByIds,ungroupedFeatures, layer, bounds, resolution){
+    aggregateFeatures(featuresGroupedByIds,ungroupedFeatures, layer, bounds, resolution, parentLayer){
+        
         var newRendered = []
         for(var id in featuresGroupedByIds){
             /*if(this.editing != null && this.editing.selectedFeature != null && id == this.editing.selectedFeature.id){
@@ -323,35 +575,45 @@ class LayerPanel {
                 //continue
             }*/
             var features = featuresGroupedByIds[id].concat(ungroupedFeatures).filter(x => x.type != null)
-            features.sort((a,b) => a.timebox_from-b.timebox_from)
+            features.sort((a,b) => this.compareDates(a.timebox_from,b.timebox_from))
 
             if(features.length == 0)
                 continue
                 
-            this.aggregateFeaturesById(features, layer, bounds, resolution, newRendered)
+            this.aggregateFeaturesById(features, layer, bounds, resolution, newRendered, id,parentLayer)
         }
+        /*
         if(Object.keys(featuresGroupedByIds).length == 0){
             var features = ungroupedFeatures.filter(x => x.type != null)
-            features.sort((a,b) => a.timebox_from-b.timebox_from)
+            features.sort((a,b) => this.compareDates(a.timebox_from,b.timebox_from))
 
             if(features.length > 0)
                 this.aggregateFeaturesById(features, layer, bounds, resolution, newRendered)
-        }
+        }*/
         
         return newRendered
     }
-    aggregateFeaturesById(features, layer, bounds, resolution, newRendered){
-        var newF = features.filter(x => x.operation == 'NEW' || x.operation == 'NEW_ALL_FEATURES')
+    aggregateFeaturesById(features, layer, bounds, resolution, newRendered, id,parentLayer){
+
+        features = features.sort((a,b) => this.compareDates(a.timebox_from,b.timebox_from))
+        var newF = features.filter(x => (x.operation == 'NEW' || x.operation == 'NEW_ALL_FEATURES') && (x.id == id))
         var firstFeature
         if(newF.length == 0){
-            features = features.sort((a,b) => this.compareDates(a.timebox_from,b.timebox_from))
-            firstFeature = features[0]
-            features = features.slice(1)
+            return
+            var features2 = features.filter(x => (x.id == id) && (x.operation == 'UNION' || x.operation == 'UNION_ALL_FEATURES'))
+            if(features2.length == 0)
+                return
+            firstFeature = features2[0]
         } else {
             firstFeature = newF[0]
-            features = features.filter(x=>x.operation != 'NEW' && x.operation != 'NEW_ALL_FEATURES')
-            features = features.sort((a,b) => this.compareDates(a.timebox_from,b.timebox_from))
         }
+
+        if(firstFeature == null || firstFeature.id != id)
+            return
+            
+        features = features.filter(x => x != firstFeature && this.compareDates(firstFeature.timebox_from, x.timebox_from) <= -1)
+
+        var existing = firstFeature.geometry != undefined
         firstFeature.type = "Feature"
         for(var i=0;i<features.length;i++){
             var feature = features[i]
@@ -361,36 +623,134 @@ class LayerPanel {
             //    continue
             switch(feature.operation){
                 case 'UNION':
-                    newGeom = turf.union(firstFeature,feature)
+                    if(!existing)
+                        newGeom = feature
+                    else
+                        newGeom = turf.union(firstFeature,feature)
+
                     break
                 case 'DIFF':
-                    newGeom = turf.difference(firstFeature,feature)
+                    if(existing)
+                        newGeom = turf.difference(firstFeature,feature)
                     break
                 case 'INTERSECT':
-                    newGeom = turf.intersect(firstFeature,feature)
-                    break
+                    if(existing)
+                        newGeom = turf.intersect(firstFeature,feature)
                 case 'PROPERTY_CHANGE':
                     newGeom = firstFeature
                     break
                 case 'NEW_ALL_FEATURES':
                 case 'UNION_ALL_FEATURES':
                     if(feature.id == firstFeature.id){
-                        if(feature.operation != 'NEW_ALL_FEATURES')
-                            newGeom = turf.union(firstFeature,feature)
-                    } else {
-                        newGeom = turf.difference(firstFeature,feature)
+                        if(feature.operation != 'NEW_ALL_FEATURES'){
+                            if(!existing)
+                                newGeom = feature
+                            else
+                                newGeom = turf.union(firstFeature,feature)
+                        }
+                    } else if(feature.id != firstFeature.id) {
+                        if(existing)
+                            newGeom = turf.difference(firstFeature,feature)
                     }
                     break
             }
             feature.type = "TempFeature"
-            if(newGeom == null)
-                continue
-            firstFeature.geometry = newGeom.geometry
+            if(newGeom == null || newGeom.geometry == null){
+                existing = false
+            } else {
+                existing = true
+                firstFeature.geometry = newGeom.geometry
+                firstFeature.bbox = this.addBboxes(firstFeature)
+            }
             
-            for(var key in feature.properties){
-                var prop = feature.properties[key]
-                
-                firstFeature.properties[key] = prop
+            if(feature.id == firstFeature.id){
+                for(var key in feature.properties){
+                    var prop = feature.properties[key]
+                    
+                    firstFeature.properties[key] = prop
+                }
+            }
+        }
+        if(existing && parentLayer != undefined && firstFeature != null && layer.relation != null){
+            switch(layer.relation.relationType){
+                case "intersectsumwithparent":
+                case "differencesumwithparent":
+                    if(parentLayer.summed == null || parentLayer.summed.geometry == null){
+                        //existing = false
+                    } else {
+                        var lastFtype = parentLayer.summed.type
+                        parentLayer.summed.type = 'Feature'
+                        var newGeom
+                        switch(layer.relation.relationType){
+                            case "intersectsumwithparent":
+                                newGeom = turf.intersect(firstFeature,parentLayer.summed)
+                                break
+                            case "differencesumwithparent":
+                                newGeom = turf.difference(firstFeature,parentLayer.summed)
+                                break
+                        }
+                        
+                        firstFeature.geometry = newGeom.geometry
+                        firstFeature.bbox = this.addBboxes(firstFeature)
+                        parentLayer.summed.type = lastFtype
+                    }
+                    //turf.union(firstFeature,feature)
+                    break
+                case "joinkeyparent":
+                    var field_to_check = layer.relation.field
+                    
+                    console.log('prop',firstFeature.properties)
+                    if(field_to_check in firstFeature.properties && firstFeature.properties[field_to_check] != null && firstFeature.properties[field_to_check] != ''){
+                        var lastFtype = firstFeature.type
+                        firstFeature.type = 'Feature'
+                        
+                        var foreignKeys = firstFeature.properties[field_to_check]
+                        
+                        var featureIds = foreignKeys.trim().split(';').map(s => s != '' ? s.trim() : null).reverse()
+                        
+                        var newGeometries = []
+                        
+                        for(var i in featureIds){
+                            var featureId = featureIds[i]
+                            if(featureId in parentLayer.lookup){
+                                var newFeature = turf.clone(firstFeature)
+                                newFeature.type = 'Feature'
+                                
+                                var parentFeature = parentLayer.lookup[featureId]
+                                
+                                var lastFtype = parentFeature.type
+                                parentFeature.type = 'Feature'
+                                
+                                newFeature = turf.intersect(newFeature,parentFeature)
+                                if(newFeature != null){
+                                    newGeometries.push(newFeature)
+                                }
+                                
+                                parentFeature.type = lastFtype
+                            }
+                        }
+                        
+                        var newGeom = null
+                        for(var i in newGeometries){
+                            var newGeometry = newGeometries[i]
+                            
+                            if(newGeom == null){
+                                newGeom = newGeometry
+                            } else {
+                                newGeom = turf.union(newGeom, newGeometry)
+                            }
+                        }
+                        if(newGeom == null){
+                            existing = false
+                        } else {
+                            firstFeature.geometry = newGeom.geometry
+                            firstFeature.bbox = this.addBboxes(firstFeature)
+                        }
+                        firstFeature.type = lastFtype
+                        
+                    }
+                    
+                    break
             }
         }
         firstFeature.type = "TempFeature"
@@ -399,6 +759,9 @@ class LayerPanel {
                 newRendered.push(firstFeature)
             }
         } else {*/
+        
+        
+        if(existing)
             newRendered.push(firstFeature)
         //}
     }
@@ -516,7 +879,6 @@ class LayerPanel {
                     continue
                 }
                     
-                    
                 var newObject = {}
                 rendered[property] = newObject
                 if(value.type == "TempFeature"){
@@ -617,62 +979,86 @@ class LayerPanel {
         
     }
     
-    hideLayer(e,layerName,layerTreeElement){
-        this.layers.children[layerName].hidden = !this.layers.children[layerName].hidden
+    hideLayer(e,path,layerName,layerTreeElement){
+        var realpath = this.getRealPath(path.concat([layerName]))
+
+        realpath.hidden = !realpath.hidden
         
-        e.target.src = this.layers.children[layerName].hidden ? "static/img/eye-closed.png" : "static/img/eye-open.png"
+        e.target.src = realpath.hidden ? "static/img/eye-closed.png" : "static/img/eye-open.png"
     }
     
-    removeLayer(e,layerName,layerTreeElement){
-        if(confirm('Are you sure to remove layer "'+layerName+'"')){
-            if(this.layers.children[layerName] == this.editing)
+    removeLayer(e,path,layerName,layerTreeElement){
+        var parentPath = this.getRealPath(path)
+        var realpath = this.getRealPath(path.concat([layerName]))
+
+        if(confirm('Are you sure to remove layer "'+realpath.name+'"')){
+            if(realpath == this.editing)
                 this.editing = null
                 
-            delete this.layers.children[layerName]
+            delete parentPath.children[realpath.name]
             this.updateLayerView(this.layers)
         }
     }
     
-    layerToTop(e,layerName,layerTreeElement){
-        var moved = this.layers.children[layerName]
-        delete this.layers.children[layerName]
+    layerToTop(e,path,layerName,layerTreeElement){
+        var parentPath = this.getRealPath(path)
+        var realpath = this.getRealPath(path.concat([layerName]))
+
+        var moved = realpath
+        delete parentPath.children[realpath.name]
         var newLayers = {}
-        for(var name in this.layers.children){
-            newLayers[name] = this.layers.children[name]
+        for(var name in parentPath.children){
+            newLayers[name] = parentPath.children[name]
         }
-        newLayers[layerName] = moved
-        this.layers.children = newLayers
+        newLayers[realpath.name] = moved
+        parentPath.children = newLayers
         this.updateLayerView(this.layers)
     }
     
-    layerToBottom(e,layerName,layerTreeElement){
-        var moved = this.layers.children[layerName]
-        delete this.layers.children[layerName]
+    layerToBottom(e,path,layerName,layerTreeElement){
+        var parentPath = this.getRealPath(path)
+        var realpath = this.getRealPath(path.concat([layerName]))
+
+        var moved = realpath
+        delete parentPath.children[realpath.name]
         var newLayers = {}
-        newLayers[layerName] = moved
-        for(var name in this.layers.children){
-            newLayers[name] = this.layers.children[name]
+        newLayers[realpath.name] = moved
+        for(var name in parentPath.children){
+            newLayers[name] = parentPath.children[name]
         }
-        this.layers.children = newLayers
+        parentPath.children = newLayers
         this.updateLayerView(this.layers)
     }
     
-    layerProperties(e,layerName,layerTreeElement,layer){
+    layerProperties(e,path,layerName,layerTreeElement,layer){
         this.layerPropertiesDialogWindow.action(e,true,layer,null,this.globalDate)
     }
+    importLayerToSchema(e,path,name,newNode,layer){
+        this.importWindow.action(e,true,layer)
+    }
+    addLayerToSchema(e,path,name,newNode,layer){
+        this.newLayerWindow.action(e,true,layer)
+    }
+    addRelationToLayer(e,path,name,newNode,layer){
+        this.relationDialogWindow.action(e,true,layer)
+    }
     
-    startEditingLayer(e,layerName,layerTreeElement){
-        var layer = this.layers.children[layerName]
+    
+    startEditingLayer(e,path,layerName,layerTreeElement){
+        var parentPath = this.getRealPath(path)
+        var realpath = this.getRealPath(path.concat([layerName]))
+
+        var layer = parentPath.children[layerName]
         if(layer.type == 'raster'){
-            
+            this.newRasterMapWindow.action(e,true,layerName,layer)
         } else {
-            this.editing = this.layers.children[layerName]
+            this.editing = parentPath.children[layerName]
             this.editing.edited = true
             this.updateLayerView(this.layers)
         }
     }
     
-    stopEditingLayer(e,layerName,layerTreeElement){
+    stopEditingLayer(e,path,layerName,layerTreeElement){
         this.updateLayer(this.editing,this.editing.originaldata)
 
         this.editing.edited = false
@@ -691,14 +1077,58 @@ class LayerPanel {
             return layerName
         return layerName + '.' + layer.type
     }
+    
+    getSavedJsonLayerInSchema(layer){
+        var children = {}
+        for(var key in layer.children){
+            var child = this.getSavedJsonLayerInSchema(layer.children[key])
+            children[key] = child
+        }
+        if(layer.type == 'schema'){
+            return {
+                type: 'schema',
+                name: layer.name,
+                originaldata: layer.originaldata,
+                path:[],
+                children: children
+            }
+        }
+        return {
+            type: layer.type,
+            name: layer.name,
+            originaldata: layer.originaldata,
+            scheme: layer.scheme,
+            hidden: layer.hidden,
+            children: children,
+            inSchema: true,
+            relation: layer.relation,
+            path:layer.path,
+            styleProperties: layer.styleProperties
+        }
+    }
+    getSavedJsonLayer(layer){
+        switch(layer.type){
+            case 'raster':
+                return null
+                break
+            case 'schema':
+                return this.getSavedJsonLayerInSchema(layer)
+                break
+        }
+        return layer.originaldata
+    }
     saveEditingLayer(e,layer){
-        var content = JSON.stringify(layer.originaldata)
-        var fileName = this.determineExtension(layer)
-        var a = document.createElement("a");
-        var file = new Blob([content], {type: 'text/plain'});
-        a.href = URL.createObjectURL(file);
-        a.download = fileName;
-        a.click();
+        var content = JSON.stringify(this.getSavedJsonLayer(layer))
+        if(content != null){
+            var fileName = this.determineExtension(layer)
+            var a = document.createElement("a");
+            var file = new Blob([content], {type: 'text/plain'});
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
+            a.click();
+        } else {
+            alert("You cannot export a raster layer!")
+        }
     }
     
     addWholeLinesChange(){
@@ -725,55 +1155,130 @@ class LayerPanel {
         //}
         
         element.innerHTML = "<div>root<div>" //remove all
+        
+        this.addChildrenToLayerViewNode(element,layers)
+        this.updateEditToolbar()
+    }
+    addChildrenToLayerViewNode(element,layers){
         var subnodes = document.createElement("div")
         element.appendChild(subnodes)
         subnodes.style.marginLeft = "3px"
         subnodes.style.borderLeft = "1px solid gray"
         subnodes.style.paddingLeft = "3px"
-        var th = this
-        
+                
         for(let name in layers.children){
             let layer = layers.children[name]
-            var newNode = document.createElement("div")
             var i = layer.number
             
-            newNode.innerHTML = "<div>"+layer.name+' '+(this.isSpatiotemporal(layer) ? '<img src="static/img/clock.png" alt="spatiotemporal" title="spatiotemporal" />' : '')
-            
-            newNode.innerHTML += '<a href="#"><img id="button-show-'+i+'" src="static/img/eye-open.png" alt="show/hide layer" title="show/hide later" /></a>'
-            newNode.innerHTML += '<a href="#"><img id="button-remove-'+i+'" src="static/img/remove-layer.png" alt="remove layer" title="remove layer" /></a>'
-            newNode.innerHTML += '<a href="#"><img id="button-to-top-'+i+'" src="static/img/to-top.png" alt="to top" title="to top" /></a>'
-            newNode.innerHTML += '<a href="#"><img id="button-to-bottom-'+i+'" src="static/img/to-bottom.png" alt="to bottom" title="to bottom" /></a>'
-            if(!layer.edited || this.editing == null){
-                newNode.innerHTML += '<a href="#"><img id="edit-layer-'+i+'" src="static/img/edit-layer.png" alt="edit layer" title="edit layer" /></a>'
-            } else {
-                newNode.innerHTML += '<a href="#"><img id="save-layer-'+i+'" src="static/img/save-layer.png" alt="save layer" title="save layer" /></a>'
-                newNode.innerHTML += '<a href="#"><img id="dont-edit-layer-'+i+'" src="static/img/dont-edit-layer.png" alt="don\'t save layer" title="don\'t save layer" /></a>'
+            switch(layer.type){
+                case 'schema':
+                    this.addSchemaNode(layer,i,name,subnodes)
+                    break
+                default:
+                    this.addVisualLayerNode(layer,i,name,subnodes)
             }
-            newNode.innerHTML += '<a href="#"><img id="button-layer-properties-'+i+'" src="static/img/layer-properties.png" alt="layer properties" title="layer properties" /></a>'
-            
-            newNode.innerHTML += "</div>"
-            subnodes.prepend(newNode)
-            
-            if(layer == this.editing){
-                this.showLayerFeatures(layer.originaldata, newNode, i)
-            }
-            
-            document.getElementById('button-show-'+i).onclick = (e)=>{th.hideLayer(e,name,newNode)}
-            document.getElementById('button-remove-'+i).onclick = (e)=>{th.removeLayer(e,name,newNode)}
-            document.getElementById('button-to-top-'+i).onclick = (e)=>{th.layerToTop(e,name,newNode)}
-            document.getElementById('button-to-bottom-'+i).onclick = (e)=>{th.layerToBottom(e,name,newNode)}
-            if(!layer.edited){
-                if(this.editing == null)
-                    document.getElementById('edit-layer-'+i).onclick = (e)=>{th.startEditingLayer(e,name,newNode)}
-            } else {
-                document.getElementById('dont-edit-layer-'+i).onclick = (e)=>{th.stopEditingLayer(e,name,newNode)}
-                document.getElementById('save-layer-'+i).onclick = (e)=>{th.saveEditingLayer(e,layer)}                
-            }
-            document.getElementById('button-layer-properties-'+i).onclick = (e)=>{th.layerProperties(e,name,newNode,layer)}
-            
             
         }
-        this.updateEditToolbar()
+    }
+    addVisualLayerNode(layer,i,name,subnodes){
+        var newNode = document.createElement("div")
+        
+        let th = this
+        newNode.innerHTML = "<div>"+layer.name+' '+(this.isSpatiotemporal(layer) ? '<img src="static/img/clock.png" alt="spatiotemporal" title="spatiotemporal" />' : '')
+        
+        newNode.innerHTML += '<a href="#"><img id="button-show-'+i+'" src="static/img/eye-open.png" alt="show/hide layer" title="show/hide later" /></a>'
+        newNode.innerHTML += '<a href="#"><img id="button-remove-'+i+'" src="static/img/remove-layer.png" alt="remove layer" title="remove layer" /></a>'
+        newNode.innerHTML += '<a href="#"><img id="button-to-top-'+i+'" src="static/img/to-top.png" alt="to top" title="to top" /></a>'
+        newNode.innerHTML += '<a href="#"><img id="button-to-bottom-'+i+'" src="static/img/to-bottom.png" alt="to bottom" title="to bottom" /></a>'
+        if(!layer.edited || this.editing == null){
+            newNode.innerHTML += '<a href="#"><img id="edit-layer-'+i+'" src="static/img/edit-layer.png" alt="edit layer" title="edit layer" /></a>'
+        } else {
+            newNode.innerHTML += '<a href="#"><img id="save-layer-'+i+'" src="static/img/save-layer.png" alt="save layer" title="save layer" /></a>'
+            newNode.innerHTML += '<a href="#"><img id="dont-edit-layer-'+i+'" src="static/img/dont-edit-layer.png" alt="don\'t save layer" title="don\'t save layer" /></a>'
+        }
+        newNode.innerHTML += '<a href="#"><img id="button-layer-properties-'+i+'" src="static/img/layer-properties.png" alt="layer properties" title="layer properties" /></a>'
+        
+        if(layer.inSchema){
+            newNode.innerHTML += '<a href="#"><img id="button-scheme-import-'+i+'" src="static/img/import.png" alt="import layer" title="import layer" width="25" height="25" /></a>'
+            newNode.innerHTML += '<a href="#"><img id="button-scheme-add-layer-'+i+'" src="static/img/add-layer.png" alt="add layer" title="add layer" width="25" height="25" /></a>'
+            if(layer.path.length > 1){
+                var relationTypeImg
+                switch(layer.relationType){
+                    default: relationTypeImg = 'no-relation.png'
+                }
+                newNode.innerHTML += '<p class="little-padding">relation: <a href="#" id="button-scheme-add-relation-'+i+'" src="static/img/add-layer.png" alt="set relation with parent layer" title="set relation with parent layer" width="25" height="25"><img src="static/img/'+relationTypeImg+'" /></a> - </p>'
+            }
+        }
+        newNode.innerHTML += "</div>"
+        subnodes.prepend(newNode)
+        
+        if(layer == this.editing){
+            this.showLayerFeatures(layer.originaldata, newNode, i)
+        }
+        
+        document.getElementById('button-show-'+i).onclick = (e)=>{th.hideLayer(e,layer.path,name,newNode)}
+        document.getElementById('button-remove-'+i).onclick = (e)=>{th.removeLayer(e,layer.path,name,newNode)}
+        document.getElementById('button-to-top-'+i).onclick = (e)=>{th.layerToTop(e,layer.path,name,newNode)}
+        document.getElementById('button-to-bottom-'+i).onclick = (e)=>{th.layerToBottom(e,layer.path,name,newNode)}
+        if(!layer.edited){
+            if(this.editing == null)
+                document.getElementById('edit-layer-'+i).onclick = (e)=>{th.startEditingLayer(e,layer.path,name,newNode)}
+        } else {
+            document.getElementById('dont-edit-layer-'+i).onclick = (e)=>{th.stopEditingLayer(e,layer.path,name,newNode)}
+            document.getElementById('save-layer-'+i).onclick = (e)=>{th.saveEditingLayer(e,layer)}                
+        }
+        document.getElementById('button-layer-properties-'+i).onclick = (e)=>{th.layerProperties(e,layer.path,name,newNode,layer)}
+            
+        if(layer.inSchema){
+            document.getElementById('button-scheme-import-'+i).onclick = (e)=>{th.importLayerToSchema(e,layer.path,name,newNode,layer)}
+            document.getElementById('button-scheme-add-layer-'+i).onclick = (e)=>{th.addLayerToSchema(e,layer.path,name,newNode,layer)}
+            if(layer.path.length > 1){
+                document.getElementById('button-scheme-add-relation-'+i).onclick = (e)=>{th.addRelationToLayer(e,layer.path,name,newNode,layer)}
+            }
+
+            this.addChildrenToLayerViewNode(newNode,layer)
+        }
+    }
+    addSchemaNode(layer,i,name,subnodes){
+        
+        var newNode = document.createElement("div")
+        
+        let th = this
+        newNode.innerHTML = "<div>"+layer.name+' <img src="static/img/scheme.png" alt="scheme" title="scheme" />'
+        
+        newNode.innerHTML += '<a href="#"><img id="button-show-'+i+'" src="static/img/eye-open.png" alt="show/hide layer" title="show/hide later" /></a>'
+        newNode.innerHTML += '<a href="#"><img id="button-remove-'+i+'" src="static/img/remove-layer.png" alt="remove layer" title="remove layer" /></a>'
+        newNode.innerHTML += '<a href="#"><img id="button-to-top-'+i+'" src="static/img/to-top.png" alt="to top" title="to top" /></a>'
+        newNode.innerHTML += '<a href="#"><img id="button-to-bottom-'+i+'" src="static/img/to-bottom.png" alt="to bottom" title="to bottom" /></a>'
+        
+        newNode.innerHTML += '<a href="#"><img id="save-layer-'+i+'" src="static/img/save-layer.png" alt="save layer" title="save layer" /></a>'
+        
+        newNode.innerHTML += '<a href="#"><img id="button-layer-properties-'+i+'" src="static/img/layer-properties.png" alt="layer properties" title="layer properties" /></a>'
+        
+        newNode.innerHTML += '<a href="#"><img id="button-scheme-import-'+i+'" src="static/img/import.png" alt="import layer" title="import layer" width="25" height="25" /></a>'
+        newNode.innerHTML += '<a href="#"><img id="button-scheme-add-layer-'+i+'" src="static/img/add-layer.png" alt="add layer" title="add layer" width="25" height="25" /></a>'
+        
+        newNode.innerHTML += "</div>"
+        subnodes.prepend(newNode)
+        
+        if(layer == this.editing){
+            this.showLayerFeatures(layer.originaldata, newNode, i)
+        }
+        
+        document.getElementById('button-show-'+i).onclick = (e)=>{th.hideLayer(e,layer.path,name,newNode)}
+        document.getElementById('button-remove-'+i).onclick = (e)=>{th.removeLayer(e,layer.path,name,newNode)}
+        document.getElementById('button-to-top-'+i).onclick = (e)=>{th.layerToTop(e,layer.path,name,newNode)}
+        document.getElementById('button-to-bottom-'+i).onclick = (e)=>{th.layerToBottom(e,layer.path,name,newNode)}
+        
+        document.getElementById('save-layer-'+i).onclick = (e)=>{th.saveEditingLayer(e,layer)}                
+        
+        document.getElementById('button-layer-properties-'+i).onclick = (e)=>{th.layerProperties(e,layer.path,name,newNode,layer)}
+        
+        document.getElementById('button-scheme-import-'+i).onclick = (e)=>{th.importLayerToSchema(e,layer.path,name,newNode,layer)}
+        document.getElementById('button-scheme-add-layer-'+i).onclick = (e)=>{th.addLayerToSchema(e,layer.path,name,newNode,layer)}
+        
+        this.addChildrenToLayerViewNode(newNode,layer)
+
     }
     
     updateEditToolbar(){
@@ -1158,10 +1663,19 @@ class LayerPanel {
                 grouped[id].push(feature)
             }
         }
+        var groupedArray = []
         for(var i in grouped){
             grouped[i].sort((a,b)=>this.compareDates(a.from,b.from))
+            groupedArray.push({elem:grouped[i], id:i})
         }
-        return {grouped: grouped, ungrouped: ungrouped}
+        groupedArray.sort((a,b) => this.compareDates(a.elem[0].from,b.elem[0].from))
+        var groupedSorted = {}
+        for(var i in groupedArray){
+            var e = groupedArray[i]
+            groupedSorted[e.id] = e.elem
+        }
+            
+        return {grouped: groupedSorted, ungrouped: ungrouped}
     }
     
     showLayerFeatures(layer, layerNode, layerId){
@@ -1172,7 +1686,7 @@ class LayerPanel {
             collection = layer.geometries
         if(layer.children != null && layer.children.length > 0)
             collection = layer.children
-        var t = this
+        let t = this
             
         if(collection != null){
             var subnodes = document.createElement("div")
@@ -1192,16 +1706,16 @@ class LayerPanel {
                     subnodes.append(line)
                 }
                 var tempFeatures = collection.grouped[i]
-                this.renderItemVersions(tempFeatures,subnodes,layerId,i,t)
+                this.renderItemVersions(tempFeatures,subnodes,layerId,i,t,layer)
             }
             for(var i in collection.ungrouped){
                 var feature = collection.ungrouped[i]
-                this.renderItemVersions([feature],subnodes,layerId,i,t)
+                this.renderItemVersions([feature],subnodes,layerId,i,t,layer)
             }
         }
     }
     
-    renderItemVersions(features,subnodes,layerId,i,t){
+    renderItemVersions(features,subnodes,layerId,i,t,topLayer){
         var firstFeature = features[0]
         var newNode = document.createElement("div")
         var fname = firstFeature['id'] != null ? firstFeature['id'] : firstFeature['properties']['name'] == null ? "<i>child-"+i+"</i>" : firstFeature['properties']['name']
@@ -1222,8 +1736,9 @@ class LayerPanel {
                 var t_to = feature.to == null ? "∞" : feature.to
                 ftime = `<div class="time-span">(${feature.from} - ${feature.to})</div>`
             }
+            var delete_feature = `<a href="#"><img src="static/img/remove-layer.png" id="delete-feature-${layerId}-${id}" /></a>`
             var version_name = feature.type == "TempFeature" ? '[version-'+j+'] : ' + feature.operation : '[select]'
-            newNode.innerHTML = `<div><span id="edit-feature-${layerId}-${id}" class="edit-version-text">${version_name}</span>${ftime}</div>`
+            newNode.innerHTML = `<div><span id="edit-feature-${layerId}-${id}" class="edit-version-text">${version_name}</span>${delete_feature}${ftime}</div>`
             if(feature == this.editing.selectedFeature){
                 newNode.style.color = "#dd0000"
                 var description = document.createElement("div")
@@ -1244,7 +1759,7 @@ class LayerPanel {
             subnodes.append(newNode)
             let ff = feature
             document.getElementById("edit-feature-"+layerId+"-"+id).onclick = (e)=>{
-                console.log(ff)
+                //console.log(ff)
                 t.editing.selectedFeature = ff
                 t.lastPointDrawing = null
                 t.addingDrawing = false
@@ -1257,6 +1772,28 @@ class LayerPanel {
                 
                 t.render(t.editing)
                 t.canvas.draw()
+            }
+            document.getElementById("delete-feature-"+layerId+"-"+id).onclick = (e)=>{
+                var del_ix = -1
+                for(var ix in topLayer.features){
+                    if(topLayer.features[ix] == ff){
+                        del_ix = ix
+                    }
+                }
+                if(ix != -1 && confirm('Do you want to remove this feature?')){
+                    t.editing.selectedFeature = null
+                    
+                    topLayer.features.splice(del_ix,1)
+                    
+                    t.updateLayer(t.editing,t.editing.originaldata,false)
+                    
+                    t.updateLayerView(t.layers)
+                    t.render(t.editing)
+                    
+                    t.canvas.draw()
+                } else if(ix == -1){
+                    alert('błąd')
+                }
             }
             if(feature == this.editing.selectedFeature){
                 document.getElementById("edit-properties-"+layerId+"-"+id).onclick = (e)=>{
@@ -1301,12 +1838,13 @@ class LayerPanel {
                         newdata = unoriginaldata
                     }
                     this.addBboxes(newdata)
-                    console.log(newdata)
+                    //console.log(newdata)
                     if(type == "tempgeojson")
                         this.addTimeboxes(newdata)
                     drawable = true
                 break
             case "json":
+            case "schema":
                     newdata = dontparse ? data : JSON.parse(data)
                     copied = newdata
                 break
@@ -1321,6 +1859,25 @@ class LayerPanel {
             drawable: drawable,
             scheme: scheme,
         }
+    }
+    validateAndTransformToSchemaJson(data, dontparse, unoriginaldata){
+        var newdata, copied, drawable = false, scheme = null
+        
+        if(!dontparse){
+            newdata = JSON.parse(data)
+            copied = this.copyGeoJSON(newdata)
+        } else {
+            newdata = unoriginaldata
+        }
+        drawable = true
+        
+        return {
+            copied: copied,
+            data: newdata,
+            drawable: drawable,
+            scheme: scheme,
+        }
+        
     }
     tryGetScheme(data){
         switch(data.type){
@@ -1870,12 +2427,12 @@ class LayerPanel {
         return null
     }
 
-    getSnapPointAllLayers(lon,lat,degreeBounds,pixelDifference,magnification){
+    getSnapPointAllLayers(alllayers,lon,lat,degreeBounds,pixelDifference,magnification){
         
-        console.log('a',pixelDifference,magnification)
+        //console.log('a',pixelDifference,magnification)
         var layerset = []
-        for(var i in this.layers.children){
-            layerset.push({key:i,value:this.layers.children[i]})
+        for(var i in alllayers.children){
+            layerset.push({key:i,value:alllayers.children[i]})
         }
         layerset = layerset.reverse()
         
@@ -1885,16 +2442,29 @@ class LayerPanel {
             var key = layerset[i].key
             var layer = layerset[i].value
             
-            var newCoords = this.getSnapPoint(layer.data,lon,lat,degreeBounds,pixelDifference,magnification)
+            var newCoords
+            if(layer == this.editing){
+                newCoords = this.getSnapPoint(layer.data,lon,lat,degreeBounds,pixelDifference,magnification)
+            } else {
+                newCoords = this.getSnapPoint(layer.rendered,lon,lat,degreeBounds,pixelDifference,magnification)
+            }
             
             coords = this.betterSnapPoint(lon,lat,coords,newCoords,pixelDifference)
+        }
+        if(coords == null){
+            for(var i in layerset){
+                
+                var layer = layerset[i].value
+                
+                coords = this.getSnapPointAllLayers(layer,lon,lat,degreeBounds,pixelDifference,magnification)
+            }
         }
         return coords
     }
     betterSnapPoint(lon,lat,coords,newCoords,pixelDifference){
         const PIXEL_DIFFERENCE_FACTOR = 1
         if(newCoords != null && Math.max(Math.abs(lon-newCoords[0]),Math.abs(lat-newCoords[1])) < pixelDifference/PIXEL_DIFFERENCE_FACTOR && (coords == null || Math.abs(newCoords[0]-lon)+Math.abs(newCoords[1]-lat) < Math.abs(coords[0]-lon)+Math.abs(coords[1]-lat))){
-            console.log('b',[lon,lat],newCoords,pixelDifference/PIXEL_DIFFERENCE_FACTOR)
+            //console.log('b',[lon,lat],newCoords,pixelDifference/PIXEL_DIFFERENCE_FACTOR)
             return newCoords
         }
         return coords
@@ -1988,7 +2558,7 @@ class LayerPanel {
             var key = layerset[i].key
             var layer = layerset[i].value
             
-            var feature = this.hitTest(layer.data,lon,lat,degreeBounds,pixelDifference,magnification,availableShapes)
+            var feature = this.hitTestLayerwise(layer,lon,lat,degreeBounds,pixelDifference,magnification,availableShapes)
             
             if(feature != null && feature != this.editing.selectedFeature)
                 return feature
@@ -1996,6 +2566,26 @@ class LayerPanel {
         return null
     }
     
+    hitTestLayerwise(layer,lon,lat,degreeBounds,pixelDifference,magnification,availableShapes){
+        if(!this.isSpatiotemporal(layer)){
+            return this.hitTest(layer.data,lon,lat,degreeBounds,pixelDifference,magnification,availableShapes)
+        } else {
+            var feature = this.hitTest(layer.rendered,lon,lat,degreeBounds,pixelDifference,magnification,availableShapes)
+
+            if(feature == null){
+                console.log('aaa')
+                return null
+            }
+                
+            var id = feature['id']
+
+            for(var i = layer.data.features.length-1;i>=0;i--){
+                if(layer.data.features[i].id == id && this.checkIfFeatureSelectableInTime(layer.data.features[i]))
+                    return layer.data.features[i]
+            }
+            return null
+        }
+    }
     hitTest(layer,lon,lat,degreeBounds,pixelDifference,magnification,availableShapes){
         if(!(layer instanceof Object))
             return null
@@ -2020,8 +2610,8 @@ class LayerPanel {
                 }
                 break
             case "TempFeature":
-                if(!this.checkIfFeatureSelectableInTime(layer))
-                    return null
+                //if(!this.checkIfFeatureSelectableInTime(layer))
+                //    return null
             case "Feature":
                 if(this.hitTest(layer.geometry,lon,lat,degreeBounds,pixelDifference,magnification,availableShapes) != null && (availableShapes == undefined || availableShapes.filter(x=>x == layer.geometry.type).length > 0))
                     return layer
@@ -2088,7 +2678,7 @@ class LayerPanel {
     notifyClick(lon,lat,degreeBounds,pixelDifference,magnification){
         if(this.editing != null){
             if(this.snapToLines){
-                var snappedCoords = this.getSnapPointAllLayers(lon,lat,degreeBounds,pixelDifference,magnification)
+                var snappedCoords = this.getSnapPointAllLayers(this.layers,lon,lat,degreeBounds,pixelDifference,magnification)
                 console.log(lon,lat,snappedCoords)
                 
                 if(snappedCoords != null){
@@ -2162,7 +2752,7 @@ class LayerPanel {
                 return true
             } else if(this.deletingShapes){
                 this.editing.selectedPoint = null
-                var selectedFeature = this.hitTest(this.editing.data,lon,lat,degreeBounds,pixelDifference,magnification)
+                var selectedFeature = this.hitTestLayerwise(this.editing,lon,lat,degreeBounds,pixelDifference,magnification)
                 if(selectedFeature != null){
                     if(selectedFeature == this.editing.selectedFeature){
                         this.deleteShape(selectedFeature)
@@ -2218,7 +2808,7 @@ class LayerPanel {
                 if(selectedPoint == null && this.editing.selectedPoint != null){
                     this.changePointPosition(this.editing.selectedPoint,lon,lat)
                 } else {
-                    var selectedFeature = this.hitTest(this.editing.data,lon,lat,degreeBounds,pixelDifference,magnification)
+                    var selectedFeature = this.hitTestLayerwise(this.editing,lon,lat,degreeBounds,pixelDifference,magnification)
                     if(selectedFeature != null)
                         console.log(selectedFeature.geometry.type)
                     var previousEditing = this.editing.selectedFeature
@@ -2253,7 +2843,6 @@ class LayerPanel {
     }
     
     notifyKeyPress(key){
-        console.log(key)
         switch(key){
             case "Backspace":
                 return this.notifyBackspace()

@@ -76,12 +76,13 @@ class LayerDialogWindow extends DialogWindow {
             ".gif": 'image',
             ".tiff": 'image',
             ".bmp": 'image',
+            '.schema': 'schema'
         }
         var extension = filename.match('[.][A-z0-9]+$')
         extension = extension == undefined || extension.length == 0 ? '' : extension[0]
         
         var predicted = extension in datatypes ? datatypes[extension] : null
-        var types = ['tempgeojson','geojson','json','none'].sort((x,y)=>y===predicted)
+        var types = ['tempgeojson','geojson','schema','json','none'].sort((x,y)=>y===predicted)
         
         for(var i in types){
             var type = types[i]
@@ -104,6 +105,10 @@ class LayerDialogWindow extends DialogWindow {
                 if(this.predictGeoJson(data))
                     return true
                 break
+            case 'schema':
+                if(this.predictSchema(data))
+                    return true
+                break
             case 'json':
                 if(this.predictJson(data))
                     return true
@@ -121,6 +126,16 @@ class LayerDialogWindow extends DialogWindow {
             return true
         }
         return false 
+    }
+    predictSchema(data){
+        try {
+            var json = JSON.parse(data)
+            if(json['type'] == 'schema')
+                return true
+        } catch(e) {
+            return false
+        } 
+        return false
     }
     predictJson(data){
         try {
@@ -141,11 +156,13 @@ class LayerDialogWindow extends DialogWindow {
     }
     
 }
+//importLayerToSchema(e,name,newNode,layer)
 class ImportDialogWindow extends LayerDialogWindow {
     constructor(configs){
         super(configs)
         
         this.fileSelect = null
+        this.topLayer = null
         this.setOwnConfig(configs)
     }
     setOwnConfig(configs){
@@ -185,6 +202,16 @@ class ImportDialogWindow extends LayerDialogWindow {
         });
         reader.readAsText(file);
     }
+    action(e, display, topLayer){
+        super.action(e, display)
+        if(this.display){
+            if(topLayer != undefined){
+                this.topLayer = topLayer
+            }
+        } else {
+            this.topLayer = null
+        }
+    }
     
     addFileLoaded(){
         document.getElementById("layer-import-file-loaded").style.display = "block"
@@ -196,10 +223,12 @@ class ImportDialogWindow extends LayerDialogWindow {
     }
     
     addLayer(e){
+        var path = this.topLayer != undefined ? this.topLayer.path.concat([this.topLayer.name]) : []
+
         if(this.data !== null){
             var bounds = this.canvas.getDegreeBounds()
             var pixelSize = this.canvas.camera.getPixelSize()
-            this.layerpanel.addLayer([], this.fileName, this.typeSelect.value, this.data, bounds, pixelSize)
+            this.layerpanel.addLayer(path, this.fileName, this.typeSelect.value, this.data, bounds, pixelSize)
             this.action(null, false)
             this.canvas.draw()
             this.removeFileLoaded()
@@ -207,11 +236,103 @@ class ImportDialogWindow extends LayerDialogWindow {
     }
 }
 
+class RelationDialogWindow extends LayerDialogWindow {
+    constructor(configs){
+        super(configs)
+        
+        this.fileSelect = null
+        this.topLayer = null
+        this.relationSelect = null
+        this.relationChildFieldSelect = null
+        this.relationType = null
+        this.relationFieldSelected = null
+        this.setOwnConfig(configs)
+    }
+    setOwnConfig(configs){
+        for(var option in configs){
+            let th = this
+            switch(option){
+                case "relationSelect":
+                    this.relationSelect = document.getElementById(configs[option])
+                    this.selectRelationSelectIndex()
+                    this.relationSelect.addEventListener("change", (e)=>{th.changeRelationType(e.target.value)})
+                    break
+                case "relationChildFieldSelect":
+                    this.relationChildFieldSelect = document.getElementById(configs[option])
+                    this.relationChildFieldSelect.addEventListener("change", (e)=>{th.changeField(e.target.value)})
+                    break
+            }
+        }
+    }
+    selectRelationSelectIndex(){
+        if(this.topLayer == null || this.topLayer.relation == null){
+            this.relationSelect.selectedIndex = 0
+        } else {
+            for(var i in this.relationSelect.options){
+                if(this.relationSelect.options[i].value == this.topLayer.relation.relationType){
+                    this.relationSelect.selectedIndex = i
+                    break
+                }
+            }
+        }
+    }
+    loadFile(e){
+        var file = e.target.files[0]
+        const reader = new FileReader();
+        
+        var th = this
+        reader.addEventListener('load', (event) => {
+            document.getElementById("layer-import-tab2").style.display = "block"
+            th.setData(event.target.result, file.name, true)
+            th.addFileLoaded(th.type)
+        });
+        reader.readAsText(file);
+    }
+    action(e, display, topLayer){
+        super.action(e, display)
+        if(this.display){
+            if(topLayer != undefined){
+                this.topLayer = topLayer
+                console.log(topLayer)
+                this.setSelectColumns(topLayer)
+            }
+        } else {
+            var newRelation = null
+            switch(this.relationType){
+                case 'intersectsumwithparent': newRelation = {relationType:this.relationType, field:null} ; break
+                case 'differencesumwithparent': newRelation = {relationType:this.relationType, field:null} ; break
+                case 'joinkeyparent': newRelation = {relationType:this.relationType, field:this.relationFieldSelected} ; break
+            }
+            console.log('rtype',this.relationType)
+            this.topLayer.relation = newRelation
+            this.topLayer = null
+            
+        }
+    }
+    changeRelationType(value){
+        this.relationType = value
+    }
+    changeField(value){
+        this.relationFieldSelected = value
+    }
+    setSelectColumns(topLayer){
+        this.relationChildFieldSelect.innerHTML = '<option value="" name="none">-- NONE --</option>'
+        for(var i in topLayer.scheme){
+            var prop = topLayer.scheme[i]
+            var select = document.createElement('option')
+            select.setAttribute('value',prop)
+            select.setAttribute('name',prop)
+            select.innerHTML = prop
+            this.relationChildFieldSelect.appendChild(select)
+        }
+    }
+}
 class AddLayerDialogWindow extends LayerDialogWindow {
     constructor(configs){
         super(configs)
         this.typeHint = null
         this.layernameinput
+        this.topLayer = null
         this.setOwnConfig(configs)
     }
     setOwnConfig(configs){
@@ -244,6 +365,16 @@ class AddLayerDialogWindow extends LayerDialogWindow {
     layername(){
         return this.layernameinput.value.trim()
     }
+    action(e, display, topLayer){
+        super.action(e, display)
+        if(this.display){
+            if(topLayer != undefined){
+                this.topLayer = topLayer
+            }
+        } else {
+            this.topLayer = null
+        }
+    }
     prepareDataAccordingToType(name){
         switch(this.typeSelect.value){
             case "tempgeojson":
@@ -262,6 +393,69 @@ class AddLayerDialogWindow extends LayerDialogWindow {
             alert("Layer name must not be empty.")
             return
         }
+
+        var layerName = this.layername()
+        
+        var path = this.topLayer != undefined ? this.topLayer.path.concat([this.topLayer.name]) : []
+        
+        var i = 1
+        while(this.layerpanel.layerNameExist(layerName,path)){
+            layerName = this.layername() + " (" + i + ")"
+            i++
+        }
+        this.prepareDataAccordingToType(layerName,path)        
+        
+        var path = this.topLayer != undefined ? this.topLayer.path.concat([this.topLayer.name]) : []
+
+        if(this.data !== null){
+            var bounds = this.canvas.getDegreeBounds()
+            var pixelSize = this.canvas.camera.getPixelSize()
+            this.layerpanel.addLayer(path, layerName, this.typeSelect.value, this.data, bounds, pixelSize)
+            this.action(null, false)
+            this.canvas.draw()
+        }
+    }
+}
+class AddSchemaDialogWindow extends LayerDialogWindow {
+    constructor(configs){
+        super(configs)
+        this.typeHint = null
+        this.layernameinput
+        this.setOwnConfig(configs)
+    }
+    setOwnConfig(configs){
+        let th = this
+        for(var option in configs){
+            switch(option){
+                case "addlayer":
+                    var addLayer = document.getElementById(configs[option])
+                    addLayer.addEventListener("click", (e)=>{th.addLayer(e)})
+                    break
+                case "layerpanel":
+                    this.layerpanel = configs[option]
+                    break
+                case "layernameinput":
+                    this.layernameinput = document.getElementById(configs[option])
+                    break
+            }
+        }
+    }
+    layername(){
+        return this.layernameinput.value.trim()
+    }
+    prepareDataAccordingToType(name){
+        var data = JSON.stringify({
+            name: this.layername(),
+            type: "Schema",
+            children: []
+        })
+        this.setData(data, name)
+    }
+    addLayer(e){
+        if(this.layername() == ""){
+            alert("Layer name must not be empty.")
+            return
+        }
         var layerName = this.layername()
         var i = 1
         while(this.layerpanel.layerNameExist(layerName)){
@@ -272,9 +466,15 @@ class AddLayerDialogWindow extends LayerDialogWindow {
         if(this.data !== null){
             var bounds = this.canvas.getDegreeBounds()
             var pixelSize = this.canvas.camera.getPixelSize()
-            this.layerpanel.addLayer([], layerName, this.typeSelect.value, this.data, bounds, pixelSize)
+            this.layerpanel.addSchema([], layerName, this.data, bounds, pixelSize)
             this.action(null, false)
             this.canvas.draw()
+        }
+    }
+    action(e, display, layer){
+        super.action(e, display)
+        if(layer != null){
+            
         }
     }
 }
@@ -304,6 +504,8 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
         this.table = null
         this.errorMessageSpan = null
         
+        this.layer = null
+        
         this.projections = {
             '': {
                 pointsNeeded:0
@@ -313,18 +515,22 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
             },
             'equirectangular': {
                 pointsNeeded:2,
-                func:(lon,lat,projectionCoordData,pointX)=>{
+                func:(lon,lat,projectionCoordData,pointX,precalc)=>{
                     
                     if(pointX){
                         return (lon - projectionCoordData.point1_lon) / (projectionCoordData.point2_lon - projectionCoordData.point1_lon) * (projectionCoordData.point2_x - projectionCoordData.point1_x) + projectionCoordData.point1_x
                     } else {
                         return (lat - projectionCoordData.point1_lat) / (projectionCoordData.point2_lat - projectionCoordData.point1_lat) * (projectionCoordData.point2_y - projectionCoordData.point1_y) + projectionCoordData.point1_y
                     }
-                }
+                },
+                precalcfunc:(pcd)=>{
+                    return new Object()
+                },
             },
             'azimuthal': {
                 pointsNeeded:3,
-                func:(lon,lat,pcd,pointX)=>{
+                precalcfunc:(pcd)=>{
+                    
                     var cos = x => Math.cos(x*Math.PI/180)
                     var sin = x => Math.sin(x*Math.PI/180)
                     var lambda_0 = Math.atan(( cos(pcd.point1_lat)*sin(pcd.point1_lon)*(pcd.point2_x - pcd.point3_x) +
@@ -334,8 +540,7 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
                                     ( cos(pcd.point1_lat)*cos(pcd.point1_lon)*(pcd.point2_x - pcd.point3_x) +
                                       cos(pcd.point2_lat)*cos(pcd.point2_lon)*(pcd.point3_x - pcd.point1_x) +
                                       cos(pcd.point3_lat)*cos(pcd.point3_lon)*(pcd.point1_x - pcd.point2_x) )) / Math.PI*180
-                                    
-                    if(pointX){
+                                 
                         var A1 = cos(pcd.point1_lat)*sin(pcd.point1_lon-lambda_0), A2 = cos(pcd.point2_lat)*sin(pcd.point2_lon-lambda_0),A3
                         var a_x,k_x
                             if(A1 - A2 != 0){
@@ -355,13 +560,7 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
                             } else {
                                 k_x = ( pcd.point3_x - a_x ) / cos(pcd.point3_lat)/sin(pcd.point3_lon-lambda_0)
                             }
-                    
-                        return a_x + k_x * cos(lat) * sin(lon-lambda_0)
-                        
-                        /*
-                        return (lon - projectionCoordData.point1_lon) / (projectionCoordData.point2_lon - projectionCoordData.point1_lon) * (projectionCoordData.point2_x - projectionCoordData.point1_x) + projectionCoordData.point1_x*/
-                    } else {
-                        
+                            
                         var phi_0 = Math.atan(( sin(pcd.point1_lat)*(pcd.point3_y - pcd.point2_y) +
                                      sin(pcd.point2_lat)*(pcd.point1_y - pcd.point3_y) +
                                      sin(pcd.point3_lat)*(pcd.point2_y - pcd.point1_y) )
@@ -393,7 +592,81 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
                             k_y = (pcd.point3_y - a_y) / B3
                         }
                         
-                        return a_y + k_y * ( cos(phi_0) * sin(lat) - sin(phi_0) * cos(lat) * cos(lon - lambda_0) )
+                    return {a_x: a_x, k_x: k_x, a_y: a_y, k_y: k_y, phi_0: phi_0, lambda_0: lambda_0}
+                },
+                func:(lon,lat,pcd,pointX,precalc)=>{
+                    var cos = x => Math.cos(x*Math.PI/180)
+                    var sin = x => Math.sin(x*Math.PI/180)
+                    /*
+                    var lambda_0 = Math.atan(( cos(pcd.point1_lat)*sin(pcd.point1_lon)*(pcd.point2_x - pcd.point3_x) +
+                                     cos(pcd.point2_lat)*sin(pcd.point2_lon)*(pcd.point3_x - pcd.point1_x) +
+                                     cos(pcd.point3_lat)*sin(pcd.point3_lon)*(pcd.point1_x - pcd.point2_x) )
+                                    /
+                                    ( cos(pcd.point1_lat)*cos(pcd.point1_lon)*(pcd.point2_x - pcd.point3_x) +
+                                      cos(pcd.point2_lat)*cos(pcd.point2_lon)*(pcd.point3_x - pcd.point1_x) +
+                                      cos(pcd.point3_lat)*cos(pcd.point3_lon)*(pcd.point1_x - pcd.point2_x) )) / Math.PI*180
+                                    */
+                    if(pointX){/*
+                        var A1 = cos(pcd.point1_lat)*sin(pcd.point1_lon-lambda_0), A2 = cos(pcd.point2_lat)*sin(pcd.point2_lon-lambda_0),A3
+                        var a_x,k_x
+                            if(A1 - A2 != 0){
+                                a_x = ( A1 * pcd.point2_x - A2 * pcd.point1_x ) / ( A1 - A2 ) 
+                            } else if(A1 - A3 != 0){
+                                A3 = cos(pcd.point3_lat)*sin(pcd.point3_lon-lambda_0)
+                                a_x = ( A1 * pcd.point3_x - A3 * pcd.point1_x ) / ( A1 - A3 ) 
+                            } else {
+                                A3 = cos(pcd.point3_lat)*sin(pcd.point3_lon-lambda_0)
+                                a_x = ( A2 * pcd.point1_x - A3 * pcd.point3_x ) / ( A3 - A2 ) 
+                            }
+                        var k_x
+                            if(pcd.point1_lon-lambda_0 != 0){
+                                k_x = ( pcd.point1_x - a_x ) / cos(pcd.point1_lat)/sin(pcd.point1_lon-lambda_0)
+                            } else if(pcd.point2_lon-lambda_0 != 0){
+                                k_x = ( pcd.point2_x - a_x ) / cos(pcd.point2_lat)/sin(pcd.point2_lon-lambda_0)
+                            } else {
+                                k_x = ( pcd.point3_x - a_x ) / cos(pcd.point3_lat)/sin(pcd.point3_lon-lambda_0)
+                            }
+                    */
+                        return precalc.a_x + precalc.k_x * cos(lat) * sin(lon - precalc.lambda_0)
+                        
+                        /*
+                        return (lon - projectionCoordData.point1_lon) / (projectionCoordData.point2_lon - projectionCoordData.point1_lon) * (projectionCoordData.point2_x - projectionCoordData.point1_x) + projectionCoordData.point1_x*/
+                    } else {
+                        /*
+                        var phi_0 = Math.atan(( sin(pcd.point1_lat)*(pcd.point3_y - pcd.point2_y) +
+                                     sin(pcd.point2_lat)*(pcd.point1_y - pcd.point3_y) +
+                                     sin(pcd.point3_lat)*(pcd.point2_y - pcd.point1_y) )
+                                    /
+                                    ( cos(pcd.point1_lat)*cos(pcd.point1_lon - lambda_0)*(pcd.point3_y - pcd.point2_y) +
+                                      cos(pcd.point2_lat)*cos(pcd.point2_lon - lambda_0)*(pcd.point1_y - pcd.point3_y) +
+                                      cos(pcd.point3_lat)*cos(pcd.point3_lon - lambda_0)*(pcd.point2_y - pcd.point1_y) )) / Math.PI*180
+                                    
+                        var B1 = cos(phi_0) * sin(pcd.point1_lat) - sin(phi_0) * cos(pcd.point1_lat) * cos(pcd.point1_lon - lambda_0),
+                            B2 = cos(phi_0) * sin(pcd.point2_lat) - sin(phi_0) * cos(pcd.point2_lat) * cos(pcd.point2_lon - lambda_0),
+                            B3
+                            
+                        var a_y
+                        if(B1 - B2 != 0){
+                            a_y = (B1 * pcd.point2_y - B2 * pcd.point1_y) / (B1 - B2)
+                        } else if(B1 - B3 != 0){
+                            B3 = cos(phi_0) * sin(pcd.point3_lat) - sin(phi_0) * cos(pcd.point3_lat) * cos(pcd.point3_lon - lambda_0)
+                            a_y = (B1 * pcd.point3_y - B3 * pcd.point1_y) / (B1 - B3)
+                        } else {
+                            B3 = cos(phi_0) * sin(pcd.point3_lat) - sin(phi_0) * cos(pcd.point3_lat) * cos(pcd.point3_lon - lambda_0)
+                            a_y = (B2 * pcd.point3_y - B3 * pcd.point2_y) / (B2 - B3)
+                        }
+                        var k_y
+                        if(B1 != 0){
+                            k_y = (pcd.point1_y - a_y) / B1
+                        } else if(B2 != 0){
+                            k_y = (pcd.point2_y - a_y) / B2
+                        } else {
+                            k_y = (pcd.point3_y - a_y) / B3
+                        }
+                        */
+                        return precalc.a_y + precalc.k_y * ( cos(precalc.phi_0) * sin(lat) - sin(precalc.phi_0) * cos(lat) * cos(lon - precalc.lambda_0) )
+                        
+                        //
                         /*
                         return (lat - projectionCoordData.point1_lat) / (projectionCoordData.point2_lat - projectionCoordData.point1_lat) * (projectionCoordData.point2_y - projectionCoordData.point1_y) + projectionCoordData.point1_y*/
                     }
@@ -419,7 +692,7 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
                     break;
                 case "addlayer":
                     var addLayer = document.getElementById(configs[option])
-                    addLayer.addEventListener("click", (e)=>{th.addLayer(e)})
+                    addLayer.addEventListener("click", (e)=>{th.addOrEditLayer(e)})
                     this.errorMessageSpan = document.getElementById('dialog-window-errormessage')
                     break
                 case "layerpanel":
@@ -554,6 +827,13 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
         });
         reader.readAsText(file);
     }
+    loadLayer(layerName, layer){
+        this.data = layer.originaldata
+        this.addFileLoaded(this.type)
+        this.image = this.data.image
+        //this.addOrEditLayer(null,layerName, layer)
+        this.showData()
+    }
     
     addFileLoaded(){
         document.getElementById("raster-map-add-file-loaded").style.display = "block"
@@ -596,7 +876,7 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
         }
     }
     
-    addLayer(e){
+    addOrEditLayer(e, layerName, layer){
         this.errorMessageSpan.innerHTML = ''
 
         if(this.data !== null){
@@ -626,8 +906,20 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
                 projectionCoordData['point'+i+'_x'] = this.projectionCoordTable[i].pointX / this.previewCanvas.width * this.image.width
                 projectionCoordData['point'+i+'_y'] = this.projectionCoordTable[i].pointY / this.previewCanvas.height * this.image.height
             }
-            var data = {image:this.image,projection:this.getProjection(),projectionCoordData:projectionCoordData,projectionFunction:this.projections[this.getProjection()].func,width:this.image.width,height:this.image.height}
-            this.layerpanel.addRasterMapLayer([], this.fileName, 'raster', data, bounds, pixelSize)
+            var data = {
+                image:this.image,
+                projection:this.getProjection(),
+                projectionCoordData:projectionCoordData,
+                projectionFunction:this.projections[this.getProjection()].func,
+                projectionPrecalcFunction:this.projections[this.getProjection()].precalcfunc,
+                width:this.image.width,
+                height:this.image.height
+            }
+            if(this.layer == null){
+                this.layerpanel.addRasterMapLayer([], this.fileName, 'raster', data, bounds, pixelSize)
+            } else {
+                this.layerpanel.updateRasterMapLayer(this.layer, this.fileName, data)
+            }
             
             this.action(null, false)
             this.canvas.draw()
@@ -637,6 +929,16 @@ class AddRasterMapDialogWindow extends LayerDialogWindow {
     
     checkNumber(number){
         return Number.isFinite(Number(number)) && number !== '' && number != null
+    }
+    
+    action(e, display, layerName, layer){
+        super.action(e, display)
+        if(layer != undefined){
+            this.loadLayer(layerName, layer)
+            this.layer = layer
+        } else {
+            this.layer = null
+        }
     }
 }
 class YesNoDialogWindow extends DialogWindow {
@@ -716,8 +1018,19 @@ class PropertyDialogWindow extends DialogWindow {
                 case "layerpanel":
                     this.layerPanel = configs[option]
                     break
+                case "coordsTableSwapCoords":
+                    this.coordsTableSwapCoords = document.getElementById(configs[option])
+                    this.coordsTableSwapCoords.onclick = (e) => {
+                        this.swapCoords()
+                    }
+                    break
             }
         }
+    }
+    swapCoords(){
+        var coordsInput = document.getElementById("coords-table-input")
+        
+        coordsInput.value = coordsInput.value.split(',').slice(1).join(',').trim() + ',' + coordsInput.value.split(',')[0].trim()
     }
     updateFeature(feature,scheme){
         if(feature.geometry && feature.geometry.type == "Point"){

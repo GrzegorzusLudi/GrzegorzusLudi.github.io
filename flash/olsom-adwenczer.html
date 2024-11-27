@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf8">
+<style type="text/css">
+* {border-collapse:collapse;border-collapse:collapse;
+-moz-box-sizing:border-box;
+-webkit-box-sizing:border-box;
+box-sizing:border-box;margin:0px;padding:0px}
+html,body {color:white;background-color:black;font-family:Courier;width:100%; height:100%;}
+#whole {margin:auto}
+/*@media (max-aspect-ratio: 1/1) {*/
+    #whole {width:auto}
+    #menu {width:auto;height:100vw}
+    #title {font-size:9vw;padding-top:2vw}
+    #start {font-size:4vw;padding-top:1.5vw}
+    .switch {font-size:4vw;padding-top:1.3vw}
+    .fontsmall {font-size:3vw;padding-top:2vw}
+/*}
+@media (min-aspect-ratio: 1/1) {
+    #whole {width:100vh;height:100vh}
+    #menu {width:100vh;height:100vh}
+    #title {font-size:9vh;padding-top:2vh}
+    #start {font-size:4vh;padding-top:1.5vh}
+    .switch {font-size:4vh;padding-top:1.3vh}
+    .fontsmall {font-size:3vh;padding-top:2vh}
+}*/
+#popupinside {position:absolute;display:inline-block;width:40%;height:30%;left:30%;top:20%;border:3px solid white;background-color:#aa0000;text-align:center;display:none}
+#canv {width:100%;height:100%;display:block;display:flex}
+#menu {position:absolute;display:inline-block}
+#menupopup {position:absolute;display:none}
+#title {position:absolute;display:inline-block;width:70%;height:15%;left:15%;top:10%;border:3px solid white;background-color:#aa0000;text-align:center}
+#start {position:absolute;display:inline-block;width:20%;height:8%;left:40%;top:82%;border:3px solid white;background-color:#aa0000;text-align:center}
+
+.switch {position:absolute;display:inline-block;width:20%;height:8%;border:2px solid white;text-align:center}
+
+#team0 {left:5%;top:37%;}
+#team1 {left:5%;top:45%;}
+#team2 {left:5%;top:53%;}
+#team3 {left:5%;top:61%;}
+#team4 {left:5%;top:69%;}
+
+#team5 {left:27%;top:37%;}
+#team6 {left:27%;top:45%;}
+#team7 {left:27%;top:53%;}
+#team8 {left:27%;top:61%;}
+#team9 {left:27%;top:69%;}
+
+#teams {left:7%;top:28%;width:38%;height:7%;background-color:#aa0000}
+#lands {left:53%;top:28%;width:38%;height:7%;background-color:#aa0000}
+#lands0 {left:59%;top:37%;background-color:#aa0000;width:25%}
+#placement {left:53%;top:48%;width:38%;height:7%;background-color:#aa0000}
+#placement0 {left:59%;top:57%;background-color:#aa0000;width:25%}
+#placement1 {left:59%;top:66%;background-color:#aa0000;width:25%}
+
+#menuyesbutton {position:relative;height:30%;width:30%;padding:3%;margin-top:10%;text-align:center;background-color:#aa0000}
+#menunobutton {position:relative;height:30%;width:30%;padding:3%;margin-top:10%;text-align:center;background-color:#aa0000}
+</style>
+<script>
+
+function init(){
+    var canv = document.getElementById('canv')
+	window.RufflePlayer = window.RufflePlayer || {};
+    window.addEventListener("load", (event) => {
+        const ruffle = window.RufflePlayer.newest();
+        const player = ruffle.createPlayer();
+        const container = canv;
+        container.appendChild(player);
+        player.ruffle().load({"url":"ołsom adwenczer.swf","width":1000,"height":1000});
+    });
+}
+
+</script>
+</head>
+<body>
+<div id="whole">
+
+<div id="canv" width="1000" height="1000">
+</div>
+</div>
+<script src="ruffle/ruffle.js"></script>
+<script>
+	init();
+</script>
+</body>
+</html>

@@ -385,14 +385,16 @@ class AbstractCanvas {
     drawRasterLayerData(topLayer, data){
         this.drawImageData(data,0,0)
     }
-    prepareBitmap(canvasBitmap,mydata,cwidth,cheight,projectionFunction,projectionCoordData){
+    prepareBitmap(canvasBitmap,mydata,cwidth,cheight,projectionFunction,projectionPrecalcFunction,projectionCoordData){
+        var precalc = projectionPrecalcFunction(projectionCoordData)
         for(var i = 0;i<cwidth;i++){
             for(var j = 0;j<cheight;j++){
                 if(i < canvasBitmap.width && j < canvasBitmap.height){
                     var degX = this.camera.pixelsToDegrees(i,j,this.bounds,true)
                     var degY = this.camera.pixelsToDegrees(i,j,this.bounds,false)
-                    var newX = Math.floor(projectionFunction(degX,degY,projectionCoordData,true))
-                    var newY = Math.floor(projectionFunction(degX,degY,projectionCoordData,false))
+                    var newX = Math.floor(projectionFunction(degX,degY,projectionCoordData,true,precalc))
+                    var newY = Math.floor(projectionFunction(degX,degY,projectionCoordData,false,precalc))
+
                     canvasBitmap.data[(i + j * canvasBitmap.width) * 4]     = mydata.data[(newX + newY * mydata.width) * 4]
                     canvasBitmap.data[(i + j * canvasBitmap.width) * 4 + 1] = mydata.data[(newX + newY * mydata.width) * 4 + 1]
                     canvasBitmap.data[(i + j * canvasBitmap.width) * 4 + 2] = mydata.data[(newX + newY * mydata.width) * 4 + 2]
@@ -589,7 +591,7 @@ class AbstractCanvas {
         var prevColor = this.styles['fillStyle']
         this.setStyle({fillStyle:"#000",font:"Helvetica",textSize:10,textAlign:"center"})
         if(data.geometry == undefined){
-            console.log(data)
+//            console.log(data)
             return
         }
         this.drawText(value,data.geometry.coordinates[0],data.geometry.coordinates[1],0,-6)
@@ -918,35 +920,7 @@ function init(){
     layerpanel.setConfig({canvas: canvas})
     let movlist = new Controller(canvas);
     
-    let importWindow = new ImportDialogWindow({
-        button: "button-import", 
-        element: "layer-import",
-        file: "layer-import-file",
-        datatype: "layer-import-datatype",
-        addlayer: "dialog-window-import-add",
-        layerpanel: layerpanel,
-        canvas: canvas,
-    })
-    let newLayerWindow = new AddLayerDialogWindow({
-        button: "button-add-layer",
-        element: "layer-add",
-        canvas: canvas,
-        layertype: "layer-add-datatype",
-        addlayer: "dialog-window-add-add",
-        layerpanel: layerpanel,
-        layernameinput: "layer-add-layer-name",
-    })
-    let newRasterMapWindow = new AddRasterMapDialogWindow({
-        button: "button-add-raster-map",
-        element: "raster-map-add",
-        canvas: canvas,
-        layerprojection: "raster-map-projection",
-        addlayer: "dialog-window-raster-map-add",
-        layerpanel: layerpanel,
-        file: "add-raster-map-import-file",
-        preview: "raster-map-preview",
-        table: "projection-coord-table",
-    })
+    layerpanel.addDialogWindows()
     /*
     let propertyWindow = new PropertyDialogWindow({
         element: "feature-properties",

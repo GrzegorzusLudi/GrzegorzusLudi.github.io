@@ -51,6 +51,9 @@
                         <img id="button-add-layer" class="menu-img" src="static/img/add-layer.png" alt="add layer" title="add layer" />
                         </a>
                         <a href="#">
+                        <img id="button-add-schema" class="menu-img" src="static/img/add-scheme.png" alt="add schema" title="add schema" />
+                        </a>
+                        <a href="#">
                         <img id="button-add-raster-map" class="menu-img" src="static/img/add-raster-map.png" alt="add raster map" title="add raster map" />
                         </a>
                     </div>
@@ -98,6 +101,7 @@
                         <option value="null" name="null">-- choose --</option>
                         <option value="tempgeojson" name="tempgeojson">geotempjson</option>
                         <option value="geojson" name="geojson">geojson</option>
+                        <option value="schema" name="schema">schema</option>
                         <option value="json" name="geojson">json</option>
                         <option value="text" name="text">text</option>
                     </select>
@@ -113,9 +117,54 @@
                 </div>
             </div>
         </div>
+        <div class="dialog-window" id="layer-relation">
+            <div class="window-closer">X</div>
+            <h4>Relation with parent layer</h4>
+            <div class="dialog-window-title">Choose relation with parent features:</div>
+            <div class="dialog-window-row">
+                Relation with parent layer:
+                
+                <table class="feature-table" id="relation-coords-table">
+                    <!--tr>
+                        <td>Parent layer feature</td>
+                        <td>
+                        <select id="layer-relation-relation-select-parent-layer">
+                            <option value="null" name="null"> choose </option>
+                        </select>
+                        </td>
+                    </tr-->
+                    <tr>
+                        <td>Relation</td>
+                        <td>
+                        <select id="layer-relation-relation-select">
+                            <option value="null" name="null">-- choose --</option>
+                            <option value="intersectsumwithparent" name="intersectsumwithparent">intersect sum of parent</option>
+                            <option value="differencesumwithparent" name="differencesumwithparent">difference sum of parent</option>
+                            <option value="joinkeyparent" name="joinkeyparent">join parent features by key</option>
+                        </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Child layer feature</td>
+                        <td>
+                        <select id="layer-relation-relation-select-child-layer">
+                            <option value="null" name="null">-- choose --</option>
+                        </select>    
+                        </td>
+                    </tr>
+                </table>
+                
+                <p class="little-padding">
+                    You can set multiple foreign (parent) keys in columns. For example: "State1;State2". 
+                </p>
+            </div>
+            <div class="dialog-window-row">
+                <input type="button" id="button-relation-update" value="UPDATE" />
+            </div>
+        </div>
         <div class="dialog-window" id="layer-add">
             <div class="window-closer">X</div>
-            <h4>New layer/schema</h4>
+            <h4>New layer</h4>
             <div class="dialog-window-title">Choose layer type:</div>
             <div class="dialog-window-row">
                 Name:
@@ -138,9 +187,21 @@
                 <input type="button" id="dialog-window-add-add" value="ADD TO STAGE" />
             </div>
         </div>
+        <div class="dialog-window" id="schema-add">
+            <div class="window-closer">X</div>
+            <h4>New schema</h4>
+            <div class="dialog-window-title">Choose schema name:</div>
+            <div class="dialog-window-row">
+                Name:
+                <input type="text" id="layer-add-schema-name">
+            </div>
+            <div class="dialog-window-row">
+                <input type="button" id="dialog-window-schema-add-add" value="ADD TO STAGE" />
+            </div>
+        </div>
         <div class="dialog-window dialog-window-wider" id="raster-map-add">
             <div class="window-closer">X</div>
-            <h4>New raster map/schema</h4>
+            <h4>New raster map</h4>
             <div class="dialog-window-split-over">
                 <div class="dialog-window-split-wider">
                     <div class="dialog-window-row">
@@ -216,6 +277,11 @@
                 </td>
                 <td>
                     <input type="text" class="table-input" id="coords-table-input" />
+                </td>
+                <td>
+                </td>
+                <td>
+                    <input type="button" id="coords-table-swap-coords" value="SWAP COORDS" />
                 </td>
                 </tr>
                 </table>
