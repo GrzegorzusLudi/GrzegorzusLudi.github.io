@@ -421,7 +421,7 @@ function aimachine(ailevel){
             //generate_areas(mist,params)
         break
         case 1.15:
-            //tryRemoveUnnecessaryPaths(dfrou,kolej)
+            tryRemoveUnnecessaryPaths(dfrou,kolej)
             aistan = 1.2
         break
         case 1.2:
@@ -1056,7 +1056,7 @@ function aimachine(ailevel){
             //console.log(possible_targets)
             //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
             //possible_targets.sort((a,b)=>(-a.value + b.value))
-            possible_targets.sort((a,b)=>((a.dist+1/(1+a.value))-(b.dist+1/(1+b.value))))
+            possible_targets.sort((a,b)=>((a.dist+1/(2+a.value))-(b.dist+1/(2+b.value))))
 
             
             //possible_targets.sort((a,b) => (a.x+'#'+a.y in behind ? behind[a.x+'#'+a.y].value : 0) - (b.x+'#'+b.y in behind ? behind[b.x+'#'+b.y].value : 0))
@@ -1066,7 +1066,7 @@ function aimachine(ailevel){
             
             //possible_targetsNew = possible_targets.filter(x=>x.hex.z > 0).slice(0,20)
             //possible_targetsAdditional = possible_targets.filter(x=>x.hex.z <= 0).slice(0,5)
-            possible_targets = possible_targets.slice(0,25)//.reverse()
+            possible_targets = possible_targets.slice(0,4)
             
             //possible_targets = possible_targetsNew.concat(possible_targetsAdditional)
             //possible_targets = possible_targets.slice(0,15)
@@ -1337,7 +1337,7 @@ function aimachine(ailevel){
                             for(var j in path.path){
                                 var hx = path.path[j]
                                 
-                                if(j > 0 && j < path.path.length-1 && heks[hx.x][hx.y].unt > 3 && heks[hx.x][hx.y].undr == kolej){
+                                if(j > 0 && j < path.path.length-1 && heks[hx.x][hx.y].unp > 3 && heks[hx.x][hx.y].undr == kolej){
                                     oks = false
                                     break
                                 }
@@ -2470,6 +2470,7 @@ function aimachine(ailevel){
                     break
                 }
             }
+            tryRemoveUnnecessaryBuilds(dfrou,kolej)
 		break;
 		case 5:
 			/*checkedunitstage:
@@ -3464,10 +3465,12 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                             continue
                         }
                         
-                        if(unp_to > 3 && unp_from <= 3 && dru_to == (checkedGrid[x][y].dru != undefined ? checkedGrid[x][y].dru : checkedGrid[x][y].undr)/* && checkedGrid[x][y] != -1*/){
+                        //console.log('g1', unp_to , unp_from, dru_to, (hekstable[x][y].dru != undefined ? hekstable[x][y].dru : hekstable[x][y].undr))
+                        //console.log('g2', dru_to,hekstable[x][y], (hekstable[x][y].dru != undefined ? hekstable[x][y].dru : hekstable[x][y].undr), dru_to == kolej)
+                        if(unp_to >= 3 && unp_from <= 3 && dru_to == (hekstable[x][y].dru != undefined ? hekstable[x][y].dru : hekstable[x][y].undr)/* && checkedGrid[x][y] != -1*/){
                             step *= 10
                         }
-                        if(unp_to == 4 && (dru_to == (checkedGrid[x][y].dru != undefined ? checkedGrid[x][y].dru : checkedGrid[x][y].undr) || dru_to == kolej)){
+                        if(unp_to == 4 && (dru_to == (hekstable[x][y].dru != undefined ? hekstable[x][y].dru : hekstable[x][y].undr) || dru_to == kolej)){
                             continue
                         }
                     } else {
@@ -3497,6 +3500,9 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                                 }
                                 //}
                             }
+                        }
+                        if(hexto.z != -1 && dru_to != -1 && dru_to != kolej && hexfrom.z == -1 && transporting){
+                            step *= 3
                         }
                         //if(hexfrom.z == -1 && dru_to != -1 && dru_to != kolej)
                         //    continue
@@ -6238,6 +6244,9 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     //interestingUnits.sort((a,b) => -(1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length/* + (a.action.length > 1 ? 0.5 : 0)*/)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))*(a.action[0].il) + 
     //                                 1/Math.pow(1.4,(b.action[0].rucho ? (b.action[0].rucho.length/* + (b.action.length > 1 ? 0.5 : 0)*/)/szy[b.unit.rodz] : b.action[0].type == 'aim' ? 0 : 0))*(b.action[0].il) ))
     
+    if(interestingUnits.length == 0)
+        return false
+        
     interestingUnits.sort((a,b) => -(1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length/* + (a.action.length > 1 ? 0.5 : 0)*/)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))
     *(2-Math.pow(0.9,a.action[0].il)) + 
                                      1/Math.pow(1.4,(b.action[0].rucho ? (b.action[0].rucho.length/* + (b.action.length > 1 ? 0.5 : 0)*/)/szy[b.unit.rodz] : b.action[0].type == 'aim' ? 0 : 0))
@@ -6255,8 +6264,6 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     //if(failedUses[x+'#'+y] > 0){
     //    interestingUnits = interestingUnits.slice(failedUses[x+'#'+y])
     //}
-    if(interestingUnits.length == 0)
-        return false
     
     //console.log("iul:\t" + interestingUnits.length)
     var oldEmbarkingTargets = {}
@@ -6353,7 +6360,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         var evaluated = false
         //console.log('val: '+value2+' '+value)
         var score2 = scoreOfBehinds(dm,kolej,behind_score)
-        if(value2 > value/* || score2 > score1 && value2 >= value/* || lost*/){
+        if(value2 > value || score2 > score1 && value2 >= value/* || lost*/){
             break
             //evaluate(dm)
             /*
@@ -6519,7 +6526,109 @@ function tryRemoveUnnecessaryPaths(dm,color){
              continue
              
          for(var j in distmap.hex.units){
+            var unit = distmap.hex.units[j]
             
+            
+            var path = getLeadedPath(distmap.hex.x,distmap.hex.y,unit.ruchk,unit.rucho)
+            
+            if(path == undefined)
+                continue
+                
+            var oks = true
+            var jhex = null
+            var jndex = -1
+            
+            for(var k in path.path){
+                var hx = path.path[k]
+                
+                if(k >= 0 && /*j < path.path.length-1 && */heks[hx.x][hx.y].unp > 3 && heks[hx.x][hx.y].undr == kolej){
+                    oks = false
+                    jhex = hx
+                    break
+                }
+            }
+            if(!oks){
+                console.log('usunięte')
+                var uni = heks[distmap.hex.x][distmap.hex.y].unt[j]
+                var unit = unix[kolej][uni]
+                if(zaznu != -1){
+                    odzaznaj(false)
+                    aktdroguj(kolej,zaznu)
+                    unit.sebix = unit.x
+                    unit.sebiy = unit.y
+                    zaznu = -1
+                    /*
+                    zaznx = -1
+                    zazny = -1
+                    tx = -1
+                    ty = -1*/
+                }
+                    
+                
+                unix[kolej][uni].sebix = unix[kolej][uni].x
+                unix[kolej][uni].sebiy = unix[kolej][uni].y
+                tx = -1
+                ty = -1
+                zaznu = -1
+                zaznu = uni
+                zaznaj(uni,false)
+                odceluj(uni,kolej);
+                oddroguj(uni,kolej,false);
+                odzaznaj(false)
+                aktdroguj(kolej,zaznu)
+                unit.sebix = unit.x
+                unit.sebiy = unit.y
+                zaznu = -1
+                
+            }
+         }
+     }
+}
+function tryRemoveUnnecessaryBuilds(dm,color){
+    
+    var distmaps = dm.distmaps
+    evaluate(dm)
+    var destMap = {}
+    for(var key in distmaps){
+         var distmap = distmaps[key]
+         //if(!distmap.frontline)
+         //    continue
+         
+         if(distmap.hex.dru != color)
+             continue
+             
+         for(var j in distmap.hex.units){
+            var unit = distmap.hex.units[j]
+            
+            
+            var path = getLeadedPath(distmap.hex.x,distmap.hex.y,unit.ruchk,unit.rucho)
+            
+            if(path == undefined)
+                continue
+                
+            var oks = true
+            
+            var hexes_to_remove = []
+            for(var k in path.path){
+                var hx = path.path[k]
+                
+                if(k > 0 && /*j < path.path.length-1 && */heks[hx.x][hx.y].unp > 3 && heks[hx.x][hx.y].undr == kolej){
+                    oks = false
+                    hexes_to_remove.push(hx)
+                }
+            }
+            if(!oks){
+                for(var k in hexes_to_remove){
+                    var hex_to_remove = heks[hexes_to_remove[k].x][hexes_to_remove[k].y]
+                    
+                    for(var l=0;l<hex_to_remove.unp;l++){
+                        if(unix[kolej][hex_to_remove.unt[l]].rozb > 0 && unix[kolej][hex_to_remove.unt[l]].il == 0){
+                            hex_to_remove.usun(l)
+                            l--
+                        }
+                    }
+                }
+            }
          }
      }
 }
@@ -6934,11 +7043,11 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                                 
                             }
                         }*/
-                        console.log(['xle', fff.code, lade])
+                        //console.log(['xle', fff.code, lade])
                         
                         possibleUnitActions[lade].push({hex_from:fff.code,hex_to:lade,unitIx:fff.unitIx,action:lac,time:time,unitrodz:unit.rodz})
                     } else if(lade in possible) {
-                        console.log(['xle2', time, fff.code, lade])
+                        //console.log(['xle2', time, fff.code, lade])
                         //console.log(time,lade,lade in possible)
                     }
                 }
