@@ -70,6 +70,8 @@ class Field {
         this.upgrading = 0
         this.downgrading = 0
         this.valuable = false
+        
+        this.canMove = false
     }
     addThing(thing){
         this.formerThing = this.currentThing
@@ -101,6 +103,12 @@ class Field {
         this.value = this.randomValue()
     }
     draw(ctx, posx, posy, kx, ky, selected, stacking){
+        if(this.canMove){
+            ctx.fillStyle = '#fff2'
+            ctx.fillRect(posx,posy,kx,ky)
+            
+        }
+        
         var fontSize = Math.floor(ky * 0.8 * (0.2 + Math.sqrt(this.value) / 3))
         if(this.upgrading){
             fontSize = Math.floor(ky * 1)
@@ -140,11 +148,14 @@ class Field {
         var x = posx + kx / 2
         var y = posy + ky * 0.9
         
+        //if(!this.canMove)
+        //    ctx.globalAlpha = 0.7
         ctx.fillText(this.value, x, y)
         ctx.strokeText(this.value, x, y)
         if(selected){
             ctx.strokeRect(posx,posy,kx,ky)
         }
+        //ctx.globalAlpha = 1
         this.upgrading = Math.max(0,this.upgrading-1)
         this.downgrading = Math.max(0,this.downgrading-1)
     }
@@ -176,6 +187,8 @@ class Model {
                 this.allFields.push(newField)
             }
         }
+        this.gameOver = false
+        this.setCanMoveBoard()
         this.firstScore = this.score(true)
         this.selectedX = 0
         this.selectedY = 0
@@ -226,6 +239,7 @@ class Model {
                         this.selectedY = (this.selectedY+this.boardSize+1)%this.boardSize
                     break
                     case " ":
+                    case "Enter":
                         this.stack = [[this.selectedX,this.selectedY]]
                     break
                 }
@@ -271,6 +285,7 @@ class Model {
                         }
                     break
                     case " ":
+                    case "Enter":
                         this.stack = []
                     break
                 }
@@ -314,11 +329,54 @@ class Model {
                         this.stack = []
                     }
                 }
+                this.setCanMoveBoard()
             }
         }
         
         
         this.key = null
+    }
+    setCanMove(x,y){
+        return this.board[x][y].canMove = this.hasMove(x,y)
+    }
+    setCanMoveBoard(){
+        this.gameOver = true
+        for(var i = 0;i<this.boardSize;i++){
+            for(var j = 0;j<this.boardSize;j++){
+                if(this.setCanMove(i,j))
+                    this.gameOver = false
+            }
+        }
+    }
+    hasMove(x,y){
+        var squaresToCheck = this.board[x][y].value-1
+        
+        return this.checkSquares(x,y,this.board[x][y].value,squaresToCheck,[])
+    }
+    checkSquares(x,y,value,squaresToGo,stack){
+        if(squaresToGo == 0)
+            return true
+            
+        var toCheck = [[x-1,y],[x+1,y],[x,y-1],[x,y+1]].filter(a => a[0] >= 0 && a[0] < this.boardSize && a[1] >= 0 && a[1] < this.boardSize)
+        
+        
+        var newStack = stack.concat([[x,y]])
+        for(var i in toCheck){
+            var used = false
+            if(this.board[toCheck[i][0]][toCheck[i][1]].value != value)
+                continue
+            for(var j in stack){
+                if(stack[j][0] == toCheck[i][0] && stack[j][1] == toCheck[i][1]){
+                    used = true
+                    break
+                }
+            }
+            if(!used){
+                if(this.checkSquares(toCheck[i][0],toCheck[i][1],value,squaresToGo-1,newStack))
+                    return true
+            }
+        }
+        return false
     }
 }
 class View {
@@ -378,6 +436,11 @@ class View {
         this.ctx.font = '40px sans serif'
         this.ctx.textAlign = 'left'
         this.ctx.fillText('Score: '+model.score(), 40, this.ch - 25)
+        
+        if(model.gameOver){
+            this.ctx.fillStyle = '#f00'
+            this.ctx.fillText('GAME OVER ;_;  PRESS R', this.cw - 560, this.ch - 25)
+        }
     }
     drawField(i,j,field,model,selected,stacking){
         var posx = this.pw + i * (this.plw) / model.boardSize
@@ -386,7 +449,7 @@ class View {
         var kx = (this.plw) / model.boardSize
         var ky = (this.plh) / model.boardSize
             
-        field.draw(this.ctx, posx, posy, kx, ky, selected, stacking)
+        field.draw(this.ctx, posx, posy, kx, ky, selected)
         
     }
 }
