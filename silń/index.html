@@ -103,11 +103,14 @@ class Field {
         this.value = this.randomValue()
     }
     draw(ctx, posx, posy, kx, ky, selected, stacking){
+        /*
         if(this.canMove){
-            ctx.fillStyle = '#fff2'
-            ctx.fillRect(posx,posy,kx,ky)
-            
-        }
+            var offset_x = kx/15
+            var offset_y = ky/15
+            ctx.lineWidth = 1.5
+            ctx.strokeStyle = '#fff'
+            ctx.strokeRect(posx+offset_x,posy+offset_y,kx-offset_x*2,ky-offset_y*2)
+        }*/
         
         var fontSize = Math.floor(ky * 0.8 * (0.2 + Math.sqrt(this.value) / 3))
         if(this.upgrading){
@@ -133,11 +136,11 @@ class Field {
         } else {
             if(selected){
                 ctx.fillStyle = this.numberColor()
-                ctx.strokeStyle = "#ff0"
+                ctx.strokeStyle = "#fff"
                 ctx.lineWidth = 3
             } else {
                 ctx.fillStyle = this.numberColor()
-                ctx.strokeStyle = this.numberColor()
+                ctx.strokeStyle = '#000'//this.numberColor()
                 ctx.lineWidth = 1
             }
         }
@@ -150,10 +153,45 @@ class Field {
         
         //if(!this.canMove)
         //    ctx.globalAlpha = 0.7
+        
+        var previousStrokeStyle = ctx.strokeStyle
+        var previousLineWidth = ctx.lineWidth
+
+        var offset_x = kx/15
+        var offset_y = ky/15
+        ctx.lineWidth = 1.5
+        ctx.strokeStyle = '#000'
+        ctx.fillRect(posx+offset_x,posy+offset_y,kx-offset_x*2,ky-offset_y*2)
+        ctx.fillStyle = '#000'
+        ctx.strokeStyle = previousStrokeStyle
+        ctx.lineWidth = previousLineWidth
+        if(!this.canMove){
+            ctx.fillStyle = '#444'
+            ctx.strokeStyle = '#444'
+        }
         ctx.fillText(this.value, x, y)
         ctx.strokeText(this.value, x, y)
+        
+        if(!this.canMove){
+            ctx.strokeStyle = "#0004"
+            ctx.lineWidth = 3
+            ctx.beginPath()
+            ctx.moveTo(posx,posy)
+            ctx.lineTo(posx+kx,posy+kx)
+            ctx.closePath()
+            ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(posx,posy+kx)
+            ctx.lineTo(posx+kx,posy)
+            ctx.closePath()
+            ctx.stroke()
+        }
         if(selected){
-            ctx.strokeRect(posx,posy,kx,ky)
+            var offset_x = kx/30
+            var offset_y = ky/30
+            ctx.strokeStyle = previousStrokeStyle == '#000' ? '#fff' : previousStrokeStyle
+            ctx.lineWidth =10
+            ctx.strokeRect(posx+offset_x,posy+offset_y,kx-offset_x*2,ky-offset_y*2)
         }
         //ctx.globalAlpha = 1
         this.upgrading = Math.max(0,this.upgrading-1)
@@ -187,6 +225,7 @@ class Model {
                 this.allFields.push(newField)
             }
         }
+        this.possibleMoves = 0
         this.gameOver = false
         this.setCanMoveBoard()
         this.firstScore = this.score(true)
@@ -337,10 +376,13 @@ class Model {
         this.key = null
     }
     setCanMove(x,y){
-        return this.board[x][y].canMove = this.hasMove(x,y)
+        var possibleMoves = this.getPossibleMoves(x,y)
+        this.possibleMoves += possibleMoves
+        return this.board[x][y].canMove = possibleMoves > 0
     }
     setCanMoveBoard(){
         this.gameOver = true
+        this.possibleMoves = 0
         for(var i = 0;i<this.boardSize;i++){
             for(var j = 0;j<this.boardSize;j++){
                 if(this.setCanMove(i,j))
@@ -348,19 +390,19 @@ class Model {
             }
         }
     }
-    hasMove(x,y){
+    getPossibleMoves(x,y){
         var squaresToCheck = this.board[x][y].value-1
         
         return this.checkSquares(x,y,this.board[x][y].value,squaresToCheck,[])
     }
     checkSquares(x,y,value,squaresToGo,stack){
         if(squaresToGo == 0)
-            return true
+            return 1
             
         var toCheck = [[x-1,y],[x+1,y],[x,y-1],[x,y+1]].filter(a => a[0] >= 0 && a[0] < this.boardSize && a[1] >= 0 && a[1] < this.boardSize)
         
-        
         var newStack = stack.concat([[x,y]])
+        var possibleMoves = 0
         for(var i in toCheck){
             var used = false
             if(this.board[toCheck[i][0]][toCheck[i][1]].value != value)
@@ -372,11 +414,11 @@ class Model {
                 }
             }
             if(!used){
-                if(this.checkSquares(toCheck[i][0],toCheck[i][1],value,squaresToGo-1,newStack))
-                    return true
+                var result = this.checkSquares(toCheck[i][0],toCheck[i][1],value,squaresToGo-1,newStack)
+                possibleMoves += result
             }
         }
-        return false
+        return possibleMoves
     }
 }
 class View {
@@ -440,6 +482,9 @@ class View {
         if(model.gameOver){
             this.ctx.fillStyle = '#f00'
             this.ctx.fillText('GAME OVER ;_;  PRESS R', this.cw - 560, this.ch - 25)
+        } else {
+            this.ctx.textAlign = 'right'
+            this.ctx.fillText('POSSIBLE MOVES: '+model.possibleMoves, this.cw - 50, this.ch - 25)
         }
     }
     drawField(i,j,field,model,selected,stacking){
@@ -449,7 +494,7 @@ class View {
         var kx = (this.plw) / model.boardSize
         var ky = (this.plh) / model.boardSize
             
-        field.draw(this.ctx, posx, posy, kx, ky, selected)
+        field.draw(this.ctx, posx, posy, kx, ky, selected, stacking)
         
     }
 }
