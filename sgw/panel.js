@@ -1,4 +1,4 @@
-﻿function budyd(x3,y3,wel){
+﻿function budyd(x3,y3,wel,druza){
 		var wi = wel;
 
 		terrainChooseCanvasCtx.strokeStyle = "#666666";
@@ -30,6 +30,38 @@
 		terrainChooseCanvasCtx.closePath();
 		terrainChooseCanvasCtx.fill();
 		terrainChooseCanvasCtx.stroke();
+		if(druza!=undefined){
+		terrainChooseCanvasCtx.globalAlpha = 100/140;
+		terrainChooseCanvasCtx.fillStyle = kolox(druza,1);
+		terrainChooseCanvasCtx.lineWidth = 1;
+		terrainChooseCanvasCtx.beginPath();
+		terrainChooseCanvasCtx.moveTo(x3-aw*0.105,y3+Math.sqrt(3)/2*bw*0.5);
+		terrainChooseCanvasCtx.lineTo(x3+aw*0.105,y3+Math.sqrt(3)/2*bw*0.5);
+		terrainChooseCanvasCtx.lineTo(x3+aw*0.105,y3+Math.sqrt(3)/2*bw*(0.5-wi/200));
+		terrainChooseCanvasCtx.lineTo(x3-aw*0.105,y3+Math.sqrt(3)/2*bw*(0.5-wi/200));
+		terrainChooseCanvasCtx.closePath();
+		terrainChooseCanvasCtx.fill();
+		terrainChooseCanvasCtx.stroke();
+		terrainChooseCanvasCtx.fillStyle = "#999999";
+		terrainChooseCanvasCtx.beginPath();
+		terrainChooseCanvasCtx.moveTo(x3+aw*0.105,y3+Math.sqrt(3)/2*bw*0.5);
+		terrainChooseCanvasCtx.lineTo(x3+aw*0.205,y3+Math.sqrt(3)/2*bw*0.4);
+		terrainChooseCanvasCtx.lineTo(x3+aw*0.205,y3+Math.sqrt(3)/2*bw*(0.4-wi/200));
+		terrainChooseCanvasCtx.lineTo(x3+aw*0.105,y3+Math.sqrt(3)/2*bw*(0.5-wi/200));
+		terrainChooseCanvasCtx.closePath();
+		terrainChooseCanvasCtx.fill();
+		terrainChooseCanvasCtx.stroke();
+		terrainChooseCanvasCtx.fillStyle = "#999999";
+		terrainChooseCanvasCtx.beginPath();
+		terrainChooseCanvasCtx.moveTo(x3+aw*0.205,y3+Math.sqrt(3)/2*bw*(0.4-wi/200));
+		terrainChooseCanvasCtx.lineTo(x3+aw*0.105,y3+Math.sqrt(3)/2*bw*(0.5-wi/200));
+		terrainChooseCanvasCtx.lineTo(x3-aw*0.105,y3+Math.sqrt(3)/2*bw*(0.5-wi/200));
+		terrainChooseCanvasCtx.lineTo(x3-aw*0.005,y3+Math.sqrt(3)/2*bw*(0.4-wi/200));
+		terrainChooseCanvasCtx.closePath();
+		terrainChooseCanvasCtx.fill();
+		terrainChooseCanvasCtx.stroke();
+		terrainChooseCanvasCtx.globalAlpha = 1;
+		}
 
 }
 function budyt(x3,y3,wel){
@@ -323,6 +355,12 @@ function terrainChooseDraw(){
 			budyd(x2-0.25*aw,y2+0.125*bw,ofz/7-1350/7+defic*3/4);
 			budyd(x2,y2+0.125*bw,ofz*2/21+150/7-defic*4/3);
 			budyd(x2+0.25*aw,y2+0.125*bw,ofz/7-1350/7+defic*3/4);
+		}
+		if(wielkuliron>0){
+			budyd(x2-0.5*au,y2+0.125*bu,wielkuliron/2,12);
+		}
+		if(wielkulprod>0){
+			budyd(x2+0.5*au,y2+0.125*bu,wielkulprod/2,13);
 		}
 	}
 		x2+=50;
@@ -1418,8 +1456,8 @@ function redrawCanvas(rtx){
 						if(heksSource[i][j].undr != -1){
 							var druż = heksSource[i][j].undr
 							if(heksSource[i][j].z > 0){
-								moneystats[druż] += heksSource[i][j].z
-								ironstats[druż] += heksSource[i][j].hutn
+								moneystats[druż] -= -heksSource[i][j].z
+								ironstats[druż] -= -heksSource[i][j].hutn
 								productionstats[druż] += heksSource[i][j].prod
 							}
 							for(var k = 0;k<heksSource[i][j].unp;k++){
@@ -2948,6 +2986,18 @@ function changeRangeInput(sp,slaj){
 			sp.innerHTML = "Mała wartość losowa";
 		}
 	}
+	if(sp == cityIronValue){
+		wielkuliron = slaj;
+		if(slaj == -1){
+			sp.innerHTML = "Los.";
+		}
+	}
+	if(sp == cityProdValue){
+		wielkulprod = slaj;
+		if(slaj == -1){
+			sp.innerHTML = "Los.";
+		}
+	}
 	if(sp == taxRangeValue){
 		sp.innerHTML = slaj+"% ("+Math.floor(heks[zaznx][zazny].z*slaj/100)+"$)";
 		//wielkul = slaj;
@@ -2963,7 +3013,7 @@ function changeRangeInput(sp,slaj){
 //shows code window
 function showcode(){
 	var cw = document.getElementById("codewindow");
-	if(cw.style.display == "none"){
+	if(cw.style.display != "block"){
 		cw.style.display = "block";
 		getCode();
 	} else {
@@ -2973,13 +3023,28 @@ function showcode(){
 
 //changes map into code
 function getCode(){
+	
+	var infos = []
+	
+	if(stan >= 1){
+		infos.push('unix='+getInfoAboutUnits())
+		var druInfo = encodedPropertyValue('dru',dru)
+		infos.push(druInfo)
+		var defdrInfo = encodedPropertyValue('defdr',defdr)
+		infos.push(defdrInfo)
+		var oddidInfo = encodedPropertyValue('oddid',oddid)
+		infos.push(oddidInfo)
+		var oddnumInfo = encodedPropertyValue('oddnum',oddnum)
+		infos.push(oddnumInfo)
+	}
+	
 	var code = ":";
-	code+=scian+":";
+	code+=scian+(infos.length > 0 ? '['+infos.join(';')+']' : '')+":";
 	a = 0;
 	while(a<scian){
 		b = 0;
 		while(b<scian){
-			code+=heks[a][b].z+":";
+			code+=getHexCode(a,b)+":";
 			b++;
 		}
 		a++;
@@ -2987,7 +3052,365 @@ function getCode(){
 	codeField = document.getElementById("codeField");
 	codeField.value = code;
 }
+function getInfoAboutUnits(){
+	var infos = []
+	
+	for(var kolejIndex in unix){
+		var kolejInfo = []
+		for(var unitIndex in unix[kolejIndex]){
+			kolejInfo.push(unitIndex+'='+getUnitCode(kolejIndex,unitIndex)+'')
+		}
+		infos.push(kolejIndex+'=['+kolejInfo.join(';')+']')
+	}
+	
+	return '['+infos.join(';')+']'
+}
+const emptyObject = new Object({
+	
+})
+const hexCodeDefaults = {
+	hutn:0,
+	prod:0,
+	zpl:0,
+	hutnpl:0,
+	prodpl:0,
+	kasy:0,
+	stali:0,
+	nazwa:'',
+}
+
+const hexCodeDefaultsInUnitPlacement = {
+	unt:{type:'array',size:4,def:-1,additionalMinusOne:true},
+	undr:-1,
+	unbr: -1,
+	unp: 0,
+	koli: 0,
+	drogn: 0,
+	drogp:{type:'array',size:0},
+	drogk:{type:'array',size:0},
+	drogpr:{type:'array',size:0},
+	drogw:{type:'array',size:0},
+	drogkol:{type:'array',size:0},
+	drogg:{type:'array',size:0},
+	drogd:{type:'array',size:0},
+
+	drpon: 0,
+	drpop:{type:'array',size:0},
+	drpok:{type:'array',size:0},
+	drpox:{type:'array',size:0},
+	drpoy:{type:'array',size:0},
+
+	wylad:{type:'array',size:4,def:-1},
+	wyladr:{type:'array',size:4,def:-1},
+	
+	ktodro:{type:'array',size:12,def:{type:'array',size:0}},
+	
+	dpodatnum:0,
+	dpodatk:{type:'array',size:0},
+	dpodato:{type:'array',size:0},
+	debix:-1,
+	debiy:-1,
+	dpodszlo:0,
+	
+	trybutariuszy:0,
+	trybutariusze:{type:'array',size:0},
+	
+
+	podatpr:0,
+	podatl:0,
+
+	kask:0,
+	kaska:0,
+	niszcz: 0,
+
+	most:{type:'array',size:6,def:0}
+}
+function getHexCode(a,b){
+	
+	//      super(['x','y','z','hutn','prod','zpl','hutnpl','prodpl','kasy','stali','gran','zmiana','unt','undr','unbr','unp','pode','koli','tiest','nazwa','drogn','drogp','drogk','drogpr','drogw','drogkol','drogg','drogd','drpon','drpop','drpok','drpox','drpoy','wylad','wyladr','ktodro','dpodatnum','dpodatk','dpodato','debix','debiy','dpodszlo','trybutariuszy','trybutariusze','podatpr','podatl','kask','kaska','buchy','niszcz','plum','plumy','most','zazwa','zazwh','test','testColor','kolz','bylo','bydlo','waterbody','land','border'])
+
+	
+	
+	var optionals = []
+	
+	var hex = heks[a][b]
+	
+	for(var key in hexCodeDefaults){
+		var defvalue = hexCodeDefaults[key]
+		//if(hex[key] != defvalue)
+		//	optionals.push(key+'='+hex[key])
+		if(!compareDefValue(hex[key],defvalue,hex)){
+			var encoded = encodedPropertyValue(key,hex[key])
+			optionals.push(encoded)
+//				optionals.push(key+'='+hex[key])
+		}
+	}
+	if(stan >= 1){
+		for(var key in hexCodeDefaultsInUnitPlacement){
+			var defvalue = hexCodeDefaultsInUnitPlacement[key]
+			if(!compareDefValue(hex[key],defvalue,hex)){
+				var encoded = encodedPropertyValue(key,hex[key])
+				optionals.push(encoded)
+//				optionals.push(key+'='+hex[key])
+			}
+		}
+	}
+	return hex.z + (optionals.length > 0 ? '['+optionals.join(';')+']' : '')
+}
+const unitCodeDefaults = {
+	x:-1,
+	y:-1,
+	d:-1,
+	il:99,
+	num:{type:'equality',size:0,property:'id'},
+	id:-1,
+	rodz:0,
+	szyt:'n',
+	szy:2,
+	ruchy:0,
+	ruchk:{type:'array',size:0},
+	rucho:{type:'array',size:0},
+	ruchh:0,
+	
+	sebix:{type:'equality',size:0,property:'x'},
+	sebiy:{type:'equality',size:0,property:'y'},
+	ata:-1,
+	atakt:-1,
+	kosz:false,
+	kiero:0,
+	przes:0,
+	wypax:-1,
+	wypay:-1,
+	kolor:0,
+	rozb:0,
+	zalad:0,
+	celd:-1,
+	celu:-1,
+	celk:-1,
+	celen:0,
+	celed:{type:'array',size:0},
+	celeu:{type:'array',size:0}
+}
+function getUnitCode(druIx,index){
+	
+	var optionals = []
+	
+	var unit = unix[druIx][index]
+	
+	for(var key in unitCodeDefaults){
+		var defvalue = unitCodeDefaults[key]
+		//if(hex[key] != defvalue)
+		//	optionals.push(key+'='+hex[key])
+		if(!compareDefValue(unit[key],defvalue,unit)){
+			var encoded = encodedPropertyValue(key,unit[key])
+			optionals.push(encoded)
+		}
+	}
+	return '['+optionals.join(';')+']'
+}
+function encodedPropertyValue(key,value){
+	if(value instanceof Object){
+		var innerValues = []
+		for(var key2 in value){
+			innerValues.push(encodedPropertyValue(key2,value[key2]))
+		}
+		return key+'=['+innerValues.join(';')+']'
+	} else {
+		return key+'='+value
+	}
+}
+function compareDefValue(value,defvalue,parentvalue){
+	if(defvalue instanceof Object){
+		if(defvalue.type == 'array'){
+			if(value.length != defvalue.size){
+				return false
+			}
+			for(var i in value){
+				if(!compareDefValue(value[i],defvalue.def,value) && !(defvalue.additionalMinusOne && i == -1 && value[i] == null)){
+					return false
+				}
+			}
+			return true
+		} else if(defvalue.type == 'equality') {
+			return value == parentvalue[defvalue.property] || value == undefined && parentvalue[defvalue.property] == undefined
+		}
+	} else {
+		return value == defvalue || value == undefined && defvalue == undefined
+	}
+}
 function readCode(){
+	codeField = document.getElementById("codeField");
+	var sta = codeField.value;
+	var ake = 0;
+	var subfields = sta.split(':')
+	for(var i in subfields){
+		var subfield = subfields[i]
+		if(subfield == '')
+			continue
+		if(ake == 0){
+			ake = 1;
+			//scian = subfield;
+			readScianAndOtherData(subfield)
+			a = 0;
+			b = 0;
+		} else	{
+			var zzz = subfield.split('[')[0]
+			
+			if(a<scian){
+				heks[a][b].z = zzz;
+				heks[a][b].hutn = 0;
+				heks[a][b].prod = 0;
+				
+				if(subfield.includes('[')){
+					var otherFields = '['+subfield.split('[').slice(1).join('[')
+					
+					otherFields = splitArrayCode(otherFields)
+					
+					for(var i in otherFields){
+						var key = otherFields[i].key
+						var value = otherFields[i].value
+						
+						if(value.includes('[')){
+							var unitFields = splitArrayCode(value)
+							
+							for(var j in unitFields){
+								var value2 = unitFields[j].value
+								if(/^[+-]?\d+(\.\d+)?$/.test(value2))
+									value2 = Number(value2)
+								if(value2 == 'null')
+									value2 = null
+								heks[a][b][key][unitFields[j].key] = value2
+							}
+						} else {
+							heks[a][b][key] = value
+						}
+					}
+				}
+				b++;
+				if(b>=scian){
+					b = 0;
+					a++;
+				}
+			}
+		}
+	}
+}
+const possibleArrayCodes = ['unix','dru','defdr','oddid','oddnum']
+function readScianAndOtherData(subfield){
+	if(subfield.includes('[')){
+		scian = subfield.split('[')[0]
+		rest = '['+subfield.split('[').slice(1).join('[')
+		
+		data = splitArrayCode(rest)
+		for(var i in data){
+			var elem = data[i]
+			
+			if(possibleArrayCodes.includes(elem.key)){
+				switch(elem.key){
+					case "unix":
+						readUnitsFromCode(elem.value)
+						break
+					default:
+						setArrayFromCode(elem.key,elem.value)
+				}
+			}
+		}
+	} else {
+		scian = subfield
+	}
+}
+
+function readUnitsFromCode(code){
+	var arrayByTeam = splitArrayCode(code)
+	
+	for(var i in arrayByTeam){
+		var key = arrayByTeam[i].key
+		var value = arrayByTeam[i].value
+		
+		oddid[key] = 0
+		oddnum[key] = 0
+		
+		unix[key].length = 0
+		
+		var arrayByUnit = splitArrayCode(value)
+		for(var j in arrayByUnit){
+			var key2 = arrayByUnit[j].key
+			var value2 = arrayByUnit[j].value
+			
+			var unitArray = splitArrayCode(value2)
+			
+			var newUnitValues = createDefValueObject(unitCodeDefaults,unitArray)
+			
+			unix[key][key2] = new Unit(newUnitValues.x,newUnitValues.y,newUnitValues.d,newUnitValues.il,newUnitValues.num,newUnitValues.id,newUnitValues.rodz);
+		}
+	}
+}
+function createDefValueObject(unitCodeDefaults,unitArray){
+	var newArray = {}
+	for(var i in unitArray){
+		var key = unitArray[i].key
+		var value = unitArray[i].value
+		newArray[key] = value
+	}
+	
+	for(var key in unitCodeDefaults){
+		if(!(key in newArray)){
+			newArray[key] = realizeDefault(newArray, unitCodeDefaults[key])
+		}
+	}
+	
+	return newArray
+}
+function realizeDefault(array, defaultValue){
+	if(defaultValue instanceof Object){
+		if(defaultValue.type == 'array'){
+			var result = []
+			for(var i = 0;i<defaultValue.size;i++){
+				result.push(realizeDefault(array[key], defaultValue.def))
+			}
+			return result
+		} else if(defaultValue.type == 'equality'){
+			return array[defaultValue.property]
+		}
+	} else {
+		return defaultValue
+	}
+}
+function splitArrayCode(str){
+	if(!(str[0] == '[' && str[str.length-1] == ']'))
+		return null
+		
+	var newStr = str.slice(1,-1)
+	var level = 0
+	var splitted = []
+	var lastSplit = 0
+	for(var i = 0;i<newStr.length;i++){
+		var char = newStr.substr(i,1)
+		if(char == '[')
+			level++
+		if(char == ']')
+			level--
+		if(char == ';' && level == 0){
+			splitted.push(newStr.substring(lastSplit,i))
+			lastSplit = i+1
+		}
+	}
+	splitted.push(newStr.substring(lastSplit))
+	return splitted.map(x=>new Object({key:x.split('=')[0], value:x.split('=').slice(1).join('=')})).filter(x=>x.key != '')
+}
+function setArrayFromCode(key,value){
+	var arrayData = splitArrayCode(value)
+	
+	for(var i in arrayData){
+		var arrayDatum = arrayData[i]
+		
+		var value2 = arrayDatum.value
+		if(/^[+-]?\d+(\.\d+)?$/.test(value2))
+			value2 = Number(value2)
+		window[key][arrayDatum.key] = value2
+	}
+}
+function readCodeWtf(){
 	codeField = document.getElementById("codeField");
 	var sta = codeField.value;
 	var ek = 1;

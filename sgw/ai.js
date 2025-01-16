@@ -1066,7 +1066,7 @@ function aimachine(ailevel){
             
             //possible_targetsNew = possible_targets.filter(x=>x.hex.z > 0).slice(0,20)
             //possible_targetsAdditional = possible_targets.filter(x=>x.hex.z <= 0).slice(0,5)
-            possible_targets = possible_targets.slice(0,4)
+            possible_targets = possible_targets.slice(0,10)
             
             //possible_targets = possible_targetsNew.concat(possible_targetsAdditional)
             //possible_targets = possible_targets.slice(0,15)
@@ -1380,6 +1380,8 @@ function aimachine(ailevel){
                                 
                             }
                         }
+                    } else {
+                        continue
                     }
                 }
                 var score3 = prepareDistTable(realSfKeys, farFromFront, allowPaths, dnew)
@@ -1734,7 +1736,7 @@ function aimachine(ailevel){
                 
                 var needs = empo.needed
                 
-                heks[empoem.x][empoem.y].test = needsFulfiled + '/' + needs
+                //heks[empoem.x][empoem.y].test = needsFulfiled + '/' + needs
                 
                 var restFulfilled = needsFulfiled - needs
                 
@@ -3138,7 +3140,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
         }
         realSfKeys[k].maxPlayer = maxPlayer
         realSfKeys[k].maxPlayerScore = zskor
-        heks[realSfKeys[k].hex.x][realSfKeys[k].hex.y].test = zskor
+        //heks[realSfKeys[k].hex.x][realSfKeys[k].hex.y].test = zskor
         
         sumOfZskor -= -zskor
         zskors.push(zskor)
@@ -6082,11 +6084,23 @@ function tryMakeDestinationMap(dm,color,allowedPaths){
                             [legalAction.length == 1, bestAction[dest_code].length == 1, legalAction[0].type == 'aim',bestAction[dest_code][0].type == 'move']
                         ])
                     }*/
+                    
+                    var destdef = 0
+                    if(dest_code in distmaps){
+                        for(var k in distmaps[dest_code].hex.units){
+                            var unit2 = distmaps[dest_code].hex.units[k]
+                            
+                            destdef += evalUnitDefense(unit2,unit2.il)
+                            
+                        }
+                    }
+                    var evatak = evalUnitAttack(unit,legalAction,dm.model)
+//                    console.log('deva',destdef,evatak)
                     if(bestAction[dest_code] == null || 
                         //bestAction[dest_code][0].distant && bestAction[dest_code][0].type == 'move' && !legalAction[0].distant && legalAction[0].type == 'move' ||
                         //(evalUnitAttack(unit,legalAction,dm.model) > evalUnitAttack(unit,bestAction[dest_code],dm.model)) || 
                         (evalUnitAttack(unit,legalAction,dm.model) > evalUnitAttack(unit,bestAction[dest_code],dm.model)) || 
-                        (zas[unit.rodz] > 1) &&
+                        (zas[unit.rodz] > 1) && (destdef > 0 && destdef > evatak*0.5) && 
                             bestAction[dest_code][0].type == 'move' && legalAction[legalAction.length-1].type == 'aim'
                             //legalAction.length == 1 && bestAction[dest_code].length == 1 && zas[unit.rodz] == 1 && legalAction[0].type == 'move'  
                             /*
@@ -6359,9 +6373,15 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         //console.log('a',value2,value)
         var evaluated = false
         //console.log('val: '+value2+' '+value)
-        var score2 = scoreOfBehinds(dm,kolej,behind_score)
-        if(value2 > value || score2 > score1 && value2 >= value/* || lost*/){
+        if(value2 > value){
+            console.log('ech1',value2,value,score2,score1)
             break
+        }
+        var score2 = scoreOfBehinds(dm,kolej,behind_score)
+        if(score2 > score1 && value2 >= value/* || lost*/){
+            console.log('ech1.5',value2,value,score2,score1)
+            break
+        }
             //evaluate(dm)
             /*
             var values2ByTime = dm.distmaps[x+'#'+y].alliegance.slice()
@@ -6374,7 +6394,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
             if(value2 > value){
                 break
             }*/
-        }
+        //}
 //        for(var j = 0;j<MAX_TURNS;j++){ score2 += Math.pow(1/2.1,dm.score[kolej][j]) }
         
         //score_2 = calculateStrategicMapForTeam(large_map, dm, kolej, modif)
@@ -6416,7 +6436,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     value2 = values2ByTime.reduce((a,b) => a+b, 0)
     
     if(value2 == undefined || value2 <= value/* || lost*/){
-            console.log('ech3')
+            console.log('ech3',value2,value,color)
         for(var i in oldActionArrayUnits){
             oldActionArrayUnits[i].actions = oldActionArrayActions[i]
         }
@@ -6950,7 +6970,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                         }
                     }
                     if(!ok){
-                        console.log('onje', disttime, disttime2)
+                        //console.log('onje', disttime, disttime2)
                         continue
                     }
                 }

@@ -217,6 +217,7 @@
 			}
 			av++;
 		}
+		
 	}
 	if(this.z == -2){
 		ctx.strokeStyle = "#666666";
@@ -663,6 +664,36 @@
 			}*/
 		rst++;
 	}
+	}
+	
+	for(var i in this.fajerwerki){
+		if(this.fajerwerki[i] > 0){
+			if(this.fajerwerki[i] < 25){
+				//x0-au/2,y0-Math.sqrt(3)/2*bu
+				var nox = x0 + au * this.fajerwerx[i]*0.7
+				var noy = y0 + bu * this.fajerwery[i]*0.7
+				ctx.strokeStyle = this.fajerwerkolor[i]
+				ctx.beginPath();
+				ctx.moveTo(nox,noy+bu*(-this.fajerwerki[i]*0.04))
+				ctx.lineTo(nox,noy+bu*(0.1-this.fajerwerki[i]*0.04))
+				ctx.closePath()
+				ctx.stroke()
+			} else {
+				
+				var nox = x0 + au * this.fajerwerx[i]*0.7
+				var noy = y0 + bu * this.fajerwery[i]*0.7
+				ctx.globalAlpha = (1-Math.pow((this.fajerwerki[i]-25)/25,3))/2
+				ctx.beginPath();
+				ctx.arc(nox, noy+bu*(-1.1), Math.pow((this.fajerwerki[i]-25)/25,0.3)*bu/2, 0, 2*Math.PI, false);
+				ctx.closePath()
+				ctx.fileStyle = '#fff'
+				ctx.fill()
+				ctx.fillStyle = this.fajerwerkolor[i]
+				ctx.fill()
+				ctx.globalAlpha = 1
+				
+			}
+		}
 	}
 	ctx.fillStyle = this.testColor;
 	ctx.font = '8pt Calibri';
@@ -1151,4 +1182,21 @@ function textuj(heksdata){
 	ctx.strokeRect(mainCanvas.width-wix-5,130,wix,100);
 	ctx.fillRect(mainCanvas.width-wix/2-30+5,155+17,40,16);
 	ctx.fillRect(mainCanvas.width-wix/2-30+17,155+5,16,40);
+	
+	//console.log('vox voy: ',vox,voy)
+	ctx.strokeStyle="#ff0";
+	ctx.lineWidth = 2
+	if(vox == -1){
+		ctx.strokeRect(0,0,100,mainCanvas.height-20);
+	}
+	if(vox == 1){
+		ctx.strokeRect(mainCanvas.width-105-wix,0,100,mainCanvas.height-20);
+	}
+	if(voy == -1){
+		ctx.strokeRect(0,0,mainCanvas.width-5-wix,100);
+	}
+	if(voy == 1){
+		ctx.strokeRect(0,mainCanvas.height-120,mainCanvas.width-5-wix,100);
+	}
+	ctx.lineWidth = 1
 }

@@ -152,7 +152,7 @@ p {
 <body onload="initialize();terrainChooseDraw();teamChooseDraw();unitChoiceDraw();unitDivisionDraw();anim()">
 <div id="mountPercentageInputa">
   <div id="aroundcanv">
-    <canvas id="canv" width="800" height="800" onmousedown="getmouseposition(event);klik();clicked = true;" onmousemove="getmouseposition(event);cursormove()" onmouseup="clicked = false;" onmouseout="clicked = false;"></canvas>
+    <canvas id="canv" width="800" height="800" onmousedown="getmouseposition(event);klik();clicked = true;" onmousemove="getmouseposition(event);cursormove()" onmouseup="odklik();clicked = false;" onmouseout="odklik();clicked = false;"></canvas>
   </div>
   <div id="codewindow">
     <textarea id="codeField" rows="40" cols="80"></textarea>
@@ -181,7 +181,7 @@ p {
             <span id="mountPercentageValue">10</span>%</p>
           <p> Ilość miast:
             <input type="range" id="cityPercentageInput" min="0" max="100" value="40" onchange="changeRangeInput(cityPercentageValue,cityPercentageInput.value)" />
-            <span id="cityPercentageValue">25</span></p>
+            <span id="cityPercentageValue">24</span></p>
           <p>
             <input type="button" value="ROZMIEŚĆ MIASTA OD NOWA" onclick="rearrangeCities(true);redraw(true);" />
           </p>
@@ -252,6 +252,7 @@ p {
         <input type="button" value="WRÓĆ DO EDYCJI LĄDU" onclick="removeUnits();changeState(0);redraw(true)" />
       </p>
       <p>
+        <input type="button" value="KOD" onclick="showcode();" />
         <input type="button" value="GRAJ!" onclick="changeState(2);gameplay = true;" />
       </p>
     </div>

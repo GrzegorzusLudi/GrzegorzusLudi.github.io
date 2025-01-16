@@ -4,6 +4,8 @@ function initialize(){
 clicked = false;
 delaj = 0;
 wielkul = 100;
+wielkuliron = -1;
+wielkulprod = -1;
 prawdl = 50;
 prawdg = 10;
 podswx = -1;
@@ -48,12 +50,15 @@ miasy = 25;
 dru = new Array(12);
 aimap = new Array(12);
 f = 0;
+celebracja = new Array(12);
 while(f<12){
 	if(f<4){
 		dru[f] = 1;
 	} else {
 		dru[f] = 0;
 	}
+	
+	celebracja[f] = 0
 
 	//ai map consists of: attacks on cities,
 	aimap[f] = {cities: []};
@@ -111,7 +116,7 @@ zas = [1,1,3,1,1,3,2,2,0,3,0,1];
 zast = ["n","n","n","n","n","p","n","n","x","l","x","m"];
 at = [1,2,1.6,1,1,1,1,2,0,1,0,0];
 obrr = [1,2,0,1,1,0,1,2,0,0,0,0];
-ced = [8,16,16,12,12,16,12,20,4,20,12,12];
+ced = [8,16,16,12,10,16,12,20,4,20,12,12];
 ces = [0,2,2,1,0,1,0,2,0,2,1,0];
 defodd1 = ["Pułk piechoty","Pułk czołgów","Pułk artylerii","Pułk piechoty zmotoryzowanej","Pułk piechoty górskiej","Pułk obrony przeciwlotniczej","Flotylla okrętów lekkich","Flotylla pancerników","Flotylla łodzi desantowych","Dywizjon lotnictwa bojowego","Dywizjon lotnictwa transportowego","Pułk saperów"];
 defodd2 = ["Batalion piechoty","Batalion czołgów","Batalion artylerii","Batalion piechoty zmotoryzowanej","Batalion piechoty górskiej","Batalion obrony przeciwlotniczej","Brygada okrętów lekkich","Brygada pancerników","Brygada łodzi desantowych","Szwadron lotnictwa bojowego","Szwadron lotnictwa transportowego","Batalion saperów"];
@@ -144,8 +149,10 @@ upgradeCityRange = document.getElementById("upgradeCityRange");
 cityPercentageInput = document.getElementById("cityPercentageInput");
 citySizeValue = document.getElementById("citySizeValue");
 unitSizeRange = document.getElementById("unitSizeRange");
-unitSizeValue = document.getElementById("unitSizeValue");
-citySizeRange = document.getElementById("citySizeRange");
+cityIronValue = document.getElementById("cityIronValue");
+unitIronRange = document.getElementById("unitIronRange");
+cityProdValue = document.getElementById("cityProdValue");
+unitProdRange = document.getElementById("unitProdRange");
 infoo = document.getElementById("infoo");
 equality = document.getElementById("equality");
 teamName = document.getElementById("teamName");
@@ -284,6 +291,32 @@ gameplay = false;
 	historyDex = new HistoryDex(this)
 }
 
+const spektrum_kolorów = [
+	'#f00',
+	'#f40',
+	'#f80',
+	'#fc0',
+	'#ff0',
+	'#cf0',
+	'#8f0',
+	'#4f0',
+	'#0f0',
+	'#0f4',
+	'#0f8',
+	'#0fc',
+	'#0ff',
+	'#0cf',
+	'#08f',
+	'#04f',
+	'#00f',
+	'#40f',
+	'#80f',
+	'#c0f',
+	'#f0f',
+	'#f0c',
+	'#f08',
+	'#f04'
+]
 //Class for hexagon
 function Hex(x,y){
  this.x = x;
@@ -318,7 +351,7 @@ function Hex(x,y){
  this.usun = usun;
  this.usunmost = usunmost;
  this.tiest = false;
- this.nazwa = dowmiasta();
+ this.nazwa = '';
 
  this.drogn = 0;	//numer
  this.drogp = [];	//skąd nadchodzi
@@ -394,6 +427,19 @@ function Hex(x,y){
 
  this.waterbody = null
  this.land = null
+ 
+ this.fajerwerki = []
+ for(var i = 0;i<6;i++){
+	 this.fajerwerki.push(0)
+ }
+ this.fajerwerkolor = this.fajerwerki.map(x=>spektrum_kolorów[Math.floor(Math.random()*spektrum_kolorów.length)])
+ this.fajerwerx = this.fajerwerki.map(x=>Math.random()*2-1)
+ this.fajerwery = this.fajerwerki.map(x=>Math.random()*2-1)
+ if(Math.abs(this.fajerwery) > 2-Math.abs(this.fajerwerx)*2){
+	 this.fajerwery = this.fajerwery > 0 ? 1-this.fajerwery : this.fajerwery-1
+	 this.fajerwerx = this.fajerwerx > 0 ? 2-this.fajerwerx : this.fajerwerx-2
+ }
+ this.fajerwerktime = 0
 
  //should be accessible only through ai function
  this.value = ()=>this.waterbody.value()+this.waterbody.city_value(this)
@@ -608,7 +654,7 @@ function changeState(newState){
 	if(stan == 4){
 		zamak = true;
 	}
-	if(stan==1 && newState==2){
+	if(stan>=1 && newState==2){
 		for(var i = 0;i<12;i++){
 			spis(i);
 		}
@@ -671,7 +717,7 @@ function spis(druz){
 	var lib = 0;
 	var bh = 0;
 	while(bh<oddid[druz]){
-		if(!unix[druz][bh].kosz)
+		if(!unix[druz][bh].kosz && unix[druz][bh].x != -1)
 		lib++;
 		bh++;
 	}
@@ -703,12 +749,14 @@ function nextTurn(){
 	defdr[kolej] = teamName.value;
 	
 	var overflow = false
+	var overflows = 0
 	while(ej<12){
 		kolej++;
 		if(kolej>=12){
 			kolej = 0;
 			overflow = true
 		}
+		
 		if(dru[kolej]!=0 && (liczeb[kolej]>0 || stan<2)){
 			ej = 12;
 		}
@@ -731,6 +779,7 @@ function generateTerrain(){
 	while(a<60){
 		b = 0;
 		while(b<60){
+			heks[a][b].nazwa = '';
 			if(Math.random()<prawdl/100){
 				if(Math.random()<prawdg/100){
   					heks[a][b].z = -2;
@@ -765,6 +814,7 @@ function rearrangeCities(czy){
 			while(b<scian){
 				if(heks[a][b].z>=0){
 					heks[a][b].z = 0;
+					heks[wasx[iku]][wasy[iku]].nazwa = '';
 					wasx[wasn] = a;
 					wasy[wasn] = b;
 					wasn++;
@@ -817,6 +867,7 @@ function rearrangeCities(czy){
 		dww = Math.floor(Math.random()*160)+41;
 		wasn--;
 		heks[wasx[iku]][wasy[iku]].z = dww;
+		heks[wasx[iku]][wasy[iku]].nazwa = dowmiasta()
 		if(dww>=80){
 			heks[wasx[iku]][wasy[iku]].hutn = Math.floor(Math.random()*(dww-79)/2);
 			heks[wasx[iku]][wasy[iku]].prod = heks[wasx[iku]][wasy[iku]].hutn+Math.floor(Math.random()*20-10);
@@ -1099,7 +1150,28 @@ function kolox(druu,obw){
 	}
 	return koy;
 }
-
+function addCity(x,y){
+				if(wielkul>39){
+					heks[x][y].z = wielkul;
+				} else {
+					heks[x][y].z = Math.floor(Math.random()*161)+40;
+				}
+				if(Number(wielkuliron)>-1){
+					heks[x][y].hutn = Number(wielkuliron);
+				} else {
+					heks[x][y].hutn = Math.floor(Math.random()*(heks[x][y].z-79)/2);
+				}
+				if(Number(wielkulprod)>-1){
+					heks[x][y].prod = Number(wielkulprod);
+				} else {
+					heks[x][y].prod = heks[x][y].hutn+Math.floor(Math.random()*20-10);
+					if(heks[x][y].prod<0){
+						heks[x][y].prod = 0;
+					}
+				}
+				heks[x][y].nazwa = dowmiasta()
+	
+}
 function cursormove(){
 	/* ZAMROŻONE!!!!!*/
 	nbx = okox;
@@ -1163,11 +1235,7 @@ function cursormove(){
 				heks[podswx][podswy].z = -2;
 				break;
 				case 3:
-				if(wielkul>39){
-					heks[podswx][podswy].z = wielkul;
-				} else {
-					heks[podswx][podswy].z = Math.floor(Math.random()*161)+40;
-				}
+				addCity(podswx,podswy)
 				break;
 			}
 		}
@@ -1239,6 +1307,7 @@ function cursormove(){
 	}
 }
 function klik(){
+	clicked = true
 	if(okomm>-1){
 		if(okomm==0){
 			if(magni>1){
@@ -1267,11 +1336,7 @@ function klik(){
 		heks[okox][okoy].z = -2;
 		break;
 		case 3:
-		if(wielkul>39){
-			heks[okox][okoy].z = wielkul;
-		} else {
-			heks[okox][okoy].z = Math.floor(Math.random()*161)+40;
-		}
+			addCity(okox,okoy)
 		break;
 	}
 		break;
@@ -1534,6 +1599,9 @@ function klik(){
 		a++;
 	}
 }
+function odklik(){
+	clicked = false
+}
 function fillAll(nui){
 	a = 0;
 	while(a<60){
@@ -1657,7 +1725,7 @@ function removeUnits(){
 function dowmiasta(){
 	var pczl = "";
 	var dczl = "";
-	switch(Math.floor(Math.random()*13)){
+	switch(Math.floor(Math.random()*15)){
 		case 0:
 			pczl = "Drew";
 			tabl = ["nowo","nów","niana Wola","niszki","niana Góra"];
@@ -1723,6 +1791,16 @@ function dowmiasta(){
 			tabl = ["ki","ków","czyńsk","ki Wielkie","czury"];
 			dczl = tabl[Math.floor(Math.random()*tabl.length)];
 		break;
+		case 13:
+			pczl = "Brz";
+			tabl = ["ózki","ozów","ezińsk","ózki Wielkie","ozowiec"];
+			dczl = tabl[Math.floor(Math.random()*tabl.length)];
+		break;
+		case 14:
+			pczl = "Traw";
+			tabl = ["no","ków","ińsk","y Wielkie","iec"];
+			dczl = tabl[Math.floor(Math.random()*tabl.length)];
+		break;
 	}
 	return pczl+dczl;
 }
@@ -1776,12 +1854,13 @@ function ataz2(att,obrr,ae,oe,ty){
 	if(ae.z==-2){
 		vae = 1.25;
 		if(att.szyt=="g")vae = 1.4;
+		if(obrr.szyt=="g"){voe = 1.25}
 	}
 	if(oe.z==-2){
 		vae = 0.75;
-		if(att.szyt=="g")vae = 1;
 		voe = 1.25;
-		if(obrr.szyt=="g")voe = 1.4;
+		if(att.szyt=="g"){vae = 1.25;voe = 1};
+		if(obrr.szyt=="g"){voe = 1.4};
 		if(ae.z==-1){
 			vae = 0.6;
 			voe = 1.4;
@@ -1802,4 +1881,25 @@ function ataz2(att,obrr,ae,oe,ty){
 		ret = vae;
 	}
 	return ret;
+}
+function checkCelebration(przed,atkju,obrkju){
+	spis(atkju)
+	spis(obrkju)
+	var długość = liczeb.filter(x=>x>0).length <= 1 ? 50000 : 40
+	if(liczeb[atkju] == 0){
+		celebracja[obrkju] = długość
+	}
+	if(liczeb[obrkju] == 0){
+		celebracja[atkju] = długość
+	}
+	console.log(atkju,obrkju,celebracja)
+		
+	/*
+	var hasUnits = false
+	for(var i = 0;i<scian && !hasUnits;i++){
+		for(var j = 0;j<scian && !hasUnits;j++){
+			if(heks[i][j].unt[0] != -1 && heks[i][j].undr == kolej)
+				hasUnits = true
+		}
+	}*/
 }

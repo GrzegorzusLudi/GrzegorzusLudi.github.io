@@ -24,7 +24,9 @@ function aktwok(vx,vy){
 blokada = false
 function anim(){
 	if(!document.hidden){
+		var previousLiczeb = liczeb.slice()
 		try {
+			
 			if(!blokada){
 				blokada = true
 			szpak = 0.34; //xD
@@ -79,10 +81,16 @@ function anim(){
 							if(unix[kolej][ruchwkolejce[uniwy]].rucho[0]>0 || unix[kolej][ruchwkolejce[uniwy]].ruchy>0){
 								var tanx = heks[unix[kolej][ruchwkolejce[uniwy]].x][unix[kolej][ruchwkolejce[uniwy]].y].border[unix[kolej][ruchwkolejce[uniwy]].ruchk[0]].x
 								var tany = heks[unix[kolej][ruchwkolejce[uniwy]].x][unix[kolej][ruchwkolejce[uniwy]].y].border[unix[kolej][ruchwkolejce[uniwy]].ruchk[0]].y
+								var tundr = heks[tanx][tany].undr
+								var tunp = heks[tanx][tany].unp
 								unix[kolej][ruchwkolejce[uniwy]].rucho[0]--;
 								unix[kolej][ruchwkolejce[uniwy]].przenies(unix[kolej][ruchwkolejce[uniwy]].ruchk[0]);
+								
 								aktdroguj(kolej,uniwy);
 
+								if(tundr > -1 && tunp > 0)
+									checkCelebration(previousLiczeb,kolej,tundr)
+									
 								if(!unix[kolej][ruchwkolejce[uniwy]].kosz){
 									if(heks[unix[kolej][ruchwkolejce[uniwy]].x][unix[kolej][ruchwkolejce[uniwy]].y].z == -2 && unix[kolej][ruchwkolejce[uniwy]].szyt!="g" /*górski oddział*/ && unix[kolej][ruchwkolejce[uniwy]].szyt!="l" /*oddział latający*/){
 										jesio = 0;
@@ -105,7 +113,11 @@ function anim(){
 									}
 
 								} else if(unix[kolej][ruchwkolejce[uniwy]].celd>-1 && szyt[unix[kolej][ruchwkolejce[uniwy]].rodz]==unix[kolej][ruchwkolejce[uniwy]].szyt) {
+									var cd = unix[kolej][ruchwkolejce[uniwy]].celd
 									atakuj(ruchwkolejce[uniwy],heks[unix[unix[kolej][ruchwkolejce[uniwy]].celd][unix[kolej][ruchwkolejce[uniwy]].celu].x][unix[unix[kolej][ruchwkolejce[uniwy]].celd][unix[kolej][ruchwkolejce[uniwy]].celu].y],unix[kolej][ruchwkolejce[uniwy]].celd);
+									
+									checkCelebration(previousLiczeb,kolej,cd)
+									
 								}
 							} else if(unix[kolej][ruchwkolejce[uniwy]].celd==-2){
 								atakujmost(ruchwkolejce[uniwy],heks[unix[unix[kolej][ruchwkolejce[uniwy]].celd][unix[kolej][ruchwkolejce[uniwy]].celu].x][unix[unix[kolej][ruchwkolejce[uniwy]].celd][unix[kolej][ruchwkolejce[uniwy]].celu].y]);
@@ -196,8 +208,10 @@ function anim(){
 			}
 				if(cac>2 && ccmm>-1){
 					sprawdz(mousePositionByCanvas.x,mousePositionByCanvas.y);
-					pox-=vox/3/magni*scian/10;
-					poy-=voy/3/magni*scian/10;
+					if(clicked){
+						pox-=vox/3/magni*scian/7;
+						poy-=voy/3/magni*scian/7;
+					}
 					redraw(true);
 				} else {
 					redraw(false);
@@ -220,6 +234,42 @@ function anim(){
 							if(heks[a][b].koli>sum*10 && heks[a][b].koli>0){
 								heks[a][b].koli-=5;
 							}
+						}
+						if(celebracja[heks[a][b].undr] > 0){
+							heks[a][b].fajerwerktime++
+							for(var ii in heks[a][b].fajerwerki){
+								if(heks[a][b].fajerwerki[ii] <= 0 && heks[a][b].fajerwerktime > ii*10 && (ii < 2 || heks[a][b].z > 0))
+									heks[a][b].fajerwerki[ii]++
+							}
+						} else {
+							heks[a][b].fajerwerktime = 0
+						}
+						for(var ii in heks[a][b].fajerwerki){
+							if(heks[a][b].fajerwerki[ii] > 0){
+								heks[a][b].fajerwerki[ii]++
+								heks[a][b].zmiana = 50
+								if(b > 0){
+									heks[a][b-1].zmiana = 50
+									if(a % 2 == 0){
+										if(a > 0){
+											heks[a-1][b-1].zmiana = 50
+										}
+										if(a<scian-1){
+											heks[a+1][b-1].zmiana = 50
+										}
+									}
+								}
+								if(a % 2 == 1){
+									if(a > 0){
+										heks[a-1][b].zmiana = 50
+									}
+									if(a<scian-1){
+										heks[a+1][b].zmiana = 50
+									}
+								}
+							}
+							if(heks[a][b].fajerwerki[ii]>50)
+								heks[a][b].fajerwerki[ii] = 0
 						}
 						if(heks[a][b].plum>0){
 							heks[a][b].plumy+=0.5;
@@ -255,11 +305,17 @@ function anim(){
 					historyDex.zapisz()
 				}
 			}
+			
 
 		} catch(e){
 			throw e
 		}
 	}
+			for(var i in celebracja){
+				if(celebracja[i] > 0){
+					celebracja[i] -= 1
+				}
+			}
     setTimeout(()=>anim(),aistan == 1.3 ? 25 : 25)
 }
 function nastepnyoddzial(){
