@@ -289,6 +289,9 @@ function aimachine(ailevel){
     //console.log('aistan:',aistan)
 	switch(aistan){
 		case 0:
+			var endedgame = liczeb.filter(x=>x>0).length <= 1
+			if(endedgame)
+                return
             var exists = false
 			params = loadStats();
 			mist = [];
@@ -1056,7 +1059,7 @@ function aimachine(ailevel){
             //console.log(possible_targets)
             //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
             //possible_targets.sort((a,b)=>(-a.value + b.value))
-            possible_targets.sort((a,b)=>((a.dist+1/(2+a.value))-(b.dist+1/(2+b.value))))
+            possible_targets.sort((a,b)=>(-(a.dist-1/(2+a.value))+(b.dist-1/(2+b.value))))
 
             
             //possible_targets.sort((a,b) => (a.x+'#'+a.y in behind ? behind[a.x+'#'+a.y].value : 0) - (b.x+'#'+b.y in behind ? behind[b.x+'#'+b.y].value : 0))
@@ -7121,7 +7124,8 @@ function cutaction(action,unitrodz){
         newAction[key] = action[key]
     }
     var before = szy[unitrodz]//newAction.rucho.length - (Math.floor(newAction.rucho.length / szy[unitrodz] )-1) * szy[unitrodz]
-    before += (zas[unitrodz] > 1 ? zas[unitrodz]-1 : 0)
+    //before += (zas[unitrodz] > 1 ? zas[unitrodz]-1 : 0)
+    before += (obrr[unitrodz] < 1 ? zas[unitrodz]-1 : 0)
     //console.log(before)
     if(before > 0){
         newAction.rucho = newAction.rucho.slice(0,-before)

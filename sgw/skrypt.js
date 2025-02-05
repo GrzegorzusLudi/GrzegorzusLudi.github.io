@@ -317,6 +317,21 @@ const spektrum_kolorów = [
 	'#f08',
 	'#f04'
 ]
+const spektrum_kolorów_fajerwerków = [
+	'#f88',
+	'#fa8',
+	'#fc8',
+	'#fe8',
+	'#ff8',
+	'#ef8',
+	'#cf8',
+	'#af8',
+	'#ef8',
+	'#f8e',
+	'#ffa',
+	'#ffc',
+	'#ffe',
+]
 //Class for hexagon
 function Hex(x,y){
  this.x = x;
@@ -429,10 +444,10 @@ function Hex(x,y){
  this.land = null
  
  this.fajerwerki = []
- for(var i = 0;i<6;i++){
+ for(var i = 0;i<12;i++){
 	 this.fajerwerki.push(0)
  }
- this.fajerwerkolor = this.fajerwerki.map(x=>spektrum_kolorów[Math.floor(Math.random()*spektrum_kolorów.length)])
+ this.fajerwerkolor = this.fajerwerki.map(x=>spektrum_kolorów_fajerwerków[Math.floor(Math.random()*spektrum_kolorów_fajerwerków.length)])
  this.fajerwerx = this.fajerwerki.map(x=>Math.random()*2-1)
  this.fajerwery = this.fajerwerki.map(x=>Math.random()*2-1)
  if(Math.abs(this.fajerwery) > 2-Math.abs(this.fajerwerx)*2){
@@ -1892,7 +1907,6 @@ function checkCelebration(przed,atkju,obrkju){
 	if(liczeb[obrkju] == 0){
 		celebracja[atkju] = długość
 	}
-	console.log(atkju,obrkju,celebracja)
 		
 	/*
 	var hasUnits = false
