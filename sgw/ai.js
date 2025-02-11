@@ -1059,7 +1059,8 @@ function aimachine(ailevel){
             //console.log(possible_targets)
             //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
             //possible_targets.sort((a,b)=>(-a.value + b.value))
-            possible_targets.sort((a,b)=>(-(a.dist-1/(2+a.value))+(b.dist-1/(2+b.value))))
+//            possible_targets.sort((a,b)=>(-(a.dist-1/(2+a.value))+(b.dist-1/(2+b.value))))
+            possible_targets.sort((a,b)=>(-Math.pow(0.5,a.dist)*(2+a.value)+Math.pow(0.5,b.dist)*(2+b.value)))
 
             
             //possible_targets.sort((a,b) => (a.x+'#'+a.y in behind ? behind[a.x+'#'+a.y].value : 0) - (b.x+'#'+b.y in behind ? behind[b.x+'#'+b.y].value : 0))
