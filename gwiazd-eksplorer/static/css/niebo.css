@@ -1,0 +1,50 @@
+
+body {
+    margin: 0px;
+    padding: 0px;
+    background-color:#000;
+    color:#fff;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+p {
+    padding: 0px;
+}
+div {
+    /*border: 1px solid red; /*TEMPORARY
+    */
+    margin:0px;
+    padding:0px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
+#stage {
+    width: calc( 100vw - 200px );
+    height: 100%;
+    display: inline-block;
+    float: left;
+}
+#legend {
+    width:180px;
+    padding: 2px;
+    margin: 2px;
+    border:1px solid white;
+    display: inline-block;
+    float: left;
+}
+canvas {
+    /*border: 1px solid red; /*TEMPORARY
+    */
+    margin:0px;
+    padding:0px;
+    width:100%;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
+#tbl {
+    width: 100%;
+}
