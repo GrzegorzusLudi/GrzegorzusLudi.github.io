@@ -1070,7 +1070,8 @@ function aimachine(ailevel){
             
             //possible_targetsNew = possible_targets.filter(x=>x.hex.z > 0).slice(0,20)
             //possible_targetsAdditional = possible_targets.filter(x=>x.hex.z <= 0).slice(0,5)
-            possible_targets = possible_targets.slice(0,10)
+            //possible_targets = possible_targets.slice(0,10)
+            possible_targets = possible_targets.slice(-10)
             
             //possible_targets = possible_targetsNew.concat(possible_targetsAdditional)
             //possible_targets = possible_targets.slice(0,15)
@@ -2223,7 +2224,7 @@ function aimachine(ailevel){
                     var v = mist[kolejność_miast[miastkol]].z*(100-mist[kolejność_miast[miastkol]].podatpr);
                     var p = Math.min(mist[kolejność_miast[miastkol]].prod,mist[kolejność_miast[miastkol]].hutn);
                     for(var i = 0;i<mist[kolejność_miast[miastkol]].trybutariuszy;i++){
-                        v+=mist[kolejność_miast[miastkol]].trybutariusze[i].z;
+                        v+=heks[mist[kolejność_miast[miastkol]].trybutariusze[i][0]][mist[kolejność_miast[miastkol]].trybutariusze[i][1]].z;
                     }
                     var okej = -1
                     for(var i = 0;i<mist[kolejność_miast[miastkol]].unp;i++){

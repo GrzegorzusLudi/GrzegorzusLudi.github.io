@@ -522,7 +522,7 @@ function popodatkuj(nax,nay,zosta){
 		heks[zaznx][zazny].debiy = -1;
 		heks[zaznx][zazny].podatpr = taxRange.value;
 		heks[zaznx][zazny].podatl = warta;
-		heks[nax][nay].trybutariusze[heks[nax][nay].trybutariuszy] = heks[zaznx][zazny];
+		heks[nax][nay].trybutariusze[heks[nax][nay].trybutariuszy] = [heks[zaznx][zazny].x,heks[zaznx][zazny].y];
 		heks[nax][nay].trybutariuszy++;
 		odzaznam(1);
 		taxRange.disabled = false;
@@ -584,7 +584,7 @@ function odpodatkuj(jax,jay){
 	var stao = false;
 	while(a<oph.trybutariuszy){
 		if(!stao){
-			if(oph.trybutariusze[a]==heks[jax][jay]){
+			if(oph.trybutariusze[a][0]==heks[jax][jay][0] && oph.trybutariusze[a][1]==heks[jax][jay][1]){
 				stao = true;
 				oph.trybutariuszy--;
 			}

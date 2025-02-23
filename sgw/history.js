@@ -28,19 +28,23 @@ class HistoryDex {
     }
     
     zapisz(){
+        var lastInstance = null
         this.kolej = this.topobject.kolej
         if(!(this.turn in this.storedStates))
             this.storedStates[this.turn] = {}
         if(!(this.kolej in this.storedStates[this.turn]))
             this.storedStates[this.turn][this.kolej] = []
-        this.storedStates[this.turn][this.kolej].push(new HistoryInstance(this.topobject))
+        else if(this.storedStates[this.turn][this.kolej].length > 0)
+            lastInstance = this.storedStates[this.turn][this.kolej][this.storedStates[this.turn][this.kolej].length-1]
         
+        this.storedStates[this.turn][this.kolej].push(new HistoryInstance(this.topobject,lastInstance))
+
         if(this.firstTurn == -1){
             this.firstTurn = this.turn
             this.firstKolej = this.kolej
             this.firstMove = this.move
         }
-        this.move = this.storedStates[this.turn][this.kolej].length-1
+        this.move = this.storedStates[this.turn][this.kolej].length-1        
     }
     
     setShowcaseDataToCurrent(reallyDraw){
@@ -156,24 +160,27 @@ function historyMove(h_all,h_kolej,h_move,forward){
     historyDex.historyMove(h_all,h_kolej,h_move,forward)
 }
 
+
 historyDex = new HistoryDex(this)
 
 class UnitHistory extends CopyableDeeper {
-    constructor(unit,topobject){
+    constructor(unit,topobject,dr,i){
         super(['x','y','d','il','num','id','rodz','szyt','szy','ruchy','ruchk','rucho','ruchh','sebix','sebiy','ata','atakt','kosz','kiero','przes','wypax','wypay','kolor','rozb','zalad','celd','celu','celk','celen','celed','celeu'])
         
-        this.topobject = topobject
+        //this.topobject = topobject
 
         this.setFields(this.getFields(unit))
         
         this.rysunit = topobject.rysunit;
+        
+        this.code = getUnitCode(dr,i)
     }
 }
 class HexHistory extends CopyableDeeper {
     constructor(topobject,x,y){
         super(['x','y','z','hutn','prod','zpl','hutnpl','prodpl','kasy','stali','gran','zmiana','unt','undr','unbr','unp','pode','koli','tiest','nazwa','drogn','drogp','drogk','drogpr','drogw','drogkol','drogg','drogd','drpon','drpop','drpok','drpox','drpoy','wylad','wyladr','ktodro','dpodatnum','dpodatk','dpodato','debix','debiy','dpodszlo','trybutariuszy','trybutariusze','podatpr','podatl','kask','kaska','buchy','niszcz','plum','plumy','most','zazwa','zazwh','test','testColor','kolz','bylo','bydlo','waterbody','land','border'])
         
-        this.topobject = topobject
+        //this.topobject = topobject
         
         var heks = topobject.heks[x][y]
         
@@ -182,19 +189,28 @@ class HexHistory extends CopyableDeeper {
         this.buchuj = topobject.buchuj;
         this.koloruj = topobject.koloruj;
         this.drawHex = topobject.drawHex
+        
+        this.code = getHexCode(x,y)
     }
 }
 
 
 class HistoryInstance {
-    constructor(topobject){
+    constructor(topobject,lastInstance){
         this.topobject = topobject
         
         this.heks = []
         for(var i = 0;i<topobject.scian;i++){
             this.heks[i] = []
             for(var j = 0;j<topobject.scian;j++){
-                this.heks[i][j] = new HexHistory(topobject,i,j)
+                //console.log([i,j])
+                var hcode = getHexCode(i,j)
+                //console.log(hcode)
+                if(lastInstance == null || lastInstance.heks[i][j].code != hcode){
+                    this.heks[i][j] = new HexHistory(topobject,i,j)
+                } else {
+                    this.heks[i][j] = lastInstance.heks[i][j]
+                }
             }
         }
         this.unix = []
@@ -202,7 +218,7 @@ class HistoryInstance {
             this.unix[dr] = []
             for(var i in topobject.unix[dr]){
                 //if(topobject.unix[dr][i].x != -1){
-                this.unix[dr][i] = new UnitHistory(topobject.unix[dr][i],topobject)
+                this.unix[dr][i] = new UnitHistory(topobject.unix[dr][i],topobject,dr,i)
                 //}
             }
         }

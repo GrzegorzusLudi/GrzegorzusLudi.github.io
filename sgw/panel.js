@@ -557,7 +557,7 @@ function pokap(){
 		var sk = 0;
 		while(sk<heks[zaznx][zazny].trybutariuszy){
 			var on = heks[zaznx][zazny].trybutariusze[sk];
-			sciag+=Math.floor(dohod(on.x,on.y)*on.podatpr/100);
+			sciag+=Math.floor(dohod(on[0],on[1])*(heks[on[0]][on[1]].podatpr/100));
 			sk++;
 		}
 		var moneyAmount = document.getElementById("moneyAmount");
@@ -3508,3 +3508,13 @@ function sellSteel(val){
 		pokap();
 	}
 }
+
+function tryEndGame(){
+	if(confirm("Czy na pewno chcesz zakończyć grę i wrócić do menu?")){
+		removeUnits();
+		changeState(0);
+		redraw(true)
+		initialize()
+	}
+}
+

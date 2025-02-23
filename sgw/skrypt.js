@@ -1716,7 +1716,7 @@ function removeUnits(){
 		while(b<scian){
  			eu = 0;
  			while(eu<4){
-				if(heks[a][b].unt[eu] > -1){
+				if(heks[a][b].unt[eu] > -1 && heks[a][b].undr > -1){
 					unix[heks[a][b].undr][heks[a][b].unt[eu]].kosz = true
 					unix[heks[a][b].undr][heks[a][b].unt[eu]].x = -1
 					unix[heks[a][b].undr][heks[a][b].unt[eu]].y = -1
