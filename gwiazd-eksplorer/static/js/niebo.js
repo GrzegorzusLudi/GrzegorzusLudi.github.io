@@ -73,6 +73,12 @@ class Star {
         ]
     }
     getCartesianPlace(){
+        if('parallax' in this.properties && typeof this.properties.parallax == 'string'){
+            if(this.properties.parallax.startsWith('{{val|')){
+                this.properties.parallax = Number(this.properties.parallax.replaceAll('{{val|','').replaceAll('}','').split('|')[0])
+            }
+        }     
+
         if('sundistance' in this.properties){
             return {x:0,y:0,z:0}
         } else if('parallax' in this.properties && this.properties.parallax > 0){
@@ -88,6 +94,8 @@ class Star {
 
             return {x:x,y:y,z:z}
         } else {
+            if(this.name == 'Betelgeuse')
+                console.log(this.properties)
             return null
         }
     }
@@ -138,14 +146,15 @@ class Star {
             var radius = this.radius
 
             if(radius > 0.5){
+                ctx.strokeStyle = '#ff0'
                 ctx.fillStyle = this.starcolor()
-                ctx.lineWidth = 2
+                ctx.lineWidth = Math.max(0.5,5-Math.log(this.cacheCoords.d))
                 ctx.beginPath()
                 ctx.arc(x,y,1+radius,0,2*Math.PI)
                 ctx.closePath()
                 ctx.globalAlpha = 1// - Number(appmag[0])/6
-                ctx.stroke()
                 ctx.fill()
+                ctx.stroke()
                 ctx.globalAlpha = 1
             }
             //ctx.font = '10px Verdana'
@@ -180,12 +189,19 @@ class Model {
     setData(data){
         this.data = data
         this.loadData()
+
+        this.stardict = {}
+        for(var i in this.starstats){
+            var ss = this.starstats[i]
+            this.stardict[ss.name] = ss
+        }
     }
     loadData(){
         var no = 0
         for(var key in this.data){
             var datum = this.data[key]
             var coords = datum.coords
+
             if(datum.coords.length == 0 && 'ra' in datum.properties && 'dec' in datum.properties){
                 var ra = datum.properties.ra.replaceAll('−','-').slice(5,-2).split('|').map(x=>Number(x))
                 var dec = datum.properties.dec.replaceAll('−','-').slice(6,-2).split('|').map(x=>Number(x))
@@ -238,10 +254,113 @@ class View {
         this.height = this.canvasElement.height
 
         this.camera = new Camera()
+
+        this.prepareAsterisms()
+    }
+    prepareAsterisms(){
+        window.stardict = this.model.stardict
+        this.asterisms = {
+            'Ursa Major':[
+                [
+                    'Eta Ursae Majoris',
+                    'Mizar',
+                    'Epsilon Ursae Majoris',
+                    'Delta Ursae Majoris',
+                    'Alpha Ursae Majoris',
+                    'Beta Ursae Majoris',
+                    'Gamma Ursae Majoris',
+                    'Delta Ursae Majoris',
+                ],
+                [
+                    'Alpha Ursae Majoris',
+                    '23 Ursae Majoris',
+                    'Omicron Ursae Majoris',
+                    'Upsilon Ursae Majoris',
+                    'Beta Ursae Majoris',
+                ],
+                [
+                    'Upsilon Ursae Majoris',
+                    'Theta Ursae Majoris',
+                    'Kappa Ursae Majoris',
+                ],
+                [
+                    'Gamma Ursae Majoris',
+                    'Chi Ursae Majoris',
+                    'Psi Ursae Majoris',
+                    'Mu Ursae Majoris',
+                ],
+                [
+                    'Chi Ursae Majoris',
+                    'Nu Ursae Majoris',
+                ]
+            ],
+            'Orion':[
+                [
+                    'Nu Orionis',
+                    'Chi1 Orionis',
+                    'Chi2 Orionis',
+                    'Xi Orionis',
+                    'Betelgeuse',
+                    'Meissa',
+                    'Bellatrix',
+                    'Betelgeuse',
+                ],
+                [
+                    'Betelgeuse',
+                    'Alnitak',
+                    'Alnilam',
+                    'Mintaka',
+                    'Bellatrix',
+                ],[
+                    'Alnitak',
+                    'Saiph',
+                ],
+                [
+                    'Mintaka',
+                    'Rigel'
+                ]
+            ],
+            'Cassiopeia':[
+                [
+                    //'Beta Cassiopeiae',
+                    'Alpha Cassiopeiae',
+                    'Gamma Cassiopeiae',
+                    'Delta Cassiopeiae',
+                    'Epsilon Cassiopeiae',
+                ]
+            ]
+        }
+    }
+    drawLines(){
+        var ctxwidth = this.width
+        var ctxheight = this.height
+
+        this.ctx.strokeStyle = '#fff'
+        this.ctx.lineWidth = 2
+        this.ctx.setLineDash([4,2])
+        for(var name in this.asterisms){
+            for(var i in this.asterisms[name]){
+                this.ctx.beginPath()
+                var last = null
+                for(var j in this.asterisms[name][i]){
+                    var starname = this.asterisms[name][i][j]
+
+                    var star = this.model.stardict[starname]
+                    if(last != null && star.cacheCoords.d > 0.5 && last.cacheCoords.d > 0.5){
+                        this.ctx.moveTo(ctxwidth/2 - ctxwidth/2 * last.cacheCoords.x, ctxheight/2 - ctxheight/2 * last.cacheCoords.y)
+                        this.ctx.lineTo(ctxwidth/2 - ctxwidth/2 * star.cacheCoords.x, ctxheight/2 - ctxheight/2 * star.cacheCoords.y)
+                    }
+                    last = star
+                }
+                this.ctx.stroke()
+            }
+        }
+        this.ctx.setLineDash([])
     }
     draw(camera){
         this.ctx.fillStyle = '#000'
         this.ctx.fillRect(0,0,this.width,this.height)
+        this.drawLines()
         this.ctx.strokeStyle = '#fff'
         this.ctx.fillStyle = '#fff'
         this.ctx.beginPath()
