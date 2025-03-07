@@ -261,13 +261,14 @@ generateTerrain();
 smoothenCoastline();
 smoothenCoastline();
 smoothenCoastline();
-changeState(0);
+changeState(-1);
 oddnum = Array(12);
 oddid = Array(12);
 unix = Array(12);
 rownia = Array(12);
 rowniak = Array(12);
 trownia = Array(12);
+bloknia = Array(12);
 equaUnitDistribution = false;
 ts = -2;
 while(ts<12){
@@ -276,6 +277,10 @@ while(ts<12){
  rowniak[ts] = Array();
  oddnum[ts] = 0;
  oddid[ts] = 0;
+ bloknia[ts] = Array();
+ for(var i = 0;i<12;i++){
+	bloknia[ts][i] = false
+ }
  unix[ts] = Array();
  if(ts==-2)
 	 ts++;
@@ -651,8 +656,9 @@ function kir(odd,doo,xy){
 	return ret;
 }
 function changeState(newState){
+	showcode(false)
 	akcja = -1;
-	f = 0;
+	f = -1;
 	var nowatura = false
 	stin = document.getElementById("u"+1);
 	while(f<7){
@@ -675,6 +681,7 @@ function changeState(newState){
 		}
 		//historyDex.zapisz()
 	}
+	var dotychczas = stan
 	stan = newState;
 	if(stan == 1){
 		kolej = -1;
@@ -721,8 +728,19 @@ function changeState(newState){
 	jesio = -1;
 	pokap();
 	unitDivisionDraw();
+	if(dotychczas == -1)
+		fajneprzejście(scian-1)
+		
 	//if(nowatura)
 	//	historyDex.zapisz()
+}
+function fajneprzejście(num){
+	for(var j = 0;j<scian;j++){
+		heks[num][j].zmiana = 1
+	}
+	if(num-1 >= 0){
+		setTimeout(() => fajneprzejście(num-1),50)
+	}
 }
 function rescaleMovesToMakeCanvasCts(){
 	movesToMakeCanvas.height = ruchwkolejcen*30 + 20
@@ -1642,7 +1660,9 @@ function redraw(all){
 	
 	//drawHex(numb,unixdata,kolej_at_time)
 	
-	if(stan == 6){
+	if(stan == -1){
+		rysujEkranStartowy(ctx)
+	} else if(stan == 6){
 		var currentState = historyDex.getCurrentState()
 		
 		if(currentState != undefined){

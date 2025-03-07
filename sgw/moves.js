@@ -1129,6 +1129,8 @@ function oddroguj(uni,koloj,odc){
 	unix[koloj][uni].wypax = -1;
 	unix[koloj][uni].wypay = -1;
 
+	unix[koloj][uni].rucho.length = 0;
+	unix[koloj][uni].ruchk.length = 0;
 }
 function przeczyscc(unu,kpx,kpy,dru){
 	var numa = 0

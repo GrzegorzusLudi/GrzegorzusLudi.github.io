@@ -689,8 +689,10 @@
 				ctx.fileStyle = '#fff'
 				ctx.fill()
 				ctx.fillStyle = this.fajerwerkolor[i]
+				ctx.strokeStyle = this.fajerwerkolor[i]
 				ctx.fill()
 				ctx.globalAlpha = 1
+				ctx.stroke()
 				
 			}
 		}
@@ -1200,3 +1202,469 @@ function textuj(heksdata){
 	}
 	ctx.lineWidth = 1
 }
+
+const a_path = [
+	[
+		[0,0],
+		[1,0],
+		[1,1],
+		[0.6,1],
+		[0.6,0.65],
+		[0.4,0.65],
+		[0.4,1],
+		[0,1],
+	],
+	[
+		[0.4,0.25],
+		[0.6,0.25],
+		[0.6,0.35],
+		[0.4,0.35],
+	]
+]
+const c_path = [
+	[0,0],
+	[1,0],
+	[1,0.25],
+	[0.4,0.25],
+	[0.4,0.75],
+	[1,0.75],
+	[1,1],
+	[0,1],
+]
+const e_path = [
+	[0,0],
+	[1,0],
+	[1,0.25],
+	[0.4,0.25],
+	[0.4,0.35],
+	[1,0.35],
+	[1,0.65],
+	[0.4,0.65],
+	[0.4,0.75],
+	[1,0.75],
+	[1,1],
+	[0,1],
+]
+const g_path = [
+	[0,0],
+	[1,0],
+	[1,0.25],
+	[0.4,0.25],
+	[0.4,0.75],
+	[0.6,0.75],
+	[0.6,0.5],
+	[1,0.5],
+	[1,1],
+	[0,1],
+]
+const h_path = [
+	[0,0],
+	[0.4,0],
+	[0.4,0.35],
+	[0.6,0.35],
+	[0.6,0],
+	[1,0],
+	[1,1],
+	[0.6,1],
+	[0.6,0.65],
+	[0.4,0.65],
+	[0.4,1],
+	[0,1],
+]
+const i_path = [
+	[0,0],
+	[1,0],
+	[1,0.25],
+	[0.7,0.25],
+	[0.7,0.75],
+	[1,0.75],
+	[1,1],
+	[0,1],
+	[0,0.75],
+	[0.3,0.75],
+	[0.3,0.25],
+	[0,0.25],
+]
+const j_path = [
+	[1,0],
+	[0,0],
+	[0,0.25],
+	[0.6,0.25],
+	[0.6,0.75],
+	[0.4,0.75],
+	[0.4,0.5],
+	[0,0.5],
+	[0,1],
+	[1,1],
+]
+const k_path = [
+	[0,0],
+	[0.4,0],
+	[0.4,0.35],
+	[0.5,0.35],
+	[0.5,0],
+	[0.9,0],
+	[0.9,0.35],
+	[1,0.35],
+	[1,1],
+	[0.6,1],
+	[0.6,0.65],
+	[0.4,0.65],
+	[0.4,1],
+	[0,1],
+]
+const l_path = [
+	[0,0],
+	[0.4,0],
+	[0.4,0.25],
+	[0.4,0.75],
+	[1,0.75],
+	[1,1],
+	[0,1],
+]
+const m_path = [
+	[0,1],
+	[0.25,1],
+	[0.25,0.25],
+	[0.35,0.25],
+	[0.35,1],
+	[0.65,1],
+	[0.65,0.25],
+	[0.75,0.25],
+	[0.75,1],
+	[1,1],
+	[1,0],
+	[0,0],
+]
+const n_path = [
+	[1,0],
+	[0.75,0],
+	[0.75,0.75],
+	[0.65,0.75],
+	[0.65,0],
+	[0,0],
+	[0,1],
+	
+	[0.35,1],
+	[0.35,0.25],
+	[0.25,0.25],
+	[0.25,1],
+	[1,1],
+]
+const o_path = [
+	[
+		[0,0],
+		[1,0],
+		[1,1],
+		[0,1],
+	],
+	[
+		[0.4,0.25],
+		[0.6,0.25],
+		[0.6,0.75],
+		[0.4,0.75],
+	]
+]
+const r_path = [
+	[
+		[0,0],
+		[0.8,0],
+		[0.8,0.35],
+		[1,0.35],
+		[1,1],
+		[0.6,1],
+		[0.6,0.65],
+		[0.4,0.65],
+		[0.4,1],
+		[0,1],
+	],
+	[
+		[0.4,0.25],
+		[0.5,0.25],
+		[0.5,0.35],
+		[0.4,0.35],
+	]
+]
+const s_path = [
+	[0,0],
+	[1,0],
+	[1,0.25],
+	[0.4,0.25],
+	[0.4,0.35],
+	[1,0.35],
+	[1,1],
+	[0,1],
+	[0,0.75],
+	[0.6,0.75],
+	[0.6,0.65],
+	[0,0.65],
+]
+const t_path = [
+	[0,0],
+	[1,0],
+	[1,0.25],
+	[0.7,0.25],
+	[0.7,1],
+	[0.3,1],
+	[0.3,0.25],
+	[0,0.25],
+]
+const w_path = [
+	[0,0],
+	[0.25,0],
+	[0.25,0.75],
+	[0.35,0.75],
+	[0.35,0],
+	[0.65,0],
+	[0.65,0.75],
+	[0.75,0.75],
+	[0.75,0],
+	[1,0],
+	[1,1],
+	[0,1],
+]
+const x_path = [
+	[0,0],
+	[0.4,0],
+	[0.4,0.25],
+	[0.6,0.25],
+	[0.6,0],
+	[1,0],
+	[1,0.4],
+	[0.8,0.4],
+	[0.8,0.6],
+	[1,0.6],
+	[1,1],
+	[0.6,1],
+	[0.6,0.75],
+	[0.4,0.75],
+	[0.4,1],
+	[0,1],
+	[0,0.6],
+	[0.2,0.6],
+	[0.2,0.4],
+	[0,0.4],
+]
+const z_path = [
+	[1,0],
+	[0,0],
+	[0,0.25],
+	[0.6,0.25],
+	[0.6,0.35],
+	[0,0.35],
+	[0,1],
+	[1,1],
+	[1,0.75],
+	[0.4,0.75],
+	[0.4,0.65],
+	[1,0.65],
+]
+const kreska_path = [
+	[0.5,-0.2],
+	[0.5,-0.4],
+	[0.8,-0.4],
+]
+const ogonek_path = [
+	[1,1],
+	[1,1.3],
+	[0.7,1.3],
+]
+function rysujEkranStartowy(context){
+	ctx.fillStyle = "#eee";
+
+	context.fillRect(0,0,mainCanvas.width,mainCanvas.height)
+	var gx = 0
+	var gy = 100
+	var gw = 100
+	var gh = 130
+	var w = 18
+	var h = 22
+	var mx = 18
+	var my = 30
+	var px = 90
+	var py = 245
+	var px2 = 40
+	var py2 = 255
+	context.strokeStyle = '#006'
+	context.fillStyle = '#0066'
+	rysPath(context,200+gx,gy,gw,gh,s_path)
+		rysPath(context,200+px,py,w,h,z_path)
+		rysPath(context,200+px+mx,py+my,w,h,e_path)
+		rysPath(context,200+px+mx*2,py+my*2,w,h,s_path)
+		rysPath(context,200+px+mx*2,py+my*2,w,h,kreska_path)
+		rysPath(context,200+px+mx*3,py+my*3,w,h,c_path)
+		rysPath(context,200+px+mx*4,py+my*4,w,h,i_path)
+		rysPath(context,200+px+mx*5,py+my*5,w,h,o_path)
+		rysPath(context,200+px+mx*6,py+my*6,w,h,k_path)
+		rysPath(context,200+px+mx*7,py+my*7,w,h,a_path)
+		rysPath(context,200+px+mx*7,py+my*7,w,h,ogonek_path)
+		rysPath(context,200+px+mx*8,py+my*8,w,h,t_path)
+		rysPath(context,200+px+mx*9,py+my*9,w,h,n_path)
+		rysPath(context,200+px+mx*10,py+my*10,w,h,a_path)
+	
+	rysPath(context,350+gx,gy,gw,gh,g_path)
+		rysPath(context,350+px,py,w,h,r_path)
+		rysPath(context,350+px+mx,py+my,w,h,a_path)
+		
+	rysPath(context,500+gx,gy,gw,gh,w_path)
+		rysPath(context,500+px,py,w,h,o_path)
+		rysPath(context,500+px+mx,py+my,w,h,j_path)
+		rysPath(context,500+px+mx*2,py+my*2,w,h,e_path)
+		rysPath(context,500+px+mx*3,py+my*3,w,h,n_path)
+		rysPath(context,500+px+mx*4,py+my*4,w,h,n_path)
+		rysPath(context,500+px+mx*5,py+my*5,w,h,a_path)
+		
+	context.strokeStyle = '#f66'
+	context.fillStyle = '#f666'
+		rysPath(context,200+px2,py2,w,h,h_path)
+		rysPath(context,200+px2+mx,py2+my,w,h,e_path)
+		rysPath(context,200+px2+mx*2,py2+my*2,w,h,x_path)
+		rysPath(context,200+px2+mx*3,py2+my*3,w,h,a_path)
+		rysPath(context,200+px2+mx*4,py2+my*4,w,h,g_path)
+		rysPath(context,200+px2+mx*5,py2+my*5,w,h,o_path)
+		rysPath(context,200+px2+mx*6,py2+my*6,w,h,n_path)
+		rysPath(context,200+px2+mx*7,py2+my*7,w,h,a_path)
+		rysPath(context,200+px2+mx*8,py2+my*8,w,h,l_path)
+		
+	rysPath(context,200+px2,py2+my*1,mx*8,my*8,[[0,0],[1,1]])
+		
+		rysPath(context,500+px2,py2,w,h,w_path)
+		rysPath(context,500+px2+mx,py2+my,w,h,a_path)
+		rysPath(context,500+px2+mx*2,py2+my*2,w,h,r_path)
+		rysPath(context,350+px2+mx*3,py2+my*3,w,h,g_path)
+		rysPath(context,350+px2+mx*4,py2+my*4,w,h,a_path)
+		rysPath(context,350+px2+mx*5,py2+my*5,w,h,m_path)
+		rysPath(context,350+px2+mx*6,py2+my*6,w,h,e_path)
+		
+	rysPath(context,500+px2,py2+my*1,mx*1.5,my*1.5,[[0,0],[1,1],[-4.5,1],[-1.5,4],[-4.5,1],[1,1]])
+	
+	scian = 16
+	
+	var unix1 = new Unit(0,0,0,99,0,0,0)
+	var unix2 = new Unit(0,1,1,99,1,1,1)
+	var unix3 = new Unit(0,2,2,99,2,2,3)
+	var unix4 = new Unit(0,3,3,99,3,3,9)
+	var unix5 = new Unit(0,4,4,99,4,4,6)
+	podswu = -1
+	var unixdata = [unix1,unix2,unix3,unix4,unix5]
+	var newHex = new Hex(2,2)
+	newHex.drawHex = drawHex
+	newHex.border = []
+	newHex.z = 0
+	newHex.drawHex(1,[],0,[])
+	newHex.drawHex(0,[],0,[])
+	
+	var newHex = new Hex(1,4)
+	newHex.drawHex = drawHex
+	newHex.border = []
+	newHex.z = -1
+	newHex.drawHex(1,[],0,[])
+	newHex.drawHex(0,[],0,[])
+	
+	var newHex = new Hex(1,7)
+	newHex.drawHex = drawHex
+	newHex.border = []
+	newHex.z = 1500
+	newHex.drawHex(1,[],0,[])
+	newHex.drawHex(0,[],0,[])
+	
+	var newHex = new Hex(2,10)
+	newHex.drawHex = drawHex
+	newHex.border = []
+	newHex.z = -2
+	newHex.drawHex(1,[],0,[])
+	newHex.drawHex(0,[],0,[])
+	
+	var newHex = new Hex(4,12)
+	newHex.drawHex = drawHex
+	newHex.border = []
+	newHex.z = 0
+	newHex.kolz = 0
+	newHex.drawHex(1,[],0,unixdata)
+	newHex.drawHex(0,[],0,unixdata)
+	var ms = obliczMiejsce(4,12)
+	unix1.rysunit(ms.x,ms.y,unixdata,false)
+	
+	var newHex = new Hex(7,13)
+	newHex.drawHex = drawHex
+	newHex.border = []
+	newHex.z = 0
+	newHex.kolz = 1
+	newHex.drawHex(1,[],0,[])
+	newHex.drawHex(0,[],0,[])
+	ms = obliczMiejsce(7,13)
+	unix2.rysunit(ms.x,ms.y,unixdata,false)
+	
+	var newHex = new Hex(10,14)
+	newHex.drawHex = drawHex
+	newHex.border = []
+	newHex.z = -2
+	newHex.kolz = 2
+	newHex.drawHex(1,[],0,[])
+	newHex.drawHex(0,[],0,[])
+	ms = obliczMiejsce(10,14)
+	unix3.rysunit(ms.x,ms.y,unixdata,false)
+	
+	var newHex = new Hex(13,13)
+	newHex.drawHex = drawHex
+	newHex.border = []
+	newHex.z = 0
+	newHex.kolz = 3
+	newHex.drawHex(1,[],0,[])
+	newHex.drawHex(0,[],0,[])
+	ms = obliczMiejsce(13,13)
+	unix4.rysunit(ms.x,ms.y,unixdata,false)
+	
+	var newHex = new Hex(16,12)
+	newHex.drawHex = drawHex
+	newHex.border = []
+	newHex.z = -1
+	newHex.kolz = 4
+	newHex.drawHex(1,[],0,[])
+	newHex.drawHex(0,[],0,[])
+	ms = obliczMiejsce(16,12)
+	unix5.rysunit(ms.x,ms.y,unixdata,false)
+}
+function rysPath(context,x,y,w,h,path){
+	context.lineWidth = 5
+	context.globalAlpha = 0.3
+	rysujPath(context,x,y,w,h,path,true)
+	context.lineWidth = 2
+	context.globalAlpha = 1
+	rysujPath(context,x,y,w,h,path)
+}
+function rysujPath(context,x,y,w,h,path,fill){
+	if(typeof path[0][0] != 'number'){
+		for(var i in path){
+			rysujPath(context,x,y,w,h,path[i],fill)
+		}
+		return
+	}
+	context.beginPath()
+	for(var i in path){
+		if(i == 0){
+			context.moveTo(x+w*path[i][0],y+h*path[i][1])
+		} else {
+			context.lineTo(x+w*path[i][0],y+h*path[i][1])
+		}
+	}
+	context.closePath()
+	context.stroke()
+	if(fill)
+		context.fill()
+		
+}
+
+function obliczMiejsce(x,y){
+	var au = magni*472*(mainCanvas.width/800)/(scian-(-0.5));
+	var bu = magni*723*(mainCanvas.height/800)/Math.sqrt(3)/(scian-(-1));
+	var x0 = 10+au*3/2*((x-scian/2+pox)+scian/magni/2+2/3),y0;
+	if(x%2 == 0){
+		y0 = 10+bu*Math.sqrt(3)*((y-scian/2+poy)+scian/magni/2+0.5);
+	} else {
+		y0 = 10+bu*Math.sqrt(3)*((y-scian/2+poy)+scian/magni/2+1);
+	}
+	return {x:x0,y:y0-bu/4}
+}
+
+

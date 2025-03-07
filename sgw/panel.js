@@ -1202,7 +1202,7 @@ function redrawCanvas(rtx){
 			while(a<3){
 				b = 0;
 				while(b<4){
-					rysunitek(35+b*50,28+a*34,rtx,b+a*4,8);
+					rysunitek(35+b*50,28+a*34,rtx,b+a*4,8,bloknia[kolej][b+a*4]);
 					b++;
 				}
 				a++;
@@ -1210,7 +1210,7 @@ function redrawCanvas(rtx){
 			if(zaznx>-1 && (((heks[zaznx][zazny].hutn<=0 || heks[zaznx][zazny].prod<=0) && ces[createUnitNumber]>0) || heks[zaznx][zazny].unp>=4)){
 
 
-			} else if(createUnitNumber>-1){
+			} else if(createUnitNumber>-1 && !bloknia[kolej][createUnitNumber]){
 				a = Math.floor(createUnitNumber/4);
 				b = createUnitNumber-a*4;
 				rtx.fillStyle = "#FFFFFF";
@@ -1788,7 +1788,7 @@ function rysunicik(x4,y4,zr,nr,wielok,zazanu){
 			zr.fillStyle = "#FFFFFF";
       		zr.fillText(unix[kolej][zazanu].il, xg-sx, yg+sy*0.9);
 }
-function rysunitek(x4,y4,zr,nr,wielok){
+function rysunitek(x4,y4,zr,nr,wielok,bloknia){
 	/*ctx.fillStyle = kolox(this.d,1);
 	ctx.strokeStyle = kolox(this.d,0);
 	ctx.fillRect(x4-150/scian,y4-225/scian,300/scian,450/scian);
@@ -1800,12 +1800,14 @@ function rysunitek(x4,y4,zr,nr,wielok){
 			sx = wielok*3;
 			sy = wielok*2;
 			zr.lineWidth = 1;
-			if(zaznx>-1 && (((heks[zaznx][zazny].hutn<=0 || heks[zaznx][zazny].prod<=0) && ces[nr]>0) || heks[zaznx][zazny].unp>=4)){
+			if(bloknia) {
+				zr.fillStyle = '#888888'
+			} else if(zaznx>-1 && (((heks[zaznx][zazny].hutn<=0 || heks[zaznx][zazny].prod<=0) && ces[nr]>0) || heks[zaznx][zazny].unp>=4)){
 				zr.fillStyle = "#FFFFFF";
 			} else {
 				zr.fillStyle = kolox(kolej,1);
 			}
-			zr.strokeStyle = kolox(kolej,0);
+			zr.strokeStyle = !bloknia ? kolox(kolej,0) : '#222222';
 			zr.lineWidth = 1;
 
 			zr.fillRect(xg-sx,yg-sy,sx*2,sy*2);
@@ -2644,10 +2646,30 @@ function unitChoiceDraw(){
 				unitChoiceCanvasCtx.fillRect(bq*50,aq*50,50,50);
 				unitChoiceCanvasCtx.globalAlpha = 1;
 			}
+			
+			if(bloknia[kolej][dth]){
+				unitChoiceCanvasCtx.strokeStyle = '#888'
+				unitChoiceCanvasCtx.fillStyle = '#ccc'
+				
+				unitChoiceCanvasCtx.fillRect(xg+sx*0.3,yg-sy*0.8,sx*0.7,sy*0.8)
+				
+				unitChoiceCanvasCtx.fillRect(xg+sx*0.4,yg-sy*1.2,sx*0.2,sy*0.6)
+				unitChoiceCanvasCtx.fillRect(xg+sx*0.7,yg-sy*1.2,sx*0.2,sy*0.6)
+				unitChoiceCanvasCtx.fillRect(xg+sx*0.4,yg-sy*1.2,sx*0.5,sy*0.2)
+				
+				unitChoiceCanvasCtx.strokeRect(xg+sx*0.3,yg-sy*0.8,sx*0.7,sy*0.8)
+				unitChoiceCanvasCtx.strokeRect(xg+sx*0.4,yg-sy*1.2,sx*0.5,sy*0.4)
+				unitChoiceCanvasCtx.strokeRect(xg+sx*0.6,yg-sy*1.0,sx*0.1,sy*0.2)
+
+				unitChoiceCanvasCtx.fillStyle = '#888'
+				unitChoiceCanvasCtx.fillRect(xg+sx*0.6,yg-sy*0.6,sx*0.1,sy*0.4)
+				
+			}
 			bq++;
 		}
 		aq++;
 	}
+	//USUWANIE
 	if(akcja==-2){
 		unitChoiceCanvasCtx.strokeStyle = "#FFFF44";
 	} else {
@@ -2659,8 +2681,8 @@ function unitChoiceDraw(){
 	} else {
 		unitChoiceCanvasCtx.fillStyle = "#DDDDDD";
 	}
-	unitChoiceCanvasCtx.fillRect(10,150,100,40);
-	unitChoiceCanvasCtx.strokeRect(10,150,100,40);
+	unitChoiceCanvasCtx.fillRect(2,150,100,40);
+	unitChoiceCanvasCtx.strokeRect(2,150,100,40);
 	unitChoiceCanvasCtx.font = '12pt Calibri';
 	unitChoiceCanvasCtx.textAlign = "center";
 	if(akcja==-2){
@@ -2668,7 +2690,30 @@ function unitChoiceDraw(){
 	} else {
 		unitChoiceCanvasCtx.fillStyle = "#666666";
 	}
-    unitChoiceCanvasCtx.fillText("USUWANIE", 58, 177);
+    unitChoiceCanvasCtx.fillText("USUWANIE", 50, 177);
+	
+	//BLOKADA
+	if(akcja==-3){
+		unitChoiceCanvasCtx.strokeStyle = "#FFFF44";
+	} else {
+		unitChoiceCanvasCtx.strokeStyle = "#666666";
+	}
+	unitChoiceCanvasCtx.lineWidth = 2;
+	if(unitChoiceNumber==-3){
+		unitChoiceCanvasCtx.fillStyle = "#F8F8F8";
+	} else {
+		unitChoiceCanvasCtx.fillStyle = "#DDDDDD";
+	}
+	unitChoiceCanvasCtx.fillRect(103,150,95,40);
+	unitChoiceCanvasCtx.strokeRect(103,150,95,40);
+	unitChoiceCanvasCtx.font = '12pt Calibri';
+	unitChoiceCanvasCtx.textAlign = "center";
+	if(akcja==-3){
+		unitChoiceCanvasCtx.fillStyle = "#FFFF44";
+	} else {
+		unitChoiceCanvasCtx.fillStyle = "#666666";
+	}
+    unitChoiceCanvasCtx.fillText("BLOKADA", 150, 177);
 }
 function unitDivisionDraw(){
 	if(stan>1){
@@ -2747,8 +2792,11 @@ function unitChoiceMove(){
 	unitChoiceNumber = Math.floor(mousePositionByCanvas.x/50)+Math.floor(mousePositionByCanvas.y/50)*4;
 	if(unitChoiceNumber>=12){
 		unitChoiceNumber = -1;
-		if(mousePositionByCanvas.x>10 && mousePositionByCanvas.x<110 && mousePositionByCanvas.y>150 && mousePositionByCanvas.y<190){
+		if(mousePositionByCanvas.x>0 && mousePositionByCanvas.x<100 && mousePositionByCanvas.y>150 && mousePositionByCanvas.y<190){
 			unitChoiceNumber = -2;
+		}
+		if(mousePositionByCanvas.x>100 && mousePositionByCanvas.x<200 && mousePositionByCanvas.y>150 && mousePositionByCanvas.y<190){
+			unitChoiceNumber = -3;
 		}
 	}
 	if(stg!=unitChoiceNumber){
@@ -2837,7 +2885,9 @@ function teamChooseClick(){
 }
 function unitChoiceClick(){
 	stawr = unitChoiceNumber;
-	if(akcja!=stawr){
+	if(akcja == -3 && stawr >= 0 && stawr < 12){
+		bloknia[kolej][stawr] = !bloknia[kolej][stawr]
+	} else if(akcja!=stawr){
 		akcja = stawr;
 	} else {
 		akcja = -1;
@@ -2905,7 +2955,7 @@ function unitsInCityClick(){
 	redrawCanvas(unitsInCityCanvasCtx);
 }
 function createUnitClick(){
-	if(((heks[zaznx][zazny].hutn>0 && heks[zaznx][zazny].prod>0) || ces[createUnitNumber]<=0) && heks[zaznx][zazny].unp<4){
+	if(!bloknia[kolej][createUnitNumber] && ((heks[zaznx][zazny].hutn>0 && heks[zaznx][zazny].prod>0) || ces[createUnitNumber]<=0) && heks[zaznx][zazny].unp<4){
 		if(createUnitNumber>-1){
 			a = Math.floor(createUnitNumber/4);
 			b = createUnitNumber-a*4;
@@ -3011,9 +3061,9 @@ function changeRangeInput(sp,slaj){
 }
 
 //shows code window
-function showcode(){
+function showcode(show){
 	var cw = document.getElementById("codewindow");
-	if(cw.style.display != "block"){
+	if(cw.style.display != "block" && show == undefined || show){
 		cw.style.display = "block";
 		getCode();
 	} else {
@@ -3036,6 +3086,8 @@ function getCode(){
 		infos.push(oddidInfo)
 		var oddnumInfo = encodedPropertyValue('oddnum',oddnum)
 		infos.push(oddnumInfo)
+		var blokniaInfo = encodedPropertyValue('bloknia',bloknia)
+		infos.push(blokniaInfo)
 	}
 	
 	var code = ":";
@@ -3295,7 +3347,7 @@ function readCode(){
 		}
 	}
 }
-const possibleArrayCodes = ['unix','dru','defdr','oddid','oddnum']
+const possibleArrayCodes = ['unix','dru','defdr','oddid','oddnum','bloknia']
 function readScianAndOtherData(subfield){
 	if(subfield.includes('[')){
 		scian = subfield.split('[')[0]
@@ -3309,6 +3361,9 @@ function readScianAndOtherData(subfield){
 				switch(elem.key){
 					case "unix":
 						readUnitsFromCode(elem.value)
+						break
+					case "bloknia":
+						set2DArrayFromCode(elem.key,elem.value)
 						break
 					default:
 						setArrayFromCode(elem.key,elem.value)
@@ -3408,6 +3463,26 @@ function setArrayFromCode(key,value){
 		if(/^[+-]?\d+(\.\d+)?$/.test(value2))
 			value2 = Number(value2)
 		window[key][arrayDatum.key] = value2
+	}
+}
+function set2DArrayFromCode(key,value){
+	var arrayData = splitArrayCode(value)
+	
+	for(var i in arrayData){
+		var arrayDatum = arrayData[i]
+
+		var value2 = arrayDatum.value
+		var arrayData2 = splitArrayCode(value2)
+		for(var j in arrayData2){
+			var arrayDatum2 = arrayData2[j]
+			
+			var value3 = arrayDatum2.value
+			if(value3 == 'true')
+				value3 = true
+			if(value3 == 'false')
+				value3 = false
+			window[key][arrayDatum.key][arrayDatum2.key] = value3
+		}
 	}
 }
 function readCodeWtf(){

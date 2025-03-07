@@ -13,7 +13,7 @@ body {
 	font-family: Trebuchet MS;
 	background-color: black;
 	color: white;
-	font-size: 12pt
+	font-size: 11pt
 }
 input[type=button] {
   background-color: #ccc;
@@ -53,6 +53,9 @@ input[type=range]::-moz-range-thumb {
   height: 30px;
   width: 15px;
   cursor: pointer;
+}
+.centered {
+  text-align:center
 }
 #cityIronRange {
   width:30%;
@@ -101,7 +104,8 @@ h3 {
 	top: 20px;
 	left: 10px;
 	background-color: black;
-	display: inline-block
+	display: inline-block;
+	font-size: 14px
 }
 p {
 	margin: 5px
@@ -161,6 +165,18 @@ p {
     <input type="button" value="WCZYTAJ KOD" onclick="readCode();redraw(true);"/>
   </div>
   <div id="right">
+    <div id="u0">
+      <h3>Menu</h3>
+      <br/>
+      <div id="controlfield" style="margin-bottom:5px">
+        <div id="controltitle">Wybierz tryb</div>
+        <div id="controlfieldin" class="centered">
+          <p>
+          <input type="button" value="SANDBOX" onclick="changeState(0);" />
+          </p>
+        </div>
+      </div>
+    </div>
     <div id="u1">
       <h3>Nowa gra &nbsp;&nbsp;<a style="text-decoration:none;color:red" href="instrukcja.html" target="_blank">[INSTRUKCJA]</a></h3>
       <div id="controlfield" style="margin-bottom:5px">
@@ -214,6 +230,7 @@ p {
             <input type="button" value="GENERUJ" onclick="generateTerrain();redraw(true);" />
             <input type="button" value="GENERUJ I SCAL" onclick="generateTerrain();smoothenCoastline();smoothenCoastline();redraw(true);" />
             <input type="button" value="KOD" onclick="showcode();" />
+            <input type="button" value="POWRÓT DO MENU" onclick="changeState(-1);redraw(true);" />
           </p>
         </div>
       </div>
@@ -268,10 +285,13 @@ p {
       <div id="controlfield">
         <div id="controltitle">Statystyki</div>
         <div id="controlfieldin"> 
-            <canvas width="220px" height="520px" id="statisticsCanvas2" ></canvas>
+            <canvas width="220px" height="420px" id="statisticsCanvas2" ></canvas>
 
         </div>
       </div>
+      <p>
+        <input type="button" value="ZAKOŃCZ GRĘ" id="endgame" onclick="tryEndGame();" />
+      </p>
     </div>
     <div id="u4">
       <div style="height:60px">
