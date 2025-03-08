@@ -728,8 +728,10 @@ function changeState(newState){
 	jesio = -1;
 	pokap();
 	unitDivisionDraw();
-	if(dotychczas == -1)
+	if(dotychczas == -1){
+		rysujEkranStartowy(ctx)
 		fajneprzejście(scian-1)
+	}
 		
 	//if(nowatura)
 	//	historyDex.zapisz()

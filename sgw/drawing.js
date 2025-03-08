@@ -1615,15 +1615,17 @@ function rysujEkranStartowy(context){
 	ms = obliczMiejsce(13,13)
 	unix4.rysunit(ms.x,ms.y,unixdata,false)
 	
-	var newHex = new Hex(16,12)
-	newHex.drawHex = drawHex
-	newHex.border = []
-	newHex.z = -1
-	newHex.kolz = 4
-	newHex.drawHex(1,[],0,[])
-	newHex.drawHex(0,[],0,[])
-	ms = obliczMiejsce(16,12)
-	unix5.rysunit(ms.x,ms.y,unixdata,false)
+	if(stan == -1){
+		var newHex = new Hex(16,12)
+		newHex.drawHex = drawHex
+		newHex.border = []
+		newHex.z = -1
+		newHex.kolz = 4
+		newHex.drawHex(1,[],0,[])
+		newHex.drawHex(0,[],0,[])
+		ms = obliczMiejsce(16,12)
+		unix5.rysunit(ms.x,ms.y,unixdata,false)
+	}
 }
 function rysPath(context,x,y,w,h,path){
 	context.lineWidth = 5
@@ -1640,12 +1642,16 @@ function rysujPath(context,x,y,w,h,path,fill){
 		}
 		return
 	}
+	_x = x/800*mainCanvas.width
+	_y = y/800*mainCanvas.height
+	_w = w/800*mainCanvas.width
+	_h = h/800*mainCanvas.height
 	context.beginPath()
 	for(var i in path){
 		if(i == 0){
-			context.moveTo(x+w*path[i][0],y+h*path[i][1])
+			context.moveTo(_x+_w*path[i][0],_y+_h*path[i][1])
 		} else {
-			context.lineTo(x+w*path[i][0],y+h*path[i][1])
+			context.lineTo(_x+_w*path[i][0],_y+_h*path[i][1])
 		}
 	}
 	context.closePath()

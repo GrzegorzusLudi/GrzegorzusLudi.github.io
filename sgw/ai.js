@@ -3081,9 +3081,9 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                     }
                 //}
             }
-            if(unit.d == kolej && (farFromFrontBool || true)){
+            if(unit.d == kolej && (farFromFrontBool)){
                 farFromFront.push({code:key,unitIx:i,time:mintime,il:unit.il})
-                if(unit.il > 10)
+                if(unit.il > 50)
                     farFromFront.push({code:key,unitIx:i,time:mintime,il:unit.il-10})
             }
             if(unit.d != kolej || !nocapped)
