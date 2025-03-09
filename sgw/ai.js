@@ -1060,7 +1060,7 @@ function aimachine(ailevel){
             //possible_targets.sort((a,b)=>(-(a.hex.z+2)/Math.pow(2,a.dist) + (b.hex.z+2)/Math.pow(2,b.dist)))
             //possible_targets.sort((a,b)=>(-a.value + b.value))
 //            possible_targets.sort((a,b)=>(-(a.dist-1/(2+a.value))+(b.dist-1/(2+b.value))))
-            possible_targets.sort((a,b)=>((-Math.pow(0.4,a.dist)*(2+a.value)+Math.pow(0.4,b.dist)*(2+b.value))))
+            possible_targets.sort((a,b)=>((-Math.pow(0.7,a.dist)*(2+a.value)+Math.pow(0.7,b.dist)*(2+b.value))))
 
             
             //possible_targets.sort((a,b) => (a.x+'#'+a.y in behind ? behind[a.x+'#'+a.y].value : 0) - (b.x+'#'+b.y in behind ? behind[b.x+'#'+b.y].value : 0))
@@ -3000,7 +3000,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             }*/
                             //time = time2
 
-                            if(time <= 2) {
+                            if(time < 2) {
                                 farFromFrontBool = false
                             }
                             //console.log(distmap.hex.x+'#'+distmap.hex.y,time)
@@ -6245,7 +6245,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         (x.action[0].type != 'move' || 
         (x.action[0].rucho.length/*-zas[x.unit.rodz]*/) / szy[x.unit.rodz] <= 2) && 
         (x.unit.actions.length == 0 || x.unit.actions[0].type == 'build' && x.unit.il > 50 ||
-        (/*x.unit.actions[0].by != 'speculation2' && */(x.unit.actions[0].type == 'move' && (x.unit.actions[0].by != 'speculation2' || x.action[0].type != 'move' || (x.action[0].rucho.length) / szy[x.unit.rodz] <= 1) && x.action[0].type == 'move' && (/*x.action[0].rucho.length <= 2*szy[x.unit.rodz]+2 || */x.unit.actions[0].rucho.length > x.action[0].rucho.length)/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/))))
+        (/*x.unit.actions[0].by != 'speculation2' && */(x.unit.actions[0].type == 'move' && (x.unit.actions[0].by != 'speculation' || x.action[0].type != 'move' || (x.action[0].rucho.length) / szy[x.unit.rodz] <= 1) && x.action[0].type == 'move' && (/*x.action[0].rucho.length <= 2*szy[x.unit.rodz]+2 || */x.unit.actions[0].rucho.length > x.action[0].rucho.length)/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/))))
     
     //console.log('filtered',interestingUnits)
     //console.log(interestingUnits.map(a => 1/Math.pow(2,a.action[0].rucho ? a.action[0].rucho.length : 0)*(a.action[0].il)))
