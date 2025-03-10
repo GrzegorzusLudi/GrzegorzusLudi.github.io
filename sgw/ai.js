@@ -6251,7 +6251,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         (x.action[0].type != 'move' || 
         (x.action[0].rucho.length/*-zas[x.unit.rodz]*/) / szy[x.unit.rodz] <= 2) && 
         (x.unit.actions.length == 0 || x.unit.actions[0].type == 'build' && x.unit.il > 50 ||
-        (/*x.unit.actions[0].by != 'speculation2' && */(x.unit.actions[0].type == 'move' && (x.unit.actions[0].by != 'speculation2' || x.unit.actions[0].type != 'move' || (x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1) && x.action[0].type == 'move' && (/*x.action[0].rucho.length <= 2*szy[x.unit.rodz]+2 || */x.unit.actions[0].rucho.length > x.action[0].rucho.length+1)/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/))))
+        (/*x.unit.actions[0].by != 'speculation2' && */(x.unit.actions[0].type == 'move' && (x.unit.actions[0].by != 'speculation2' || x.unit.actions[0].type != 'move' || (x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1) && x.action[0].type == 'move' && (/*x.action[0].rucho.length <= 2*szy[x.unit.rodz]+2 || */x.unit.actions[0].rucho.length > x.action[0].rucho.length)/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/))))
     
     //console.log('filtered',interestingUnits)
     //console.log(interestingUnits.map(a => 1/Math.pow(2,a.action[0].rucho ? a.action[0].rucho.length : 0)*(a.action[0].il)))
