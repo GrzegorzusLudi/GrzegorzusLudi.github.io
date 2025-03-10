@@ -6251,7 +6251,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         (x.action[0].type != 'move' || 
         (x.action[0].rucho.length/*-zas[x.unit.rodz]*/) / szy[x.unit.rodz] <= 2) && 
         (x.unit.actions.length == 0 || x.unit.actions[0].type == 'build' && x.unit.il > 50 ||
-        (/*x.unit.actions[0].by != 'speculation2' && */(x.unit.actions[0].type == 'move' && (x.unit.actions[0].by != 'speculation2' || x.unit.actions[0].type != 'move' || (x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1) && x.action[0].type == 'move' && (/*x.action[0].rucho.length <= 2*szy[x.unit.rodz]+2 || */x.unit.actions[0].rucho.length > x.action[0].rucho.length+2)/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/))))
+        (/*x.unit.actions[0].by != 'speculation2' && */(x.unit.actions[0].type == 'move' && (x.unit.actions[0].by != 'speculation2' || x.unit.actions[0].type != 'move' || (x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1) && x.action[0].type == 'move' && (/*x.action[0].rucho.length <= 2*szy[x.unit.rodz]+2 || */x.unit.actions[0].rucho.length > x.action[0].rucho.length+1)/* && x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'aim'*/))))
     
     //console.log('filtered',interestingUnits)
     //console.log(interestingUnits.map(a => 1/Math.pow(2,a.action[0].rucho ? a.action[0].rucho.length : 0)*(a.action[0].il)))
@@ -6268,14 +6268,14 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     if(interestingUnits.length == 0)
         return false
     
-    //interestingUnits.sort((a,b) => -(1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length/* + (a.action.length > 1 ? 0.5 : 0)*/)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))*(a.action[0].il) + 
-    //                                 1/Math.pow(1.4,(b.action[0].rucho ? (b.action[0].rucho.length/* + (b.action.length > 1 ? 0.5 : 0)*/)/szy[b.unit.rodz] : b.action[0].type == 'aim' ? 0 : 0))*(b.action[0].il) ))
+    interestingUnits.sort((a,b) => -(1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length/* + (a.action.length > 1 ? 0.5 : 0)*/)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))*(a.action[0].il) + 
+                                     1/Math.pow(1.4,(b.action[0].rucho ? (b.action[0].rucho.length/* + (b.action.length > 1 ? 0.5 : 0)*/)/szy[b.unit.rodz] : b.action[0].type == 'aim' ? 0 : 0))*(b.action[0].il) ))
     
         
-    interestingUnits.sort((a,b) => -(1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))
-    *(2-Math.pow(0.9,a.action[0].il)) + 
-                                     1/Math.pow(1.4,(b.action[0].rucho ? (b.action[0].rucho.length)/szy[b.unit.rodz] : b.action[0].type == 'aim' ? 0 : 0))
-    *(2-Math.pow(0.9,b.action[0].il)) ))
+    //interestingUnits.sort((a,b) => -(1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))
+    //*(2-Math.pow(0.9,a.action[0].il)) + 
+    //                                 1/Math.pow(1.4,(b.action[0].rucho ? (b.action[0].rucho.length)/szy[b.unit.rodz] : b.action[0].type == 'aim' ? 0 : 0))
+    //*(2-Math.pow(0.9,b.action[0].il)) ))
     
     //console.log(interestingUnits.map((a) => [a.hex.x,a.hex.y,-1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length + a.action.length > 1 ? 0.5 : 0)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))]))
     //console.log(interestingUnits)
