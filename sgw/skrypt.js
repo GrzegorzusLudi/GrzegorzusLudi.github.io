@@ -71,6 +71,8 @@ terrainChooseCanvas=document.getElementById("terrainChooseField");
 terrainChooseCanvasCtx=terrainChooseCanvas.getContext("2d");
 teamChooseCanvas=document.getElementById("teamChoose");
 teamChooseCanvasCtx=teamChooseCanvas.getContext("2d");
+teamChoose2Canvas=document.getElementById("teamChoose2");
+teamChoose2CanvasCtx=teamChoose2Canvas.getContext("2d");
 unitChoiceCanvas=document.getElementById("unitChoiceCanvas");
 unitChoiceCanvasCtx=unitChoiceCanvas.getContext("2d");
 unitDivisionCanvas=document.getElementById("unitDivisionCanvas");
@@ -127,6 +129,7 @@ okox = -1;
 okoy = -1;
 terrainChooseNumber = -1;
 teamChooseNumber = -1;
+teamChoose2Number = -1;
 unitChoiceNumber = -1;
 movesToMakeNumber = -1;
 movesToMakeNumber2 = -1;
@@ -658,7 +661,7 @@ function kir(odd,doo,xy){
 function changeState(newState){
 	showcode(false)
 	akcja = -1;
-	f = -1;
+	f = -2;
 	var nowatura = false
 	stin = document.getElementById("u"+1);
 	while(f<7){

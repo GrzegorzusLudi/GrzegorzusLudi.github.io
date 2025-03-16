@@ -369,10 +369,16 @@ function terrainChooseDraw(){
 
 }
 function teamChooseDraw(){
-	teamChooseCanvasCtx.fillStyle = "#FFFFFF";
-	teamChooseCanvasCtx.strokeStyle = "#666666";
-	teamChooseCanvasCtx.fillRect(0,0,200,150);
-	teamChooseCanvasCtx.lineWidth = 2;
+	generic_teamChooseDraw(teamChooseCanvasCtx,teamChooseNumber)
+}
+function teamChoose2Draw(){
+	generic_teamChooseDraw(teamChoose2CanvasCtx,teamChoose2Number)
+}
+function generic_teamChooseDraw(context,number){
+	context.fillStyle = "#FFFFFF";
+	context.strokeStyle = "#666666";
+	context.fillRect(0,0,200,150);
+	context.lineWidth = 2;
 	var aq = 0;
 	var bq = 0;
 	var xg = 0;
@@ -383,104 +389,104 @@ function teamChooseDraw(){
 			dtr = aq*4+bq;
 			xg = bq*50+25;
 			yg = aq*50+25;
-			teamChooseCanvasCtx.fillStyle = kolox(dtr,0);
-			teamChooseCanvasCtx.strokeStyle = kolox(dtr,0);
-			teamChooseCanvasCtx.fillRect(bq*50,aq*50,50,50);
-			teamChooseCanvasCtx.fillStyle = kolox(dtr,1);
-			teamChooseCanvasCtx.fillRect(bq*50+2,aq*50+2,46,46);
+			context.fillStyle = kolox(dtr,0);
+			context.strokeStyle = kolox(dtr,0);
+			context.fillRect(bq*50,aq*50,50,50);
+			context.fillStyle = kolox(dtr,1);
+			context.fillRect(bq*50+2,aq*50+2,46,46);
 			if(dru[dtr]==0){
-				teamChooseCanvasCtx.beginPath();
-				teamChooseCanvasCtx.moveTo(xg-15,yg-15);
-				teamChooseCanvasCtx.lineTo(xg+15,yg+15);
-				teamChooseCanvasCtx.closePath();
-				teamChooseCanvasCtx.stroke();
-				teamChooseCanvasCtx.beginPath();
-				teamChooseCanvasCtx.moveTo(xg+15,yg-15);
-				teamChooseCanvasCtx.lineTo(xg-15,yg+15);
-				teamChooseCanvasCtx.closePath();
-				teamChooseCanvasCtx.stroke();
+				context.beginPath();
+				context.moveTo(xg-15,yg-15);
+				context.lineTo(xg+15,yg+15);
+				context.closePath();
+				context.stroke();
+				context.beginPath();
+				context.moveTo(xg+15,yg-15);
+				context.lineTo(xg-15,yg+15);
+				context.closePath();
+				context.stroke();
 			} else if(dru[dtr]==1){
 				yg-=2;
-				teamChooseCanvasCtx.beginPath();
-				teamChooseCanvasCtx.arc(xg,yg-10,5,Math.PI*2,false);
-				teamChooseCanvasCtx.stroke();
-				teamChooseCanvasCtx.beginPath();
-				teamChooseCanvasCtx.moveTo(xg,yg-5);
-				teamChooseCanvasCtx.lineTo(xg-10,yg+5);
-				teamChooseCanvasCtx.lineTo(xg,yg-5);
-				teamChooseCanvasCtx.lineTo(xg+10,yg+5);
-				teamChooseCanvasCtx.lineTo(xg,yg-5);
-				teamChooseCanvasCtx.lineTo(xg,yg+5);
-				teamChooseCanvasCtx.lineTo(xg-10,yg+20);
-				teamChooseCanvasCtx.lineTo(xg,yg+5);
-				teamChooseCanvasCtx.lineTo(xg+10,yg+20);
-				teamChooseCanvasCtx.stroke();
+				context.beginPath();
+				context.arc(xg,yg-10,5,Math.PI*2,false);
+				context.stroke();
+				context.beginPath();
+				context.moveTo(xg,yg-5);
+				context.lineTo(xg-10,yg+5);
+				context.lineTo(xg,yg-5);
+				context.lineTo(xg+10,yg+5);
+				context.lineTo(xg,yg-5);
+				context.lineTo(xg,yg+5);
+				context.lineTo(xg-10,yg+20);
+				context.lineTo(xg,yg+5);
+				context.lineTo(xg+10,yg+20);
+				context.stroke();
 			} else if(dru[dtr]>1){
-				teamChooseCanvasCtx.beginPath();
+				context.beginPath();
 				switch(dru[dtr]){
 				case 2:
-				teamChooseCanvasCtx.moveTo(xg+5,yg-10);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-10);
-				teamChooseCanvasCtx.lineTo(xg,yg-10);
-				teamChooseCanvasCtx.lineTo(xg,yg-20);
-				teamChooseCanvasCtx.lineTo(xg,yg-17);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-17);
-				teamChooseCanvasCtx.stroke();
+				context.moveTo(xg+5,yg-10);
+				context.lineTo(xg-5,yg-10);
+				context.lineTo(xg,yg-10);
+				context.lineTo(xg,yg-20);
+				context.lineTo(xg,yg-17);
+				context.lineTo(xg-5,yg-17);
+				context.stroke();
 				break;
 				case 3:
-				teamChooseCanvasCtx.moveTo(xg-5,yg-17);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-20);
-				teamChooseCanvasCtx.lineTo(xg+5,yg-20);
-				teamChooseCanvasCtx.lineTo(xg+5,yg-17);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-10);
-				teamChooseCanvasCtx.lineTo(xg+6,yg-10);
-				teamChooseCanvasCtx.stroke();
+				context.moveTo(xg-5,yg-17);
+				context.lineTo(xg-5,yg-20);
+				context.lineTo(xg+5,yg-20);
+				context.lineTo(xg+5,yg-17);
+				context.lineTo(xg-5,yg-10);
+				context.lineTo(xg+6,yg-10);
+				context.stroke();
 				break;
 				case 4:
-				teamChooseCanvasCtx.moveTo(xg-5,yg-17);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-20);
-				teamChooseCanvasCtx.lineTo(xg+5,yg-20);
-				teamChooseCanvasCtx.lineTo(xg+5,yg-17);
-				teamChooseCanvasCtx.lineTo(xg+3,yg-15);
-				teamChooseCanvasCtx.lineTo(xg,yg-15);
-				teamChooseCanvasCtx.lineTo(xg+3,yg-15);
-				teamChooseCanvasCtx.lineTo(xg+5,yg-12);
-				teamChooseCanvasCtx.lineTo(xg+5,yg-10);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-10);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-12);
-				teamChooseCanvasCtx.stroke();
+				context.moveTo(xg-5,yg-17);
+				context.lineTo(xg-5,yg-20);
+				context.lineTo(xg+5,yg-20);
+				context.lineTo(xg+5,yg-17);
+				context.lineTo(xg+3,yg-15);
+				context.lineTo(xg,yg-15);
+				context.lineTo(xg+3,yg-15);
+				context.lineTo(xg+5,yg-12);
+				context.lineTo(xg+5,yg-10);
+				context.lineTo(xg-5,yg-10);
+				context.lineTo(xg-5,yg-12);
+				context.stroke();
 				break;
 				case 5:
-				teamChooseCanvasCtx.moveTo(xg-5,yg-20);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-15);
-				teamChooseCanvasCtx.lineTo(xg+5,yg-15);
-				teamChooseCanvasCtx.lineTo(xg+3,yg-15);
-				teamChooseCanvasCtx.lineTo(xg+3,yg-17);
-				teamChooseCanvasCtx.lineTo(xg+3,yg-10);
-				teamChooseCanvasCtx.stroke();
+				context.moveTo(xg-5,yg-20);
+				context.lineTo(xg-5,yg-15);
+				context.lineTo(xg+5,yg-15);
+				context.lineTo(xg+3,yg-15);
+				context.lineTo(xg+3,yg-17);
+				context.lineTo(xg+3,yg-10);
+				context.stroke();
 				break;
 				case 6:
-				teamChooseCanvasCtx.moveTo(xg+5,yg-20);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-20);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-15);
-				teamChooseCanvasCtx.lineTo(xg+3,yg-15);
-				teamChooseCanvasCtx.lineTo(xg+5,yg-12);
-				teamChooseCanvasCtx.lineTo(xg+3,yg-10);
-				teamChooseCanvasCtx.lineTo(xg-5,yg-10);
-				teamChooseCanvasCtx.stroke();
+				context.moveTo(xg+5,yg-20);
+				context.lineTo(xg-5,yg-20);
+				context.lineTo(xg-5,yg-15);
+				context.lineTo(xg+3,yg-15);
+				context.lineTo(xg+5,yg-12);
+				context.lineTo(xg+3,yg-10);
+				context.lineTo(xg-5,yg-10);
+				context.stroke();
 				break;
 				}
 
-				teamChooseCanvasCtx.strokeRect(xg-15,yg-5,30,20);
-				teamChooseCanvasCtx.strokeRect(xg-11,yg-1,7,7);
-				teamChooseCanvasCtx.strokeRect(xg+4,yg-1,7,7);
-				teamChooseCanvasCtx.strokeRect(xg-11,yg+10,22,1);
+				context.strokeRect(xg-15,yg-5,30,20);
+				context.strokeRect(xg-11,yg-1,7,7);
+				context.strokeRect(xg+4,yg-1,7,7);
+				context.strokeRect(xg-11,yg+10,22,1);
 			}
-			if(dtr == teamChooseNumber){
-				teamChooseCanvasCtx.globalAlpha = 0.5;
-				teamChooseCanvasCtx.fillStyle = "#FFFFFF";
-				teamChooseCanvasCtx.fillRect(bq*50,aq*50,50,50);
-				teamChooseCanvasCtx.globalAlpha = 1;
+			if(dtr == number){
+				context.globalAlpha = 0.5;
+				context.fillStyle = "#FFFFFF";
+				context.fillRect(bq*50,aq*50,50,50);
+				context.globalAlpha = 1;
 			}
 			bq++;
 		}
@@ -2787,6 +2793,13 @@ function teamChooseMove(){
 		teamChooseDraw();
 	}
 }
+function teamChoose2Move(){
+	stg = teamChoose2Number;
+	teamChoose2Number = Math.floor(mousePositionByCanvas.x/50)+Math.floor(mousePositionByCanvas.y/50)*4;
+	if(stg!=teamChoose2Number){
+		teamChoose2Draw();
+	}
+}
 function unitChoiceMove(){
 	stg = unitChoiceNumber;
 	unitChoiceNumber = Math.floor(mousePositionByCanvas.x/50)+Math.floor(mousePositionByCanvas.y/50)*4;
@@ -2882,6 +2895,14 @@ function teamChooseClick(){
 		dru[teamChooseNumber] = 0;
 	}
 	teamChooseDraw();
+}
+function teamChoose2Click(){
+	dru[teamChoose2Number]++;
+	//if(dru[teamChooseNumber]>6){
+	if(dru[teamChoose2Number]>2){
+		dru[teamChoose2Number] = 0;
+	}
+	teamChoose2Draw();
 }
 function unitChoiceClick(){
 	stawr = unitChoiceNumber;

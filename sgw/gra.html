@@ -165,12 +165,30 @@ p {
     <input type="button" value="WCZYTAJ KOD" onclick="readCode();redraw(true);"/>
   </div>
   <div id="right">
+    <div id="u-1">
+      <h3>Generator plansz</h3>
+      <br/>
+      
+      <div id="controlfield" style="margin-bottom:5px">
+        <div id="controltitle">Drużyny</div>
+        <div id="controlfieldin">
+          <canvas width="200px" height="150px" id="teamChoose2" onclick="gmp(teamChoose2Canvas,event);teamChoose2Click();" onmousemove="gmp(teamChoose2Canvas,event);teamChoose2Move();" onmouseout="teamChoose2Number = -1;teamChoose2Draw();"></canvas>
+          <br/>
+        </div>
+      </div>
+      <p>
+        <input type="button" value="POWRÓT DO MENU" onclick="changeState(-1);redraw(true);" />
+      </p>
+    </div>
     <div id="u0">
       <h3>Menu</h3>
       <br/>
       <div id="controlfield" style="margin-bottom:5px">
         <div id="controltitle">Wybierz tryb</div>
         <div id="controlfieldin" class="centered">
+          <p>
+          <input type="button" value="GENERATOR" onclick="changeState(-2);" />
+          </p>
           <p>
           <input type="button" value="SANDBOX" onclick="changeState(0);" />
           </p>
@@ -230,10 +248,12 @@ p {
             <input type="button" value="GENERUJ" onclick="generateTerrain();redraw(true);" />
             <input type="button" value="GENERUJ I SCAL" onclick="generateTerrain();smoothenCoastline();smoothenCoastline();redraw(true);" />
             <input type="button" value="KOD" onclick="showcode();" />
-            <input type="button" value="POWRÓT DO MENU" onclick="changeState(-1);redraw(true);" />
           </p>
         </div>
       </div>
+      <p>
+        <input type="button" value="POWRÓT DO MENU" onclick="changeState(-1);redraw(true);" />
+      </p>
       <div id="controlfield" style="margin-bottom:5px">
         <div id="controltitle">Drużyny</div>
         <div id="controlfieldin">
