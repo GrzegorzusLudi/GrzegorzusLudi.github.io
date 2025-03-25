@@ -678,7 +678,7 @@ function changeState(newState){
 	if(stan == 4){
 		zamak = true;
 	}
-	if(stan>=1 && newState==2){
+	if((stan>=1 || stan == -2) && newState==2){
 		for(var i = 0;i<12;i++){
 			spis(i);
 		}
@@ -858,6 +858,10 @@ function rearrangeCities(czy){
 					wasn++;
 					ladu++;
 				}
+				for(var j = 0;j<heks[a][b].unp;j++){
+					heks[a][b].usun(j)
+				}
+				heks[a][b].unp = 0
 				b++;
 			}
 			a++;

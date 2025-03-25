@@ -1660,7 +1660,7 @@ function aimachine(ailevel){
                             if(liczba < 5)
                                 continue
                         
-                            var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:liczba,from:[pole_z_tratwami.x,pole_z_tratwami.y],destination:leadPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho),leadedPath:getLeadedPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho)}
+                            var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:liczba,from:[pole_z_tratwami.x,pole_z_tratwami.y],destination:leadPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho),leadedPath:getLeadedPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho)*/}
                             
                             var turnsToGo = Math.floor(ruchk.length/unit.szy)
                             
@@ -1863,7 +1863,7 @@ function aimachine(ailevel){
                                         var lepakod = lepa[0]+'#'+lepa[1]
                                         
                                         if(!(lepakod in alreadyDestination)){
-                                            var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-additil,from:[distmap.hex.x,distmap.hex.y],destination:lepa,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}                               
+                                            var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-additil,from:[distmap.hex.x,distmap.hex.y],destination:lepa,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk,rucho)*/}
 
                                             unit.actions = [ action ]
                                         }
@@ -4186,7 +4186,7 @@ class UnitAction extends Copyable {
             if(this.ruchy > 0){
                 var rucho = this.rucho.slice(0,this.ruchy)
                 var ruchk = this.ruchk.slice(0,this.ruchy)
-                this.actions.push({type:'move',by:'real',rucho:rucho,ruchk:ruchk,il:unit.il,from:[hex.x,hex.y],destination:leadPath(hex.x,hex.y,ruchk,rucho),embarking:embarkingPointFromLeadedPath(hex.x,hex.y,ruchk,rucho),distant:false,leadedPath:getLeadedPath(hex.x,hex.y,ruchk,rucho)})
+                this.actions.push({type:'move',by:'real',rucho:rucho,ruchk:ruchk,il:unit.il,from:[hex.x,hex.y],destination:leadPath(hex.x,hex.y,ruchk,rucho),embarking:embarkingPointFromLeadedPath(hex.x,hex.y,ruchk,rucho),distant:false,leadedPath:getLeadedPath(hex.x,hex.y,ruchk,rucho)/*,collisional:isPathCollisional(hex.x,hex.y,ruchk,rucho)*/})
             }
             if(this.celu != -1 && this.celd in unix){
                 var aimedunit = unix[this.celd][this.celu]
@@ -4213,6 +4213,31 @@ function leadPath(x,y,ruchk,rucho,stopBefore){
         }
     }
     return [he.x,he.y]
+}
+function isPathCollisional(x,y,ruchk,rucho,stopBefore){
+    //return true
+    var he = heks[x][y]
+    var undr = he.undr
+    if(stopBefore == undefined)
+        stopBefore = 0
+    for(var i in ruchk){
+        if(i >= ruchk.length-stopBefore)
+            break
+        for(var j = 0;j<rucho[i];j++){
+            he = he.border[ruchk[i]]
+            if(collisional(he))
+                return true
+            if(he == undefined)
+                return false
+        }
+    }
+    if(heks[he.x][he.y].z > 0 || collisional(he,undr))
+        return true
+    return false
+}
+function collisional(he,undr){
+    var result = heks[he.x][he.y].unp > 0 && heks[he.x][he.y].undr != undr && heks[he.x][he.y].undr != -1
+    return result
 }
 function getLeadedPath(x,y,ruchk,rucho,stopBefore){
     var leadedPath = []
@@ -5067,9 +5092,9 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
             }
         }
         
-        if(false)
-        for(var movement_type in distmap.maps){
-            var map_of_movement_type = distmap.maps[movement_type].hexmap
+        //if(false)
+        //for(var movement_type in distmap.maps){
+         //   var map_of_movement_type = distmap.maps[movement_type].hexmap
 
             //var hexesToCheck = map_of_movement_type.filter(x => x.hex.z > 0 || x.hex.units.length > 0)
             /*
@@ -5078,11 +5103,11 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                 var elem = map_of_movement_type[i]
                 unitDistDict[elem.hex.x+'#'+elem.hex.y] = elem
             }*/
-            for(var j in distmap.hex.units){
-                var unit = distmap.hex.units[j]
+            //for(var j in distmap.hex.units){
+            //    var unit = distmap.hex.units[j]
                 
-                if(szyt[unit.rodz] != movement_type/* || unit.actions.length > 0*/)
-                    continue
+            //    if(szyt[unit.rodz] != movement_type/* || unit.actions.length > 0*/)
+            //        continue
                 
                 /*
                 var hexesCheckedInTurn = {}
@@ -5142,8 +5167,8 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                 path = path.reverse()
                 */
                 
-            }
-        }
+        //    }
+        //}
     //}
     if(time == undefined)
         time = 1
@@ -5156,7 +5181,7 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
 function calculateAlliegance(dm){
     
     var distmaps = dm.distmaps
-    if(dm.score == undefined || dm.score[0] == undefined || true){
+    if(dm.score == undefined || dm.score[0] == undefined){
         dm.score = {}
         for(var t = 0;t<MAX_TURNS;t++){
             dm.score[t] = allColors()
@@ -5464,9 +5489,9 @@ function legalActions(dm,simplifieddistmaps){
                         if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,ruchk,rucho)){
                             var lnp = leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
                             if(frontline == undefined || true){
-                                unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:lnp,embarking:embarking,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
+                                unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:lnp,embarking:embarking,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk,rucho)*/}])
                                 if(unit.il > 10 && distmap.hex.units.length <= 3)
-                                    unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:lnp,embarking:embarking,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
+                                    unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:lnp,embarking:embarking,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk,rucho)*/}])
                                 //if(unit.il > 20 && distmap.hex.units.length <= 2 && distmap.frontline)
                                 //    unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:Math.floor(unit.il/2),from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
                                 
@@ -5494,12 +5519,12 @@ function legalActions(dm,simplifieddistmaps){
                                             var ds = distance(lnp[0],lnp[1],hex.hex.x,hex.hex.y)
                                             if(ds != undefined && ds <= zas[unit.rodz] && turnPrediction < 2){  
                                                 unit.legalActions.push([
-                                                    {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)},  //not a real situation, but it solves some problem
+                                                    {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)*/},  //not a real situation, but it solves some problem
                                                     {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,destination:[hex.hex.x,hex.hex.y],hex_x:hex.hex.x,hex_y:hex.hex.y},
                                                 ])
                                                 if(unit.il > 10 && distmap.hex.units.length <= 3)
                                                     unit.legalActions.push([
-                                                        {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)},
+                                                        {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)*/},
                                                         {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il-10,destination:[hex.hex.x,hex.hex.y],hex_x:hex.hex.x,hex_y:hex.hex.y},
                                                     ])
                                             }
@@ -6262,8 +6287,8 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
             
             || x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'build'
                     //|| ((x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1)
-            || (x.unit.actions[0].type == 'move' && (x.unit.actions[0].by != 'speculation2'
-                || (x.unit.actions[0].rucho.length > x.action[0].rucho.length)))
+            || (x.unit.actions[0].type == 'move' && x.action[0].type == 'move' && (x.unit.actions[0].by != 'speculation2'
+                 || (x.unit.actions[0].rucho.length > x.action[0].rucho.length)))
                     
             )
         )

@@ -3614,3 +3614,65 @@ function tryEndGame(){
 	}
 }
 
+function generateTerrainAndArmies(){
+	var configuration = document.getElementById('select-configuration').value + '-'
+	
+	var stack = []
+	var curstack = stack
+	var str = ''
+	for(var i in configuration){
+		var c = configuration[i]
+		
+		if(c == '-'){
+			if(str != ''){
+				curstack.push(str)
+			}
+			str = ''
+		} else if(c == '['){
+			curstack = []
+			stack.push(curstack)
+		} else if(c == ']'){
+			curstack.push(str)
+			str = ''
+			curstack = stack
+		} else {
+			str += c
+		}
+	}
+	
+	prawdl = 70
+	prawdg = 10
+	scian = Number(stack[0])
+	generateTerrain();smoothenCoastline();
+	miasy = Number(stack[1].reduce((a,b)=>Number(a)+Number(b),0))
+	rearrangeCities(true);
+	addCitiesAccordingToStack(stack[1],stack[2])
+}
+function addCitiesAccordingToStack(cityStack, powerStack){
+	var cities = []
+	a = 0;
+	while(a<scian){
+		b = 0;
+		while(b<scian){
+			if(heks[a][b].z>0){
+				cities.push(heks[a][b])
+			}
+			b++;
+		}
+		a++;
+	}
+	if(cityStack.length == 2){
+		kolej = 0
+		for(var i = 0;i<cities.length && i<cityStack[0];i++){
+			var city = cities[i]
+			dodai(city.x,city.y,powerStack[0],0,0)
+		}
+		kolej = 1
+		for(var j = 0;j<cities.length && j<cityStack[1];j++){
+			var city = cities[cities.length-j-1]
+			dodai(city.x,city.y,powerStack[1],0,0)
+		}
+	}
+}
+
+

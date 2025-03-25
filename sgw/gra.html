@@ -151,6 +151,9 @@ p {
 	margin-top: 0px;
 	margin-bottom: 0px
 }
+#select-configuration {
+  width:100%;
+}
 </style>
 </head>
 <body onload="initialize();terrainChooseDraw();teamChooseDraw();unitChoiceDraw();unitDivisionDraw();anim()">
@@ -166,14 +169,33 @@ p {
   </div>
   <div id="right">
     <div id="u-1">
-      <h3>Generator plansz</h3>
+      <h3>Generator rozgrywek</h3>
       <br/>
       
+      <div id="controlfield" style="margin-bottom:5px">
+        <div id="controltitle">Konfiguracje</div>
+        <div id="controlfieldin">
+        <select id="select-configuration" size="10">
+          <option value="10-[7-7]-[99-99]-land">10-boczny ląd, armie 10vs10 po 99</option>
+          <option value="15-[13-13]-[99-99]-land">15-boczny ląd, armie 13vs13 po 99</option>
+        </select>
+        <p>
+        <input type="button" value="GENERUJ" onclick="generateTerrainAndArmies();redraw(true);" />
+        </p>
+        </div>
+      </div>
       <div id="controlfield" style="margin-bottom:5px">
         <div id="controltitle">Drużyny</div>
         <div id="controlfieldin">
           <canvas width="200px" height="150px" id="teamChoose2" onclick="gmp(teamChoose2Canvas,event);teamChoose2Click();" onmousemove="gmp(teamChoose2Canvas,event);teamChoose2Move();" onmouseout="teamChoose2Number = -1;teamChoose2Draw();"></canvas>
           <br/>
+        </div>
+      </div>
+      <div id="controlfield" style="margin-bottom:5px">
+        <div id="controlfieldin">
+      
+          <input type="button" value="KOD" onclick="showcode();" />
+          <input type="button" value="GRAJ!" onclick="kolej = 0;changeState(2);gameplay = true;" />
         </div>
       </div>
       <p>
