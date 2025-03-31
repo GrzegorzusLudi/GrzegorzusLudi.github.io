@@ -3130,6 +3130,8 @@ function getInfoAboutUnits(){
 	
 	for(var kolejIndex in unix){
 		var kolejInfo = []
+		if(kolejIndex == '-1')
+			continue
 		for(var unitIndex in unix[kolejIndex]){
 			kolejInfo.push(unitIndex+'='+getUnitCode(kolejIndex,unitIndex)+'')
 		}
@@ -3266,6 +3268,8 @@ const unitCodeDefaults = {
 }
 function getUnitCode(druIx,index){
 	
+	if(druIx == -2)
+		return
 	var optionals = []
 	
 	var unit = unix[druIx][index]
@@ -3274,6 +3278,7 @@ function getUnitCode(druIx,index){
 		var defvalue = unitCodeDefaults[key]
 		//if(hex[key] != defvalue)
 		//	optionals.push(key+'='+hex[key])
+		
 		if(!compareDefValue(unit[key],defvalue,unit)){
 			var encoded = encodedPropertyValue(key,unit[key])
 			optionals.push(encoded)
@@ -3299,7 +3304,7 @@ function compareDefValue(value,defvalue,parentvalue){
 				return false
 			}
 			for(var i in value){
-				if(!compareDefValue(value[i],defvalue.def,value) && !(defvalue.additionalMinusOne && i == -1 && value[i] == null)){
+				if((defvalue.additionalMinusOne && i == -1 && value[i] != null) || !compareDefValue(value[i],defvalue.def,value)){
 					return false
 				}
 			}
@@ -3640,13 +3645,19 @@ function generateTerrainAndArmies(){
 		}
 	}
 	
-	prawdl = 70
-	prawdg = 10
-	scian = Number(stack[0])
-	generateTerrain();smoothenCoastline();
-	miasy = Number(stack[1].reduce((a,b)=>Number(a)+Number(b),0))
-	rearrangeCities(true);
-	addCitiesAccordingToStack(stack[1],stack[2])
+	var typ = curstack[3]
+	switch(typ){
+		case 'land':
+		case 'poorland':
+			prawdl = 65
+			prawdg = 10
+			scian = Number(stack[0])
+			generateTerrain();smoothenCoastline();smoothenCoastline();
+			miasy = Number(stack[1].reduce((a,b)=>Number(a)+Number(b),0))
+			rearrangeCities(true,typ == 'poorland' ? 0.25 : 1);
+			addCitiesAccordingToStack(stack[1],stack[2])
+			break
+	}
 }
 function addCitiesAccordingToStack(cityStack, powerStack){
 	var cities = []
@@ -3665,12 +3676,30 @@ function addCitiesAccordingToStack(cityStack, powerStack){
 		kolej = 0
 		for(var i = 0;i<cities.length && i<cityStack[0];i++){
 			var city = cities[i]
-			dodai(city.x,city.y,powerStack[0],0,0)
+			var ciss = powerStack[0]
+			while(ciss > 0 && !Number.isNaN(Number(powerStack[0]))){
+				if(ciss > 99){
+					dodai(city.x,city.y,99,0,0)
+					ciss-=99
+				} else {
+					dodai(city.x,city.y,ciss,0,0)
+					ciss = 0
+				}
+			}
 		}
 		kolej = 1
 		for(var j = 0;j<cities.length && j<cityStack[1];j++){
 			var city = cities[cities.length-j-1]
-			dodai(city.x,city.y,powerStack[1],0,0)
+			var ciss = powerStack[1]
+			while(ciss > 0 && !Number.isNaN(Number(powerStack[1]))){
+				if(ciss > 99){
+					dodai(city.x,city.y,99,0,0)
+					ciss-=99
+				} else {
+					dodai(city.x,city.y,ciss,0,0)
+					ciss = 0
+				}
+			}
 		}
 	}
 }

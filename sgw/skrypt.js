@@ -841,7 +841,7 @@ function generateTerrain(){
 	rearrangeCities(false);
 
 }
-function rearrangeCities(czy){
+function rearrangeCities(czy,citysizefactor){
 	if(czy){
 		wasn = 0;
 		ladu = 0;
@@ -875,6 +875,8 @@ function rearrangeCities(czy){
 			wej++;
 		}*/
 	}
+	if(citysizefactor == undefined)
+		citysizefactor = 1
 	tymczx = new Array(6);
 	tymczy = new Array(6);
 	miask = 0;
@@ -906,7 +908,7 @@ function rearrangeCities(czy){
 			}
 			luj++;
 		}
-		dww = Math.floor(Math.random()*160)+41;
+		dww = Math.floor((Math.random()*160+41)*citysizefactor);
 		wasn--;
 		heks[wasx[iku]][wasy[iku]].z = dww;
 		heks[wasx[iku]][wasy[iku]].nazwa = dowmiasta()

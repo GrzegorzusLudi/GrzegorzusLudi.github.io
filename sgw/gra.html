@@ -176,8 +176,12 @@ p {
         <div id="controltitle">Konfiguracje</div>
         <div id="controlfieldin">
         <select id="select-configuration" size="10">
-          <option value="10-[7-7]-[99-99]-land">10-boczny ląd, armie 10vs10 po 99</option>
+          <option value="10-[7-7]-[99-99]-land">10-boczny ląd, armie 7vs7 po 99</option>
           <option value="15-[13-13]-[99-99]-land">15-boczny ląd, armie 13vs13 po 99</option>
+          <option value="10-[7-7]-[99-99]-poorland">10-boczny biedny ląd, armie 7vs7 po 99</option>
+          <option value="15-[13-13]-[99-99]-poorland">15-boczny biedny ląd, armie 13vs13 po 99</option>
+          <option value="10-[4-11]-[396-99]-land">10-boczny ląd, armie 4vs10 jedna większa</option>
+          <option value="15-[8-18]-[396-99]-land">15-boczny ląd, armie 8vs18 jedna większa</option>
         </select>
         <p>
         <input type="button" value="GENERUJ" onclick="generateTerrainAndArmies();redraw(true);" />

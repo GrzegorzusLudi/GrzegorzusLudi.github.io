@@ -645,6 +645,8 @@ function celuj(xhh,yhh,dru,uni,changeTheState){
 	if(unix[kolej][zaznu].celd!=-1 || (unix[kolej][zaznu].sebix==unix[kolej][zaznu].x && unix[kolej][zaznu].sebiy==unix[kolej][zaznu].y)){
 		oddroguj(zaznu,kolej,false);
 	}
+	var zix = unix[kolej][zaznu].x
+	var ziy = unix[kolej][zaznu].y
 	kiera = 0;
 	if(xhh==tx){
 		if(yhh<ty){
@@ -751,16 +753,28 @@ function celuj(xhh,yhh,dru,uni,changeTheState){
 		var wiazka = [];
 		var wiah = heks[unix[kolej][zaznu].sebix][unix[kolej][zaznu].sebiy];
 		wiazka[wiah.x] = wiah.y;
-		while(wiah.x>0 && (wiah.y>0 || wiah.x%2==1)){
+		while(wiah.x>0 && (wiah.y>=0 || wiah.x%2==1)){
 			var wiaz = wiah.x;
-			wiah = wiah.border[5];
+			if(ziy>=scian/2){
+				wiah = wiah.border[5];
+			} else {
+				wiah = wiah.border[4];
+			}
+			if(wiah == null)
+				break
 			wiazka[wiah.x] = wiah.y;
 		}
 		wiah = heks[unix[kolej][zaznu].sebix][unix[kolej][zaznu].sebiy];
 		wiazka[wiah.x] = wiah.y;
-		while(wiah.x<scian-1 && (wiah.y>0 || wiah.x%2==1)){
+		while(wiah.x<scian-1 && (wiah.y>=0 || wiah.x%2==1)){
 			var wiaz = wiah.x;
-			wiah = wiah.border[1];
+			if(ziy>=scian/2){
+				wiah = wiah.border[1];
+			} else {
+				wiah = wiah.border[2];
+			}
+			if(wiah == null)
+				break
 			wiazka[wiah.x] = wiah.y;
 		}
 		wiah = heks[unix[dru][uni].x][unix[dru][uni].y];
@@ -772,16 +786,32 @@ function celuj(xhh,yhh,dru,uni,changeTheState){
 					kiera = 3;
 				}
 			} else if(wiah.x<unix[kolej][zaznu].sebix){
-				if(wiah.y<=wiazka[wiah.x]){
-					kiera = 2;
+				if(ziy>=scian/2){
+					if(wiah.y<=wiazka[wiah.x]){
+						kiera = 2;
+					} else {
+						kiera = 1;
+					}
 				} else {
-					kiera = 1;
+					if(wiah.y>=wiazka[wiah.x]){
+						kiera = 1;
+					} else {
+						kiera = 2;
+					}
 				}
 			} else if(wiah.x>unix[kolej][zaznu].sebix){
-				if(wiah.y<=wiazka[wiah.x]){
-					kiera = 4;
+				if(ziy>=scian/2){
+					if(wiah.y<=wiazka[wiah.x]){
+						kiera = 4;
+					} else {
+						kiera = 5;
+					}
 				} else {
-					kiera = 5;
+					if(wiah.y>=wiazka[wiah.x]){
+						kiera = 5;
+					} else {
+						kiera = 4;
+					}
 				}
 			}
 			wiah.drogpr[wiah.drogn] = 2;
