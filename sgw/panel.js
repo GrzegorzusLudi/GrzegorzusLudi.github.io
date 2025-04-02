@@ -3649,6 +3649,7 @@ function generateTerrainAndArmies(){
 	switch(typ){
 		case 'land':
 		case 'poorland':
+		case 'bigarmy':
 			prawdl = 65
 			prawdg = 10
 			scian = Number(stack[0])
@@ -3656,6 +3657,8 @@ function generateTerrainAndArmies(){
 			miasy = Number(stack[1].reduce((a,b)=>Number(a)+Number(b),0))
 			rearrangeCities(true,typ == 'poorland' ? 0.25 : 1);
 			addCitiesAccordingToStack(stack[1],stack[2])
+			if(typ == 'bigarmy')
+				addBigArmies(2)
 			break
 	}
 }
@@ -3699,6 +3702,85 @@ function addCitiesAccordingToStack(cityStack, powerStack){
 					dodai(city.x,city.y,ciss,0,0)
 					ciss = 0
 				}
+			}
+		}
+	} else if(cityStack.length == 4){
+		var ciso = cities.sort((a,b)=>a.y-b.y)
+		var cities_top = ciso.slice(0,Math.floor(ciso.length / 2)).sort((a,b)=>a.x-b.x)
+		var cities_bottom = ciso.slice(Math.floor(ciso.length / 2)).sort((a,b)=>a.x-b.x)
+		kolej = 0
+		for(var i = 0;i<cities_top.length && i<cityStack[0];i++){
+			var city = cities_top[i]
+			var ciss = powerStack[0]
+			while(ciss > 0 && !Number.isNaN(Number(powerStack[0]))){
+				if(ciss > 99){
+					dodai(city.x,city.y,99,0,0)
+					ciss-=99
+				} else {
+					dodai(city.x,city.y,ciss,0,0)
+					ciss = 0
+				}
+			}
+		}
+		kolej = 2
+		for(var j = 0;j<cities_top.length && j<cityStack[1];j++){
+			var city = cities_top[cities_top.length-j-1]
+			var ciss = powerStack[1]
+			while(ciss > 0 && !Number.isNaN(Number(powerStack[1]))){
+				if(ciss > 99){
+					dodai(city.x,city.y,99,0,0)
+					ciss-=99
+				} else {
+					dodai(city.x,city.y,ciss,0,0)
+					ciss = 0
+				}
+			}
+		}
+		kolej = 1
+		for(var i = 0;i<cities_bottom.length && i<cityStack[2];i++){
+			var city = cities_bottom[i]
+			var ciss = powerStack[2]
+			while(ciss > 0 && !Number.isNaN(Number(powerStack[2]))){
+				if(ciss > 99){
+					dodai(city.x,city.y,99,0,0)
+					ciss-=99
+				} else {
+					dodai(city.x,city.y,ciss,0,0)
+					ciss = 0
+				}
+			}
+		}
+		kolej = 3
+		for(var j = 0;j<cities_bottom.length && j<cityStack[3];j++){
+			var city = cities_bottom[cities_bottom.length-j-1]
+			var ciss = powerStack[3]
+			while(ciss > 0 && !Number.isNaN(Number(powerStack[3]))){
+				if(ciss > 99){
+					dodai(city.x,city.y,99,0,0)
+					ciss-=99
+				} else {
+					dodai(city.x,city.y,ciss,0,0)
+					ciss = 0
+				}
+			}
+		}
+	}
+}
+function addBigArmies(width){
+	var x1 = Math.round(scian/2)
+	for(var i = 0;i<width;i++){
+		for(var j = 0;j<scian;j++){
+			var x2 = x1-i-1
+			var x3 = x1+i
+			kolej = 0
+			if(heks[x2][j].z != -1)
+			for(var k = 0;k<4 && heks[x2][j].unp < 4;k++){
+				dodai(x2,j,99,0,0)
+			}
+			kolej = 1
+			if(heks[x3][j].z != -1)
+			for(var k = 0;k<4 && heks[x3][j].unp < 4;k++){
+				dodai(x3,j,99,0,0)
 			}
 		}
 	}

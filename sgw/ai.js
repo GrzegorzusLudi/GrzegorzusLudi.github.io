@@ -1076,6 +1076,7 @@ function aimachine(ailevel){
             possible_targets = Array.from(new Set(nearest_hexes[true].concat(nearest_hexes[false]))).map(a => new Object({hex:{x:a.x, y:a.y, z:heks[a.x][a.y].z},dist:a.dist,value:0}))
             
             possible_targets.sort((a,b) => (new String(a.hex.x+'#'+a.hex.y)).localeCompare(b.hex.x+'#'+b.hex.y))
+            possible_targets = possible_targets.filter(x=>x.dist < Infinity)
             var possible_targets3 = []
             for(var i in possible_targets){
                 var targ1 = possible_targets[i]

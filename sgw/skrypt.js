@@ -862,6 +862,7 @@ function rearrangeCities(czy,citysizefactor){
 					heks[a][b].usun(j)
 				}
 				heks[a][b].unp = 0
+				heks[a][b].kolz = -1
 				b++;
 			}
 			a++;
