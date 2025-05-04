@@ -1,6 +1,6 @@
 ﻿
 //HERE IS DECLERED MOST OF GLOBAL VARIABLES
-function initialize(){
+function initialize(sty){
 clicked = false;
 delaj = 0;
 wielkul = 100;
@@ -28,7 +28,7 @@ zazny = -1;
 
 aistan = 0;
 
-stan = 0;
+stan = sty;
 kolej = 0;
 akcja = -1;
 stawr = 0;
@@ -264,7 +264,7 @@ generateTerrain();
 smoothenCoastline();
 smoothenCoastline();
 smoothenCoastline();
-changeState(-1);
+changeState(sty == 0 ? -1 : sty);
 oddnum = Array(12);
 oddid = Array(12);
 unix = Array(12);
@@ -463,6 +463,9 @@ function Hex(x,y){
 	 this.fajerwerx = this.fajerwerx > 0 ? 2-this.fajerwerx : this.fajerwerx-2
  }
  this.fajerwerktime = 0
+ 
+ this.cel_rodz = -1
+ this.cel_rodz_il = -1
 
  //should be accessible only through ai function
  this.value = ()=>this.waterbody.value()+this.waterbody.city_value(this)
@@ -661,7 +664,7 @@ function kir(odd,doo,xy){
 function changeState(newState){
 	showcode(false)
 	akcja = -1;
-	f = -2;
+	f = -3;
 	var nowatura = false
 	stin = document.getElementById("u"+1);
 	while(f<7){
@@ -674,9 +677,43 @@ function changeState(newState){
 		}
 		f++;
 	}
+	var firstKolej = kolej
 	var zamak = false;
 	if(stan == 4){
+		podswd = -1
+		podswu = -1
+		zaznu = -1
 		zamak = true;
+	}
+	if(stan == -3 && newState != -1){
+		podswd = -1
+		podswu = -1
+		zaznu = -1
+		tutorial = true
+		przejszty = false
+	} else if(stan < 2) {
+		tutorial = false
+		przejszty = false
+	}
+	if(tutorial){
+		var divnametokeep = 'state2'+lekcjaTutoriala
+
+		document.getElementById('tutorial').style.display = 'block'
+		for(var i in document.getElementById('tutorial').children){
+			var child = document.getElementById('tutorial').children[i]
+			
+			if((typeof child) == 'object' && child.id.slice(0,6) == 'state2'){
+				if(child.id == divnametokeep){
+					child.style.display = 'block'
+				} else {
+					child.style.display = 'none'
+				}
+			}
+		}
+		
+		document.getElementById('tutorial-lekcja').innerHTML = lekcjaTutoriala.slice(6)+'/'+Object.values(tutorialWinning).length
+	} else {
+		document.getElementById('tutorial').style.display = 'none'
 	}
 	if((stan>=1 || stan == -2) && newState==2){
 		for(var i = 0;i<12;i++){
@@ -720,6 +757,10 @@ function changeState(newState){
 		}
 		//rescaleMovesToMakeCanvasCts()
 		//redrawCanvas(movesToMakeCanvasCtx)
+	}
+	
+	if(stan == 4 && tutorial){
+		checkCelebration(null,firstKolej)
 	}
 	if(stan == 6){
 		historyDex.setShowcaseDataToCurrent()
@@ -802,7 +843,7 @@ function nextTurn(){
 	}
 	
 	historyDex.nowaKolej(overflow)
-	if(dru[kolej]>1){
+	if(dru[kolej]>1 || dru[kolej] == -1){
 		aistan = 0;
 	}
 	pokap();
@@ -1040,6 +1081,8 @@ function sprawdz(cx,cy){
 	
 	vox = 0;
 	voy = 0;
+	if(wix == undefined)
+		wix = mainCanvas.width/800*80;
 	if(wix!=undefined){
   		aax = au*3/2*((0-scian/2+pox)+scian/magni/2+2/3);
 		aay = bu*Math.sqrt(3)*((0-scian/2+poy)+scian/magni/2+0.5);
@@ -1152,6 +1195,9 @@ function sprawdz(cx,cy){
 function kolox(druu,obw){
 	koy = "#FFFFFF";
 	switch(druu*2+obw){
+		case -2: koy = "#F0F"; break;
+		case -1: koy = "#D000"; break;
+		
 		case 0: koy = "#900"; break;
 		case 1: koy = "#D66"; break;
 
@@ -1496,7 +1542,8 @@ function klik(){
 						}
 					} else if(podswd!=-1){
 						//unit another than selected
-
+						
+						console.log('b',podswd,podswu)
 						if(unix[podswd][podswu].kolor==1 || unix[podswd][podswu].kolor==2 || unix[podswd][podswu].kolor==3){
 							//unit is highlighted (ready to be attacked, merged or transported by air)
 
@@ -1661,6 +1708,35 @@ function fillAll(nui){
 			b++;
 		}
 		a++;
+	}
+}
+rememberedState = null
+function rememberState(){
+	rememberedState = []
+	a = 0;
+	while(a<60){
+		rememberedState[a] = []
+		b = 0;
+		while(b<60){
+			rememberedState[a][b] = heks[a][b].z
+
+			b++;
+		}
+		a++;
+	}
+}
+function przywróćState(){
+	if(rememberedState != null){
+		a = 0;
+		while(a<60){
+			b = 0;
+			while(b<60){
+				heks[a][b].z = rememberedState[a][b]
+				b++;
+			}
+			a++;
+		}
+		rememberedState = null
 	}
 }
 function redraw(all){
@@ -1930,14 +2006,21 @@ function ataz2(att,obrr,ae,oe,ty){
 	return ret;
 }
 function checkCelebration(przed,atkju,obrkju){
-	spis(atkju)
-	spis(obrkju)
-	var długość = liczeb.filter(x=>x>0).length <= 1 ? 50000 : 40
-	if(liczeb[atkju] == 0){
-		celebracja[obrkju] = długość
-	}
-	if(liczeb[obrkju] == 0){
-		celebracja[atkju] = długość
+	if(!tutorial){
+		spis(atkju)
+		spis(obrkju)
+		var długość = liczeb.filter(x=>x>0).length <= 1 ? 50000 : 40
+		if(liczeb[atkju] == 0){
+			celebracja[obrkju] = długość
+		}
+		if(liczeb[obrkju] == 0){
+			celebracja[atkju] = długość
+		}
+	} else {
+		if(!przejszty && checkOverallTutorialWinning(atkju)){
+			celebracja[0] = 50000
+			przejszty = true
+		}
 	}
 		
 	/*
@@ -1948,4 +2031,49 @@ function checkCelebration(przed,atkju,obrkju){
 				hasUnits = true
 		}
 	}*/
+}
+function checkOverallTutorialWinning(kolux){
+	if(tutorialWinning[lekcjaTutoriala].method == 'positions-taken' || tutorialWinning[lekcjaTutoriala].method == 'positions-taken-and-enemy-removed'){
+		for(var i = 0;i<scian;i++){
+			for(var j = 0;j<scian;j++){
+				var huu = heks[i][j]
+				if(huu.cel_rodz > -1){
+					var ok = false
+					for(var k=0;k<huu.unp;k++){
+						var unit = unix[huu.undr][huu.unt[k]]
+						if(unit.rodz == huu.cel_rodz && unit.il >= huu.cel_rodz_il){
+							ok = true
+						}
+					}
+					if(!ok)
+						return false
+				}
+			}
+		}
+		if(tutorialWinning[lekcjaTutoriala].method == 'positions-taken-and-enemy-removed'){
+			for(var i = 0;i<scian;i++){
+				for(var j = 0;j<scian;j++){
+					var huu = heks[i][j]
+					for(var k=0;k<huu.unp;k++){
+						var unit = unix[huu.undr][huu.unt[k]]
+						if(unit.d != kolux){
+							return false
+						}
+					}
+				}
+			}
+		}
+		return true
+	} else if(tutorialWinning[lekcjaTutoriala].method == 'all-cities-taken'){
+		for(var i = 0;i<scian;i++){
+			for(var j = 0;j<scian;j++){
+				var huu = heks[i][j]
+				if(huu.z > 0 && huu.undr != kolux){
+					return false
+				}
+			}
+		}
+		return true
+	}
+	return false
 }

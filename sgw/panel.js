@@ -405,6 +405,14 @@ function generic_teamChooseDraw(context,number){
 				context.lineTo(xg-15,yg+15);
 				context.closePath();
 				context.stroke();
+			} else if(dru[dtr]==-1){
+				yg-=2;
+				context.strokeRect(xg-5,yg-15,10,10)
+				context.strokeRect(xg-10,yg-5,20,15)
+				context.strokeRect(xg-18,yg-5,8,5)
+				context.strokeRect(xg+10,yg-5,8,5)
+				context.strokeRect(xg-8,yg+10,5,10)
+				context.strokeRect(xg+3,yg+10,5,10)
 			} else if(dru[dtr]==1){
 				yg-=2;
 				context.beginPath();
@@ -666,6 +674,14 @@ function redrawCanvas(rtx){
 				rtx.lineTo(xg-15,yg+15);
 				rtx.closePath();
 				rtx.stroke();
+			} else if(dru[dtr]==-1){
+				yg-=2;
+				rtx.strokeRect(xg-5,yg-15,10,10)
+				rtx.strokeRect(xg-10,yg-5,20,15)
+				rtx.strokeRect(xg-18,yg-5,8,5)
+				rtx.strokeRect(xg+10,yg-5,8,5)
+				rtx.strokeRect(xg-8,yg+10,5,10)
+				rtx.strokeRect(xg+3,yg+10,5,10)
 			} else if(dru[dtr]==1){
 				yg-=2;
 				rtx.beginPath();
@@ -1480,7 +1496,7 @@ function redrawCanvas(rtx){
 					var óx = 40*column
 					var óy = 10+20*row*16.5+ 70
 					var óy2 = 15+20*row*16.5
-					if(dru[i] > 0){
+					if(dru[i] != 0){
 						przypisania.push({i:i,dru:dru[i],column:column,row:row})
 						
 						rtx.font = '9pt Calibri';
@@ -3198,7 +3214,10 @@ const hexCodeDefaultsInUnitPlacement = {
 	kaska:0,
 	niszcz: 0,
 
-	most:{type:'array',size:6,def:0}
+	most:{type:'array',size:6,def:0},
+	
+	cel_rodz:-1,
+	cel_rodz_il:-1
 }
 function getHexCode(a,b){
 	
@@ -3319,6 +3338,9 @@ function compareDefValue(value,defvalue,parentvalue){
 function readCode(){
 	codeField = document.getElementById("codeField");
 	var sta = codeField.value;
+	readCodeFromString(sta)
+}
+function readCodeFromString(sta){
 	var ake = 0;
 	var subfields = sta.split(':')
 	for(var i in subfields){
@@ -3335,7 +3357,7 @@ function readCode(){
 			var zzz = subfield.split('[')[0]
 			
 			if(a<scian){
-				heks[a][b].z = zzz;
+				heks[a][b].z = Number(zzz);
 				heks[a][b].hutn = 0;
 				heks[a][b].prod = 0;
 				
@@ -3360,6 +3382,8 @@ function readCode(){
 								heks[a][b][key][unitFields[j].key] = value2
 							}
 						} else {
+							if(/^[+-]?\d+(\.\d+)?$/.test(value))
+								value = Number(value)
 							heks[a][b][key] = value
 						}
 					}
@@ -3422,7 +3446,15 @@ function readUnitsFromCode(code){
 			
 			var newUnitValues = createDefValueObject(unitCodeDefaults,unitArray)
 			
-			unix[key][key2] = new Unit(newUnitValues.x,newUnitValues.y,newUnitValues.d,newUnitValues.il,newUnitValues.num,newUnitValues.id,newUnitValues.rodz);
+			unix[key][key2] = new Unit(
+				Number(newUnitValues.x),
+				Number(newUnitValues.y),
+				Number(newUnitValues.d),
+				Number(newUnitValues.il),
+				Number(newUnitValues.num),
+				Number(newUnitValues.id),
+				Number(newUnitValues.rodz)
+			);
 		}
 	}
 }
@@ -3612,13 +3644,15 @@ function sellSteel(val){
 
 function tryEndGame(){
 	if(confirm("Czy na pewno chcesz zakończyć grę i wrócić do menu?")){
-		removeUnits();
-		changeState(0);
-		redraw(true)
-		initialize()
+		endGame(0)
 	}
 }
-
+function endGame(sty){
+	removeUnits();
+	changeState(sty);
+	redraw(true)
+	initialize(sty)
+}
 function generateTerrainAndArmies(){
 	var configuration = document.getElementById('select-configuration').value + '-'
 	
@@ -3650,6 +3684,7 @@ function generateTerrainAndArmies(){
 		case 'land':
 		case 'poorland':
 		case 'bigarmy':
+		case 'largearmy':
 			prawdl = 65
 			prawdg = 10
 			scian = Number(stack[0])
@@ -3658,6 +3693,8 @@ function generateTerrainAndArmies(){
 			rearrangeCities(true,typ == 'poorland' ? 0.25 : 1);
 			addCitiesAccordingToStack(stack[1],stack[2])
 			if(typ == 'bigarmy')
+				addBigArmies(1)
+			if(typ == 'largearmy')
 				addBigArmies(2)
 			break
 	}
@@ -3773,14 +3810,16 @@ function addBigArmies(width){
 			var x2 = x1-i-1
 			var x3 = x1+i
 			kolej = 0
-			if(heks[x2][j].z != -1)
-			for(var k = 0;k<4 && heks[x2][j].unp < 4;k++){
-				dodai(x2,j,99,0,0)
+			if(heks[x2][j].z != -1 && (heks[x2][j].z <= 0 || heks[x2][j].undr == kolej)){
+				for(var k = 0;k<4 && heks[x2][j].unp < 4;k++){
+					dodai(x2,j,99,0,0)
+				}
 			}
 			kolej = 1
-			if(heks[x3][j].z != -1)
-			for(var k = 0;k<4 && heks[x3][j].unp < 4;k++){
-				dodai(x3,j,99,0,0)
+			if(heks[x3][j].z != -1 && (heks[x3][j].z <= 0 || heks[x3][j].undr == kolej)){
+				for(var k = 0;k<4 && heks[x3][j].unp < 4;k++){
+					dodai(x3,j,99,0,0)
+				}
 			}
 		}
 	}

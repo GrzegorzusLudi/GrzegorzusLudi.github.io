@@ -8,6 +8,7 @@
 <script src="drawing.js"></script>
 <script src="ai.js"></script>
 <script src="history.js"></script>
+<script src="tutorial.js"></script>
 <style>
 body {
 	font-family: Trebuchet MS;
@@ -80,7 +81,17 @@ input[type=range]::-moz-range-thumb {
 #right {
 	border: 1px solid white;
 	float: left;
-	height: 790px;
+/* 	height: 790px; */
+	height:100%;
+	width: 250px;
+	padding: 5px
+}
+#tutorial {
+	border: 1px solid white;
+	float: left;
+	height: 600px;
+	overflow-y:scroll;
+/* 	height:100%; */
 	width: 250px;
 	padding: 5px
 }
@@ -88,7 +99,7 @@ input[type=range]::-moz-range-thumb {
 	float: left
 }
 h3 {
-	margin: 10px 10px 0px 10px
+	margin: 10px 10px -10px 10px
 }
 #controlfield {
 	margin-top: 0px;
@@ -154,9 +165,12 @@ p {
 #select-configuration {
   width:100%;
 }
+#select-tutorial { 
+  width:100%;
+}
 </style>
 </head>
-<body onload="initialize();terrainChooseDraw();teamChooseDraw();unitChoiceDraw();unitDivisionDraw();anim()">
+<body onload="initialize(0);terrainChooseDraw();teamChooseDraw();unitChoiceDraw();unitDivisionDraw();anim()">
 <div id="mountPercentageInputa">
   <div id="aroundcanv">
     <canvas id="canv" width="800" height="800" onmousedown="getmouseposition(event);klik();clicked = true;" onmousemove="getmouseposition(event);cursormove()" onmouseup="odklik();clicked = false;" onmouseout="odklik();clicked = false;"></canvas>
@@ -168,6 +182,32 @@ p {
     <input type="button" value="WCZYTAJ KOD" onclick="readCode();redraw(true);"/>
   </div>
   <div id="right">
+  
+    <div id="u-2">
+      <div style="height:60px">
+        <h3>TUTORIAL</h3>
+      </div>
+      <div id="controlfield">
+        <div id="controltitle">Zadania</div>
+        <div id="controlfieldin">
+          <select id="select-tutorial" size="6">
+            <option value="lekcja1">1. poruszanie oddziałów</option>
+            <option value="lekcja2">2. dzielenie i łączenie oddziałów</option>
+            <option value="lekcja3">3. oddziały wodne i desant</option>
+            <option value="lekcja4">4. miasta i budowa oddziałów</option>
+            <option value="lekcja5">5. atakowanie oddziałów nieprzyjaciela</option>
+            <option value="lekcja6">6. desant</option>
+          </select>
+          <p>
+            <input type="button" value="USTAW ZADANIE" id="tutorial-choose-button" onclick="setTutorial();" />
+          </p>
+        </div>
+      </div>
+      <p>
+        <input type="button" value="GRAJ W TUTORIAL" id="go-tutorial" onclick="prepareTutorial()" />
+        <input type="button" value="POWRÓT DO MENU" onclick="przywróćState();changeState(-1);redraw(true);" />
+      </p>
+    </div>
     <div id="u-1">
       <h3>Generator rozgrywek</h3>
       <br/>
@@ -182,8 +222,10 @@ p {
           <option value="15-[13-13]-[99-99]-poorland">15-boczny biedny ląd, armie 13vs13 po 99</option>
           <option value="10-[4-11]-[396-99]-land">10-boczny ląd, armie 4vs10 jedna większa</option>
           <option value="15-[8-18]-[396-99]-land">15-boczny ląd, armie 8vs18 jedna większa</option>
-          <option value="10-[5-5]-[99-99]-bigarmy">10-boczny ląd, podwójny pas armii plus miasta 5vs5 po 99</option>
-          <option value="15-[10-10]-[99-99]-bigarmy">15-boczny ląd, podwójny pas armii plus miasta 10vs10 po 99</option>
+          <option value="10-[5-5]-[99-99]-bigarmy">10-boczny ląd, pas armii plus miasta 5vs5 po 99</option>
+          <option value="15-[10-10]-[99-99]-bigarmy">15-boczny ląd, pas armii plus miasta 10vs10 po 99</option>
+          <option value="10-[5-5]-[99-99]-largearmy">10-boczny ląd, podwójny pas armii plus miasta 5vs5 po 99</option>
+          <option value="15-[10-10]-[99-99]-largearmy">15-boczny ląd, podwójny pas armii plus miasta 10vs10 po 99</option>
           <option value="10-[4-4-4-4]-[99-99-99-99]-land">10-boczny ląd, armie 4vs4vs4vs4 po 99</option>
           <option value="15-[7-7-7-7]-[99-99-99-99]-land">15-boczny ląd, armie 7vs7vs7vs7 po 99</option>
         </select>
@@ -211,22 +253,25 @@ p {
       </p>
     </div>
     <div id="u0">
-      <h3>Menu</h3>
+      <h3>Menu &nbsp;&nbsp;<a style="text-decoration:none;color:red" href="instrukcja.html" target="_blank">[INSTRUKCJA]</a></h3>
       <br/>
       <div id="controlfield" style="margin-bottom:5px">
         <div id="controltitle">Wybierz tryb</div>
         <div id="controlfieldin" class="centered">
           <p>
-          <input type="button" value="GENERATOR" onclick="changeState(-2);" />
+          <input type="button" value="GENERATOR" onclick="przywróćState();changeState(-2);" />
           </p>
           <p>
-          <input type="button" value="SANDBOX" onclick="changeState(0);" />
+          <input type="button" value="SANDBOX" onclick="przywróćState();removeUnits();changeState(0);" />
+          </p>
+          <p>
+          <input type="button" value="TUTORIAL" onclick="rememberState();fillAll(1);changeState(-3);" />
           </p>
         </div>
       </div>
     </div>
     <div id="u1">
-      <h3>Nowa gra &nbsp;&nbsp;<a style="text-decoration:none;color:red" href="instrukcja.html" target="_blank">[INSTRUKCJA]</a></h3>
+      <h3>Nowa gra</h3>
       <div id="controlfield" style="margin-bottom:5px">
         <div id="controltitle">Mapa</div>
         <div id="controlfieldin">
@@ -332,13 +377,13 @@ p {
         <input type="button" value="ZAKOŃCZ TURĘ" id="endturn" onclick="changeState(4);" />
         <input type="button" value="HISTORIA" id="history" onclick="changeState(6);" />
       </p>
-      <div id="controlfield">
-        <div id="controltitle">Statystyki</div>
-        <div id="controlfieldin"> 
-            <canvas width="220px" height="420px" id="statisticsCanvas2" ></canvas>
+        <div id="controlfield">
+          <div id="controltitle">Statystyki</div>
+          <div id="controlfieldin"> 
+              <canvas width="220px" height="420px" id="statisticsCanvas2" ></canvas>
 
+          </div>
         </div>
-      </div>
       <p>
         <input type="button" value="ZAKOŃCZ GRĘ" id="endgame" onclick="tryEndGame();" />
       </p>
@@ -487,6 +532,776 @@ p {
         </div>
       </div>
     </div>
+  </div>
+  
+  <div id="tutorial">
+    <h3>Tutorial</h3>
+    <div id="controlfield">
+      <div id="controltitle">Kontrola</div>
+      <div id="controlfieldin"> 
+        
+          <b>Lekcja: </b><span id="tutorial-lekcja">1/20</span>
+          <div>
+            <input type="button" value="OD NOWA" onclick="tutorialRestartLesson()" />
+          </div>
+          <div>
+            <input type="button" value="POPRZEDNIA" onclick="tutorialPreviousLesson()" />
+            <input type="button" value="NASTĘPNA" onclick="tutorialNextLesson()" />
+          </div>
+          
+      </div>
+    </div>
+    <span id="state2lekcja1">
+        <div id="controlfield">
+          <div id="controltitle">Opis lekcji</div>
+          <div id="controlfieldin"> 
+            <p>
+              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury)
+            </p>
+            <p>
+              <b>Wskazówki:</b>
+            </p>
+            <p>
+              1.<br/>
+              <img src="tutorial1-1.png" style="width:200px;height:150px" />
+              <br/>
+              Aby zaznaczyć oddział, kliknij na niego. Należy kliknąć na prostokąt, który zakrywa obszar oddziału o wielkości 99. 
+            </p>
+            <p>
+              2.<br/>
+              <img src="tutorial1-1.5.png" style="width:200px;height:150px" />
+              <br/>
+              Aby odznaczyć oddział, kliknij na dolną część sześciokąta, na którym jest oddział, dowolny niepodświetlony sześciokąt lub obszar planszy bez sześciokątów.
+            </p>
+            <p>
+              3.<br/>
+              <img src="tutorial1-2.png" style="width:200px;height:150px" />
+              <br/>
+              Po zaznaczeniu oddziału podświetlą się sześciokąty, na które możesz zaprowadzić drogę, którą poruszy się oddział. 
+              <br/>
+              W panelu sterowania pojawi się nowa strona, którą na razie można zignorować. 
+            </p>
+            <p>
+              4.<br/>
+              <img src="tutorial1-3.png" style="width:200px;height:150px" />
+              <br/>
+              Po zaprowadzeniu drogi możesz ją przedłużyć w dowolnym kierunku.
+              <br/>
+            </p>
+            <p>
+              5.<br/>
+              <img src="tutorial1-4.png" style="width:200px;height:130px" />
+              <br/>
+              Aby zakończyć prowadzenie drogi można:
+              <br/>
+              -kilkąć 2-krotnie na miejsce docelowe
+              <br/>
+              -kilkąć w dowolne niepodświetlone miejsce na planszy (niezależnie, czy to sześciokąt, czy jasnoszary obszar poza planszą)
+              <br/>
+            </p>
+            <p>
+              6.<br/>
+              <img src="tutorial1-5.png" style="width:200px;height:150px" />
+              <br/>
+              Aby usunąć drogę, należy zaznaczyć oddział i kliknąć na obszar sześciokąta, na którym jest dany oddział, nie przykryty przez oddział, gdyby miał wielkośc 99. 
+              <br/>
+              Intuicyjnie jego dolną część. 
+              <br/>
+            </p>
+            <p>
+              7.<br/>
+              Aby zakończyć turę i ruszyć oddziały, należy odznaczyć oddział i kliknąć na przycisk <b>"ZAKOŃCZ TURĘ"</b>.
+            </p>
+          </div>
+        </div>
+            
+        <div id="controlfield">
+          <div id="controltitle">Uwagi</div>
+          <div id="controlfieldin"> 
+            Żaden z poniższych oddziałów nie może samodzielnie przekroczyć wody. 
+            <br/>
+            <br/>
+            Oddziały lekkie mogą podczas jednej tury poruszać się po lądzie o liczbę pól odpowiednią do swojej szybkości, a przy wchodzeniu na górę o 1 pole. 
+            <br/>
+            <br/>
+            Oddziały górskie mogą podczas jednej tury poruszać się zarówno po lądzie i po górach o liczbę pól odpowiednią do swojej szybkości (jedynie 2). 
+            <p>
+              <b>Oddziały:</b>
+            </p>
+            <p>
+              <b>Piechota</b>
+              <br/>
+              <img src="o1.png" />
+              <br/>
+              <table>
+                <tr><td>Szybkość</td><td>2</td></tr>
+                <tr><td>Rodzaj</td><td>lekki</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Piechota zmotoryzowana</b>
+              <br/>
+              <img src="o4.png" />
+              <br/>
+              <table>
+                <tr><td>Szybkość</td><td>5</td></tr>
+                <tr><td>Rodzaj</td><td>lekki</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Piechota górska</b>
+              <br/>
+              <img src="o5.png" />
+              <br/>
+              <table>
+                <tr><td>Szybkość</td><td>2</td></tr>
+                <tr><td>Rodzaj</td><td>górski</td></tr>
+              </table>
+            </p>
+          </div>
+        </div>
+      </span>
+    <span id="state2lekcja2">
+        <div id="controlfield">
+          <div id="controltitle">Opis lekcji</div>
+          <div id="controlfieldin"> 
+            <p>
+              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury)
+            </p>
+            <p>
+              <b>Wskazówki:</b>
+            </p>
+            <p>
+              1.<br/>
+              <img src="tutorial2-1.png" style="width:200px;height:150px" />
+              <br/>
+              Na stosie na sześciokącie (8,4) są 4 oddziały: 3 oddziały czołgów i 1 oddział piechoty na samym spodzie. 
+              <br/>
+              Zaznacz oddział na wierzchu stosu, klikając na niego i tasuj oddziały, klikając ponownie na nie, aż oddział piechoty będzie na wierzchu. 
+              <br/>
+              <br/>
+              W panelu sterowania można zobaczyć kolejność oddziałów na stosie pod zaznaczonym oddziałem.
+              <br/>
+              <img src="tutorial2-1.5.png" style="width:200px;height:100px" />
+            </p>
+            <p>
+              2.<br/>
+              <img src="tutorial2-2.png" style="width:200px;height:150px" />
+              <br/>
+              Wejdź oddziałem piechoty na górę na północno-zachodni (lub południowo-zachodni) sześciokąt. 
+              <br/>
+              Zakończ turę.
+            </p>
+            <p>
+              3.<br/>
+              Podziel ów oddział piechoty. 
+              <br/>
+              Można to zrobić na 2 sposoby:
+              <br/>
+              -zaznacz oddział piechoty i kliknij na niego jeszcze raz. Wtedy z oddziału wydzielony zostanie oddział o wielkości 10 i przeniesiony na spód stosu. 
+              <br/>
+              <b>UWAGA!</b> Działa to jedynie na oddziałach, które są jedyne na ich sześciokącie. 
+              <br/>
+              <img src="tutorial2-3.png" style="width:200px;height:200px" />
+              <br/>
+              -po zaznaczeniu oddziału, w panelu sterowania widoczny jest panel dzielenia/rozbudowy oddziału. 
+              <br/>
+              na pasku, w tym panelu można zaznaczyć liczebność oddziałów, które powstaną ze starego oddziału po podzieleniu. Aby podzielić oddział w dokładny sposób, należy klinkąć przycisk "PODZIEL"
+              <br/>
+              -alternatywnie, w panelu dzielenia można klinkąc przycisk "ZOSTAW 10", przez co z oddziału wydzielony zostanie oddział o liczebności 10
+              <br/>
+              <br/>
+              <b>UWAGA!!!</b>
+              <br/>
+              Dzielenie oddziałów nie działa, gdy na sześciokącie, gdzie znajduje się dany oddział są 4 oddziały (maksymalna liczba). 
+            </p>
+            <p>
+              4.<br/>
+              <img src="tutorial2-4.png" style="width:200px;height:150px" />
+              <br/>
+              Poprowadź podzielone oddziały na docelowe miejsca. Pamiętaj, że oddziały na jednym sześciokącie można "tasować". 
+              <br/>
+              Zakończ turę.
+            </p>
+            <p>
+              5.<br/>
+              <img src="tutorial2-5.png" style="width:200px;height:150px" />
+              <br/>
+              Na sześciokącie (8,1) znajduje się stos odzdziałów czołgów. Powinien przejść na pole (10,3), ale jest blokowany przez 3 stosy oddziałów artylerii, ponieważ na jednym sześciokącie nie może być więcej, niż 4 oddziały . 
+              <br/>
+              <img src="tutorial2-6.png" style="width:200px;height:150px" />
+              <br/>
+              Aby połączyć oddziały, należy zaznaczyć oddział na szczycie stosu i z panelu sterowania wybrać oddział z tego samego stosu, z którym zaznaczony oddział ma zostać połączony. Oddziały na stosie, które mogą być połączone z zaznaczonym oddziałem mają niebieski kwadrat po prawej stronie. 
+              <br/>
+              <b>UWAGA!!!</b> Można łączyć jedynie oddziały tego samego rodzaju. 
+              <br/>
+              <br/>
+              Po "udrożnieniu" drogi oddział czołgów może przejechać w docelowe miejsce. 
+            </p>
+            <p>
+              6.<br/>
+              Oddziały można łączyć też w inny sposób. Dotyczy to oddziałów tego samego typu, ale na różnych heksach, oddalonych od siebie o zasięg oddziału plus jeden. 
+              <br/>
+              Mależy zaznaczyć jeden oddział obrony przeciwlotniczej. Ponieważ oddział ten znajduje się obok drugiego oddziału obrony przeciwlotniczej, ten drugi oddział będzie miał kontury podświetlone na niebiesko. Oznacza to, że można na niego kliknąć, by zaplanować akcję połączenia.
+              <br/>
+              <img src="tutorial2-7.png" style="width:200px;height:150px" />
+              <br/>
+              <img src="tutorial2-8.png" style="width:200px;height:150px" />
+              <br/>
+              Jeśli oddział nie stoi zaraz obok drugiego oddziału, należy poprowadzić drogę zaraz pod oddział i wtedy będzie można zaplanować połączenie oddziałów.
+              <br/>
+              <img src="tutorial2-7.5.png" style="width:200px;height:150px" />
+              <br/>
+              Po zaplanowaniu łączenia oddziałów, można zakończyć turę. 
+            </p>
+          </div>
+        </div>
+            
+        <div id="controlfield">
+          <div id="controltitle">Uwagi</div>
+          <div id="controlfieldin"> 
+            Żaden z poniższych oddziałów nie może samodzielnie przekroczyć wody.
+            <br/>
+            <br/>
+            Są to oddziały ciężkie, więc nie mogą poruszać się po górach oraz nie mogą samodzielnie poruszać się po wodzie. 
+            Oddziały lekkie mogą podczas jednej tury poruszać się jedynie po lądzie o liczbę pól odpowiednią do swojej szybkości. 
+            <p>
+              <b>Oddziały:</b>
+            </p>
+            <p>
+              <b>Czołgi</b>
+              <br/>
+              <img src="o2.png" />
+              <br/>
+              <table>
+                <tr><td>Szybkość</td><td>3</td></tr>
+                <tr><td>Rodzaj</td><td>ciężki</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Artyleria</b>
+              <br/>
+              <img src="o3.png" />
+              <br/>
+              <table>
+                <tr><td>Szybkość</td><td>1</td></tr>
+                <tr><td>Rodzaj</td><td>ciężki</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Obrona przeciwlotnicza</b>
+              <br/>
+              <img src="o6.png" />
+              <br/>
+              <table>
+                <tr><td>Szybkość</td><td>1</td></tr>
+                <tr><td>Rodzaj</td><td>ciężki</td></tr>
+              </table>
+            </p>
+          </div>
+        </div>
+      </span>
+      
+    <span id="state2lekcja3">
+        <div id="controlfield">
+          <div id="controltitle">Opis lekcji</div>
+          <div id="controlfieldin"> 
+            <p>
+              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury)
+            </p>
+            <p>
+              <b>Wskazówki:</b>
+            </p>
+            <p>
+              1.<br/>
+              Oddział piechoty na sześciokącie (3,9) musi dotrzeć na sześciokąt (1,0), który jest na wyspie, a jak wiadomo oddział lądowy nie może samodzielnie przejść na wyspę. 
+              <br/>
+              Można jednak poprowadzić ścieżkę przez wodę. 
+              <br/>
+              <img src="tutorial3-1.png" style="width:200px;height:266px" />
+              <br/>
+              2.<br/>
+              Jednak aby oddział lądowy można było przenieść, należy doprowadzić oddział łodzi desantowych do pierwszego wodnego sześciokąta, który jest na wyznaczonej drodze (miejsce załadunku oddziału). 
+              <br/>
+              <img src="tutorial3-2.png" style="width:200px;height:150px" />
+              <br/>
+              Można teraz zakończyć turę.
+              <br/>
+              <b>UWAGA!!!</b> Kolejność zaznaczania oddziałów będzie miała wpływ na kolejność ruchów podczas fazy przemieszczania się. Oddziały zaznaczone później wykonają ruch później. Dlatego warto najpierw zaplanować drogę tratwy, a potem dopiero drogę desantowanego oddziału. 
+              <br/>
+              3.<br/>
+              <img src="tutorial3-3.png" style="width:200px;height:150px" />
+              Ponieważ wielkość oddziału łodzi desantowych jest mniejsza, niż oddział desantowany, oddział ten będzie podzielony i jedynie część niego będzie transportowana. 
+              <br/>
+              Aby przenieść cały oddział na miejsce docelowe, oddział łodzi desantowych będzie musiał wrócić po wyładowaniu piechoty. 
+              <br/>
+              <img src="tutorial3-4.png" style="width:200px;height:266px" />
+              <br/>
+              4.<br/>
+              <img src="tutorial3-5.png" style="width:200px;height:170px" />
+              <br/>
+              Poruszanie się oddziałów wodnych po wodzie jest trywialne. Nie mogą one poruszać się po niezamieszkałym lądzie. 
+            </p>
+          </div>
+        </div>
+            
+        <div id="controlfield">
+          <div id="controltitle">Uwagi</div>
+          <div id="controlfieldin"> 
+            <br/>
+            <br/>
+            Są to oddziały wodne, więc nie mogą poruszać się po niezamieszkałym lądzie lub górach. 
+            <br/>
+            <br/>
+            Oddział łodzi desantowych nie może atakować i służy do transportowania wszystkich oddziałów lądowych przez morze. 
+            <p>
+              <b>Oddziały:</b>
+            </p>
+            <p>
+              <b>Lekkie okręty</b>
+              <br/>
+              <img src="o7.png" />
+              <br/>
+              <table>
+                <tr><td>Szybkość</td><td>3</td></tr>
+                <tr><td>Rodzaj</td><td>wodny</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Pancerniki</b>
+              <br/>
+              <img src="o8.png" />
+              <br/>
+              <table>
+                <tr><td>Szybkość</td><td>3</td></tr>
+                <tr><td>Rodzaj</td><td>wodny</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Łodzie desantowe</b>
+              <br/>
+              <img src="o9.png" />
+              <br/>
+              <table>
+                <tr><td>Szybkość</td><td>3</td></tr>
+                <tr><td>Rodzaj</td><td>wodny/transportowy</td></tr>
+              </table>
+            </p>
+          </div>
+        </div>
+      </span>
+      
+    <span id="state2lekcja4">
+        <div id="controlfield">
+          <div id="controltitle">Opis lekcji</div>
+          <div id="controlfieldin"> 
+            <p>
+              <b>Cel:</b> Zajmij wszystkie miasta
+            </p>
+            <p>
+              <b>Wskazówki:</b>
+            </p>
+            <p>
+              1.<br/>
+              Zajmij jedno miasto. Przesuń jedyny twój oddział na którekolwiek z miast. 
+              <br/>
+              Zakończ turę.
+              <br/>
+              <img src="tutorial4-1.png" style="width:200px;height:150px" />
+              <br/>
+              Aby efektywnie zająć miasto potrzeba oddział o wielkości 10 dowolnego nie-lotniczego rodzaju. Jeśli suma oddziałów na sześciokącie będzie mniejsza, niż 10, wtedy miasto zbierze mniej pieniędzy na turę. 
+              2.<br/>
+              <img src="tutorial4-2.png" style="width:200px;height:150px" />
+              <br/>
+              Aby zaznaczyć zdobyte miasto, należy kliknąć na dolną część sześciokąta z miastem. Miasto (a nie oddział) będzie zaznaczone po kliknięciu, jeśli to sześciokąt z miastem będzie podświetlony, a nie oddział na nim. 
+              <br/>
+              3.<br/>
+              Po kliknięciu wyświetli się panel sterowania. 
+              <br/>
+              Najważniejszym zadaniem jest wybudowanie nowego oddziału. 
+              <br/>
+              <img src="tutorial4-3.png" style="width:200px;height:150px" />
+              <br/>
+              W panelu sterowania jest tablica możliwych do wybudowania oddziałów. W danej grze nie można wybudować wyszarzonych oddziałów. Suwakiem "Rozmiar" można zmienić wielkość oddziału. Aby zaplanować budowę oddziału należy kliknąć na odpowiedni oddział na panelu. 
+              <br/>
+              <img src="tutorial4-4.png" style="width:200px;height:130px" />
+              <br/>
+              Po zaplanowaniu, na sześciokącie pojawią się puste oddziały z jasnoniebieską obwódką. Obwódka ta oznacza o ile docelowo oddział ma urosnąć. 
+              <br/>
+              4.<br/>
+              <img src="tutorial4-5.png" style="width:180px;height:220px" />
+              <br/>
+              Aby usunąc planowanie, gdy oddział ma wielkość 0, należy zaznaczyć ten oddział i w panelu sterowania kliknąć przycisk "ZAPRZESTAJ ROZBUDOWY". 
+              <br/>
+              5.<br/>
+              Zakończ turę. Dalsze zajmowanie miast przez ląd powinno być proste. 
+              <br/>
+              6.<br/>
+              <img src="tutorial4-6.png" style="width:180px;height:120px" />
+              <br/>
+              Oddziały morskie mogą też stacjonować w miastach. Oczywiście doprowadza to do takiego kuriozum, że statki mogą poruszać się ciągiem miast w głąb lądu, ale to nie błąd, tylko funkcjonalność. 
+              <br/>
+              7.<br/>
+              <img src="tutorial4-7.png" style="width:180px;height:220px" />
+              <br/>
+              Jeśli na sześciokącie przy morzu jest zarówno oddział lądowy i łodzie desantowe, można poprowadzić oddział przez wodę bez stawiania łodzi desantowych na morzu. Oddział łodzi desantowych nie może być jednak wtedy rozbudowywany. 
+            </p>
+          </div>
+        </div>
+            
+        <div id="controlfield">
+          <div id="controltitle">Uwagi</div>
+          <div id="controlfieldin"> 
+            W miastach można planować tworzenie oddziałów. 
+            <br/>
+            <br/>
+            Gdy kończy się tura drużyny, wtedy oddziały są rozbudowywane za pomocą pieniędzy zgromadzonych w danym mieście. 
+            <br/>
+            Najpierw rozbudowywane są oddziały najwyżej na stosie, jesli któryś oddział będzie rozbudowany do końca, wtedy rozbudowywany jest kolejny oddział niżej na stosie. 
+            <br/>
+            <br/>
+            W panelu sterowania miasta przy produkcji widoczne są ceny oddziałów. Jest to cena za rozbudowę danego oddziału o wielkość 1, np. oddział piechoty o wielkości 99 kosztuje 792$.
+            <br/>
+              <img src="tutorial4-3.png" style="width:200px;height:150px" />
+            <br/>
+            <br/>
+            Liczbę pieniędzy dla danego miasta dostępną w danej turze można zobaczyć w górnej części panelu sterowania. 
+            <br/>
+              <img src="tutorial4-8.png" style="width:200px;height:150px" />
+            <br/>
+            W tej lekcji mowa jest głównie o tworzeniu oddziałów, nie wymagających stali/produkcji. 
+            <br/>
+            Poniżej pokazane są ceny tych oddziałów (nie licząc wojsk saperskich). 
+            <br/>
+            <p>
+              <b>Oddziały:</b>
+            </p>
+            <p>
+              <b>Piechota</b>
+              <br/>
+              <img src="o1.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>8$</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Piechota górska</b>
+              <br/>
+              <img src="o5.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>10$</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Lekkie okręty</b>
+              <br/>
+              <img src="o7.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>12$</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Łodzie desantowe</b>
+              <br/>
+              <img src="o9.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>4$</td></tr>
+              </table>
+            </p>
+            <hr/>
+          </div>
+        </div>
+      </span>
+    <span id="state2lekcja5">
+        <div id="controlfield">
+          <div id="controltitle">Opis lekcji</div>
+          <div id="controlfieldin"> 
+            <p>
+              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury) i zniszcz wszystkie oddziały nieprzyjaciela
+            </p>
+            <p>
+              <b>Wskazówki:</b>
+            </p>
+            <p>
+              1.<br/>
+              W tej lekcji pojawiły się oddziały przeciwnika. Jedyną akcją, który on robi jest zakończenie tury, więc można na nim testować bez obawy, że straci się oddziały. 
+              <br/>
+              <br/>
+              2.<br/>
+              Oddziały przeciwnika można zaatakować na 2 sposoby:
+              <br/>
+              <img src="tutorial5-1.png" style="width:200px;height:150px" />
+              <br/>
+              -można dla oddziału poprowadzić drogę na/przez sześciokąt, na którym stoi oddział nieprzyjaciela. Twój oddział przejdzie na ten sześciokąt dopiero jeśli wygra walkę. 
+              <br/>
+              <img src="tutorial5-2.png" style="width:200px;height:300px" />
+              <br/>
+              -można dla oddziału poprowadzić drogę na odległość zasięgu ataku oddziału (przydatne zwłaszcza dla oddziałów, które mają daleki zasięg ataku). Wtedy podobnie, jak przy łączeniu oddziałów, kontury oddziału przeciwnika zmienią kolor, tym razem na czerwony. Oznacza to, że można zaplanować atak na nie bez ruszania się na sześciokąt, na którym znajduje się oddział nieprzyjaciela. 
+              <br/>
+              3.<br/>
+              <img src="tutorial5-3.png" style="width:200px;height:150px" />
+              <br/>
+              Dla oddziałów morskich zasady są generalnie takie same. Więcej o atakach za pomocą oddziałów morskich w lekcji "desant". 
+              <br/>
+              4.<br/>
+              <img src="tutorial5-4.png" style="width:200px;height:150px" />
+              <br/>
+              Atakowanie oddziałów z góry przez oddziały lekkie daje przewagę terenu, przez co siła ataku oddziału jest większa. Odwrotnie, w przypadku ataku na oddział stojący na górze siła ataku jest mniejsza. 
+              <br/>
+              Oddziały górskie oprócz szybszego poruszania się po górach mają jeszcze bardziej zwiększoną siłę ataku z góry i siłę obrony na górze. Ponadto inne oddziały, które je atakują z góry nie mają przewagi terenu. 
+              <br/>
+              5.<br/>
+              <img src="tutorial5-5.png" style="width:200px;height:210px" />
+              <br/>
+              Oddziały, które mają zasięg ataku większy od 1 mogą oczywiście strzelać na oddziały będące na morzu i za morzem. Dla oddziałów ciężkich ograniczeniem jest to, że nie mogą atakować w ten sposób oddziałów, znajdujących się na górach. 
+            </p>
+          </div>
+        </div>
+            
+        <div id="controlfield">
+          <div id="controltitle">Uwagi</div>
+          <div id="controlfieldin"> 
+            <br/>
+            <br/>
+            Po walce na sześciokącie oddziały obrońcy i (nie zawsze) atakującego zmniejszają swoje rozmiary. 
+            <br/>
+            <br/>
+            Algorytm walki brzmi następująco:
+            <br/>
+            -ustalana jest wartość ataku dla atakującego (siła ataku jednostki atakującej razy współczynnik terenu dla atakującego) i obrony dla broniącego (siła obrony jednostki broniącej razy współczynnik terenu dla broniącego)
+            <br/>
+            -wartość ataku jest mnożona przez losową wartość z zakresu od 0 do 2, a obrony przez losową wartość z zakresu od 0 do 1
+            <br/>
+            -jeśli wartość ataku jest większa od wartości obrony, liczba oddziału bronionego jest dzielona przez podłogę różnicy wartości ataku i obrony
+            <br/>
+            -broniący oddział odpowiada tym samym, z tym że, wartość ataku dla broniącego jest mnożona przez współczynnik obrony, a wartość obrony dla atakującego przez współczynnik ataku
+            <br/>
+            -algorytm jest powtarzany tyle razy ile wynosi wielkość oddziału atakującego
+            <br/>
+            <br/>
+            Oddział łodzi desantowych nie może atakować i służy do transportowania wszystkich oddziałów lądowych przez morze. 
+            <br/>
+            <p>
+              <b>Siły obrony dla omawianych oddziałów:</b>
+            </p>
+            <p>
+              <b>Piechota</b>
+              <br/>
+              <img src="o1.png" />
+              <br/>
+              <table>
+                <tr><td>Siła ataku</td><td>1</td></tr>
+                <tr><td>Siła obrony</td><td>1</td></tr>
+                <tr><td>Zasięg ataku</td><td>1</td></tr>
+                <tr><td>Rodzaj</td><td>lekki</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Czołgi</b>
+              <br/>
+              <img src="o2.png" />
+              <br/>
+              <table>
+                <tr><td>Siła ataku</td><td>2</td></tr>
+                <tr><td>Siła obrony</td><td>2</td></tr>
+                <tr><td>Zasięg ataku</td><td>1</td></tr>
+                <tr><td>Rodzaj</td><td>ciężki</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Artyleria</b>
+              <br/>
+              <img src="o3.png" />
+              <br/>
+              <table>
+                <tr><td>Siła ataku</td><td>1.6</td></tr>
+                <tr><td>Siła obrony</td><td>0</td></tr>
+                <tr><td>Zasięg ataku</td><td>3</td></tr>
+                <tr><td>Rodzaj</td><td>ciężki</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Piechota zmotoryzowana</b>
+              <br/>
+              <img src="o4.png" />
+              <br/>
+              <table>
+                <tr><td>Siła ataku</td><td>1</td></tr>
+                <tr><td>Siła obrony</td><td>1</td></tr>
+                <tr><td>Zasięg ataku</td><td>1</td></tr>
+                <tr><td>Rodzaj</td><td>lekki</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Piechota górska</b>
+              <br/>
+              <img src="o5.png" />
+              <br/>
+              <table>
+                <tr><td>Siła ataku</td><td>1</td></tr>
+                <tr><td>Siła obrony</td><td>1</td></tr>
+                <tr><td>Zasięg ataku</td><td>1</td></tr>
+                <tr><td>Rodzaj</td><td>górski</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Lekkie okręty</b>
+              <br/>
+              <img src="o7.png" />
+              <br/>
+              <table>
+                <tr><td>Siła ataku</td><td>1</td></tr>
+                <tr><td>Siła obrony</td><td>1</td></tr>
+                <tr><td>Zasięg ataku</td><td>2</td></tr>
+                <tr><td>Rodzaj</td><td>morski</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Pancerniki</b>
+              <br/>
+              <img src="o8.png" />
+              <br/>
+              <table>
+                <tr><td>Siła ataku</td><td>2</td></tr>
+                <tr><td>Siła obrony</td><td>2</td></tr>
+                <tr><td>Zasięg ataku</td><td>2</td></tr>
+                <tr><td>Rodzaj</td><td>morski</td></tr>
+              </table>
+            </p>
+            <hr/>
+          </div>
+        </div>
+      </span>
+      
+      
+    <span id="state2lekcja6">
+        <div id="controlfield">
+          <div id="controltitle">Opis lekcji</div>
+          <div id="controlfieldin"> 
+            <p>
+              <b>Cel:</b> Zajmij wszystkie miasta
+            </p>
+            <p>
+              <b>Wskazówki:</b>
+            </p>
+            <p>
+              1.<br/>
+              Zaatakuj nadbrzeżne miasta nieprzyjaciela za pomocą okrętów. 
+              <br/>
+              <img src="tutorial6-1.png" style="width:200px;height:150px" />
+              <br/>
+              <b>WAŻNA UWAGA!</b> Oddziały atakujące, które mają większy zasięg, niż oddziały atakowane nie otrzymują obrażeń w walce na dystans. Dlatego oddziały morskie doskonale nadają się do przygotowania desantu oddziałów lądowych na ląd zamorski. 
+              <br/>
+              2.<br/>
+              <b>UWAGA! </b>Nie powinno się atakować sześciokątów z oddziałami nieprzyjaciela za pomocą oddziałów desantowanych. Oddziały broniące mają wtedy podwójną wartość obrony. 
+              <br/>
+              <img src="tutorial6-2.png" style="width:200px;height:150px" />
+              <br/>
+              3.<br/>
+              Nierozważnym jest też atakowanie oddziałów morskich zadokowanych w miastach, ponieważ działa ten sam mechanizm podwojonej wartości obrony, jak podczas desantu oddziałami lądowymi. 
+              <br/>
+              <img src="tutorial6-3.png" style="width:150px;height:200px" />
+              <br/>
+              Dlatego lepszym rozwiązaniem jest atakowanie owych oddziałów morskich za pomocą piechoty, od strony lądu.
+              <br/>
+              <img src="tutorial6-4.png" style="width:200px;height:150px" />
+              <br/>
+              <img src="tutorial6-5.png" style="width:180px;height:200px" />
+              
+              
+            </p>
+          </div>
+        </div>
+            
+        <div id="controlfield">
+          <div id="controltitle">Uwagi</div>
+          <div id="controlfieldin"> 
+            W miastach można planować tworzenie oddziałów. 
+            <br/>
+            <br/>
+            Gdy kończy się tura drużyny, wtedy oddziały są rozbudowywane za pomocą pieniędzy zgromadzonych w danym mieście. 
+            <br/>
+            Najpierw rozbudowywane są oddziały najwyżej na stosie, jesli któryś oddział będzie rozbudowany do końca, wtedy rozbudowywany jest kolejny oddział niżej na stosie. 
+            <br/>
+            <br/>
+            W panelu sterowania miasta przy produkcji widoczne są ceny oddziałów. Jest to cena za rozbudowę danego oddziału o wielkość 1, np. oddział piechoty o wielkości 99 kosztuje 792$.
+            <br/>
+              <img src="tutorial4-3.png" style="width:200px;height:150px" />
+            <br/>
+            <br/>
+            Liczbę pieniędzy dla danego miasta dostępną w danej turze można zobaczyć w górnej części panelu sterowania. 
+            <br/>
+              <img src="tutorial4-8.png" style="width:200px;height:150px" />
+            <br/>
+            W tej lekcji mowa jest głównie o tworzeniu oddziałów, nie wymagających stali/produkcji. 
+            <br/>
+            Poniżej pokazane są ceny tych oddziałów (nie licząc wojsk saperskich). 
+            <br/>
+            <p>
+              <b>Oddziały:</b>
+            </p>
+            <p>
+              <b>Piechota</b>
+              <br/>
+              <img src="o1.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>8$</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Piechota górska</b>
+              <br/>
+              <img src="o5.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>10$</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Lekkie okręty</b>
+              <br/>
+              <img src="o7.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>12$</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Łodzie desantowe</b>
+              <br/>
+              <img src="o9.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>4$</td></tr>
+              </table>
+            </p>
+            <hr/>
+          </div>
+        </div>
+      </span>
   </div>
 </div>
 <div style="float:left;clear:left"><span style="float:left;margin-top:40px">Wymiary planszy:</span>

@@ -862,7 +862,7 @@ function aimachine(ailevel){
                                     var d2 = chexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
                                     var d3 = (chexes[i].dmap[chexes[j].x+'#'+chexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                     
-                                    var prst = d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)// && d1-1 > d2
+                                    var prst = d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)// && d1 > 1// && d1-1 > d2
                                     if(prst){
                                         ok2_ = false
                                         i_am_behind[mountainous][d1code].codes.push(d2code)
@@ -922,7 +922,7 @@ function aimachine(ailevel){
                         realSfKeys[key] = {hex:strictly_forward[mountainous][key].hex, distTable:allColorTables(), maxPlayer: -1, maxPlayerScore: 0, mountainous: mountainous}
                 }
             }
-            sfkeys.sort((a,b)=>-a.score+b.score)
+            sfkeys.sort((a,b)=>a.score-b.score)
             
             for(var i in sfkeys){
                 var sfkey = sfkeys[i]
@@ -990,7 +990,7 @@ function aimachine(ailevel){
                                 if(prsz){
                                     ok2 = true
                                 }
-                                if(prsz || d2 <= 1){
+                                if(prsz/* || d2 <= 1*/){
                                     //if(!(d2code in behind))
                                     //    behind[d2code] = {hex:from_hexes[j],value:0}
                                     //behind[d2code].value += heks[nearest_hexes[i].x][nearest_hexes[i].y].z
@@ -6319,7 +6319,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
             || x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'build'
                     //|| ((x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1)
             || (x.unit.actions[0].type == 'move' && x.action[0].type != 'aim' && x.unit.actions[0].by != 'speculation2' &&
-                 (x.action[0].type != 'move' || (x.unit.actions[0].rucho.length < 0 || x.unit.actions[0].rucho.length > x.action[0].rucho.length)))
+                 (/*x.action[0].type != 'move' || */(x.unit.actions[0].rucho.length < 0 || x.unit.actions[0].rucho.length >= x.action[0].rucho.length)))
                     
             )
         )
@@ -6456,12 +6456,12 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         //console.log('a',value2,value)
         var evaluated = false
         //console.log('val: '+value2+' '+value)
-        if(value2 > value){
+        var score2 = scoreOfBehinds(dm,kolej,behind_score)
+        if(score2 > score1){
             console.log('ech1',value2,value,score2,score1)
             break
         }
-        var score2 = scoreOfBehinds(dm,kolej,behind_score)
-        if(score2 > score1 && value2 >= value/* || lost*/){
+        if(value2 > value && score2 >= score1/* || lost*/){
             console.log('ech1.5',value2,value,score2,score1)
             break
         }
@@ -7095,7 +7095,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                                 //delete possible[key1]
                                 //break
                             }
-                            if(d1 != null && d2 != null && d3 != null && d2 != -1 && d3 != -1 && d1 /*- szy[unit.rodz]*/ > d2 && d1 > szy[unit.rodz] && d1 > (d2+d3) * 0.7 && !(d2 > (d1+d3) * 0.7)){
+                            if(d1 != null && d2 != null && d3 != null && d2 != -1 && d3 != -1 && d1 - szy[unit.rodz] > d2 && d1 > szy[unit.rodz] && d1 > (d2+d3) * 0.7 && !(d2 > (d1+d3) * 0.7)){
                                 delete possible[key1]
                                 break
                             }

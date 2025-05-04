@@ -1261,6 +1261,7 @@ function tatasuj(uni,wyski){
 
 }
 function divideUnit(uni,zost,changeTheState){
+	console.log(kolej,uni)
 	if(unix[kolej][uni].il>zost && heks[unix[kolej][uni].x][unix[kolej][uni].y].unp<4){
 		
 		tx = unix[kolej][uni].x

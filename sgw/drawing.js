@@ -656,6 +656,7 @@
 				}
 			}
 		}
+		
 			/*ctx.font = '8pt Calibri';
 			ctx.textAlign = "center";
 			ctx.fillStyle = "#000";
@@ -664,6 +665,33 @@
 			}*/
 		rst++;
 	}
+	
+	}
+	
+	if(this.cel_rodz > -1){
+		
+		//xh,yh,druzh,il,nunum,id,rodz)
+		var unix_imag = new Unit(this.x,this.y,-1,99,-10000000,-1000000,this.cel_rodz)
+		var unixdata = [unix_imag]
+		unix_imag.rysunit(x0,y0-bu/4,unixdata,kolej_at_time);
+		
+		if(this.cel_rodz_il > -1){
+			var xg = x0-au/8
+			var yg = y0+bu/6
+			
+			//xg+=kir((this.kiero+5)%6,(this.kiero+1)%6,"x")*3*this.przes;
+			//yg+=kir((this.kiero+5)%6,(this.kiero+1)%6,"y")*3*this.przes;
+			var sx = au/2;
+			var sy = au/3;
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillStyle = kolox(-1,0);
+			ctx.fillRect(xg-sx,yg+sy*0.1,sy*1.1,sy*0.9);
+			//btx.strokeRect(xg-24,yg-16,48,32);
+			ctx.font = Math.floor(sy*0.8)+'pt Calibri';
+			ctx.textAlign = "left";
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillText(this.cel_rodz_il, xg-sx, yg+sy*0.9);
+		}
 	}
 	
 	for(var i in this.fajerwerki){
@@ -1005,16 +1033,18 @@ function rysunit(x4,y4,unixdata,kolej_at_time){
 			/*
 			24 16 48 32   0.53125
 			(xg-sx,yg-sy,sx*2,sy*2)*/
-			sx = au/2;
-			sy = au/3;
-			ctx.fillStyle = "#FFFFFF";
-			ctx.fillStyle = "#444444";
-			ctx.fillRect(xg-sx,yg+sy*0.1,sy*1.1,sy*0.9);
-			//btx.strokeRect(xg-24,yg-16,48,32);
-			ctx.font = Math.floor(sy*0.8)+'pt Calibri';
-			ctx.textAlign = "left";
-			ctx.fillStyle = "#FFFFFF";
-      		ctx.fillText(this.il, xg-sx, yg+sy*0.9);
+			if(this.d >= 0){
+				sx = au/2;
+				sy = au/3;
+				ctx.fillStyle = "#FFFFFF";
+				ctx.fillStyle = "#444444";
+				ctx.fillRect(xg-sx,yg+sy*0.1,sy*1.1,sy*0.9);
+				//btx.strokeRect(xg-24,yg-16,48,32);
+				ctx.font = Math.floor(sy*0.8)+'pt Calibri';
+				ctx.textAlign = "left";
+				ctx.fillStyle = "#FFFFFF";
+				ctx.fillText(this.il, xg-sx, yg+sy*0.9);
+			}
 
 
 		if(this.rozb>0){
@@ -1546,6 +1576,7 @@ function rysujEkranStartowy(context){
 	var unix4 = new Unit(0,3,3,99,3,3,9)
 	var unix5 = new Unit(0,4,4,99,4,4,6)
 	podswu = -1
+	podswd = -1
 	var unixdata = [unix1,unix2,unix3,unix4,unix5]
 	var newHex = new Hex(2,2)
 	newHex.drawHex = drawHex

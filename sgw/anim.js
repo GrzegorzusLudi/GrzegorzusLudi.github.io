@@ -88,7 +88,7 @@ function anim(){
 								
 								aktdroguj(kolej,uniwy);
 
-								if(tundr > -1 && tunp > 0)
+								if(tundr > -1 && tunp > 0 || heks[tanx][tany].cel_rodz > -1 || tutorial)
 									checkCelebration(previousLiczeb,kolej,tundr)
 									
 								if(!unix[kolej][ruchwkolejce[uniwy]].kosz){
@@ -174,9 +174,10 @@ function anim(){
 
 				}
 
-			} else if(dru[kolej]>1 && stan>1 && stan != 6){
+			} else if((dru[kolej]>1 || dru[kolej] == -1) && stan>1 && stan != 6){
 				pokap()
 				switch(dru[kolej]){
+					case -1:  dummyplayer();break;
 					case 2:  ai1();break;
 					case 3:  ai2();break;
 					case 4:  ai3();break;
@@ -317,6 +318,19 @@ function anim(){
 				}
 			}
     setTimeout(()=>anim(),aistan == 1.3 ? 25 : 25)
+}
+function dummyplayer(){
+	if(aistan == 0){
+		aistan = 1377.997
+	} else {
+		zaznx = -1
+		zazny = -1
+		tx = -1
+		ty = -1
+		zaznu = -1
+		changeState(4);
+		aistan = 0
+	}
 }
 function nastepnyoddzial(){
     while(uniwy<ruchwkolejcen && (unix[kolej][ruchwkolejce[uniwy]]==null || unix[kolej][ruchwkolejce[uniwy]].kosz || (unix[kolej][ruchwkolejce[uniwy]].ruchy<=0 && unix[kolej][ruchwkolejce[uniwy]].celd==-1))){
