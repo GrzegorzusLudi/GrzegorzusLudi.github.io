@@ -153,7 +153,7 @@ function zaznaj(uni,changeTheState){
 	ty = unix[kolej][uni].sebiy;
 	tph = heks[tx][ty];
 	typek = unix[kolej][uni].rodz;
-	if(unix[kolej][uni].szyt=="l" && szyt[unix[kolej][uni].rodz]!="l" && unix[kolej][uni].wypax==-1){
+	if(unix[kolej][uni].szyt=="l" && szyt[unix[kolej][uni].rodz]!="l" && unix[kolej][uni].wypax==-1 && tph.unp < 4){
 		tph.pode = 1;
 		tph.zmiana++;
 	}
@@ -1159,8 +1159,10 @@ function oddroguj(uni,koloj,odc){
 	unix[koloj][uni].wypax = -1;
 	unix[koloj][uni].wypay = -1;
 
-	unix[koloj][uni].rucho.length = 0;
-	unix[koloj][uni].ruchk.length = 0;
+	if(koloj != -2){
+		unix[koloj][uni].rucho.length = 0;
+		unix[koloj][uni].ruchk.length = 0;
+	}
 }
 function przeczyscc(unu,kpx,kpy,dru){
 	var numa = 0
@@ -1195,13 +1197,12 @@ function czyscc(unu,kpx,kpy,dru){
 	}
 	numa = 0;
 	while(numa<4){
-		if(numa<heks[kpx][kpy].unp){
-			var ala = 0;
-			while(ala<unix[heks[kpx][kpy].undr][heks[kpx][kpy].unt[numa]]){
-				ala++;
-			}
-		}
+	
 		if(heks[kpx][kpy].wylad[numa] == unu && heks[kpx][kpy].wyladr[numa] == dru){
+			heks[kpx][kpy].wylad[numu] = -1;
+			heks[kpx][kpy].wyladr[numu] = -1;
+		}
+		if(heks[kpx][kpy].wyladr[numa] != -1 && heks[kpx][kpy].wylad[numa] in unix[heks[kpx][kpy].wyladr[numa]] && (unix[heks[kpx][kpy].wyladr[numa]][heks[kpx][kpy].wylad[numa]].szyt != 'l' && szyt[unix[heks[kpx][kpy].wyladr[numa]][heks[kpx][kpy].wylad[numa]].rodz] != 'l' || unix[heks[kpx][kpy].wyladr[numa]][heks[kpx][kpy].wylad[numa]].ruchy == 0)){
 			heks[kpx][kpy].wylad[numu] = -1;
 			heks[kpx][kpy].wyladr[numu] = -1;
 		}
@@ -1508,10 +1509,10 @@ function koloruj(){
 function mostuj(x,y,kierunek,ilosc){
 	var ghh;
 	ghh = heks[x][y].border[kierunek];
-	heks[x][y].most[kierunek]-=-ilosc;
+	heks[x][y].most[kierunek]=Math.max(0,heks[x][y].most[kierunek],ilosc);
 	if(heks[x][y].most[kierunek]>99)
 		heks[x][y].most[kierunek]=99;
-	ghh.most[(kierunek+3)%6]-=-ilosc;
+	ghh.most[(kierunek+3)%6]=Math.max(0,ghh.most[(kierunek+3)%6],ilosc);
 	if(ghh.most[(kierunek+3)%6]>99)
 		ghh.most[(kierunek+3)%6]=99;
 	ghh.zmiana++;
@@ -1524,7 +1525,7 @@ function przenies(kierunek){
 	var taik = false;
 	var peh = hexOfUnit(this).border[kierunek];
 	var ton = 0;
-	var tox,toy;
+	var tox = this.x,toy = this.y;
 	if(peh.undr!=kolej && peh.undr!=-1){
 		atakuj(this.id,peh,peh.undr);
 	}
@@ -1536,10 +1537,8 @@ function przenies(kierunek){
 				this.szyt = szyt[this.rodz];
 				this.szy = szy[this.rodz];
 				jesio = 0;
-			}
-			if(hexOfUnit(this).z==-1){
-
-				if((zast[this.rodz]=="m" && hexOfUnit(this).most[kierunek]<this.il) && this.szyt==szyt[this.rodz]){
+			} else if(hexOfUnit(this).z==-1){
+				if((zast[this.rodz]=="m" && (hexOfUnit(this).most[kierunek]<this.il || peh.most[(kierunek+3)%6]<this.il)) && this.szyt==szyt[this.rodz]){
 					mostuj(this.x,this.y,kierunek,this.il);
 				}
 			}
@@ -1638,15 +1637,17 @@ function przenies(kierunek){
 				this.szy = szy[8];
 				jesio = szy[8];
 			} else {
-				if((zast[this.rodz]=="m" && hexOfUnit(this).most[kierunek]<this.il) && this.szyt==szyt[this.rodz]){
-					mostuj(this.x,this.y,kierunek,this.il);
-					jesio = 0;
-				} else if(peh.most[(kierunek+3)%6]==0){
-					jesio = -1;
+				if(this.szyt==szyt[this.rodz]){
+					if((zast[this.rodz]=="m" && (hexOfUnit(this).most[kierunek]<this.il || peh.most[(kierunek+3)%6]<this.il))){
+						mostuj(this.x,this.y,kierunek,this.il);
+						jesio = 0;
+					} else if(peh.most[(kierunek+3)%6]==0){
+						jesio = -1;
+					}
 				}
 			}
 
-			if(peh.most[(kierunek+3)%6]>0){
+			if(peh.most[(kierunek+3)%6]>0 && this.szyt == szyt[this.rodz]){
 				var numw = peh.most[(kierunek+3)%6];
 				var nump = this.il;
 				var gv = 0;
@@ -1664,22 +1665,22 @@ function przenies(kierunek){
 					divideUnit(this.id,numw);
 				}
 				if(numw>0){
-					while(rer<hexOfUnit(this).unp){
-						if(hexOfUnit(this).unt[rer] == this.id){
+					while(rer<heks[tox][toy].unp){
+						if(heks[tox][toy].unt[rer] == this.id){
 							taik = true;
-							hexOfUnit(this).unp--;
+							heks[tox][toy].unp--;
 						}
-						if(taik && rer<hexOfUnit(this).unp){
-							hexOfUnit(this).unt[rer] = hexOfUnit(this).unt[rer+1];
+						if(taik && rer<heks[tox][toy].unp){
+							heks[tox][toy].unt[rer] = heks[tox][toy].unt[rer+1];
 						}
 						rer++;
 					}
-					if(hexOfUnit(this).unp == 0){
-						hexOfUnit(this).undr = -1;
-						hexOfUnit(this).unbr = -1;
+					if(heks[tox][toy].unp == 0){
+						heks[tox][toy].undr = -1;
+						heks[tox][toy].unbr = -1;
 					}
-					tox = this.x;
-					toy = this.y;
+					//tox = this.x;
+					//toy = this.y;
 					ton = 1;
 					this.x = peh.x;
 					this.y = peh.y;
@@ -2064,20 +2065,24 @@ function czyutrzymasie(hek){
 function atakujmost(uni,hek){
 	var s = 0;
 	zbor = 0;
-	while(s<6){
+	s = 0
 	bitni = unix[kolej][uni].il;
-		while(hek.most[s]>0 && bitni>0 && !unix[kolej][uni].kosz){
-			unic = hek.unt[hek.unp-1];
-			att = at[unix[kolej][uni].rodz];
-			var wak = Math.floor(Math.random()*(att+1));
-			if(wak>0){
-				hek.most[s]-=wak;
-				czyutrzymasie(hek);
-				zbor+=wak;
+	while((hek.most[0]>0 || hek.most[1]>0 || hek.most[2]>0 || hek.most[3]>0 || hek.most[4]>0 || hek.most[5]>0) && bitni>0 && !unix[kolej][uni].kosz){
+		unic = hek.unt[hek.unp-1];
+		att = at[unix[kolej][uni].rodz];
+		var wak = Math.floor(Math.random()*(att+1));
+		if(wak>0){
+			s = 0
+			while(s<6){
+				if(hek.most[s] > 0){
+					hek.most[s]=Math.max(0,hek.most[s]-wak);
+				}
+				s++
 			}
-			bitni--;
+			czyutrzymasie(hek);
+			zbor+=wak;
 		}
-		s++;
+		bitni--;
 	}
 	hek.zmiana = 20;
 	hek.buchuj(zbor/6);
@@ -2155,7 +2160,7 @@ function zaladuj(uni,unic){
 		}
 		var dou = false;
 		if(unix[kolej][unic].il<unix[kolej][uni].il){
-			divideUnit(uni,unix[kolej][uni].il-unix[kolej][unic].il);
+			divideUnit(uni,/*unix[kolej][uni].il-*/unix[kolej][unic].il);
 			dou = true;
 		}
 		if(unix[kolej][unic].il==unix[kolej][uni].il){
@@ -2166,11 +2171,6 @@ function zaladuj(uni,unic){
 			unix[kolej][unic].il-=unix[kolej][uni].il;
 		}
 
-		if(dou){
-			heks[unix[kolej][unic].x][unix[kolej][unic].y].usun(ah);
-		}
-
-		unix[kolej][uni].przenies(unix[kolej][uni].celk);
 
 		unix[kolej][uni].szyt = szyt[10];
 		unix[kolej][uni].szy = szy[10];
@@ -2189,9 +2189,16 @@ function zaladuj(uni,unic){
 			ai++;
 		}
 
+		unix[kolej][uni].przenies(unix[kolej][uni].celk);
+
+		if(dou){
+			heks[unix[kolej][unic].x][unix[kolej][unic].y].usun(ah);
+		}
+		
 		unix[kolej][uni].celd = -1;
 		unix[kolej][uni].celu = -1;
 		unix[kolej][uni].celk = -1;
+		
 		czyscc(uni,unix[kolej][uni].x,unix[kolej][uni].y,kolej);
 
 	} else {
@@ -2199,35 +2206,38 @@ function zaladuj(uni,unic){
 	}
 }
 function zezaladuj(uni,unic){
-	if(heks[unix[kolej][uni].x][unix[kolej][uni].y].unp<4 || unix[kolej][uni].il>=unix[kolej][unic].il){
+	//if(heks[unix[kolej][uni].x][unix[kolej][uni].y].unp<4 || unix[kolej][uni].il>=unix[kolej][unic].il){
 			var at = 0;
 			var ah = 0;
+			var aw = 0;
 			while(at<heks[unix[kolej][uni].x][unix[kolej][uni].y].unp){
 				if(heks[unix[kolej][uni].x][unix[kolej][uni].y].unt[at]==unic){
 					ah = at;
-					at = 4;
+				}
+				if(heks[unix[kolej][uni].x][unix[kolej][uni].y].unt[at]==uni){
+					aw = at;
 				}
 				at++;
 			}
 		var dou = false;
 		if(unix[kolej][uni].il>unix[kolej][unic].il){
+			heks[unix[kolej][uni].x][unix[kolej][uni].y].usun(ah);
+			czyscc(uni,unix[kolej][uni].x,unix[kolej][uni].y,kolej);
+			if(ah < aw){
+				aw--
+			}
 			divideUnit(uni,unix[kolej][uni].il-unix[kolej][unic].il);
-			dou = true;
-		}
-		if(unix[kolej][uni].il==unix[kolej][unic].il){
+		} else if(unix[kolej][uni].il==unix[kolej][unic].il){
+			heks[unix[kolej][uni].x][unix[kolej][uni].y].usun(ah);
 			czyscc(uni,unix[kolej][uni].x,unix[kolej][uni].y,kolej);
 			dou = true;
-		}
-		if(unix[kolej][uni].il<unix[kolej][unic].il){
+		} else if(unix[kolej][uni].il<unix[kolej][unic].il){
 			unix[kolej][unic].il-=unix[kolej][uni].il;
 		}
 
 		unix[kolej][zaznu].szyt = szyt[10];
 		unix[kolej][zaznu].szy = szy[10];
 
-		if(dou){
-			heks[unix[kolej][uni].x][unix[kolej][uni].y].usun(ah);
-		}
 
 		unix[kolej][unic].celd = -1;
 		unix[kolej][unic].celu = -1;
@@ -2236,18 +2246,20 @@ function zezaladuj(uni,unic){
 		kpy = unix[kolej][unic].y;
 		czyscc(uni,unix[kolej][unic].x,unix[kolej][unic].y,kolej);
 		heks[unix[kolej][uni].x][unix[kolej][uni].y].zmiana++;
-	} else {
+	/*} else {
 		jesio = -1;
-	}
+	}*/
 }
 function wyladuj(uni){
-	unix[kolej][uni].szy = szy[unix[kolej][uni].rodz];
-	unix[kolej][uni].szyt = szyt[unix[kolej][uni].rodz];
-	if(stan == 4){
-		jesio = unix[kolej][uniwy].szy;
+	if(heks[unix[kolej][uni].x][unix[kolej][uni].y].unp < 4){
+		unix[kolej][uni].szy = szy[unix[kolej][uni].rodz];
+		unix[kolej][uni].szyt = szyt[unix[kolej][uni].rodz];
+		if(stan == 4){
+			jesio = unix[kolej][uniwy].szy;
+		}
+		dodai(unix[kolej][uni].x,unix[kolej][uni].y,unix[kolej][uni].il,10,0);
+		heks[unix[kolej][uni].x][unix[kolej][uni].y].tasuj();
 	}
-	dodai(unix[kolej][uni].x,unix[kolej][uni].y,unix[kolej][uni].il,10,0);
-	heks[unix[kolej][uni].x][unix[kolej][uni].y].tasuj();
 }
 function createCity(zazn){
 	if(zazn == undefined)

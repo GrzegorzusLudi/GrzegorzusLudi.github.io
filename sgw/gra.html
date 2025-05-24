@@ -197,6 +197,8 @@ p {
             <option value="lekcja4">4. miasta i budowa oddziałów</option>
             <option value="lekcja5">5. atakowanie oddziałów nieprzyjaciela</option>
             <option value="lekcja6">6. desant</option>
+            <option value="lekcja7">7. podatki i przemysł</option>
+            <option value="lekcja8">8. oddziały saperskie</option>
           </select>
           <p>
             <input type="button" value="USTAW ZADANIE" id="tutorial-choose-button" onclick="setTutorial();" />
@@ -245,7 +247,7 @@ p {
         <div id="controlfieldin">
       
           <input type="button" value="KOD" onclick="showcode();" />
-          <input type="button" value="GRAJ!" onclick="kolej = 0;changeState(2);gameplay = true;" />
+          <input type="button" value="GRAJ!" onclick="próbujGrać()" />
         </div>
       </div>
       <p>
@@ -365,7 +367,7 @@ p {
       </p>
       <p>
         <input type="button" value="KOD" onclick="showcode();" />
-        <input type="button" value="GRAJ!" onclick="changeState(2);gameplay = true;" />
+        <input type="button" value="GRAJ!" onclick="próbujGrać()" />
       </p>
     </div>
     <div id="u3">
@@ -1299,6 +1301,255 @@ p {
               </table>
             </p>
             <hr/>
+          </div>
+        </div>
+      </span>
+      
+      
+    <span id="state2lekcja7">
+        <div id="controlfield">
+          <div id="controltitle">Opis lekcji</div>
+          <div id="controlfieldin"> 
+            <p>
+              <b>Cel:</b> Zniszcz wszystkie oddziały nieprzyjaciela
+            </p>
+            <p>
+              <b>Wskazówki:</b>
+            </p>
+            <p>
+              1.<br/>
+              Masz do swojej dyspozycji 14 miast o łącznej populacji 1698, co daje łącznie 1698$ na turę. 
+              <br/>
+              Mimo to, nie można od razu tych pieniędzy wykorzystać w jednym miejscu. 
+              <br/>
+              Potrzebne jest wysyłanie podatków do jednego, wybranego miasta. 
+              <br/>
+              <br/>
+              Po zaznaczeniu dowolnego miasta w panelu sterowania widać suwak i przyciski odpowiadające za podatki:
+              <img src="tutorial7-1.png" style="width:200px;height:300px" />
+              Przesuń suwakiem o dowolną ilość i naciśnij przycisk "ZATWIERDŹ" lub naciśnij przycisk "DAJ 100%". 
+              <br/>
+              <img src="tutorial7-2.png" style="width:200px;height:150px" />
+              <br/>
+              Rozpoczyna się prowadzenie drogi, którą mogą będą wysyłane podatki. Drogę prowadzi się podobnie, jak drogę oddziałów. 
+              <br/>
+              <img src="tutorial7-3.png" style="width:200px;height:150px" />
+              Główna różnica polega na tym, że drogę można poprowadzić tylko do innego miasta, kontrolowanego przez tą samą drużynę. Jeśli klinie się na niepodświetlony sześciokąt, bądź na oddział, prowadzenie drogi zakończy się niepowodzeniem. 
+              <br/>
+              <br/>
+              Spróbuj poprowadzić podatek do jednego miasta, najlepiej blisko cieśniny, za którą jest przeciwnik. 
+              <img src="tutorial7-4.png" style="width:200px;height:150px" />
+              <br/>
+              2.<br/>
+              W panelu sterowania dla zaznaczonego miasta widać, że można zbudować jedynie 6 rodzajów oddziałów w tym tutorialu. 
+              <br/>
+              W dodatku w żadnym mieście nie można zbudować 4 z 6 oddziałów. Są to oddziały, do których produkcji potrzeba oprócz pieniędzy także stali i przemysłu. 
+              <br/>
+              <br/>
+              <img src="tutorial7-4,5.png" style="width:200px;height:170px" />
+              Aby zwiększyć produkcję stali i przemysł, w dolnej części panelu, w sekcji "Inwestycje" ustaw suwak na wybraną wielkość i klinkij szary i brązowy prostokąt, by zaplanować kolejno produkcję stali i przemysł. 
+              <br/>
+              Zakończ turę.
+              <br/>
+              3.<br/>
+              <img src="tutorial7-4,6.png" style="width:200px;height:150px" />
+              <br/>
+              Widać, że w koło miasta pojawiły się prostopadłościany, które oznaczają produkcję stali i przemysł. 
+              <br/>
+              <img src="tutorial7-5.png" style="width:200px;height:100px" />
+              <br/>
+              Odblokowane zostały też 4 pozostałe oddziały. Obok ceny w pieniądzach widoczna jest też cena zwiększenia oddziału o 1 w tonach stali. W przeciwieństwie do oddziałów lekkich, które można kupować za pomocą dowolnej ilości pieniędzy, do zwiększenia oddziału potrzeba tyle samo ogólnej wielkości przemysłu, co ton stali. Np. gdy miasto ma 200 ton stali, ale tylko 50 przemysłu, może ono użyć tylko 50 ton stali. 
+              <br/>
+              <img src="tutorial7-6.png" style="width:200px;height:150px" />
+              <br/>
+              Poza tym nie można przesyłać stali w podatkach. Można jednak sprzedawać stal, klikając na przeciski w górnej części panelu sterowania miasta. Za 1 tonę stali można dostać 2$. 
+              <br/>
+              4.<br/>
+              Wybuduj oddziały artylerii (zalecane) lub obrony przeciwlotniczej, bo tylko one mogą dosięgnąć oddziałów przeciwnika na tej mapie. Dalsza część lekcji jest trywialna. Możesz też zwiększyć populację miasta, by jeszcze szybciej budować oddziały. 
+            </p>
+          </div>
+        </div>
+            
+        <div id="controlfield">
+          <div id="controltitle">Uwagi</div>
+          <div id="controlfieldin"> 
+            <p>
+              <b>Uwagi odnośnie prowadzenia podatków</b>
+            </p>
+            Przenoszenie pieniędzy drogą kosztuje. 
+            <br/>
+              <img src="tutorial7-7.png" style="width:200px;height:150px" />
+            <br/>
+            Cena przesyłu przez sześciokąt zależy od rodzaju terenu: 2$ dla lądu/miasta, 5$ dla morza, 8$ dla gór. 
+            <br/>
+            Dlatego czasami nie można doprowadzić drogi z miasta o małej populacji do któregoś z odległych miast. 
+            <br/>
+            <br/>
+            Poniżej pokazane są ceny nowych oddziałów (nie licząc wojsk saperskich). 
+            <br/>
+            <p>
+              <b>Oddziały:</b>
+            </p>
+            <p>
+              <b>Czołgi</b>
+              <br/>
+              <img src="o2.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>16$</td></tr>
+                <tr><td>Wymagana ilość stali/przemysłu</td><td>2$</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Artyleria</b>
+              <br/>
+              <img src="o3.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>16$</td></tr>
+                <tr><td>Wymagana ilość stali/przemysłu</td><td>2$</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Piechota zmotoryzowana</b>
+              <br/>
+              <img src="o4.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>12$</td></tr>
+                <tr><td>Wymagana ilość stali/przemysłu</td><td>1$</td></tr>
+              </table>
+            </p>
+            <hr/>
+            <p>
+              <b>Obrona przeciwlotnicza</b>
+              <br/>
+              <img src="o6.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>16$</td></tr>
+                <tr><td>Wymagana ilość stali/przemysłu</td><td>1$</td></tr>
+              </table>
+            </p>
+            <hr/>
+          </div>
+        </div>
+      </span>
+      
+    <span id="state2lekcja8">
+        <div id="controlfield">
+          <div id="controltitle">Opis lekcji</div>
+          <div id="controlfieldin"> 
+            <p>
+              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury)
+            </p>
+            <p>
+              <b>Wskazówki:</b>
+            </p>
+            <p>
+              1.<br/>
+              Trzeba poprowadzić oddział piechoty z sześciokąta (9,8) na pole (3,2). Jednak na lądzie, na którym oddział ten się znajduje nie ma żadnego miasta, a na mapie nie ma żadnego oddziału łodzi desantowych. 
+              <br/>
+              Jest jednak na sześciokącie (8,8) oddział saperów. 
+              <br/>
+              <img src="tutorial8-1.png" style="width:200px;height:150px" />
+              Saperzy mogą budować mosty, jeśli się dla nich zaplanuje drogę przez wodę. 
+              <br/>
+              <br/>
+              Po zaplanowaniu trasy przejdź kilka tur, aż oddział saperów przejdzie morze. 
+              <br/>
+              <br/>
+              1.5.<br/>
+              <b>UWAGA</b><br/>
+              <img src="tutorial8-1.5.png" style="width:200px;height:250px" />
+              Oddział saperski, budując most, buduje most jedynie o szerokości wielkości tego oddziału. Na moście o takiej szerokości suma wielkości oddziałów nie może przekraczać szerokości tego mostu. 
+              <br/>
+              <img src="tutorial8-1.6.png" style="width:200px;height:150px" />
+              <br/>
+              Aby wybudować szerszy most, trzeba poprowadzić większy oddział. 
+              <br/>
+              <br/>
+              2.<br/>
+              Po utworzeniu mostu można już przejść nim oddziałami lądowymi. 
+              <br/>
+              <img src="tutorial8-2.png" style="width:200px;height:150px" />
+              <br/>
+              3.<br/>
+              Oczywiście oddział o wielkości 99 jest za duży na most o szerokości 50. 
+              <br/>
+              <img src="tutorial8-3.png" style="width:200px;height:150px" />
+              Resztki oddziału należy poprowadzić jeszcze raz w to samo miejsce. 
+              <br/>
+              <img src="tutorial8-4.png" style="width:200px;height:130px" />
+              <br/>
+              Teraz można połączyć oddział piechoty i poprowadzić go na miejsce. 
+              <br/>
+              4.<br/>
+              Oprócz budowania mostów, część oddziału saperów może się "poświęcić", by zbudować miasto na sześciokącie lądowym. 
+              <br/>
+              Jeśli zaznaczy się oddział saperów, będący na sześciokącie lądowym (bez miasta), wtedy w panelu sterowania widoczny jest przycisk "ZAŁÓŹ MIASTO":
+              <br/>
+              <img src="tutorial8-5.png" style="width:200px;height:130px" />
+              <br/>
+              Jak widać, przycisk ten jest zablokowany. To dlatego, że jedynie oddziały o wielkości od 51 mogą zakładać miasta. <br/>
+              Poprowadź oddział na jedyne miasto na planszy i zbuduj 2 oddziały, z których oba mają wielkość większą, niż 50:
+              <img src="tutorial8-6.png" style="width:200px;height:130px" />
+              <br/>
+              Pomiń 10 tur. 
+              <br/>
+              5. Oddział okrętów lekkich z sześciokątu (9,3) ma za zadanie dostać się na sześciokąt (0,2), ale nie może się tam dostać, bo drogę zagradza ląd. 
+              <br/>
+              Istnieje pewien myk (wcale nie bug), by oddział mógł tam się dostać. Należy zbudować 2 miasta przez ląd w najkrótszym miejscu. 
+              <br/>
+              <img src="tutorial8-7.png" style="width:200px;height:130px" />
+              <br/>
+              Poprowadź 2 nowe oddziały saperów w to miejsce i pomiń tury aż oddziały dotrą na miejsce. 
+              <br/>
+              6.<br/>
+              Klinkij na któryś z oddziałów. <br/>
+              <img src="tutorial8-8.png" style="width:200px;height:100px" />
+              <br/>
+              Potem załóż miasto, klikając przycisk w panelu sterowania. 
+              <br/>
+              7.<br/>
+              <img src="tutorial8-9.png" style="width:200px;height:130px" />
+              Teraz można bez przeszkód przeprowadzić statki przez ląd. 
+              <br/>
+              8.<br/>
+              <u>Ostatnia uwaga</u><br/>
+              <img src="tutorial8-10.png" style="width:200px;height:450px" />
+              <br/>
+              Mosty także można niszczyć. Atakuje się je tak samo, jak oddziały wroga. Można je atakować, gdy po najechaniu będą podświetlone. Nie można atakować mostu, na którym jest inny twój oddział. 
+            </p>
+          </div>
+        </div>
+            
+        <div id="controlfield">
+          <div id="controltitle">Uwagi</div>
+          <div id="controlfieldin"> 
+            Inne informacje odnośnie wojsk saperskich i mostów. 
+            <ul>
+            <li>
+            Po założeniu miasta zostaje jedynie oddział o wielkości 5 albo reszta z dzielenia przez 5 wielkości tego oddziału. Reszta oddziału zamienia się w populację, gdzie na każde 5 wielkości oddziału przypada 1 mieszkaniec miasta. 
+            </li>
+            <li>
+            W wypadku, gdy oddział saperski wejdzie w morze, ale w tym miejscu będzie oddział łodzi desantowych, nie wybuduje on mostu, ale popłynie łodziami.
+            </li>
+            </ul>
+            <p>
+              <b>Oddziały:</b>
+            </p>
+            <p>
+              <b>Wojska saperskie</b>
+              <br/>
+              <img src="o11.png" />
+              
+              <table>
+                <tr><td>Cena</td><td>12$</td></tr>
+              </table>
+            </p>
           </div>
         </div>
       </span>

@@ -2074,6 +2074,18 @@ function checkOverallTutorialWinning(kolux){
 			}
 		}
 		return true
+	} else if(tutorialWinning[lekcjaTutoriala].method == 'enemy-removed'){
+		for(var i = 0;i<scian;i++){
+			for(var j = 0;j<scian;j++){
+				var huu = heks[i][j]
+				for(var k=0;k<huu.unp;k++){
+					var unit = unix[huu.undr][huu.unt[k]]
+					if(unit.d != kolux){
+						return false
+					}
+				}
+			}
+		}
 	}
 	return false
 }

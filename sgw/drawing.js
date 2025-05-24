@@ -180,10 +180,14 @@
 					ctx.fillStyle = "#B59B77";
 				else
 					ctx.fillStyle = "#634A29";
-				var strok = false;
+				var strok = true;
 				if(podswd==-2 && podswu==this.unt[-1]){
 					ctx.strokeStyle = "#FFFF00";
+					ctx.lineWidth = 2
 					strok = true;
+				} else {
+					ctx.strokeStyle = '#402f19'
+					ctx.lineWidth = 1
 				}
 				ctx.beginPath();
 				ctx.moveTo(x0,y0);

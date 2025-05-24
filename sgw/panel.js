@@ -3031,8 +3031,7 @@ function unitMergeClick(){
 	if(unitMergeChoice>-1 && unitMergeChoice<heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unp-1){
 		if(unix[kolej][zaznu].rodz==unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[unitMergeChoice]].rodz && unix[kolej][zaznu].szyt==unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[unitMergeChoice]].szyt){
 			zespoj(zaznu,heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[unitMergeChoice]);
-		}
-		if(unix[kolej][zaznu].szyt!="c" && unix[kolej][zaznu].szyt!="l" && unix[kolej][zaznu].szyt!="w" && unix[kolej][zaznu].szyt==szyt[unix[kolej][zaznu].rodz] && unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[unitMergeChoice]].rodz==10){
+		} else if(unix[kolej][zaznu].szyt!="c" && unix[kolej][zaznu].szyt!="l" && unix[kolej][zaznu].szyt!="w" && unix[kolej][zaznu].szyt==szyt[unix[kolej][zaznu].rodz] && unix[kolej][heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[unitMergeChoice]].rodz==10){
 			zezaladuj(zaznu,heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].unt[unitMergeChoice]);
 		}
 	}
@@ -3822,6 +3821,21 @@ function addBigArmies(width){
 				}
 			}
 		}
+	}
+}
+function próbujGrać(){
+	var jestdrużyna = false
+	for(var i = 0;i<12 && !jestdrużyna;i++){
+		spis(i);
+		if(liczeb[i] > 0)
+			jestdrużyna = true
+	}
+	if(jestdrużyna){
+		kolej = 0;
+		changeState(2);
+		gameplay = true;
+	} else {
+		alert("Ustaw chociaż jeden oddział!")
 	}
 }
 
