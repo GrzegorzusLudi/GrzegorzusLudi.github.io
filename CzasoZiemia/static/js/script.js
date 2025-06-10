@@ -233,7 +233,7 @@ class AbstractCanvas {
 
         var magnification = this.camera.getMagnification()
         
-        this.camera.setMagnification(magnification * Math.pow(0.5,delta))
+        this.camera.setMagnification(magnification * Math.pow(Math.sqrt(0.5),delta))
         
         actualizeBottomWithCoords(this.camera, this.bounds)
         this.draw()
@@ -589,13 +589,58 @@ class AbstractCanvas {
     }
     drawLayerPointText(data,value,degreeBounds){
         var prevColor = this.styles['fillStyle']
-        this.setStyle({fillStyle:"#000",font:"Helvetica",textSize:10,textAlign:"center"})
         if(data.geometry == undefined){
 //            console.log(data)
             return
         }
-        this.drawText(value,data.geometry.coordinates[0],data.geometry.coordinates[1],0,-6)
+        switch(data.geometry.type){
+            case 'Point':
+                this.setStyle({fillStyle:"#000",font:"Helvetica",textSize:10,textAlign:"center"})
+                this.drawPointText(value,data.geometry.coordinates[0],data.geometry.coordinates[1])
+            break
+            case 'Polygon':
+                this.setStyle({strokeStyle:"#000a",lineWidth:1,font:"Helvetica",textSize:12,textAlign:"center"})
+                if(data.geometry.coordinates.length > 0)
+                    this.drawPolygonText(value,data.geometry.coordinates[0],degreeBounds)
+            break
+            case 'MultiPolygon':
+                this.setStyle({strokeStyle:"#000a",lineWidth:1,font:"Helvetica",textSize:12,textAlign:"center"})
+                for(var i in data.geometry.coordinates){
+                    if(data.geometry.coordinates[i].length > 0)
+                        this.drawPolygonText(value,data.geometry.coordinates[i][0],degreeBounds)
+                }
+            break
+        }
         this.setStyle({fillStyle:prevColor})
+    }
+    drawPointText(value,x,y){
+        this.drawText(value,x,y,0,-6)
+    }
+    drawPolygonText(value,polygonData,degreeBounds){
+        var left = polygonData[0][0]
+        var right = polygonData[0][0]
+        var top = polygonData[0][1]
+        var bottom = polygonData[0][1]
+        for(var i in polygonData){
+            if(!Number.isNaN(-i)){
+                left = Math.min(left,polygonData[i][0])
+                right = Math.max(right,polygonData[i][0])
+                top = Math.min(top,polygonData[i][1])
+                bottom = Math.max(bottom,polygonData[i][1])
+            }
+        }
+        if(degreeBounds != undefined){
+            left = Math.min(left,degreeBounds.left)
+            right = Math.min(right,degreeBounds.right)
+            top = Math.min(top,degreeBounds.top)
+            bottom = Math.min(bottom,degreeBounds.bottom)
+        }
+        
+        if(right-left > value.length * 6 * this.camera.pixelSize && bottom-top > 12 * this.camera.pixelSize){
+            for(var i in value){
+                this.drawText(value[i],left+(right-left)*(i-(-2))/(value.length-(-4)),(top+bottom)/2,0,0,true)
+            }
+        }
     }
 }
 class WebGLCanvas extends AbstractCanvas {
@@ -655,7 +700,7 @@ class TwoDCanvas extends AbstractCanvas {
         this.context.stroke()
         this.context.closePath()
     }
-    drawText(text,x,y,transx,transy){
+    drawText(text,x,y,transx,transy,stroke){
         if(transx == undefined)
             transx = 0
         if(transy == undefined)
@@ -664,7 +709,11 @@ class TwoDCanvas extends AbstractCanvas {
         var pointx = this.camera.degreesToPixels(x,y,this.bounds,true)
         var pointy = this.camera.degreesToPixels(x,y,this.bounds,false)
         
-        this.context.fillText(text,pointx+transx,pointy+transy)
+        if(stroke){
+            this.context.strokeText(text,pointx+transx,pointy+transy)
+        } else {
+            this.context.fillText(text,pointx+transx,pointy+transy)
+        }
         
     }
     drawPoint(x,y){
