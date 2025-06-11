@@ -2787,7 +2787,9 @@ function unitDivisionDraw(){
 	}
 	}
 }
-
+function campaignChooseCanvasDraw(){
+	
+}
 
 
 
@@ -2890,6 +2892,9 @@ function movesToMakeMove(){
 	redrawCanvas(movesToMakeCanvasCtx);
 }
 
+function campaignChooseCanvasMove(){
+	
+}
 
 
 /*
@@ -3049,6 +3054,11 @@ function movesToMakeClick(){
 	redrawCanvas(movesToMakeCanvasCtx);
 	
 }
+
+function campaignChooseCanvasClick(){
+	
+}
+
 function changeRangeInput(sp,slaj){
 	sp.innerHTML = slaj;
 	if(sp == mapsizevalue){

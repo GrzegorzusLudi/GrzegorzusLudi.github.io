@@ -9,6 +9,7 @@
 <script src="ai.js"></script>
 <script src="history.js"></script>
 <script src="tutorial.js"></script>
+<script src="kampania.js"></script>
 <style>
 body {
 	font-family: Trebuchet MS;
@@ -183,6 +184,22 @@ p {
   </div>
   <div id="right">
   
+    <div id="u-3">
+      <div style="height:60px">
+        <h3>KAMPANIA</h3>
+      </div>
+      <div id="controlfield">
+        <div id="controltitle">Zadania</div>
+        <div id="controlfieldin">
+          <canvas width="220px" height="420px" id="campaignChooseCanvas"  onclick="gmp(campaignChooseCanvas,event);campaignChooseCanvasClick();" onmousemove="gmp(campaignChooseCanvas,event);campaignChooseCanvasMove();" onmouseout="campaignChooseCanvasNumber = -1;campaignChooseCanvasDraw();"></canvas>
+
+        </div>
+      </div>
+      <p>
+        <input type="button" value="GRAJ" id="go-tutorial" onclick="prepareTutorial()" />
+        <input type="button" value="POWRÓT DO MENU" onclick="przywróćState();changeState(-1);redraw(true);" />
+      </p>
+    </div>
     <div id="u-2">
       <div style="height:60px">
         <h3>TUTORIAL</h3>
@@ -269,6 +286,9 @@ p {
           </p>
           <p>
           <input type="button" value="TUTORIAL" onclick="rememberState();fillAll(1);changeState(-3);" />
+          </p>
+          <p>
+          <input type="button" value="KAMPANIA" onclick="rememberState();fillAll(1);changeState(-4);" />
           </p>
         </div>
       </div>
@@ -754,6 +774,8 @@ p {
               <img src="tutorial2-8.png" style="width:200px;height:150px" />
               <br/>
               Jeśli oddział nie stoi zaraz obok drugiego oddziału, należy poprowadzić drogę zaraz pod oddział i wtedy będzie można zaplanować połączenie oddziałów.
+              <br/>
+              <b>UWAGA!</b>Jeśli suma wielkości łączonych oddziałów będzie większa, niż 99, wtedy część oddziału nie zostanie połączona i zostanie na swoim miejscu, a drugi oddział będzie miał wielkośc 99. 
               <br/>
               <img src="tutorial2-7.5.png" style="width:200px;height:150px" />
               <br/>

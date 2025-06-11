@@ -107,6 +107,9 @@ statisticsCanvas2=document.getElementById("statisticsCanvas2");
 statisticsCanvasCtx2=statisticsCanvas2.getContext("2d");
 statisticsCanvas3=document.getElementById("statisticsCanvas3");
 statisticsCanvasCtx3=statisticsCanvas3.getContext("2d");
+campaignChooseCanvas=document.getElementById("campaignChooseCanvas");
+campaignChooseCanvasCtx=campaignChooseCanvas.getContext("2d")
+
 ctx.mozImageSmoothingEnabled = false;
 ctx.font = "8pt Arial";
 ctx.fillStyle = "white";
@@ -664,7 +667,7 @@ function kir(odd,doo,xy){
 function changeState(newState){
 	showcode(false)
 	akcja = -1;
-	f = -3;
+	f = -4;
 	var nowatura = false
 	stin = document.getElementById("u"+1);
 	while(f<7){

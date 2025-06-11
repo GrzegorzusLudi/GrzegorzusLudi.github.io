@@ -2292,7 +2292,7 @@ function aimachine(ailevel){
                         mist[kolejność_miast[miastkol]].tasuj()
                     }
                     if(v>0 || true){
-                        var needed = 0;		//todo
+                        var needed = bloknia[kolej].indexOf(false);		//todo
                         
                         var code = mist[kolejność_miast[miastkol]].x+'#'+mist[kolejność_miast[miastkol]].y
                         var dm_lad = dfrou.distmaps[code].maps['n'].hexmap
@@ -2448,10 +2448,10 @@ function aimachine(ailevel){
                         
                         //console.log(lad_needsByTurn, morze_needsByTurn)
                         
-                        if(morze_needs > lad_needs+10 && morze_needs > 0)
+                        if(morze_needs > lad_needs+10 && morze_needs > 0 && !bloknia[kolej][6])
                             needed = 6
                             
-                        if(tratwa_needs > morze_needs*2 && tratwa_needs > 0)
+                        if(tratwa_needs > morze_needs*2 && tratwa_needs > 0 && !bloknia[kolej][6])
                             needed = 8
                         
                         //mist[kolejność_miast[miastkol]].test = lad_needs+'/'+morze_needs
@@ -2488,7 +2488,7 @@ function aimachine(ailevel){
                         
                         var needednum = 99
                         var enough_units_produced = Math.max(lad_needs,morze_needs) <= local_prod// && miast_dist[kolejność_miast[miastkol]] > 0
-                        if(enough_units_produced && possible_coastline != null && sapper_prod <= 20){
+                        if(enough_units_produced && possible_coastline != null && sapper_prod <= 20 && !bloknia[kolej][11]){
                             //console.log([enough_units_produced,possible_coastline,sapper_prod])
                             needed = 11
                             needednum = 60
@@ -2509,7 +2509,7 @@ function aimachine(ailevel){
                             }
                             if(mist[kolejność_miast[miastkol]].unp>=4){
                                 
-                            } else if(creat==-1/* && mist[kolejność_miast[miastkol]].unp > 0*/) {
+                            } else if(creat==-1/* && mist[kolejność_miast[miastkol]].unp > 0*/ && needed != -1) {
                                 dodai(mist[kolejność_miast[miastkol]].x,mist[kolejność_miast[miastkol]].y,0,needed,needednum);
                                 odzaz(); 
                             }
@@ -5535,7 +5535,7 @@ function legalActions(dm,simplifieddistmaps){
                             
 
                                             var ds = distance(lnp[0],lnp[1],hex.hex.x,hex.hex.y)
-                                            if(ds != undefined && ds <= zas[unit.rodz] && turnPrediction < 2){  
+                                            if(ds != undefined && ds <= zas[unit.rodz] && turnPrediction < 2 && rucho2.length+1 <= szy[unit.rodz]){
                                                 unit.legalActions.push([
                                                     {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)*/},  //not a real situation, but it solves some problem
                                                     {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,destination:[hex.hex.x,hex.hex.y],hex_x:hex.hex.x,hex_y:hex.hex.y},
@@ -6918,7 +6918,7 @@ function actionsToReal(dm,color,completely_used_passages){
                 aktdroguj(kolej,zaznu)
                 changeState(2)
             }
-            if(tratwa > 0){
+            if(tratwa > 0 && !bloknia[kolej][8]){
                 //function dodai(unx,uny,ilo,typ,rosn){
                 console.log('tratwa:',tratwa)
                 var kv = -1
