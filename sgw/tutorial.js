@@ -98,4 +98,3 @@ function tutorialNextLesson(){
 		prepareTutorial('lekcja'+(currentLesson-(-1)))
 	}
 }
-

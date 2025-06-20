@@ -688,7 +688,15 @@ function changeState(newState){
 		zaznu = -1
 		zamak = true;
 	}
-	if(stan == -3 && newState != -1){
+	if(stan == -4 && newState != 2){
+		campaignGraphSet = -1
+		podswd = -1
+		podswu = -1
+		zaznu = -1
+		tutorial = false
+		przejszty = false
+	} else if(stan == -3 && newState != -1){
+		campaignGraphSet = -1
 		podswd = -1
 		podswu = -1
 		zaznu = -1
@@ -697,7 +705,11 @@ function changeState(newState){
 	} else if(stan < 2) {
 		tutorial = false
 		przejszty = false
+		if(stan != -4 && newState == 2)
+			campaignGraphSet = -1
 	}
+	document.getElementById('dokampanii').style.display = ((campaignGraphSet != -1) ? 'block' : 'none')
+
 	if(tutorial){
 		var divnametokeep = 'state2'+lekcjaTutoriala
 
@@ -765,6 +777,7 @@ function changeState(newState){
 	if(stan == 4 && tutorial){
 		checkCelebration(null,firstKolej)
 	}
+	
 	if(stan == 6){
 		historyDex.setShowcaseDataToCurrent()
 		
@@ -2012,12 +2025,21 @@ function checkCelebration(przed,atkju,obrkju){
 	if(!tutorial){
 		spis(atkju)
 		spis(obrkju)
-		var długość = liczeb.filter(x=>x>0).length <= 1 ? 50000 : 40
+		var vyhrana = liczeb.filter(x=>x>0).length <= 1
+		var vyhral = null
+		var długość = vyhrana ? 50000 : 40
 		if(liczeb[atkju] == 0){
 			celebracja[obrkju] = długość
+			vyhral = obrkju
 		}
 		if(liczeb[obrkju] == 0){
 			celebracja[atkju] = długość
+			vyhral = atkju
+		}
+		if(campaignGraphSet != -1 && vyhrana && vyhral == campaignGraphInPanel[campaignGraphSet].partyToWin){
+			for(var i in campaignGraphInPanel[campaignGraphSet].to){
+				campaignGraphInPanel[campaignGraphInPanel[campaignGraphSet].to[i]].unlocked = true
+			}
 		}
 	} else {
 		if(!przejszty && checkOverallTutorialWinning(atkju)){

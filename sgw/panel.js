@@ -1483,6 +1483,7 @@ function redrawCanvas(rtx){
 								productionstats[druż] += heksSource[i][j].prod
 							}
 							for(var k = 0;k<heksSource[i][j].unp;k++){
+								//console.log(druż,i,j,heksSource[i][j])
 								var unitik = unixSource[druż][heksSource[i][j].unt[k]]
 								stats[druż][unitik.rodz] -= -unitik.il
 							}
@@ -2788,7 +2789,94 @@ function unitDivisionDraw(){
 	}
 }
 function campaignChooseCanvasDraw(){
-	
+	campaignChooseCanvasCtx.clearRect(0,0,220,1000)
+	for(var key in campaignGraphInPanel){
+		var point = campaignGraphInPanel[key]
+		
+		campaignChooseCanvasCtx.strokeStyle = point.unlocked ? '#00b' : '#616161'
+		campaignChooseCanvasCtx.fillStyle = point.unlocked ? '#88f' : '#bbb'
+		campaignChooseCanvasCtx.lineWidth = 2
+		
+		if(campaignGraphChoose == key && point.unlocked){
+			campaignChooseCanvasCtx.strokeStyle = '#ff0'
+		}
+		
+		var rombWidth = 20
+		campaignChooseCanvasCtx.beginPath()
+		campaignChooseCanvasCtx.moveTo(point.x,point.y-rombWidth)
+		campaignChooseCanvasCtx.lineTo(point.x+rombWidth,point.y)
+		campaignChooseCanvasCtx.lineTo(point.x,point.y+rombWidth)
+		campaignChooseCanvasCtx.lineTo(point.x-rombWidth,point.y)
+		campaignChooseCanvasCtx.closePath()
+		
+		campaignChooseCanvasCtx.fill()
+		campaignChooseCanvasCtx.stroke()
+		
+		campaignChooseCanvasCtx.font = '12pt Calibri';
+		campaignChooseCanvasCtx.textAlign = "center";
+		campaignChooseCanvasCtx.fillStyle = campaignChooseCanvasCtx.strokeStyle;
+		campaignChooseCanvasCtx.fillText(key, point.x,point.y+6);
+		
+		var oldStrokeStyle = campaignChooseCanvasCtx.strokeStyle
+		for(var i in point.to){
+			var pointTo = campaignGraphInPanel[point.to[i]]
+			
+			if(!pointTo.unlocked){
+				campaignChooseCanvasCtx.strokeStyle = '#616161'
+				campaignChooseCanvasCtx.fillStyle = campaignChooseCanvasCtx.strokeStyle
+			} else {
+				campaignChooseCanvasCtx.strokeStyle = oldStrokeStyle
+				campaignChooseCanvasCtx.fillStyle = campaignChooseCanvasCtx.strokeStyle
+			}
+
+			
+			if(pointTo.x == point.x){
+				campaignChooseCanvasCtx.beginPath()
+				campaignChooseCanvasCtx.moveTo(point.x,point.y+rombWidth)
+				campaignChooseCanvasCtx.lineTo(pointTo.x,pointTo.y-rombWidth)
+				campaignChooseCanvasCtx.closePath()
+				campaignChooseCanvasCtx.stroke()
+				
+				campaignChooseCanvasCtx.beginPath()
+				campaignChooseCanvasCtx.moveTo(pointTo.x,pointTo.y-rombWidth)
+				campaignChooseCanvasCtx.lineTo(pointTo.x-5,pointTo.y-rombWidth-5)
+				campaignChooseCanvasCtx.lineTo(pointTo.x+5,pointTo.y-rombWidth-5)
+				campaignChooseCanvasCtx.closePath()
+				campaignChooseCanvasCtx.fill()
+				campaignChooseCanvasCtx.stroke()
+			} else if(pointTo.x != point.x && point.to.length >= 1){
+				var sign = Math.sign(pointTo.x - point.x)
+				campaignChooseCanvasCtx.beginPath()
+				campaignChooseCanvasCtx.moveTo(point.x+rombWidth*sign,point.y)
+				campaignChooseCanvasCtx.lineTo(pointTo.x,point.y)
+				campaignChooseCanvasCtx.lineTo(pointTo.x,pointTo.y-rombWidth*sign)
+				campaignChooseCanvasCtx.stroke()
+				
+				campaignChooseCanvasCtx.beginPath()
+				campaignChooseCanvasCtx.moveTo(pointTo.x,pointTo.y-rombWidth)
+				campaignChooseCanvasCtx.lineTo(pointTo.x-5,pointTo.y-rombWidth-5)
+				campaignChooseCanvasCtx.lineTo(pointTo.x+5,pointTo.y-rombWidth-5)
+				campaignChooseCanvasCtx.closePath()
+				campaignChooseCanvasCtx.fill()
+				campaignChooseCanvasCtx.stroke()
+			} else if(pointTo.x != point.x && point.to.length == 1){
+				var sign = Math.sign(pointTo.x - point.x)
+				campaignChooseCanvasCtx.beginPath()
+				campaignChooseCanvasCtx.moveTo(point.x,point.y+rombWidth*sign)
+				campaignChooseCanvasCtx.lineTo(point.x,pointTo.y)
+				campaignChooseCanvasCtx.lineTo(pointTo.x-rombWidth*sign,pointTo.y)
+				campaignChooseCanvasCtx.stroke()
+				
+				campaignChooseCanvasCtx.beginPath()
+				campaignChooseCanvasCtx.moveTo(pointTo.x-rombWidth*sign,pointTo.y)
+				campaignChooseCanvasCtx.lineTo(pointTo.x-(rombWidth+5)*sign,pointTo.y-5*sign)
+				campaignChooseCanvasCtx.lineTo(pointTo.x-(rombWidth+5)*sign,pointTo.y+5*sign)
+				campaignChooseCanvasCtx.closePath()
+				campaignChooseCanvasCtx.fill()
+				campaignChooseCanvasCtx.stroke()
+			}
+		}
+	}
 }
 
 
@@ -2893,7 +2981,19 @@ function movesToMakeMove(){
 }
 
 function campaignChooseCanvasMove(){
-	
+	campaignGraphChoose = -1
+	if(mousePositionByCanvas.x>10 && mousePositionByCanvas.x<210 && mousePositionByCanvas.y>10 && mousePositionByCanvas.y<1000){
+		
+		for(var key in campaignGraphInPanel){
+			var point = campaignGraphInPanel[key]
+			if(Math.abs(mousePositionByCanvas.x - point.x) < 20 && Math.abs(mousePositionByCanvas.y - point.y) < 20){
+				campaignGraphChoose = key
+			}
+		}
+	} else {
+		campaignGraphChoose = -1;
+	}
+	campaignChooseCanvasDraw()
 }
 
 
@@ -3056,7 +3156,8 @@ function movesToMakeClick(){
 }
 
 function campaignChooseCanvasClick(){
-	
+	tryChooseCampaign(campaignGraphChoose)
+	campaignChooseCanvasDraw()
 }
 
 function changeRangeInput(sp,slaj){
@@ -3350,6 +3451,8 @@ function readCode(){
 	readCodeFromString(sta)
 }
 function readCodeFromString(sta){
+	removeUnits()
+	fillAll(0)
 	var ake = 0;
 	var subfields = sta.split(':')
 	for(var i in subfields){
@@ -3369,6 +3472,7 @@ function readCodeFromString(sta){
 				heks[a][b].z = Number(zzz);
 				heks[a][b].hutn = 0;
 				heks[a][b].prod = 0;
+				heks[a][b].undr = -1;
 				
 				if(subfield.includes('[')){
 					var otherFields = '['+subfield.split('[').slice(1).join('[')
@@ -3835,7 +3939,7 @@ function addBigArmies(width){
 }
 function próbujGrać(){
 	var jestdrużyna = false
-	for(var i = 0;i<12 && !jestdrużyna;i++){
+	for(var i = 0;i<12/* && !jestdrużyna*/;i++){
 		spis(i);
 		if(liczeb[i] > 0)
 			jestdrużyna = true
