@@ -2038,7 +2038,9 @@ function checkCelebration(przed,atkju,obrkju){
 		}
 		if(campaignGraphSet != -1 && vyhrana && vyhral == campaignGraphInPanel[campaignGraphSet].partyToWin){
 			for(var i in campaignGraphInPanel[campaignGraphSet].to){
-				campaignGraphInPanel[campaignGraphInPanel[campaignGraphSet].to[i]].unlocked = true
+				var keyTo = campaignGraphInPanel[campaignGraphSet].to[i]
+				campaignGraphInPanel[keyTo].unlocked = true
+				localStorage.setItem('campaignUnlocked'+keyTo,'true')
 			}
 		}
 	} else {

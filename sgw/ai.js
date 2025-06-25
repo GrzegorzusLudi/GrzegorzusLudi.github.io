@@ -862,7 +862,7 @@ function aimachine(ailevel){
                                     var d2 = chexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
                                     var d3 = (chexes[i].dmap[chexes[j].x+'#'+chexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                     
-                                    var prst = d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)// && d1 > 1// && d1-1 > d2
+                                    var prst = d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)/* && d1 > 3*/ && distance(chexes[i].x,chexes[i].y,chexes[j].x,chexes[j].y) > 2// && d1-1 > d2
                                     if(prst){
                                         ok2_ = false
                                         i_am_behind[mountainous][d1code].codes.push(d2code)
@@ -1077,6 +1077,19 @@ function aimachine(ailevel){
             
             possible_targets.sort((a,b) => (new String(a.hex.x+'#'+a.hex.y)).localeCompare(b.hex.x+'#'+b.hex.y))
             possible_targets = possible_targets.filter(x=>x.dist < Infinity)
+            
+            for(var i in possible_stationary_targets){
+                var był = false
+                for(var j in possible_targets){
+                    if(possible_targets[j].hex.x == possible_stationary_targets[i].hex.x && possible_targets[j].hex.y == possible_stationary_targets[i].hex.y){
+                        był = true
+                        break
+                    }
+                }
+                if(!był){
+                    possible_targets.push(possible_stationary_targets[i])
+                }
+            }
             var possible_targets3 = []
             for(var i in possible_targets){
                 var targ1 = possible_targets[i]
@@ -2276,9 +2289,9 @@ function aimachine(ailevel){
                     }
                     var okej = -1
                     for(var i = 0;i<mist[kolejność_miast[miastkol]].unp;i++){
-                        if(unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].ruchy == 0 && unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].celu == -1){
+                        //if(unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].ruchy == 0 && unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].celu == -1){
                             okej = i
-                        }
+                        //}
                         if(unix[kolej][mist[kolejność_miast[miastkol]].unt[i]].rozb > 0){
                             okej = -1
                             break
@@ -3055,7 +3068,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             }
                             //console.log(distmap.hex.x+'#'+distmap.hex.y,time)
                             if(unit.d == kolej && time > 2){
-                                continue
+                                //continue
                             }
                             mintime = Math.min(time2,mintime)
                             if(infantrytime[lade] == null){
@@ -3415,7 +3428,7 @@ function populateEmbarkingPossibility(hekstable,checkedGrid,x,y,il){
             
             for(var j = 0;j<6;j++){
                 var h = g.border[j]
-                if(h != null && (h.x == undefined || not_outside_board(h)) && !(h.x+','+h.y in thex) && (h.z == -1 || h.z>0) && (true || h.undr != undefined && h.undr != kolej || h.dru != undefined && h.dru != kolej)){
+                if(h != null && (h.x == undefined || not_outside_board(h)) && !(h.x+','+h.y in thex) && (h.z == -1 || h.z>0 && h.unp < 4) && (true || h.undr != undefined && h.undr != kolej || h.dru != undefined && h.dru != kolej)){
                     thex[h.x+','+h.y] = true
                     
                     temp2.push(h)
@@ -4001,6 +4014,9 @@ function putPath(uni, distmap, hex_x, hex_y, stopBefore, completely_used_passage
     
     if(szybt == 'n' && zast[unit.rodz] == 'm')
         szybt == 'm'
+        
+    if(!(szybt in distmap.maps))
+        szybt = 'n'
     var unitDistMap = distmap.maps[szybt].hexmap//hexdistmap(unit.x,unit.y,szyt[unit.rodz] == 'w',szyt[unit.rodz] == 'g',szyt[unit.rodz] == 'l',szyt[unit.rodz] == 'c',zast[unit.rodz] == 'x',zast[unit.rodz] == 'm')
     
     var heksk = unitDistMap.filter(a => a.hex.x == hex_x && a.hex.y == hex_y)
@@ -4058,7 +4074,7 @@ function putPath(uni, distmap, hex_x, hex_y, stopBefore, completely_used_passage
     if(stopBefore == undefined){
     }
     
-    return path.length > 0 && unit.szyt != 'w' && unit.szyt != 'l' && heks[unit.x][unit.y].z > 0 && heks[path[0].x][path[0].y].z == -1 && !(path[0].x+'#'+path[0].y in completely_used_passages)
+    return path.length > 0 && unit.szyt != 'w' && unit.szyt != 'l' && heks[unit.x][unit.y].z > 0 && heks[path[0].x][path[0].y].z == -1// && !(path[0].x+'#'+path[0].y in completely_used_passages)
 }
 
 
@@ -4309,7 +4325,7 @@ function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho,unitAttackStrength,unit){
                 break
             
             var str = he.x+'#'+he.y
-            if(i > 0 && i <= ruchk.length-1 && (he.dru != undefined && he.dru != kolej || he.d != undefined && he.d != kolej) && (dm != undefined && str in dm.distmaps && dm.distmaps[str].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp >= 4)){
+            if(i > 0 && i <= ruchk.length-1 && (he.dru != undefined && he.dru == kolej || he.d != undefined && he.d == kolej) && (dm != undefined && str in dm.distmaps && dm.distmaps[str].hex.units.length == 4 || dm == undefined && heks[he.x][he.y].unp >= 4)){
                 return true
             }
             //if(zast[unit.rodz] == 'x' || zast[unit.rodz] == 'm')
@@ -6319,7 +6335,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
             || x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'build'
                     //|| ((x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1)
             || (x.unit.actions[0].type == 'move' && x.action[0].type != 'aim' && x.unit.actions[0].by != 'speculation2' &&
-                 (/*x.action[0].type != 'move' || */(x.unit.actions[0].rucho.length < 0 || x.unit.actions[0].rucho.length >= x.action[0].rucho.length)))
+                 (/*x.action[0].type != 'move' || */(x.unit.actions[0].rucho.length < 0 || x.unit.actions[0].rucho.length > x.action[0].rucho.length || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].z <= 0 || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].undr == kolej)))
                     
             )
         )
@@ -6340,6 +6356,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     if(interestingUnits.length == 0)
         return false
     
+    //interestingUnits = interestingUnits.slice(0,8)
     //interestingUnits.sort((a,b) => -(1/Math.pow(1.4,(a.action[0].rucho ? (a.action[0].rucho.length/* + (a.action.length > 1 ? 0.5 : 0)*/)/szy[a.unit.rodz] : a.action[0].type == 'aim' ? 0 : 0))*(a.action[0].il) + 
     //                                 1/Math.pow(1.4,(b.action[0].rucho ? (b.action[0].rucho.length/* + (b.action.length > 1 ? 0.5 : 0)*/)/szy[b.unit.rodz] : b.action[0].type == 'aim' ? 0 : 0))*(b.action[0].il) ))
     
@@ -6767,6 +6784,24 @@ function actionsToReal(dm,color,completely_used_passages){
     if(color == kolej){
         var distmaps = dm.distmaps
         
+        embarkingDestinations = {}
+        
+        for(var j in unix[kolej]){
+            var unit = unix[kolej][j]
+            if(unit.d != color || unit.x == -1)
+                continue
+                
+            if(unit.rodz == 8){
+                var cords = leadPath(unit.x,unit.y,unit.ruchk,unit.rucho)
+                
+                if(cords == undefined)
+                    continue
+                var cod = cords[0]+'#'+cords[1]
+                if(!(cod in embarkingDestinations))
+                    embarkingDestinations[cod] = 0
+                embarkingDestinations[cod]+=unit.il
+            }
+        }
         for(var key in distmaps){
             var distmap = distmaps[key]
             //if(!distmap.frontline)
@@ -6802,19 +6837,24 @@ function actionsToReal(dm,color,completely_used_passages){
                         unix[kolej][unid].rozb = 0
                         unid = divideUnit(unid,unit.il - properAction.il,false)
                         
-                        if(unid == -1)
-                            continue
                     }
-                                        //var pemb = {distmap:key, dru:unit.d, embarking:hexkey, unitIndex:j, turn:turn, move:move}
+                    if(unid != -1){
+                                            //var pemb = {distmap:key, dru:unit.d, embarking:hexkey, unitIndex:j, turn:turn, move:move}
 
-                    var dodajTratwe = putPath(unid,distmap,properAction.destination[0],properAction.destination[1],undefined,completely_used_passages)
-                    if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l'){
-                        if(properAction.embarking != null && (!(properAction.embarking.x+'#'+properAction.embarking.y in potentialEmbarkingSet) || potentialEmbarkingSet[properAction.embarking.x+'#'+properAction.embarking.y] < Math.max(1,unit.il - 20)))
-                            tratwa -= -properAction.il
-                        else
-                            console.log('bbbbbbb')
+                        var dodajTratwe = putPath(unid,distmap,properAction.destination[0],properAction.destination[1],undefined,completely_used_passages)
+                        if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l'){
+                            if(properAction.embarking != null && (!(properAction.embarking.x+'#'+properAction.embarking.y in potentialEmbarkingSet) || potentialEmbarkingSet[properAction.embarking.x+'#'+properAction.embarking.y] < Math.max(1,unit.il - 20)))
+                                tratwa -= -properAction.il
+                            else
+                                console.log('bbbbbbb')
+                        }
+                        unix[kolej][unid].rozb = 0
+                        
+                        if(tratwa == 0 && unit.szyt != 'w' && unit.szyt != 'l' && properAction.embarking != null && !(properAction.embarking.x+'#'+properAction.embarking.y in embarkingDestinations)){
+                            tratwa -= -unit.il
+                        }
                     }
-                    unix[kolej][unid].rozb = 0
+                    
 
                 } else if(unit.actions.length == 1 && unit.actions[0].type == 'aim'){
                     var action2 = unit.actions[0]
@@ -6823,34 +6863,36 @@ function actionsToReal(dm,color,completely_used_passages){
                     if(action2.il < unit.il){
                         unix[kolej][unid].rozb = 0
                         unid = divideUnit(unid,unit.il - action2.il,false)
-                        if(unid == -1)
-                            continue
+//                        if(unid == -1)
+//                            continue
                     }
-                    var stopBefore = 1
-                    if((zast[unit.rodz] == 'n' || zast[unit.rodz] == 'p' || zast[unit.rodz] == 'l'))
-                        stopBefore = zas[unit.rodz]
-                        
-                    //{type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,destination:[distmap.hex.x,distmap.hex.y]},
+                    if(unid != -1){
+                        var stopBefore = 1
+                        if((zast[unit.rodz] == 'n' || zast[unit.rodz] == 'p' || zast[unit.rodz] == 'l'))
+                            stopBefore = zas[unit.rodz]
+                            
+                        //{type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,destination:[distmap.hex.x,distmap.hex.y]},
 
-                    zaznu = unid
-                    tx = distmap.hex.x
-                    ty = distmap.hex.y
-                    celuj(distmap.hex.x,distmap.hex.y,action2.celd,action2.celu,false);
+                        zaznu = unid
+                        tx = distmap.hex.x
+                        ty = distmap.hex.y
+                        celuj(distmap.hex.x,distmap.hex.y,action2.celd,action2.celu,false);
 
-                    if(zaznu!=-1){
-                        heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].zmiana++;
-                        unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
-                        unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
-                        tx = unix[kolej][zaznu].x;
-                        ty = unix[kolej][zaznu].y;
-                        odzaznaj(false);
-                        aktdroguj(kolej,zaznu);
-                        zaznu = -1
+                        if(zaznu!=-1){
+                            heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].zmiana++;
+                            unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
+                            unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
+                            tx = unix[kolej][zaznu].x;
+                            ty = unix[kolej][zaznu].y;
+                            odzaznaj(false);
+                            aktdroguj(kolej,zaznu);
+                            zaznu = -1
+                        }
+                        zaznx = -1;zazny = -1;
+                        tx = -1
+                        ty = -1
+                        unix[kolej][unid].rozb = 0
                     }
-                    zaznx = -1;zazny = -1;
-                    tx = -1
-                    ty = -1
-                    unix[kolej][unid].rozb = 0
 
 
                 } else if(unit.actions.length == 2 && unit.actions[0].type == 'move' && unit.actions[1].type == 'aim'){
@@ -6861,48 +6903,49 @@ function actionsToReal(dm,color,completely_used_passages){
                     if(action1.il < unit.il){
                         unix[kolej][unid].rozb = 0
                         unid = divideUnit(unid,unit.il - action1.il,false)
-                        if(unid == -1)
-                            continue
                     }
-                    var stopBefore = 1
-                    if((zast[unit.rodz] == 'n' || zast[unit.rodz] == 'p' || zast[unit.rodz] == 'l') && zas[unit.rodz] > 1)
-                        stopBefore = zas[unit.rodz]
-                        
-                    var dodajTratwe = putPath(unid,distmap,action1.destination[0],action1.destination[1],stopBefore,completely_used_passages)
-
-                    //if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l'/* && !(action1.embarking != null && action1.embarking.x+'#'+action1.embarking.y in distmap.potentialEmbarkings)*/)
-                    //    tratwa -= -action1.il
-                        
-                    //{type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,destination:[distmap.hex.x,distmap.hex.y]},
-
-                    if(dodajTratwe !== null){
-                        zaznu = unid
-                        var cords = leadPath(distmap.hex.x,distmap.hex.y,action1.ruchk,action1.rucho,stopBefore)
-                        tx = unix[kolej][zaznu].sebix
-                        ty = unix[kolej][zaznu].sebiy
-                        
-                        if(distance(unix[kolej][zaznu].sebix,unix[kolej][zaznu].sebiy,unix[action2.celd][action2.celu].x,unix[action2.celd][action2.celu].y) <= zas[unix[kolej][zaznu].rodz]){
+                    if(unid != -1){
+                        var stopBefore = 1
+                        if((zast[unit.rodz] == 'n' || zast[unit.rodz] == 'p' || zast[unit.rodz] == 'l') && zas[unit.rodz] > 1)
+                            stopBefore = zas[unit.rodz]
                             
-                            if(zaznu!=-1){
-                                celuj(unix[kolej][zaznu].sebix,unix[kolej][zaznu].sebiy,action2.celd,action2.celu,false);
+                        var dodajTratwe = putPath(unid,distmap,action1.destination[0],action1.destination[1],stopBefore,completely_used_passages)
+
+                        //if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l'/* && !(action1.embarking != null && action1.embarking.x+'#'+action1.embarking.y in distmap.potentialEmbarkings)*/)
+                        //    tratwa -= -action1.il
+                            
+                        //{type:'aim',by:'speculation',celu:aimedunit.id,celd:aimedunit.d,destination:[distmap.hex.x,distmap.hex.y]},
+
+                        if(dodajTratwe !== null){
+                            zaznu = unid
+                            //var cords = leadPath(distmap.hex.x,distmap.hex.y,action1.ruchk,action1.rucho,stopBefore)
+                            tx = unix[kolej][zaznu].sebix
+                            ty = unix[kolej][zaznu].sebiy
+                            
+                            if(distance(unix[kolej][zaznu].sebix,unix[kolej][zaznu].sebiy,unix[action2.celd][action2.celu].x,unix[action2.celd][action2.celu].y) <= zas[unix[kolej][zaznu].rodz]){
                                 
-                                heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].zmiana++;
-                                unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
-                                unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
-                                if(tx != -1)
-                                    odzaznaj(false);
-                                aktdroguj(kolej,zaznu);
-                                zaznu = -1
-                                zaznx = -1
-                                zazny = -1
-                                tx = -1
-                                ty = -1
+                                if(zaznu!=-1){
+                                    celuj(unix[kolej][zaznu].sebix,unix[kolej][zaznu].sebiy,action2.celd,action2.celu,false);
+                                    
+                                    heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].zmiana++;
+                                    unix[kolej][zaznu].sebix = unix[kolej][zaznu].x;
+                                    unix[kolej][zaznu].sebiy = unix[kolej][zaznu].y;
+                                    if(tx != -1)
+                                        odzaznaj(false);
+                                    aktdroguj(kolej,zaznu);
+                                    zaznu = -1
+                                    zaznx = -1
+                                    zazny = -1
+                                    tx = -1
+                                    ty = -1
+                                }
+                                unix[kolej][unid].rozb = 0
                             }
-                            unix[kolej][unid].rozb = 0
+                            
                         }
-                        
                     }
                 }
+                
                 if(unit.actions.length == 0){
                     putPath(unit.id,distmap,unit.x,unit.y)
                     unix[kolej][unit.id].rozb = 0
@@ -6932,6 +6975,9 @@ function actionsToReal(dm,color,completely_used_passages){
                     heks[distmap.hex.x][distmap.hex.y].usun[kv]
                 //if(tdistmap.hex.z >= 50){
                     const sustainable_tratwa_growth = 99//Math.min(99, Math.floor(distmap.hex.z * 2 / 4))
+                    if(heks[distmap.hex.x][distmap.hex.y].unp == 4){
+                        heks[distmap.hex.x][distmap.hex.y].usun(3)
+                    }
                     dodai(distmap.hex.x,distmap.hex.y,0,8,Math.min(Math.floor(tratwa),sustainable_tratwa_growth))
                     heks[distmap.hex.x][distmap.hex.y].tasuj()
                 /*}/* else {
@@ -7063,7 +7109,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     }
                     if(!ok){
                         //console.log('onje', disttime, disttime2)
-                        continue
+                        //continue
                     }
                 }
             //}
@@ -7085,7 +7131,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     possible[key1] = realSfKeysOriginal[key1]
                     for(var key2 in realSfKeysOriginal){
                         //console.log(key1, key2, dfrou.distmaps[key2].alliegance)
-                        if((szyt[unit.rodz] != 'c' || (heks[realSfKeysOriginal[key1].hex.x][realSfKeysOriginal[key1].hex.y].z != -2 && heks[realSfKeysOriginal[key2].hex.x][realSfKeysOriginal[key2].hex.y].z != -2)) && key1 != key2 && key2 in dfrou.distmaps/* && dfrou.distmaps[key2].alliegance[MAX_TURNS-1] != -1/* && dfrou.distmaps[fff.code].alliegance[MAX_TURNS-1] != kolej*/){
+                        if(key2 in possibleDestinations && (szyt[unit.rodz] != 'c' || (heks[realSfKeysOriginal[key1].hex.x][realSfKeysOriginal[key1].hex.y].z != -2 && heks[realSfKeysOriginal[key2].hex.x][realSfKeysOriginal[key2].hex.y].z != -2)) && key1 != key2 && key2 in dfrou.distmaps/* && dfrou.distmaps[key2].alliegance[MAX_TURNS-1] != -1/* && dfrou.distmaps[fff.code].alliegance[MAX_TURNS-1] != kolej*/){
                             var d1 = distmapsearch(dfrou,fff.code,key1,unit.rodz)
                             var d2 = distmapsearch(dfrou,fff.code,key2,unit.rodz)
                             var d3 = distmapsearch(dfrou,key1,key2,unit.rodz)
@@ -7122,7 +7168,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                 var lac = unit.legalActions[j]
                 if(lac[0].type == 'move' && lac.length == 1 && (lac[0].il < unit.il || !actionil)){
                     var dist = lac[0].rucho.length
-                    var time = (dist/*-zas[unit.rodz]*/)/(szy[unit.rodz])
+                    var time = (dist-zas[unit.rodz])/(szy[unit.rodz])
                     /*
                     if(unit.actions.length > 0 && unit.actions[0].type == 'move' && dist > unit.actions[0].rucho.length){     
                         console.log('c6')                   
