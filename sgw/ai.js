@@ -283,6 +283,8 @@ function mapmap(map,subfield){
 }
 laststan = -1
 function aimachine(ailevel){
+    podswu = -1
+    podswd = -1
     if(laststan != aistan){
         laststan = aistan
     }
@@ -6412,7 +6414,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     var interestingUnitsHexCodes = interestingUnits.map(x=>x.hex.x+'#'+x.hex.y)
 
     var addedEmbarkigns = []
-    var alreadyAttacking = {}
+    //var alreadyAttacking = {}
     
     var lost = false
     for(var i in interestingUnits){
@@ -6450,13 +6452,13 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
             }
         }
         
-        alreadyAttacking[unitaction.hex.x+'#'+unitaction.hex.y] = true
-        var destiny = unitaction.action[0].destination[0]+'#'+unitaction.action[0].destination[1]
+        //alreadyAttacking[unitaction.hex.x+'#'+unitaction.hex.y] = true
+        //var destiny = unitaction.action[0].destination[0]+'#'+unitaction.action[0].destination[1]
         
         evaluate(dm)//,null,alreadyAttacking,destiny)
         
         //alreadyAttacking[hexcod] = unitaction//,null,alreadyAttacking,x+'#'+y)
-        delete alreadyAttacking[hexcod] 
+        //delete alreadyAttacking[hexcod] 
         var values2ByTime = dm.distmaps[x+'#'+y].alliegance.slice()
         
         lost = lost || unitaction.hex.heks.z > 0 && dm.distmaps[unitaction.hex.x+'#'+unitaction.hex.y].alliegance[MAX_TURNS-1] != color
@@ -6535,7 +6537,8 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     }
     value2 = values2ByTime.reduce((a,b) => a+b, 0)
     
-    if(value2 == undefined || value2 <= value && !(score2 > score1 && value2 >= value)/* || lost*/){
+//    if(value2 == undefined || value2 <= value && !(score2 > score1 && value2 >= value)/* || lost*/){
+    if(value2 == undefined || score2 <= score1 && !(value2 > value && score2 >= score1)/* || lost*/){
         console.log('ech3',value2,value,color)
         for(var i in oldActionArrayUnits){
             oldActionArrayUnits[i].actions = oldActionArrayActions[i]

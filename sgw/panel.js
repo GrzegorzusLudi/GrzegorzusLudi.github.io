@@ -3854,6 +3854,10 @@ function addCitiesAccordingToStack(cityStack, powerStack){
 				}
 			}
 		}
+		if(dru[0] == 0)
+			dru[0] = 2
+		if(dru[1] == 0)
+			dru[1] = 1
 	} else if(cityStack.length == 4){
 		var ciso = cities.sort((a,b)=>a.y-b.y)
 		var cities_top = ciso.slice(0,Math.floor(ciso.length / 2)).sort((a,b)=>a.x-b.x)
@@ -3914,6 +3918,14 @@ function addCitiesAccordingToStack(cityStack, powerStack){
 				}
 			}
 		}
+		if(dru[0] == 0)
+			dru[0] = 2
+		if(dru[1] == 0)
+			dru[1] = 2
+		if(dru[2] == 0)
+			dru[2] = 1
+		if(dru[3] == 0)
+			dru[3] = 2
 	}
 }
 function addBigArmies(width){
