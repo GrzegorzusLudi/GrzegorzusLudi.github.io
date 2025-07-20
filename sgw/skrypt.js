@@ -387,6 +387,7 @@ function Hex(x,y){
  this.drogkol = [];	//kolor
  this.drogg = [];	//do kogo należy
  this.drogd = [];	//drużyna
+ this.drogh = [];	//odległość od środka
 
  this.drpon = 0;
  this.drpop = [];
@@ -770,7 +771,7 @@ function changeState(newState){
 				a++;
 			}
 		}
-		//rescaleMovesToMakeCanvasCts()
+		rescaleStatisticCanvas()
 		//redrawCanvas(movesToMakeCanvasCtx)
 	}
 	
@@ -1554,6 +1555,7 @@ function klik(){
 							zaznx = -1;zazny = -1;
 							zaznaj(zaznu);
 						} else {
+							//aa
 							divideUnit(zaznu,10)
 						}
 					} else if(podswd!=-1){
@@ -1853,7 +1855,11 @@ function removeUnits(){
 				heks[a][b].unbr = heks[a][b].undr;
 			}
 			heks[a][b].undr = -1;
+			heks[a][b].unbr = -1;
 			heks[a][b].unp = 0;
+			
+			heks[a][b].cel_rodz = -1;
+			heks[a][b].cel_rodz_il = -1;
 			b++;
 		}
 		a++;

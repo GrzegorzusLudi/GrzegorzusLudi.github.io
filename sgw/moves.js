@@ -27,7 +27,7 @@ function usunmost(){
 	spis(kolej);
 	this.koloruj();
 }
-function usun(ktor){
+function usun(ktor,atakując){
 	if(ktor == -1){
 		wybur = this.unp-1;
 	} else {
@@ -42,12 +42,15 @@ function usun(ktor){
 
 	if(wybur>0 && this.undr!=kolej){
 		przeceluj(this.unt[wybur],this.unt[tamten],this.undr);
+		odceluj(this.unt[wybur],this.undr);
 	} else {
 		odceluj(this.unt[wybur],this.undr);
 	}
-	oddroguj(this.unt[wybur],this.undr,false);
+	oddroguj(this.unt[wybur],this.undr,false,atakując);
 	if(wybur>=0){
 		unix[this.undr][this.unt[wybur]].kosz = true;
+		unix[this.undr][this.unt[wybur]].sebix = unix[this.undr][this.unt[wybur]].x;
+		unix[this.undr][this.unt[wybur]].sebiy = unix[this.undr][this.unt[wybur]].y;
 		unix[this.undr][this.unt[wybur]].x = -1;
 		unix[this.undr][this.unt[wybur]].y = -1;
 		unix[this.undr][this.unt[wybur]].celd = -1;
@@ -923,6 +926,7 @@ function droguj(xhh,yhh,uni){
 		tph.drogd[tph.drogn] = kolej;
 		tph.drogw[tph.drogn] = uniw(kolej,uni);
 		tph.drogkol[tph.drogn] = 0;
+		tph.drogh[tph.drogn] = unix[kolej][uni].ruchh;
 
 		tph.ktodro[uni] = tph.drogn;
 		tph.zmiana++;
@@ -957,9 +961,10 @@ function droguj(xhh,yhh,uni){
 		if(tph.z==-2 && unix[kolej][uni].szyt!="g" && unix[kolej][uni].szyt!="l" && dust==0){
 			dust = 1;
 		}
-		if(unix[kolej][uni].ruchh<unix[kolej][uni].szy && dust<1){
+		console.log(unix[kolej][uni].ruchh)
+		if(unix[kolej][uni].ruchh<unix[kolej][uni].szy && dust<=1){
 			tph.drogpr[tph.drogn] = 2;
-		} else if(unix[kolej][uni].ruchh<=unix[kolej][uni].szy && dust==1){
+		} else if(unix[kolej][uni].ruchh<=unix[kolej][uni].szy && dust<1){
 			tph.drogpr[tph.drogn] = 1;
 			if(dust==1){
 				dust=2;
@@ -984,6 +989,7 @@ function droguj(xhh,yhh,uni){
 		tph.drogg[tph.drogn] = uni;
 		tph.drogd[tph.drogn] = kolej;
 		tph.drogw[tph.drogn] = uniw(kolej,uni);
+		tph.drogh[tph.drogn] = unix[kolej][uni].ruchh;
 		tph.ktodro[uni] = tph.drogn;
 		tph.drogkol[tph.drogn] = 0;
 		tph.zmiana++;
@@ -1045,7 +1051,7 @@ function przeceluj(uni,uni2,dru){
 	//}
 		//unix[kolej][uni].celen--;
 }
-function oddroguj(uni,koloj,odc){
+function oddroguj(uni,koloj,odc,atakując){
 	tph = hexOfUnit(unix[koloj][uni]);
 	czyscc(uni,tph.x,tph.y,koloj);
 	ajk = 0;
@@ -1164,20 +1170,20 @@ function oddroguj(uni,koloj,odc){
 		unix[koloj][uni].ruchk.length = 0;
 	}
 }
-function przeczyscc(unu,kpx,kpy,dru){
+function przeczyscc(unu,kpx,kpy,dru,drogh){
 	var numa = 0
 	while(numa<heks[kpx][kpy].drogn){
-		if(heks[kpx][kpy].drogd[numa] == dru && heks[kpx][kpy].drogg[numa] == unu){
+		if(heks[kpx][kpy].drogd[numa] == dru && heks[kpx][kpy].drogg[numa] == unu && (drogh == undefined || heks[kpx][kpy].drogh[numa] <= drogh+1)){
 			heks[kpx][kpy].drogp[numa] = -1
 		}
 		numa++;
 	}
 }
-function czyscc(unu,kpx,kpy,dru){
+function czyscc(unu,kpx,kpy,dru,drogh){
 	var numa = 0;
 
 	while(numa<heks[kpx][kpy].drogn){
-		if(heks[kpx][kpy].drogd[numa] == dru && heks[kpx][kpy].drogg[numa] == unu){
+		if(heks[kpx][kpy].drogd[numa] == dru && heks[kpx][kpy].drogg[numa] == unu && (drogh == undefined || heks[kpx][kpy].drogh[numa] <= drogh+1)){
 			var numu = numa;
 			while(numu<heks[kpx][kpy].drogn-1){
 				heks[kpx][kpy].drogp[numu] = heks[kpx][kpy].drogp[numu+1];
@@ -1186,6 +1192,7 @@ function czyscc(unu,kpx,kpy,dru){
 				heks[kpx][kpy].drogw[numu] = heks[kpx][kpy].drogw[numu+1];
 				heks[kpx][kpy].drogd[numu] = heks[kpx][kpy].drogd[numu+1];
 				heks[kpx][kpy].drogg[numu] = heks[kpx][kpy].drogg[numu+1];
+				heks[kpx][kpy].drogh[numu] = heks[kpx][kpy].drogh[numu+1];
 				heks[kpx][kpy].ktodro[kolej][heks[kpx][kpy].drogg[numu]] = numu;
 
 				numu++;
@@ -1278,7 +1285,14 @@ function divideUnit(uni,zost,changeTheState){
 		unix[kolej][pal].szy = unix[kolej][uni].szy;
 		unix[kolej][pal].szyt = unix[kolej][uni].szyt;
 		if(zaznu!=-1){
+			
+			tx = unix[kolej][uni].sebix;
+			ty = unix[kolej][uni].sebiy;
             odzaznaj(changeTheState);
+			
+			unix[kolej][uni].sebix = unix[kolej][uni].x;
+			unix[kolej][uni].sebiy = unix[kolej][uni].y;
+			
             zaznu = pal;
 
             zaznaj(zaznu,changeTheState);
@@ -1528,6 +1542,7 @@ function przenies(kierunek){
 	var peh = hexOfUnit(this).border[kierunek];
 	var ton = 0;
 	var tox = this.x,toy = this.y;
+	console.log(peh.x,peh.y,this.x,this.y)
 	if(peh.undr!=kolej && peh.undr!=-1){
 		atakuj(this.id,peh,peh.undr);
 	}
@@ -1704,8 +1719,8 @@ function przenies(kierunek){
 		jesio = -1;
 	}
 	if(ton>0){
-		przeczyscc(this.id,this.x,this.y,this.d)
-		czyscc(this.id,tox,toy,this.d);
+		przeczyscc(this.id,this.x,this.y,this.d,0)
+		czyscc(this.id,tox,toy,this.d,0);
 		aktdroguj(kolej,this.id);
 	}
 }
@@ -1713,7 +1728,7 @@ function przenies(kierunek){
 //returns hexagon where unit is placed
 function hexOfUnit(unit){
 	if(unit.x == -1 || unit.y == -1)
-		return null
+		return heks[unit.sebix][unit.sebiy];
 	return heks[unit.x][unit.y];
 }
 
@@ -1721,56 +1736,66 @@ function aktdroguj(kolejk,uni){
 	if(uni!=-1){
 	tph = unix[kolejk][uni];
 	zasieg = unix[kolejk][uni].szy;
+	tphx = hexOfUnit(tph)
 	a = 0;
-	while(a<tph.drogn){
-		if(tph.drogg[a]==uni && tph.drogd[a]==kolejk && tph.drogkol[a]==0){
-			tph.drogp[a] = -1;
-			tph.drogk[a] = -1;
+	if(tphx != null){
+		while(a<tphx.drogn){
+			if(tphx.drogg[a]==uni && tphx.drogd[a]==kolejk && tphx.drogh[a]<1 && tphx.drogkol[a]==0){
+				//tphx.drogp[a] = -1;
+				//tphx.drogk[a] = -1;
 
-			tph.drogw[a] = uniw(kolejk,uni);
-			tph.drogpr[a] = 2;
+				tphx.drogw[a] = uniw(kolejk,uni);
+				tphx.drogpr[a] = 2;
+				tphx.drogh[a] = 0;
+			}
+			a++;
 		}
-		a++;
 	}
-	tph.zmiana++;
+	tphx.zmiana++;
+	var drogow = 0
 	ajk = 0;
 	while(ajk<unix[kolejk][uni].ruchy){
 		bjk = 0;
 		while(bjk<unix[kolejk][uni].rucho[ajk]){
 			//console.log(tph.x+'#'+tph.y+'#'+unix[kolejk][uni].ruchk[ajk])
+			drogow++
 			tph = hexOfUnit(tph).border[unix[kolejk][uni].ruchk[ajk]];
 			if(tph == undefined)
 				break
 			if(zasieg>=0){
 				zasieg--;
 			}
-			if(tph.z == -2 && unix[kolejk][uni].szyt!="l" && unix[kolejk][uni].szyt!="g"){
-				zasieg = 0;
+			if(zasieg > 0){
+				if(tph.z == -2 && unix[kolejk][uni].szyt!="l" && unix[kolejk][uni].szyt!="g"){
+					zasieg = 0;
+				}
+				if(tph.z == -1 && unix[kolejk][uni].szyt!="w" && unix[kolejk][uni].szyt!="l"){
+					zasieg = -1;
+				}
 			}
-			if(tph.z == -1 && unix[kolejk][uni].szyt!="w" && unix[kolejk][uni].szyt!="l"){
-				zasieg = -1;
-			}
-			if(zasieg >= 0){
 				a = 0;
 				while(a<tph.drogn){
-					if(tph.drogg[a]==uni && tph.drogd[a]==kolejk){
-						tph.drogw[a] = uniw(kolejk,uni);
-						if(zasieg>0){
-							tph.drogpr[a] = 2;
-						} else {
-							tph.drogpr[a] = 1;
+					if(tph.drogg[a]==uni && tph.drogd[a]==kolejk && tph.drogh[a] >= drogow-1 && tph.drogh[a] <= drogow+1){
+						if(zasieg >= 0){
+							tph.drogw[a] = uniw(kolejk,uni);
+							if(zasieg>0){
+								tph.drogpr[a] = 2;
+							} else {
+								tph.drogpr[a] = 1;
+							}
 						}
+						tph.drogh[a] = drogow;
+
 					}
 
 					a++;
 				}
-			}
 			tph.zmiana++;
 			bjk++;
 		}
 		ajk++;
 	}
-
+	/*
 	if(false && unix[kolejk][uni].celd>-1 && unix[unix[kolejk][uni].celd][unix[kolejk][uni].celu].x>-1){
         if(unix[kolejk][uni].celd!=kolej){
             tx = tph.x;
@@ -1845,7 +1870,7 @@ function aktdroguj(kolejk,uni){
 
 				}
 			}
-		}
+		}*/
 
 	}
 }
@@ -1983,7 +2008,8 @@ function atakuj(uni,hek,dru){
 				var ata = 0;
 				while(ata<4 && ata<heks[unix[dru][unic].x][unix[dru][unic].y].unp){
 					if(heks[unix[dru][unic].x][unix[dru][unic].y].unt[ata] == unic){
-						//oddroguj(unic,dru,false);
+						oddroguj(unic,dru,false);
+						
 						heks[unix[dru][unic].x][unix[dru][unic].y].usun(ata);
 						ata = 4;
 					}
@@ -2007,7 +2033,8 @@ function atakuj(uni,hek,dru){
 		var ata = 0;
 		while(ata<4 && ata<heks[unix[kolej][uni].x][unix[kolej][uni].y].unp){
 			if(heks[unix[kolej][uni].x][unix[kolej][uni].y].unt[ata] == uni){
-				heks[unix[kolej][uni].x][unix[kolej][uni].y].usun(ata);
+				oddroguj(uni,dru,false);
+				heks[unix[kolej][uni].x][unix[kolej][uni].y].usun(ata,true);
 				ata = 4;
 			}
 			ata++;

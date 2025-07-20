@@ -83,21 +83,23 @@ function anim(){
 								var tany = heks[unix[kolej][ruchwkolejce[uniwy]].x][unix[kolej][ruchwkolejce[uniwy]].y].border[unix[kolej][ruchwkolejce[uniwy]].ruchk[0]].y
 								var tundr = heks[tanx][tany].undr
 								var tunp = heks[tanx][tany].unp
-								unix[kolej][ruchwkolejce[uniwy]].rucho[0]--;
 								unix[kolej][ruchwkolejce[uniwy]].przenies(unix[kolej][ruchwkolejce[uniwy]].ruchk[0]);
+								//if(jesio > -1)
+									unix[kolej][ruchwkolejce[uniwy]].rucho[0]--;
 								
-								aktdroguj(kolej,uniwy);
+								//if(unix[kolej][ruchwkolejce[uniwy]].x > -1)
+									aktdroguj(kolej,ruchwkolejce[uniwy]);
 
 								if(tundr > -1 && tunp > 0 || heks[tanx][tany].cel_rodz > -1 || tutorial)
 									checkCelebration(previousLiczeb,kolej,tundr)
 									
 								if(!unix[kolej][ruchwkolejce[uniwy]].kosz){
-									if(heks[unix[kolej][ruchwkolejce[uniwy]].x][unix[kolej][ruchwkolejce[uniwy]].y].z == -2 && unix[kolej][ruchwkolejce[uniwy]].szyt!="g" /*górski oddział*/ && unix[kolej][ruchwkolejce[uniwy]].szyt!="l" /*oddział latający*/){
-										jesio = 0;
-									}
 									if(jesio == -1){
 										unix[kolej][ruchwkolejce[uniwy]].rucho[0]++;
 										unix[kolej][ruchwkolejce[uniwy]].przes += 2;
+									}
+									if(heks[unix[kolej][ruchwkolejce[uniwy]].x][unix[kolej][ruchwkolejce[uniwy]].y].z == -2 && unix[kolej][ruchwkolejce[uniwy]].szyt!="g" /*górski oddział*/ && unix[kolej][ruchwkolejce[uniwy]].szyt!="l" /*oddział latający*/){
+										jesio = 0;
 									}
 								} else {
 									console.log('a:',tanx,tany)
@@ -126,12 +128,14 @@ function anim(){
 					/*if((unix[kolej][uniwy].ruchy == 0 && jesio == 0) && unix[kolej][uniwy].przes>=0 && unix[kolej][uniwy].celd>-1 && !unix[kolej][uniwy].kosz){
 						unix[kolej][uniwy].kiero = unix[kolej][uniwy].celk;
 					}*/
-					aktdroguj(kolej,uniwy);
+					//if(unix[kolej][ruchwkolejce[uniwy]].x > -1)
+						aktdroguj(kolej,ruchwkolejce[uniwy]);
 
 					if(((unix[kolej][ruchwkolejce[uniwy]].ruchy == 0 || jesio == 0) && unix[kolej][ruchwkolejce[uniwy]].przes>0 && (unix[kolej][ruchwkolejce[uniwy]].celd==-1 || jesio == 0)) || (jesio==-1 && unix[kolej][ruchwkolejce[uniwy]].przes<0) || unix[kolej][ruchwkolejce[uniwy]].kosz){
 						unix[kolej][ruchwkolejce[uniwy]].przes = 0;
 						//czyscc(ruchwkolejce[uniwy],tax,tay,kolej);
-						aktdroguj(kolej,ruchwkolejce[uniwy]);
+						//if(unix[kolej][ruchwkolejce[uniwy]].x > -1)
+							aktdroguj(kolej,ruchwkolejce[uniwy]);
 						uniwy++;
 						nastepnyoddzial();nsto = true
 					}

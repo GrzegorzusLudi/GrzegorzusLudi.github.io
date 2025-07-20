@@ -96,6 +96,10 @@ input[type=range]::-moz-range-thumb {
 	width: 250px;
 	padding: 5px
 }
+.scrollable {
+    height:450px;
+	overflow-y:scroll;
+}
 #mountPercentageInputa {
 	float: left
 }
@@ -191,8 +195,9 @@ p {
       <div id="controlfield">
         <div id="controltitle">Misje</div>
         <div id="controlfieldin">
-          <canvas width="220px" height="420px" id="campaignChooseCanvas"  onclick="gmp(campaignChooseCanvas,event);campaignChooseCanvasClick();" onmousemove="gmp(campaignChooseCanvas,event);campaignChooseCanvasMove();" onmouseout="campaignChooseCanvasNumber = -1;campaignChooseCanvasDraw();"></canvas>
-
+         <div class="scrollable">
+          <canvas width="220px" height="630px" id="campaignChooseCanvas"  onclick="gmp(campaignChooseCanvas,event);campaignChooseCanvasClick();" onmousemove="gmp(campaignChooseCanvas,event);campaignChooseCanvasMove();" onmouseout="campaignChooseCanvasNumber = -1;campaignChooseCanvasDraw();"></canvas>
+         </div>
         </div>
       </div>
       <p>
@@ -250,7 +255,7 @@ p {
           <option value="15-[7-7-7-7]-[99-99-99-99]-land">15-boczny ląd, armie 7vs7vs7vs7 po 99</option>
         </select>
         <p>
-        <input type="button" value="GENERUJ" onclick="generateTerrainAndArmies();redraw(true);" />
+        <input type="button" value="GENERUJ" onclick="removeUnits();generateTerrainAndArmies();redraw(true);" />
         </p>
         </div>
       </div>
@@ -403,8 +408,10 @@ p {
         <div id="controlfield">
           <div id="controltitle">Statystyki</div>
           <div id="controlfieldin"> 
+          
+            <div class="scrollable">
               <canvas width="220px" height="420px" id="statisticsCanvas2" ></canvas>
-
+            </div>
           </div>
         </div>
       <p>
@@ -468,8 +475,9 @@ p {
       <div id="controlfield">
         <div id="controltitle">Statystyki</div>
         <div id="controlfieldin"> 
+          <div class="scrollable">
             <canvas width="220px" height="520px" id="statisticsCanvas" ></canvas>
-
+          </div>
         </div>
       </div>
     </div>
@@ -550,8 +558,10 @@ p {
       </div>
       <div id="controlfield">
         <div id="controltitle">Statystyki</div>
-        <div id="controlfieldin"> 
-            <canvas width="220px" height="520px" id="statisticsCanvas3" ></canvas>
+        <div id="controlfieldin">
+          <div class="scrollable">
+              <canvas width="220px" height="520px" id="statisticsCanvas3" ></canvas>
+            </div>
         
         </div>
       </div>

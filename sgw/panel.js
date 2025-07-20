@@ -3473,6 +3473,7 @@ function readCodeFromString(sta){
 				heks[a][b].hutn = 0;
 				heks[a][b].prod = 0;
 				heks[a][b].undr = -1;
+				heks[a][b].unbr = -1;
 				
 				if(subfield.includes('[')){
 					var otherFields = '['+subfield.split('[').slice(1).join('[')
@@ -3964,5 +3965,23 @@ function próbujGrać(){
 		alert("Ustaw chociaż jeden oddział!")
 	}
 }
-
+function rescaleStatisticCanvas(){
+	var height = 340
+	var number = 0
+	for(var i = 0;i<12;i++){
+		if(dru[i] != 0)
+			number++
+	}
+	if(number > 8)
+		height *= 3
+	else if(number > 4)
+		height *= 2
+		
+	statisticsCanvas.height = height
+	statisticsCanvasCtx = statisticsCanvas.getContext('2d')
+	statisticsCanvas2.height = height
+	statisticsCanvasCtx2 = statisticsCanvas2.getContext('2d')
+	statisticsCanvas3.height = height
+	statisticsCanvasCtx3 = statisticsCanvas3.getContext('2d')
+}
 
