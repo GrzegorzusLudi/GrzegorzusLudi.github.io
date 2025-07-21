@@ -914,9 +914,9 @@ function droguj(xhh,yhh,uni){
 	tph.drogp[tph.drogn] = -1.11;
 	if(unix[kolej][uni].ruchy>0){
 		tph.drogp[tph.drogn] = (kierk+3)%6;
-		tph.drogn--;
+		//tph.drogn--;
 	} else {
-		tph.drogn = 0;
+		//tph.drogn = 0;
 	}
 	moz = true;
 	dloh = 0;
@@ -961,7 +961,7 @@ function droguj(xhh,yhh,uni){
 		if(tph.z==-2 && unix[kolej][uni].szyt!="g" && unix[kolej][uni].szyt!="l" && dust==0){
 			dust = 1;
 		}
-		console.log(unix[kolej][uni].ruchh)
+		//console.log(unix[kolej][uni].ruchh)
 		if(unix[kolej][uni].ruchh<unix[kolej][uni].szy && dust<=1){
 			tph.drogpr[tph.drogn] = 2;
 		} else if(unix[kolej][uni].ruchh<=unix[kolej][uni].szy && dust<1){
@@ -1269,7 +1269,7 @@ function tatasuj(uni,wyski){
 
 }
 function divideUnit(uni,zost,changeTheState){
-	console.log(kolej,uni)
+	//console.log(kolej,uni)
 	if(unix[kolej][uni].il>zost && heks[unix[kolej][uni].x][unix[kolej][uni].y].unp<4){
 		
 		tx = unix[kolej][uni].x
@@ -1759,7 +1759,7 @@ function aktdroguj(kolejk,uni){
 		while(bjk<unix[kolejk][uni].rucho[ajk]){
 			//console.log(tph.x+'#'+tph.y+'#'+unix[kolejk][uni].ruchk[ajk])
 			drogow++
-			console.log(tph,unix[kolejk][uni].ruchk[ajk])
+			//console.log(tph,unix[kolejk][uni].ruchk[ajk])
 			tph = hexOfUnit(tph).border[unix[kolejk][uni].ruchk[ajk]];
 			if(tph == undefined)
 				break

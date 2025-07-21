@@ -1561,7 +1561,7 @@ function klik(){
 					} else if(podswd!=-1){
 						//unit another than selected
 						
-						console.log('b',podswd,podswu)
+						//console.log('b',podswd,podswu)
 						if(unix[podswd][podswu].kolor==1 || unix[podswd][podswu].kolor==2 || unix[podswd][podswu].kolor==3){
 							//unit is highlighted (ready to be attacked, merged or transported by air)
 

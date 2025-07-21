@@ -102,7 +102,7 @@ function anim(){
 										jesio = 0;
 									}
 								} else {
-									console.log('a:',tanx,tany)
+									//console.log('a:',tanx,tany)
 									czyscc(ruchwkolejce[uniwy],tanx,tany,kolej)
 									jesio = 0;
 								}
