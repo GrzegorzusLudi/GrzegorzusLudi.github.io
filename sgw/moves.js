@@ -1542,7 +1542,6 @@ function przenies(kierunek){
 	var peh = hexOfUnit(this).border[kierunek];
 	var ton = 0;
 	var tox = this.x,toy = this.y;
-	console.log(peh.x,peh.y,this.x,this.y)
 	if(peh.undr!=kolej && peh.undr!=-1){
 		atakuj(this.id,peh,peh.undr);
 	}
@@ -1721,7 +1720,7 @@ function przenies(kierunek){
 	if(ton>0){
 		przeczyscc(this.id,this.x,this.y,this.d,0)
 		czyscc(this.id,tox,toy,this.d,0);
-		aktdroguj(kolej,this.id);
+		//aktdroguj(kolej,this.id);
 	}
 }
 
@@ -1740,7 +1739,7 @@ function aktdroguj(kolejk,uni){
 	a = 0;
 	if(tphx != null){
 		while(a<tphx.drogn){
-			if(tphx.drogg[a]==uni && tphx.drogd[a]==kolejk && tphx.drogh[a]<1 && tphx.drogkol[a]==0){
+			if(tphx.drogg[a]==uni && tphx.drogd[a]==kolejk && tphx.drogh[a]<=1 && tphx.drogkol[a]==0){
 				//tphx.drogp[a] = -1;
 				//tphx.drogk[a] = -1;
 
@@ -1752,6 +1751,7 @@ function aktdroguj(kolejk,uni){
 		}
 	}
 	tphx.zmiana++;
+	tph = tphx
 	var drogow = 0
 	ajk = 0;
 	while(ajk<unix[kolejk][uni].ruchy){
@@ -1759,6 +1759,7 @@ function aktdroguj(kolejk,uni){
 		while(bjk<unix[kolejk][uni].rucho[ajk]){
 			//console.log(tph.x+'#'+tph.y+'#'+unix[kolejk][uni].ruchk[ajk])
 			drogow++
+			console.log(tph,unix[kolejk][uni].ruchk[ajk])
 			tph = hexOfUnit(tph).border[unix[kolejk][uni].ruchk[ajk]];
 			if(tph == undefined)
 				break
@@ -1775,7 +1776,7 @@ function aktdroguj(kolejk,uni){
 			}
 				a = 0;
 				while(a<tph.drogn){
-					if(tph.drogg[a]==uni && tph.drogd[a]==kolejk && tph.drogh[a] >= drogow-1 && tph.drogh[a] <= drogow+1){
+					if(tph.drogg[a]==uni && tph.drogd[a]==kolejk && tph.drogh[a] <= drogow+1){
 						if(zasieg >= 0){
 							tph.drogw[a] = uniw(kolejk,uni);
 							if(zasieg>0){
@@ -2033,7 +2034,7 @@ function atakuj(uni,hek,dru){
 		var ata = 0;
 		while(ata<4 && ata<heks[unix[kolej][uni].x][unix[kolej][uni].y].unp){
 			if(heks[unix[kolej][uni].x][unix[kolej][uni].y].unt[ata] == uni){
-				oddroguj(uni,dru,false);
+				oddroguj(uni,kolej,false);
 				heks[unix[kolej][uni].x][unix[kolej][uni].y].usun(ata,true);
 				ata = 4;
 			}
