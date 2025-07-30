@@ -1452,7 +1452,7 @@ function redrawCanvas(rtx){
 		case statisticsCanvasCtx2:
 		case statisticsCanvasCtx3:
 			if(stan >= 2){
-				rtx.clearRect(0,0,220,520)
+				rtx.clearRect(0,0,220,2500)
 				var stats = []
 				var moneystats = []
 				var ironstats = []
@@ -3704,17 +3704,21 @@ function checkTeams(){
 }
 function changeScreenWidth(w){
 	var prawo = document.getElementById('right')
+	var tutorial = document.getElementById('tutorial')
 	mainCanvas.width = w;
 	mainCanvas.height = w;
 	aroundcanv.style.height = w+"px";
 	aroundcanv.style.width = w+"px";
+	/*
 	if(w==1000){
 		prawo.style.marginTop = "100px";
 	} else if(w==1200){
 		prawo.style.marginTop = "170px";
 	} else {
 		prawo.style.marginTop = "0px";
-	}
+	}*/
+	prawo.style.height = w+"px"
+	tutorial.style.height = w+"px"
 	ctx=mainCanvas.getContext("2d");
 	redraw(true);
 }

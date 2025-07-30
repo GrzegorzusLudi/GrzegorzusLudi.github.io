@@ -1829,7 +1829,7 @@ function redraw(all){
 		textuj();
 	}
 }
-function removeUnits(){
+function removeUnits(really_remove){
 	equaUnitDistribution = false;/*
 	cc = 0;
 	while(cc<12){
@@ -1837,12 +1837,12 @@ function removeUnits(){
 		cc++;
 	}*/
 	a = 0;
-	while(a<scian){
+	while(a<60){
 		b = 0;
-		while(b<scian){
+		while(b<60){
  			eu = 0;
  			while(eu<4){
-				if(heks[a][b].unt[eu] > -1 && heks[a][b].undr > -1){
+				if(heks[a][b].unt[eu] > -1 && heks[a][b].undr > -1 && unix[heks[a][b].undr][heks[a][b].unt[eu]] != undefined){
 					unix[heks[a][b].undr][heks[a][b].unt[eu]].kosz = true
 					unix[heks[a][b].undr][heks[a][b].unt[eu]].x = -1
 					unix[heks[a][b].undr][heks[a][b].unt[eu]].y = -1
@@ -1850,10 +1850,12 @@ function removeUnits(){
  				heks[a][b].unt[eu] = -1;
  				eu++;
 			}
-			if(heks[a][b].z>0){
+			if(heks[a][b].z>0 || heks[a][b].kolz > -1){
 				heks[a][b].zmiana = 20;
 				heks[a][b].unbr = heks[a][b].undr;
 			}
+			heks[a][b].kolz = -1;
+			
 			heks[a][b].undr = -1;
 			heks[a][b].unbr = -1;
 			heks[a][b].unp = 0;
@@ -1863,6 +1865,20 @@ function removeUnits(){
 			b++;
 		}
 		a++;
+	}
+	
+	teamChooseDraw()
+	teamChoose2Draw()
+}
+function resetDru(){
+	f = 0
+	while(f<12){
+		if(f<4){
+			dru[f] = 1;
+		} else {
+			dru[f] = 0;
+		}
+		f++;
 	}
 }
 
