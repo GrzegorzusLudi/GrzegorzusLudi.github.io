@@ -10,6 +10,7 @@
 <script src="history.js"></script>
 <script src="tutorial.js"></script>
 <script src="kampania.js"></script>
+<script src="language.js"></script>
 <style>
 body {
 	font-family: Trebuchet MS;
@@ -173,6 +174,19 @@ p {
 #select-tutorial { 
   width:100%;
 }
+.naflage {
+  display:inline-block;
+  font-size:14px;
+  font-weight:normal;
+}
+.flaga {
+  height:40px;
+  width:70px;
+  border:3px solid darkblue;
+}
+.flaga:hover {
+  border:3px solid yellow;
+}
 </style>
 </head>
 <body onload="initialize(0);terrainChooseDraw();teamChooseDraw();unitChoiceDraw();unitDivisionDraw();anim()">
@@ -183,17 +197,17 @@ p {
   <div id="codewindow">
     <textarea id="codeField" rows="40" cols="80"></textarea>
     <br/>
-    <input type="button" value="POBIERZ KOD" onclick="getCode();" />
-    <input type="button" value="WCZYTAJ KOD" onclick="readCode();redraw(true);"/>
+    <input type="button" value="{pl|POBIERZ KOD|en|GET CODE}" onclick="getCode();" />
+    <input type="button" value="{pl|WCZYTAJ KOD|en|READ CODE}" onclick="readCode();redraw(true);"/>
   </div>
   <div id="right">
   
     <div id="u-3">
       <div style="height:60px">
-        <h3>KAMPANIA</h3>
+        <h3>{pl|KAMPANIA|en|CAMPAIGN}</h3>
       </div>
       <div id="controlfield">
-        <div id="controltitle">Misje</div>
+        <div id="controltitle">{pl|Misje|en|Missions}</div>
         <div id="controlfieldin">
          <div class="scrollable">
           <canvas width="220px" height="750px" id="campaignChooseCanvas"  onclick="gmp(campaignChooseCanvas,event);campaignChooseCanvasClick();" onmousemove="gmp(campaignChooseCanvas,event);campaignChooseCanvasMove();" onmouseout="campaignChooseCanvasNumber = -1;campaignChooseCanvasDraw();"></canvas>
@@ -201,8 +215,8 @@ p {
         </div>
       </div>
       <p>
-        <input type="button" value="GRAJ" id="go-campaign" onclick="prepareCampaign()" />
-        <input type="button" value="POWRÓT DO MENU" onclick="przywróćState();changeState(-1);redraw(true);" />
+        <input type="button" value="{pl|GRAJ|en|PLAY}" id="go-campaign" onclick="prepareCampaign()" />
+        <input type="button" value="{pl|POWRÓT DO MENU|en|BACK TO MENU}" onclick="przywróćState();changeState(-1);redraw(true);" />
       </p>
     </div>
     <div id="u-2">
@@ -210,57 +224,57 @@ p {
         <h3>TUTORIAL</h3>
       </div>
       <div id="controlfield">
-        <div id="controltitle">Zadania</div>
+        <div id="controltitle">{pl|Zadania|en|Tasks}</div>
         <div id="controlfieldin">
           <select id="select-tutorial" size="6">
-            <option value="lekcja1">1. poruszanie oddziałów</option>
-            <option value="lekcja2">2. dzielenie i łączenie oddziałów</option>
-            <option value="lekcja3">3. oddziały wodne i desant</option>
-            <option value="lekcja4">4. miasta i budowa oddziałów</option>
-            <option value="lekcja5">5. atakowanie oddziałów nieprzyjaciela</option>
-            <option value="lekcja6">6. desant</option>
-            <option value="lekcja7">7. podatki i przemysł</option>
-            <option value="lekcja8">8. oddziały saperskie</option>
-            <option value="lekcja9">9. oddziały lotnicze</option>
+            <option value="lekcja1">1. {pl|poruszanie oddziałów|en|moving units}</option>
+            <option value="lekcja2">2. {pl|dzielenie i łączenie oddziałów|en|dividing and merging units}</option>
+            <option value="lekcja3">3. {pl|oddziały wodne i desant|en|marine units and landing operations}</option>
+            <option value="lekcja4">4. {pl|miasta i budowa oddziałów|en|towns and building units}</option>
+            <option value="lekcja5">5. {pl|atakowanie oddziałów nieprzyjaciela|en|attacking units of the opponent}</option>
+            <option value="lekcja6">6. {pl|desant|en|landing operation}</option>
+            <option value="lekcja7">7. {pl|podatki i przemysł|en|taxes and industry}</option>
+            <option value="lekcja8">8. {pl|oddziały saperskie|en|engineering units}</option>
+            <option value="lekcja9">9. {pl|oddziały lotnicze|en|airforce}</option>
           </select>
           <p>
-            <input type="button" value="USTAW ZADANIE" id="tutorial-choose-button" onclick="setTutorial();" />
+            <input type="button" value="{pl|USTAW ZADANIE|en|SET TASK}" id="tutorial-choose-button" onclick="setTutorial();" />
           </p>
         </div>
       </div>
       <p>
-        <input type="button" value="GRAJ W TUTORIAL" id="go-tutorial" onclick="prepareTutorial()" />
-        <input type="button" value="POWRÓT DO MENU" onclick="przywróćState();changeState(-1);redraw(true);" />
+        <input type="button" value="{pl|GRAJ W TUTORIAL|en|PLAY TUTORIAL}" id="go-tutorial" onclick="prepareTutorial()" />
+        <input type="button" value="{pl|POWRÓT DO MENU|en|BACK TO MENU}" onclick="przywróćState();changeState(-1);redraw(true);" />
       </p>
     </div>
     <div id="u-1">
-      <h3>Generator rozgrywek</h3>
+      <h3>{pl|Generator rozgrywek|en|Game generator}</h3>
       <br/>
       
       <div id="controlfield" style="margin-bottom:5px">
-        <div id="controltitle">Konfiguracje</div>
+        <div id="controltitle">{pl|Konfiguracje|en|Configurations}</div>
         <div id="controlfieldin">
         <select id="select-configuration" size="10">
-          <option value="10-[7-7]-[99-99]-land">10-boczny ląd, armie 7vs7 po 99</option>
-          <option value="15-[13-13]-[99-99]-land">15-boczny ląd, armie 13vs13 po 99</option>
-          <option value="10-[7-7]-[99-99]-poorland">10-boczny biedny ląd, armie 7vs7 po 99</option>
-          <option value="15-[13-13]-[99-99]-poorland">15-boczny biedny ląd, armie 13vs13 po 99</option>
-          <option value="10-[4-11]-[396-99]-land">10-boczny ląd, armie 4vs10 jedna większa</option>
-          <option value="15-[8-18]-[396-99]-land">15-boczny ląd, armie 8vs18 jedna większa</option>
-          <option value="10-[5-5]-[99-99]-bigarmy">10-boczny ląd, pas armii plus miasta 5vs5 po 99</option>
-          <option value="15-[10-10]-[99-99]-bigarmy">15-boczny ląd, pas armii plus miasta 10vs10 po 99</option>
-          <option value="10-[5-5]-[99-99]-largearmy">10-boczny ląd, podwójny pas armii plus miasta 5vs5 po 99</option>
-          <option value="15-[10-10]-[99-99]-largearmy">15-boczny ląd, podwójny pas armii plus miasta 10vs10 po 99</option>
-          <option value="10-[4-4-4-4]-[99-99-99-99]-land">10-boczny ląd, armie 4vs4vs4vs4 po 99</option>
-          <option value="15-[7-7-7-7]-[99-99-99-99]-land">15-boczny ląd, armie 7vs7vs7vs7 po 99</option>
+          <option value="10-[7-7]-[99-99]-land">{pl|10-boczny ląd, armie 7vs7 po 99|en|10-sided land, 7vs7 armies of 99s}</option>
+          <option value="15-[13-13]-[99-99]-land">{pl|15-boczny ląd, armie 13vs13 po 99|en|15-sided land, 13vs13 armies of 99s}</option>
+          <option value="10-[7-7]-[99-99]-poorland">{pl|10-boczny biedny ląd, armie 7vs7 po 99|en|10-sided poor land, 7vs7 armies of 99}</option>
+          <option value="15-[13-13]-[99-99]-poorland">{pl|15-boczny biedny ląd, armie 13vs13 po 99|en|15-sided poor land, 13vs13 armies of 99}</option>
+          <option value="10-[4-11]-[396-99]-land">{pl|10-boczny ląd, armie 4vs10 po 99|en|10-sided land, 4vs10 armies of 99}</option>
+          <option value="15-[8-18]-[396-99]-land">{pl|15-boczny ląd, armie 8vs18 po 99|en|15-sided land, 8vs18 armies of 99}</option>
+          <option value="10-[5-5]-[99-99]-bigarmy">{pl|10-boczny ląd, pas armii plus miasta 5vs5 po 99|en|10-sided land, line of armies and 5vs5 towns of 99s}</option>
+          <option value="15-[10-10]-[99-99]-bigarmy">{pl|15-boczny ląd, pas armii plus miasta 10vs10 po 99|en|15-sided land, line of armies and 10x10 towns of 99s}</option>
+          <option value="10-[5-5]-[99-99]-largearmy">{pl|10-boczny ląd, podwójny pas armii plus miasta 5vs5 po 99|en|10-sided land, double line of armies and 5x5 towns of 99s}</option>
+          <option value="15-[10-10]-[99-99]-largearmy">{pl|15-boczny ląd, podwójny pas armii plus miasta 10vs10 po 99|en|15-sided land, double line of armies and 10x10 towns of 99s}</option>
+          <option value="10-[4-4-4-4]-[99-99-99-99]-land">{pl|10-boczny ląd, armie 4vs4vs4vs4 po 99|en|10-sided land, 4vs4vs4vs4 armies of 99s}</option>
+          <option value="15-[7-7-7-7]-[99-99-99-99]-land">{pl|15-boczny ląd, armie 7vs7vs7vs7 po 99|en|15-sided land, 7vs7vs7vs7 armies of 99s}</option>
         </select>
         <p>
-        <input type="button" value="GENERUJ" onclick="removeUnits();generateTerrainAndArmies();redraw(true);" />
+        <input type="button" value="{pl|GENERUJ|en|GENERATE}" onclick="removeUnits();generateTerrainAndArmies();redraw(true);" />
         </p>
         </div>
       </div>
       <div id="controlfield" style="margin-bottom:5px">
-        <div id="controltitle">Drużyny</div>
+        <div id="controltitle">{pl|Drużyny|en|Teams}</div>
         <div id="controlfieldin">
           <canvas width="200px" height="150px" id="teamChoose2" onclick="gmp(teamChoose2Canvas,event);teamChoose2Click();" onmousemove="gmp(teamChoose2Canvas,event);teamChoose2Move();" onmouseout="teamChoose2Number = -1;teamChoose2Draw();"></canvas>
           <br/>
@@ -269,19 +283,19 @@ p {
       <div id="controlfield" style="margin-bottom:5px">
         <div id="controlfieldin">
       
-          <input type="button" value="KOD" onclick="showcode();" />
-          <input type="button" value="GRAJ!" onclick="próbujGrać()" />
+          <input type="button" value="{pl|KOD|en|CODE}" onclick="showcode();" />
+          <input type="button" value="{pl|GRAJ!|en|PLAY!}" onclick="próbujGrać()" />
         </div>
       </div>
       <p>
-        <input type="button" value="POWRÓT DO MENU" onclick="changeState(-1);redraw(true);" />
+        <input type="button" value="{pl|POWRÓT DO MENU|en|BACK TO MENU}" onclick="changeState(-1);redraw(true);" />
       </p>
     </div>
     <div id="u0">
-      <h3>Menu &nbsp;&nbsp;<a style="text-decoration:none;color:red" href="instrukcja.html" target="_blank">[INSTRUKCJA]</a></h3>
+      <h3>Menu &nbsp;&nbsp;<!--a style="text-decoration:none;color:red" href="instrukcja.html" target="_blank">[INSTRUKCJA]</a>--></h3>
       <br/>
       <div id="controlfield" style="margin-bottom:5px">
-        <div id="controltitle">Wybierz tryb</div>
+        <div id="controltitle">{pl|Wybierz tryb|en|Choose mode}</div>
         <div id="controlfieldin" class="centered">
           <p>
           <input type="button" value="GENERATOR" onclick="przywróćState();removeUnits();resetDru();fillAll(1);changeState(-2);" />
@@ -293,81 +307,88 @@ p {
           <input type="button" value="TUTORIAL" onclick="rememberState();removeUnits();resetDru();fillAll(1);changeState(-3);" />
           </p>
           <p>
-          <input type="button" value="KAMPANIA" onclick="rememberState();removeUnits();resetDru();fillAll(1);changeState(-4);prepareCampaignChoosing()" />
+          <input type="button" value="{pl|KAMPANIA|en|CAMPAIGN}" onclick="rememberState();removeUnits();resetDru();fillAll(1);changeState(-4);prepareCampaignChoosing()" />
           </p>
+        </div>
+      </div>
+      <div id="controlfield" style="margin-bottom:5px">
+        <div id="controltitle">{pl|Wybierz język|en|Choose language}</div>
+        <div id="controlfieldin" class="centered">
+          <div class="naflage" onclick="setLanguage('pl')"><img class="flaga" src="pl.png" /><br/>polski</div>
+          <div class="naflage" onclick="setLanguage('en')"><img class="flaga" src="en.png" /><br/>English</div>
         </div>
       </div>
     </div>
     <div id="u1">
       <h3>Nowa gra</h3>
       <div id="controlfield" style="margin-bottom:5px">
-        <div id="controltitle">Drużyny</div>
+        <div id="controltitle">{pl|Drużyny|en|Teams}</div>
         <div id="controlfieldin">
           <canvas width="200px" height="150px" id="teamChoose" onclick="gmp(teamChooseCanvas,event);teamChooseClick();" onmousemove="gmp(teamChooseCanvas,event);teamChooseMove();" onmouseout="teamChooseNumber = -1;teamChooseDraw();"></canvas>
           <br/>
-          <input type="button" value="USTAW ODDZIAŁY" onclick="if(checkTeams()){changeState(1);}" />
+          <input type="button" value="{pl|USTAW ODDZIAŁY|en|PLACE UNITS}" onclick="if(checkTeams()){changeState(1);}" />
         </div>
       </div>
       <p>
-        <input type="button" value="POWRÓT DO MENU" onclick="changeState(-1);redraw(true);" />
+        <input type="button" value="{pl|POWRÓT DO MENU|en|BACK TO MENU}" onclick="changeState(-1);redraw(true);" />
       </p>
       <div id="controlfield" style="margin-bottom:5px">
-        <div id="controltitle">Mapa</div>
+        <div id="controltitle">{pl|Mapa|en|Map}</div>
         <div id="controlfieldin">
-          <p> Ilość hexów na boku:
+          <p> {pl|Ilość hexów na boku|en|Number of hexes on the side}:
             <input type="range" id="mapsizerange" min="6" value="20" max="60"  onchange="changeRangeInput(mapsizevalue,mapsizerange.value);redraw(true)" />
             <span id="mapsizevalue">15</span></p>
           <p>
-            <input type="button" value="SCAL LĄDY" onclick="smoothenCoastline();redraw(true);" />
+            <input type="button" value="{pl|SCAL LĄDY|en|MERGE LANDS}" onclick="smoothenCoastline();redraw(true);" />
             <br/>
           </p>
-          <p> Ilość lądu:
+          <p> {pl|Ilość lądu|en|Land amount}:
             <input type="range" id="landPercentageInput" min="0" max="100" value="50" onchange="changeRangeInput(landPercentageValue,landPercentageInput.value)" />
             <span id="landPercentageValue">50</span>%</p>
-          <p> Ilość gór na lądzie:
+          <p> {pl|Ilość gór na lądzie|en|Amount of mountains on land}:
             <input type="range" id="mountPercentageInput" min="0" max="100" value="10" onchange="changeRangeInput(mountPercentageValue,mountPercentageInput.value)" />
             <span id="mountPercentageValue">10</span>%</p>
-          <p> Ilość miast:
+          <p> {pl|Ilość miast|en|Number of towns}:
             <input type="range" id="cityPercentageInput" min="0" max="100" value="40" onchange="changeRangeInput(cityPercentageValue,cityPercentageInput.value)" />
             <span id="cityPercentageValue">24</span></p>
           <p>
-            <input type="button" value="ROZMIEŚĆ MIASTA OD NOWA" onclick="rearrangeCities(true);redraw(true);" />
+            <input type="button" value="{pl|ROZMIEŚĆ MIASTA OD NOWA|en|PLACE THE CITIES ANEW}" onclick="rearrangeCities(true);redraw(true);" />
           </p>
           <p>
 
           <div id="controlfield">
-            <div id="controltitle">Edycja</div>
+            <div id="controltitle">{pl|Edycja|en|Editing}</div>
             <div id="controlfieldin">
               <canvas width="200px" height="50px" id="terrainChooseField" onclick="gmp(terrainChooseField,event);terrainChooseClick();" onmousemove="gmp(terrainChooseField,event);terrainChooseMove();" onmouseout="terrainChooseNumber = -1;terrainChooseDraw()"></canvas>
-              Wielkość miasta:
+              {pl|Wielkość miasta|en|Town size}:
               <input type="range" id="citySizeRange" min="39" max="1200" value="100" onchange="changeRangeInput(citySizeValue,citySizeRange.value);terrainChooseDraw();" />
               <span id="citySizeValue">100</span>
               <div class="flexing">
                 <input type="range" id="cityIronRange" min="-1" max="500" value="-1" onchange="changeRangeInput(cityIronValue,cityIronRange.value);terrainChooseDraw();" />
-                <span id="cityIronValue">Los.</span>
+                <span id="cityIronValue">{pl|Los.|en|Rand.}</span>
                 <input type="range" id="cityProdRange" min="-1" max="500" value="-1" onchange="changeRangeInput(cityProdValue,cityProdRange.value);terrainChooseDraw();" />
-                <span id="cityProdValue">Los.</span>
+                <span id="cityProdValue">{pl|Los.|en|Rand.}</span>
 
               </div>
               </p>
               <p>
-                <input type="button" value="ZAMIEŃ WSZYSTKO NA WODĘ" onclick="fillAll(0);redraw(true);" />
+                <input type="button" value="{pl|ZAMIEŃ WSZYSTKO NA WODĘ|en|TURN ALL INTO WATER}" onclick="fillAll(0);redraw(true);" />
               </p>
               <p>
-                <input type="button" value="ZAMIEŃ WSZYSTKO NA LĄD" onclick="fillAll(1);redraw(true);" />
+                <input type="button" value="{pl|ZAMIEŃ WSZYSTKO NA LĄD|en|TURN ALL INTO LAND}" onclick="fillAll(1);redraw(true);" />
               </p>
             </div>
           </div>
           <p>
-            <input type="button" value="GENERUJ" onclick="generateTerrain();redraw(true);" />
-            <input type="button" value="GENERUJ I SCAL" onclick="generateTerrain();smoothenCoastline();smoothenCoastline();redraw(true);" />
-            <input type="button" value="KOD" onclick="showcode();" />
+            <input type="button" value="{pl|GENERUJ|en|GENERATE}" onclick="generateTerrain();redraw(true);" />
+            <input type="button" value="{pl|GENERUJ I SCAL|en|GENERATE AND MERGE}" onclick="generateTerrain();smoothenCoastline();smoothenCoastline();redraw(true);" />
+            <input type="button" value="{pl|KOD|en|CODE}" onclick="showcode();" />
           </p>
         </div>
       </div>
     </div>
     <div id="u2">
-      <h3>Stawianie oddziałów</h3>
+      <h3>{pl|Stawianie oddziałów|en|Unit placement}</h3>
       <div style="height:60px">
         <canvas id="teamPreview" width="50" height="50"></canvas>
         <h3 style="padding:12px;padding-left:0px;float:left">
@@ -375,25 +396,25 @@ p {
         </h3>
       </div>
       <div id="controlfield" style="margin-bottom:5px">
-        <div id="controltitle">Bataliony</div>
+        <div id="controltitle">{pl|Bataliony|en|Battalions}</div>
         <div id="controlfieldin">
-          <p id="infoo">Wybierz jednostkę do rozmieszczenia:</p>
+          <p id="infoo">{pl|Wybierz jednostkę do rozmieszczenia|en|Choose an unit to place}:</p>
           <canvas width="200" height="200" id="unitChoiceCanvas" onclick="gmp(unitChoiceCanvas,event);unitChoiceClick();" onmousemove="gmp(unitChoiceCanvas,event);unitChoiceMove();" onmouseout="unitChoiceNumber = -1;unitChoiceDraw();"></canvas>
-          <p>Wielkość oddziału:<br/>
+          <p>{pl|Wielkość oddziału|en|Size of an unit}:<br/>
             <input type="range" id="unitSizeRange" min="1" max="99" value="50" onchange="changeRangeInput(unitSizeValue,unitSizeRange.value);unitChoiceDraw();" />
             <span id="unitSizeValue">50</span></p>
         </div>
       </div>
-      <input type="button" value="NASTĘPNA DRUŻYNA" onclick="nextTurn();unitChoiceDraw();" />
+      <input type="button" value="{pl|NASTĘPNA DRUŻYNA|en|NEXT TEAM}" onclick="nextTurn();unitChoiceDraw();" />
       <br />
       <input type="checkbox" id="equality"  />
-      Wszystkim po równo
+      {pl|Wszystkim po równo|en|Everyone has equal teams}
       <p>
-        <input type="button" value="WRÓĆ DO EDYCJI LĄDU" onclick="removeUnits();changeState(0);redraw(true)" />
+        <input type="button" value="{pl|WRÓĆ DO EDYCJI LĄDU|en|BACK TO LAND EDIT}" onclick="removeUnits();changeState(0);redraw(true)" />
       </p>
       <p>
-        <input type="button" value="KOD" onclick="showcode();" />
-        <input type="button" value="GRAJ!" onclick="próbujGrać()" />
+        <input type="button" value="{pl|KOD|en|CODE}" onclick="showcode();" />
+        <input type="button" value="{pl|GRAJ!|en|PLAY!}" onclick="próbujGrać()" />
       </p>
     </div>
     <div id="u3">
@@ -402,11 +423,11 @@ p {
         <h3 style="padding:15px;padding-left:0px;float:left" id="teamName2">CZERWONI</h3>
       </div>
       <p>
-        <input type="button" value="ZAKOŃCZ TURĘ" id="endturn" onclick="changeState(4);" />
-        <input type="button" value="HISTORIA" id="history" onclick="changeState(6);" />
+        <input type="button" value="{pl|ZAKOŃCZ TURĘ|en|END TURN}" id="endturn" onclick="changeState(4);" />
+        <input type="button" value="{pl|HISTORIA|en|HISTORY}" id="history" onclick="changeState(6);" />
       </p>
         <div id="controlfield">
-          <div id="controltitle">Statystyki</div>
+          <div id="controltitle">{pl|Statystyki|en|Statistics}</div>
           <div id="controlfieldin"> 
           
             <div class="scrollable">
@@ -415,8 +436,9 @@ p {
           </div>
         </div>
       <p>
-        <input type="button" value="ZAKOŃCZ GRĘ" id="endgame" onclick="tryEndGame();" />
-        <input type="button" value="WRÓĆ DO KAMPANII" id="dokampanii" onclick="backToCampaign();" />
+        <input type="button" value="{pl|ZAKOŃCZ GRĘ|en|END GAME}" id="endgame" onclick="tryEndGame();" />
+        <input type="button" value="{pl|PONÓW GRĘ|en|RESTART GAME}" id="restartgame" onclick="tryRestartGame();" />
+        <input type="button" value="{pl|WRÓĆ DO KAMPANII|en|BACK TO THE CAMPAIGN}" id="dokampanii" onclick="backToCampaign();" />
       </p>
     </div>
     <div id="u4">
@@ -427,26 +449,26 @@ p {
       </div>
 	  <span id="remindField"></span>
       <div id="controlfield">
-        <div id="controltitle">Akcja</div>
+        <div id="controltitle">{pl|Akcja|en|Action}</div>
         <div id="controlfieldin">
           <p>
-            <input type="button" value="PODZIEL" id="divideButton" onclick="divideUnit(zaznu,unitDivisionValue);" />
-            <input type="button" value="ROZBUDUJ" id="expandButton" onclick="expandUnit(zaznu,unitDivisionValue);" />
-            <input type="button" value="ZOSTAW 10" onclick="divideUnit(zaznu,10);" />
-            <input type="button" value="ROZBUDUJ DO 99" onclick="expandUnit(zaznu,99);" />
+            <input type="button" value="{pl|PODZIEL|en|DIVIDE}" id="divideButton" onclick="divideUnit(zaznu,unitDivisionValue);" />
+            <input type="button" value="{pl|ROZBUDUJ|en|BUILD}" id="expandButton" onclick="expandUnit(zaznu,unitDivisionValue);" />
+            <input type="button" value="{pl|ZOSTAW 10|en|LEAVE 10}" onclick="divideUnit(zaznu,10);" />
+            <input type="button" value="{pl|ROZBUDUJ DO 99|en|BUILD UP TO 99}" onclick="expandUnit(zaznu,99);" />
 
             <canvas width="220px" height="90px" id="unitDivisionCanvas" onclick="gmp(unitDivisionCanvas,event);unitDivisionClick();" onmousemove="gmp(unitDivisionCanvas,event);unitDivisionMove();" onmouseout="unitDivisionHighlight=unitDivisionValue;unitDivisionDraw()"></canvas>
-          <div> Połącz z jednostkami z tego samego hexa:<br/>
+          <div> {pl|Połącz z jednostkami z tego samego hexa|en|Merge with units from the same hex}:<br/>
             <canvas width="220px" height="110px" id="unitMerge" onclick="gmp(unitMergeCanvas,event);unitMergeClick();" onmousemove="gmp(unitMergeCanvas,event);unitMergeMove();" onmouseout="unitMergeChoice=-1;redrawCanvas(unitMergeCanvasCtx)"></canvas>
           </div>
             <p>
-            <input type="button" value="ROZWIĄŻ JEDNOSTKĘ" onclick="disbanduj()" />
+            <input type="button" value="{pl|ROZWIĄŻ JEDNOSTKĘ|en|DISBAND UNIT}" onclick="disbanduj()" />
             </p>          
           <div id="placementDisplay" style="display:none">
-            <p> Rozlokowano w mieście <span id="placement" style="font-weight:bold"></span> </p>
+            <p> {pl|Rozlokowano w mieście|en|Quartered in} <span id="placement" style="font-weight:bold"></span> </p>
             <p id="cityData"> </p>
             <p>
-            <input type="button" value="PRZEJDŹ DO MIASTA" onclick="gotoTheCityWhereUnitIsPlaced()" />
+            <input type="button" value="{pl|PRZEJDŹ DO MIASTA|en|GO TO THE CITY}" onclick="gotoTheCityWhereUnitIsPlaced()" />
             </p>
           </div>
           </p>
@@ -454,10 +476,10 @@ p {
       </div>
       <span id="engineersField">
       <div id="controlfield">
-        <div id="controltitle">Zadania dla saperów</div>
+        <div id="controltitle">{pl|Zadania dla saperów|en|Tasks for engineering troops}</div>
         <div id="controlfieldin">
           <p>
-            <input type="button" value="ZAŁÓŻ MIASTO" id="createCityButton" onclick="createCity()" /><br/> (1 mieszkaniec - 5 saperów, minimum 10 mieszkańców)
+            <input type="button" value="{pl|ZAŁÓŻ MIASTO|en|BUILD A TOWN}" id="createCityButton" onclick="createCity()" /><br/> {pl|(1 mieszkaniec - 5 saperów, minimum 10 mieszkańców)|en|(1 inhabitant - 5 engineering troops, minimally 10 inhabitants)}
           </p>
         </div>
       </div>
@@ -473,7 +495,7 @@ p {
         <!--input type="button" value="HISTORIA" disabled="true" id="historyanim" onclick="" /-->
       </p>
       <div id="controlfield">
-        <div id="controltitle">Statystyki</div>
+        <div id="controltitle">{pl|Statystyki|en|Statistics}</div>
         <div id="controlfieldin"> 
           <div class="scrollable">
             <canvas width="220px" height="520px" id="statisticsCanvas" ></canvas>
@@ -491,13 +513,13 @@ p {
       </div>
       <div id="moneyAmount">Pieniędzy: 50gr</div>
       <div id="steelAmount">Stali: 2t</div>
-      <div>Sprzedaj stal: <br/>
+      <div>{pl|Sprzedaj stal|en|Sell the steel}: <br/>
         <input type="button" value="1 (2$)" onclick="sellSteel(1);" />
         <input type="button" value="10 (20$)" onclick="sellSteel(10);" />
         <input type="button" value="100 (200$)" onclick="sellSteel(100);" />
       </div>
       <div id="controlfield" style="margin-top:10px">
-        <div id="controltitle">Załoga</div>
+        <div id="controltitle">{pl|Załoga|en|Staff}</div>
         <div id="controlfieldin">
           <p>
             <canvas width="220px" height="140px" id="unitsInCity" onclick="gmp(unitsInCityCanvas,event);unitsInCityClick();" onmousemove="gmp(unitsInCityCanvas,event);unitsInCityMove();" onmouseout="unitsInCityNumber=-1;redrawCanvas(unitsInCityCanvasCtx)" ></canvas>
@@ -505,24 +527,24 @@ p {
         </div>
       </div>
       <div id="controlfield">
-        <div id="controltitle">Zadania</div>
+        <div id="controltitle">{pl|Zadania|en|Tasks}</div>
         <div id="controlfieldin">
           <p>
-          <p><span id="taxValue">Podatek:</span>
+          <p><span id="taxValue">{pl|Podatek|en|Tax}:</span>
             <input type="range" id="taxRange" min="0" max="100" value="100" onchange="changeRangeInput(taxRangeValue,taxRange.value);"  />
             <span id="taxRangeValue">23% (SunOfPeru approves)</span></p>
-          <input type="button" value="ZATWIERDŹ" id="zatw" onclick="makeTaxPath()" />
-          <input type="button" value="DAJ 100%" onclick="taxRange.value = 100;makeTaxPath()" />
+          <input type="button" value="{pl|ZATWIERDŹ|en|ACCEPT}" id="zatw" onclick="makeTaxPath()" />
+          <input type="button" value="{pl|DAJ 100%|en|GIVE 100%}" onclick="taxRange.value = 100;makeTaxPath()" />
           <br/>
           <p>
             <canvas width="220px" height="120px" id="createUnitCanvas" onclick="gmp(createUnitCanvas,event);createUnitClick();" onmousemove="gmp(createUnitCanvas,event);createUnitMove();" onmouseout="createUnitNumber=-1;redrawCanvas(createUnitCanvasCtx)" ></canvas>
-            Rozmiar:
+            {pl|Rozmiar|en|Size}:
             <input type="range" id="newUnitSizeRange" min="1" max="99" value="99" onchange="changeRangeInput(newUnitSizeValue,newUnitSizeRange.value);" />
             <span id="newUnitSizeValue">50</span> </p>
-          <p> Inwestycje:
+          <p> {pl|Inwestycje|en|Investments}:
             <canvas width="220px" height="100px" id="upgradeCityCanvas" onclick="gmp(upgradeCityCanvas,event);upgradeCityClick();" onmousemove="gmp(upgradeCityCanvas,event);upgradeCityMove();" onmouseout="upgradeCityNumber=-1;redrawCanvas(upgradeCityCanvasCtx)" ></canvas>
             <br/>
-            Wielkość:
+            {pl|Wielkość|en|Amount}:
             <input type="range" id="upgradeCityRange" min="1" max="200" value="20" onchange="changeRangeInput(upgradeCityRangeValue,upgradeCityRange.value);" />
             <span id="upgradeCityRangeValue">50</span> </p>
           </p>
@@ -532,17 +554,17 @@ p {
     <div id="u7">
       <div style="height:60px">
         <canvas id="klepsydraPreview" width="50" height="50"></canvas>
-        <h3 style="padding:15px;padding-left:0px;float:left" id="teamName2">HISTORIA</h3>
+        <h3 style="padding:15px;padding-left:0px;float:left" id="teamName2">{pl|HISTORIA|en|HISTORY}</h3>
       </div>
       <p>
         <input type="button" value="WRÓĆ" id="wroc" onclick="changeState(2);" />
       </p>
       <div id="controlfield">
-        <div id="controltitle">Kontrola</div>
+        <div id="controltitle">{pl|Kontrola|en|Control}</div>
         <div id="controlfieldin"> 
-          <div><b>Tura: </b><span id="historia-tura-span"></span></div>
-          <div><b>Drużyna: </b><span id="historia-druzyna-span"></span></div>
-          <div><b>Ruch: </b><span id="historia-ruch-span"></span></div>
+          <div><b>{pl|Tura|en|Turn}: </b><span id="historia-tura-span"></span></div>
+          <div><b>{pl|Drużyna|en|Team}: </b><span id="historia-druzyna-span"></span></div>
+          <div><b>{pl|Ruch|en|Move}: </b><span id="historia-ruch-span"></span></div>
           <br/>
           <div>
             <input type="button" value="&lt;&lt;&lt;" onclick="historyMove(true,false,false,false);" />
@@ -557,7 +579,7 @@ p {
         </div>
       </div>
       <div id="controlfield">
-        <div id="controltitle">Statystyki</div>
+        <div id="controltitle">{pl|Statystyki|en|Statistics}</div>
         <div id="controlfieldin">
           <div class="scrollable">
               <canvas width="220px" height="520px" id="statisticsCanvas3" ></canvas>
@@ -571,116 +593,116 @@ p {
   <div id="tutorial">
     <h3>Tutorial</h3>
     <div id="controlfield">
-      <div id="controltitle">Kontrola</div>
+      <div id="controltitle">{pl|Kontrola|en|Control}</div>
       <div id="controlfieldin"> 
         
-          <b>Lekcja: </b><span id="tutorial-lekcja">1/20</span>
+          <b>{pl|Lekcja|en|Lesson}: </b><span id="tutorial-lekcja">1/20</span>
           <div>
-            <input type="button" value="OD NOWA" onclick="tutorialRestartLesson()" />
+            <input type="button" value="{pl|OD NOWA|en|RESTART}" onclick="tutorialRestartLesson()" />
           </div>
           <div>
-            <input type="button" value="POPRZEDNIA" onclick="tutorialPreviousLesson()" />
-            <input type="button" value="NASTĘPNA" onclick="tutorialNextLesson()" />
+            <input type="button" value="{pl|POPRZEDNIA|en|PREVIOUS}" onclick="tutorialPreviousLesson()" />
+            <input type="button" value="{pl|NASTĘPNA|en|NEXT}" onclick="tutorialNextLesson()" />
           </div>
           
       </div>
     </div>
     <span id="state2lekcja1">
         <div id="controlfield">
-          <div id="controltitle">Opis lekcji</div>
+          <div id="controltitle">{pl|Opis lekcji|en|Description of the lesson}</div>
           <div id="controlfieldin"> 
             <p>
-              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury)
+              <b>{pl|Cel|en|Goal}:</b> {pl|Przenieś jednostki w docelowe miejsca (purpurowe kontury)|en|Move units to their destinations (purple contours)}
             </p>
             <p>
-              <b>Wskazówki:</b>
+              <b>{pl|Wskazówki|en|Hints}:</b>
             </p>
             <p>
               1.<br/>
               <img src="tutorial1-1.png" style="width:200px;height:150px" />
               <br/>
-              Aby zaznaczyć oddział, kliknij na niego. Należy kliknąć na prostokąt, który zakrywa obszar oddziału o wielkości 99. 
+              {pl|Aby zaznaczyć oddział, kliknij na niego. Należy kliknąć na prostokąt, który zakrywa obszar oddziału o wielkości 99.|en|To select an unit, click on it. You have to click a rectangle that covers an area of a unit of 99 size} 
             </p>
             <p>
               2.<br/>
               <img src="tutorial1-1.5.png" style="width:200px;height:150px" />
               <br/>
-              Aby odznaczyć oddział, kliknij na dolną część sześciokąta, na którym jest oddział, dowolny niepodświetlony sześciokąt lub obszar planszy bez sześciokątów.
+              {pl|Aby odznaczyć oddział, kliknij na dolną część sześciokąta, na którym jest oddział lub dowolny niepodświetlony sześciokąt, albo na obszar planszy bez sześciokątów.|en|To deselect a unit, click on the bottom part of a hexagon where the unit is placed or on an unhighlighted hexagon or on a board area without hexagons. }
             </p>
             <p>
               3.<br/>
               <img src="tutorial1-2.png" style="width:200px;height:150px" />
               <br/>
-              Po zaznaczeniu oddziału podświetlą się sześciokąty, na które możesz zaprowadzić drogę, którą poruszy się oddział. 
+              {pl|Po zaznaczeniu oddziału podświetlą się sześciokąty, na które możesz zaprowadzić drogę, którą poruszy się oddział.|en|After selecting of a unit, some hexagons will be highlighted and you can lead a path on them. The unit will move along this path after the end of the turn.}
               <br/>
-              W panelu sterowania pojawi się nowa strona, którą na razie można zignorować. 
+              {pl|W panelu sterowania pojawi się nowa strona, którą na razie można zignorować. |en|In the control panel a new page will appear, but now you can ignore it.}
             </p>
             <p>
               4.<br/>
               <img src="tutorial1-3.png" style="width:200px;height:150px" />
               <br/>
-              Po zaprowadzeniu drogi możesz ją przedłużyć w dowolnym kierunku.
+              {pl|Po zaprowadzeniu drogi możesz ją przedłużyć w dowolnym kierunku.|en|After leading a path, you can prolong it in any direction.}
               <br/>
             </p>
             <p>
               5.<br/>
               <img src="tutorial1-4.png" style="width:200px;height:130px" />
               <br/>
-              Aby zakończyć prowadzenie drogi można:
+              {pl|Aby zakończyć prowadzenie drogi można|en|To end leading the path you can}:
               <br/>
-              -kilkąć 2-krotnie na miejsce docelowe
+              -{pl|kilkąć 2-krotnie na miejsce docelowe|en|click twice on the destination place}
               <br/>
-              -kilkąć w dowolne niepodświetlone miejsce na planszy (niezależnie, czy to sześciokąt, czy jasnoszary obszar poza planszą)
+              -{pl|kilkąć w dowolne niepodświetlone miejsce na planszy (niezależnie, czy to sześciokąt, czy jasnoszary obszar poza planszą)|en|click on any unhighlighted place on the board (it doesn't matter if it's a hexagon or the light-gray area on the edges)}
               <br/>
             </p>
             <p>
               6.<br/>
               <img src="tutorial1-5.png" style="width:200px;height:150px" />
               <br/>
-              Aby usunąć drogę, należy zaznaczyć oddział i kliknąć na obszar sześciokąta, na którym jest dany oddział, nie przykryty przez oddział, gdyby miał wielkośc 99. 
+              {pl|Aby usunąć drogę, należy zaznaczyć oddział i kliknąć na obszar sześciokąta, na którym jest dany oddział, który nie jest przykryty przez oddział, gdyby miał wielkośc 99.|en|To remove a path, you have to select a hexagon area where the unit is placed, but not covered by a hipothetical unit of the max size.}
               <br/>
-              Intuicyjnie jego dolną część. 
+              {pl|Intuicyjnie jego dolną część.|en|Intuitively the bottom part of the hexagon.}
               <br/>
             </p>
             <p>
               7.<br/>
-              Aby zakończyć turę i ruszyć oddziały, należy odznaczyć oddział i kliknąć na przycisk <b>"ZAKOŃCZ TURĘ"</b>.
+              {pl|Aby zakończyć turę i ruszyć oddziały, należy odznaczyć oddział i kliknąć na przycisk|en|To end a turn and let the units move, you have to deselect a unit and click an} <b>"{pl|ZAKOŃCZ TURĘ|en|END TURN}"</b>{pl|.|en| button.}
             </p>
           </div>
         </div>
             
         <div id="controlfield">
-          <div id="controltitle">Uwagi</div>
+          <div id="controltitle">{pl|Uwagi|en|Notice}</div>
           <div id="controlfieldin"> 
-            Żaden z poniższych oddziałów nie może samodzielnie przekroczyć wody. 
+            {pl|Żaden z poniższych oddziałów nie może samodzielnie przekroczyć wody.|en|None of the units below can cross the water on its own.}
             <br/>
             <br/>
-            Oddziały lekkie mogą podczas jednej tury poruszać się po lądzie o liczbę pól odpowiednią do swojej szybkości, a przy wchodzeniu na górę o 1 pole. 
+            {pl|Oddziały lekkie mogą podczas jednej tury poruszać się po lądzie o liczbę pól odpowiednią do swojej szybkości, a przy wchodzeniu na górę o 1 pole.|en|During one turn, light units can move through the number of hexagons equal or lesser than its speed and when climbing a mountain, only through 1 hexagon.} 
             <br/>
             <br/>
-            Oddziały górskie mogą podczas jednej tury poruszać się zarówno po lądzie i po górach o liczbę pól odpowiednią do swojej szybkości (jedynie 2). 
+            {pl|Oddziały górskie mogą podczas jednej tury poruszać się zarówno po lądzie i po górach o liczbę pól odpowiednią do swojej szybkości (jedynie 2).|en|During one turn, mountain units can move through number of hexagons equal or lesser than its speed on both land and mountains}
             <p>
-              <b>Oddziały:</b>
+              <b>{pl|Oddziały|en|Units}:</b>
             </p>
             <p>
-              <b>Piechota</b>
+              <b>{pl|Piechota|en|Infantry}</b>
               <br/>
               <img src="o1.png" />
               <br/>
               <table>
-                <tr><td>Szybkość</td><td>2</td></tr>
-                <tr><td>Rodzaj</td><td>lekki</td></tr>
+                <tr><td>{pl|Szybkość|en|Speed}</td><td>2</td></tr>
+                <tr><td>{pl|Rodzaj|en|Type}</td><td>{pl|lekki|en|light}</td></tr>
               </table>
             </p>
             <hr/>
             <p>
-              <b>Piechota zmotoryzowana</b>
+              <b>{pl|Piechota zmotoryzowana|en|Motorized infantry}</b>
               <br/>
               <img src="o4.png" />
               <br/>
               <table>
-                <tr><td>Szybkość</td><td>5</td></tr>
-                <tr><td>Rodzaj</td><td>lekki</td></tr>
+                <tr><td>{pl|Szybkość|en|Speed}</td><td>5</td></tr>
+                <tr><td>{pl|Rodzaj|en|Type}</td><td>{pl|lekki|en|light}</td></tr>
               </table>
             </p>
             <hr/>
@@ -690,8 +712,8 @@ p {
               <img src="o5.png" />
               <br/>
               <table>
-                <tr><td>Szybkość</td><td>2</td></tr>
-                <tr><td>Rodzaj</td><td>górski</td></tr>
+                <tr><td>{pl|Szybkość|en|Speed}</td><td>2</td></tr>
+                <tr><td>{pl|Rodzaj|en|Type}</td><td>{pl|górski|en|mountain}</td></tr>
               </table>
             </p>
           </div>
@@ -699,24 +721,24 @@ p {
       </span>
     <span id="state2lekcja2">
         <div id="controlfield">
-          <div id="controltitle">Opis lekcji</div>
+          <div id="controltitle">{pl|Opis lekcji|en|Description of the lesson}</div>
           <div id="controlfieldin"> 
             <p>
-              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury)
+              <b>{pl|Cel|en|Goal}:</b> {pl|Przenieś jednostki w docelowe miejsca (purpurowe kontury)|en|Move units to their destinations (purple contours)}
             </p>
             <p>
-              <b>Wskazówki:</b>
+              <b>{pl|Wskazówki|en|Hints}:</b>
             </p>
             <p>
               1.<br/>
               <img src="tutorial2-1.png" style="width:200px;height:150px" />
               <br/>
-              Na stosie na sześciokącie (8,4) są 4 oddziały: 3 oddziały czołgów i 1 oddział piechoty na samym spodzie. 
+              {pl|Na stosie na sześciokącie (8,4) są 4 oddziały: 3 oddziały czołgów i 1 oddział piechoty na samym spodzie.|en|On a stack on (8,4) hexagon there are 4 units: 3 tank units and one infantry unit on the bottom of the stack.}
               <br/>
-              Zaznacz oddział na wierzchu stosu, klikając na niego i tasuj oddziały, klikając ponownie na nie, aż oddział piechoty będzie na wierzchu. 
+              {pl|Zaznacz oddział na wierzchu stosu, klikając na niego. Tasuj oddziały, klikając ponownie na nie, aż oddział piechoty będzie na wierzchu.|en|Choose an unit on the top of the stack by clicking on it. Shuffle units by clicking again on them until the infantry unit will be on the top.}
               <br/>
               <br/>
-              W panelu sterowania można zobaczyć kolejność oddziałów na stosie pod zaznaczonym oddziałem.
+              {pl|W panelu sterowania można zobaczyć kolejność oddziałów na stosie pod zaznaczonym oddziałem.|en|In the control panel you can see the order of units on the stack which are below of the selected unit.}
               <br/>
               <img src="tutorial2-1.5.png" style="width:200px;height:100px" />
             </p>
@@ -724,118 +746,118 @@ p {
               2.<br/>
               <img src="tutorial2-2.png" style="width:200px;height:150px" />
               <br/>
-              Wejdź oddziałem piechoty na górę na północno-zachodni (lub południowo-zachodni) sześciokąt. 
+              {pl|Wejdź oddziałem piechoty na górę na północno-zachodni (lub południowo-zachodni) sześciokąt.|en|Move the infantry unit to the mountain on the north-western (or south-western) hexagon}
               <br/>
-              Zakończ turę.
+              {pl|Zakończ turę|en|End turn}.
             </p>
             <p>
               3.<br/>
-              Podziel ów oddział piechoty. 
+              {pl|Podziel ów oddział piechoty|en|Divide this infantry unit}. 
               <br/>
-              Można to zrobić na 2 sposoby:
+              {pl|Można to zrobić na 2 sposoby|en|You can do this in 2 ways}:
               <br/>
-              -zaznacz oddział piechoty i kliknij na niego jeszcze raz. Wtedy z oddziału wydzielony zostanie oddział o wielkości 10 i przeniesiony na spód stosu. 
+              -{pl|zaznacz oddział piechoty i kliknij na niego jeszcze raz. Wtedy z oddziału wydzielony zostanie oddział o wielkości 10 i przeniesiony na spód stosu.|en|select an infantry unit and click on it one more time. A smaller unit of size 10 will be carved out of the unit and moved to the bottom of the stack.}
               <br/>
-              <b>UWAGA!</b> Działa to jedynie na oddziałach, które są jedyne na ich sześciokącie. 
+              <b>{pl|UWAGA!|en|NOTICE!}</b> {pl|Działa to jedynie na oddziałach, które są jedyne na ich sześciokącie.|en|It works only for units which are alone on their hexagon.}
               <br/>
               <img src="tutorial2-3.png" style="width:200px;height:200px" />
               <br/>
-              -po zaznaczeniu oddziału, w panelu sterowania widoczny jest panel dzielenia/rozbudowy oddziału. 
+              -{pl|po zaznaczeniu oddziału, w panelu sterowania widoczny jest panel dzielenia/rozbudowy oddziału.|en|after selecting an unit, there is a division/building section in the control panel.}
               <br/>
-              na pasku, w tym panelu można zaznaczyć liczebność oddziałów, które powstaną ze starego oddziału po podzieleniu. Aby podzielić oddział w dokładny sposób, należy klinkąć przycisk "PODZIEL"
+              {pl|na pasku, w tym panelu można zaznaczyć liczebność oddziałów, które powstaną ze starego oddziału po podzieleniu. Aby podzielić oddział w dokładny sposób, należy klinkąć przycisk "PODZIEL"|en|on a bar in this section you can set the size of units which will be crated from the old unit after dividing them. To divide a unit in a precise way you have to click "DIVIDE" button}
               <br/>
-              -alternatywnie, w panelu dzielenia można klinkąc przycisk "ZOSTAW 10", przez co z oddziału wydzielony zostanie oddział o liczebności 10
+              -{pl|alternatywnie, można klinkąc przycisk "ZOSTAW 10", przez co z oddziału wydzielony zostanie oddział o liczebności 10|en|alternatively, you can click "LEAVE 10" and an unit of size 10 will be created}
               <br/>
               <br/>
-              <b>UWAGA!!!</b>
+              <b>{pl|UWAGA!!!|en|NOTICE!!!}</b>
               <br/>
-              Dzielenie oddziałów nie działa, gdy na sześciokącie, gdzie znajduje się dany oddział są 4 oddziały (maksymalna liczba). 
+              {pl|Dzielenie oddziałów nie działa, gdy na sześciokącie, gdzie znajduje się dany oddział są 4 oddziały (maksymalna liczba).|en|Dividing units doesn't work if on a hexagon there are 4 units (maximum number)} 
             </p>
             <p>
               4.<br/>
               <img src="tutorial2-4.png" style="width:200px;height:150px" />
               <br/>
-              Poprowadź podzielone oddziały na docelowe miejsca. Pamiętaj, że oddziały na jednym sześciokącie można "tasować". 
+              {pl|Poprowadź podzielone oddziały na docelowe miejsca. Pamiętaj, że oddziały na jednym sześciokącie można "tasować".|en|Move the divided units on their destination places}
               <br/>
-              Zakończ turę.
+              {pl|Zakończ turę|en|End turn}.
             </p>
             <p>
               5.<br/>
               <img src="tutorial2-5.png" style="width:200px;height:150px" />
               <br/>
-              Na sześciokącie (8,1) znajduje się stos odzdziałów czołgów. Powinien przejść na pole (10,3), ale jest blokowany przez 3 stosy oddziałów artylerii, ponieważ na jednym sześciokącie nie może być więcej, niż 4 oddziały . 
+              {pl|Na sześciokącie (8,1) znajduje się stos oddziałów czołgów. Powinien przejść na pole (10,3), ale jest blokowany przez 3 stosy oddziałów artylerii, ponieważ na jednym sześciokącie nie może być więcej, niż 4 oddziały.|en|On (8,1) hexagon there is a stack of tank units. It should move to (10,3) field, but it's being blocked by 3 stacks of artillery units because on one hexagon there can be no more than 4 units.}
               <br/>
               <img src="tutorial2-6.png" style="width:200px;height:150px" />
               <br/>
-              Aby połączyć oddziały, należy zaznaczyć oddział na szczycie stosu i z panelu sterowania wybrać oddział z tego samego stosu, z którym zaznaczony oddział ma zostać połączony. Oddziały na stosie, które mogą być połączone z zaznaczonym oddziałem mają niebieski kwadrat po prawej stronie. 
+              {pl|Aby połączyć oddziały, należy zaznaczyć oddział na szczycie stosu i z panelu sterowania wybrać oddział z tego samego stosu, z którym zaznaczony oddział ma zostać połączony. Oddziały na stosie, które mogą być połączone z zaznaczonym oddziałem mają niebieski kwadrat po prawej stronie.|en|In order to merge units, you have to select a unit on the top of the stack and select an unit from the same stack in the control panel, with which the unit will be merged}
               <br/>
-              <b>UWAGA!!!</b> Można łączyć jedynie oddziały tego samego rodzaju. 
+              <b>{pl|UWAGA!!!|en|NOTICE!!!}</b> {pl|Można łączyć jedynie oddziały tego samego rodzaju.|en|You can merge only units of the same type.}
               <br/>
               <br/>
-              Po "udrożnieniu" drogi oddział czołgów może przejechać w docelowe miejsce. 
+              {pl|Po "udrożnieniu" drogi oddział czołgów może przejechać w docelowe miejsce.|en|After clearing the path, the tank unit can finally go to the destination.}
             </p>
             <p>
               6.<br/>
-              Oddziały można łączyć też w inny sposób. Dotyczy to oddziałów tego samego typu, ale na różnych heksach, oddalonych od siebie o zasięg oddziału plus jeden. 
+              {pl|Oddziały można łączyć też w inny sposób. Dotyczy to oddziałów tego samego typu, ale na różnych heksach, oddalonych od siebie o zasięg oddziału plus jeden.|en|Units can be merged also in a different way. It applies for units of the same type, but on different hexagons far from themselves up to their speed plus 1.}
               <br/>
-              Mależy zaznaczyć jeden oddział obrony przeciwlotniczej. Ponieważ oddział ten znajduje się obok drugiego oddziału obrony przeciwlotniczej, ten drugi oddział będzie miał kontury podświetlone na niebiesko. Oznacza to, że można na niego kliknąć, by zaplanować akcję połączenia.
+              {pl|Należy zaznaczyć jeden oddział obrony przeciwlotniczej. Ponieważ oddział ten znajduje się obok drugiego oddziału obrony przeciwlotniczej, ten drugi oddział będzie miał kontury podświetlone na niebiesko. Oznacza to, że można na niego kliknąć, by zaplanować akcję połączenia.|en|You need to select one of anti-aircraft units. Because this unit is placed next to another anti-aircraft unit, the second unit will have its contours marked in blue. It means that you can click on it to plan merging both units.}
               <br/>
               <img src="tutorial2-7.png" style="width:200px;height:150px" />
               <br/>
               <img src="tutorial2-8.png" style="width:200px;height:150px" />
               <br/>
-              Jeśli oddział nie stoi zaraz obok drugiego oddziału, należy poprowadzić drogę zaraz pod oddział i wtedy będzie można zaplanować połączenie oddziałów.
+              {pl|Jeśli oddział nie stoi zaraz obok drugiego oddziału, należy poprowadzić drogę zaraz pod oddział i wtedy będzie można zaplanować połączenie oddziałów.|en|If a unit isn't placed next to another unit, you need to lead a path to the hexagon directly bordering this unit and then it will be possible to plan merging units.}
               <br/>
-              <b>UWAGA!</b>Jeśli suma wielkości łączonych oddziałów będzie większa, niż 99, wtedy część oddziału nie zostanie połączona i zostanie na swoim miejscu, a drugi oddział będzie miał wielkośc 99. 
+              <b>{pl|UWAGA|en|NOTICE}!</b> {pl|Jeśli suma wielkości łączonych oddziałów będzie większa, niż 99, wtedy część oddziału nie zostanie połączona i zostanie na swoim miejscu, a drugi oddział będzie miał wielkośc 99. |en|If a sum of sizes of merged units will be greater than 99, then part of one unit will not be merged and will stay on its place and the second unit will have size of 99.}
               <br/>
               <img src="tutorial2-7.5.png" style="width:200px;height:150px" />
               <br/>
-              Po zaplanowaniu łączenia oddziałów, można zakończyć turę. 
+              {pl|Po zaplanowaniu łączenia oddziałów, można zakończyć turę.|en|After planning merging units you can end turn.}
             </p>
           </div>
         </div>
             
         <div id="controlfield">
-          <div id="controltitle">Uwagi</div>
+          <div id="controltitle">{pl|Uwagi|en|Notice}</div>
           <div id="controlfieldin"> 
-            Żaden z poniższych oddziałów nie może samodzielnie przekroczyć wody.
+            {pl|Żaden z poniższych oddziałów nie może samodzielnie przekroczyć wody.|en|None of the units below can cross the water on its own.}
             <br/>
             <br/>
-            Są to oddziały ciężkie, więc nie mogą poruszać się po górach oraz nie mogą samodzielnie poruszać się po wodzie. 
-            Oddziały lekkie mogą podczas jednej tury poruszać się jedynie po lądzie o liczbę pól odpowiednią do swojej szybkości. 
+            {pl|Są to oddziały ciężkie, więc nie mogą poruszać się po górach oraz nie mogą samodzielnie poruszać się po wodzie.|en|These are heavy units, so they cannot move through the mountains and cannot move through water on their own.}
+            {pl|Oddziały ciężkie tak, jak lekkie mogą podczas jednej tury poruszać się jedynie po lądzie o liczbę pól odpowiednią do swojej szybkości.|en|During one turn, heavy units can move through the number of hexagons equal or lesser than its speed, just like light units}
             <p>
-              <b>Oddziały:</b>
+              <b>{pl|Oddziały|en|Units}:</b>
             </p>
             <p>
-              <b>Czołgi</b>
+              <b>{pl|Czołgi|en|Tanks}</b>
               <br/>
               <img src="o2.png" />
               <br/>
               <table>
-                <tr><td>Szybkość</td><td>3</td></tr>
-                <tr><td>Rodzaj</td><td>ciężki</td></tr>
+                <tr><td>{pl|Szybkość|en|Speed}</td><td>3</td></tr>
+                <tr><td>{pl|Rodzaj|en|Type}</td><td>{pl|ciężki|en|heavy}</td></tr>
               </table>
             </p>
             <hr/>
             <p>
-              <b>Artyleria</b>
+              <b>{pl|Artyleria|en|Artillery}</b>
               <br/>
               <img src="o3.png" />
               <br/>
               <table>
-                <tr><td>Szybkość</td><td>1</td></tr>
-                <tr><td>Rodzaj</td><td>ciężki</td></tr>
+                <tr><td>{pl|Szybkość|en|Speed}</td><td>1</td></tr>
+                <tr><td>{pl|Rodzaj|en|Type}</td><td>{pl|ciężki|en|heavy}</td></tr>
               </table>
             </p>
             <hr/>
             <p>
-              <b>Obrona przeciwlotnicza</b>
+              <b>{pl|Obrona przeciwlotnicza|en|Anti-aircraft}</b>
               <br/>
               <img src="o6.png" />
               <br/>
               <table>
-                <tr><td>Szybkość</td><td>1</td></tr>
-                <tr><td>Rodzaj</td><td>ciężki</td></tr>
+                <tr><td>{pl|Szybkość|en|Speed}</td><td>1</td></tr>
+                <tr><td>{pl|Rodzaj|en|Type}</td><td>{pl|ciężki|en|heavy}</td></tr>
               </table>
             </p>
           </div>
@@ -844,89 +866,89 @@ p {
       
     <span id="state2lekcja3">
         <div id="controlfield">
-          <div id="controltitle">Opis lekcji</div>
+          <div id="controltitle">{pl|Opis lekcji|en|Description of the lesson}</div>
           <div id="controlfieldin"> 
             <p>
-              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury)
+              <b>{pl|Cel|en|Goal}:</b> {pl|Przenieś jednostki w docelowe miejsca (purpurowe kontury)|en|Move units to their destinations (purple contours)}
             </p>
             <p>
-              <b>Wskazówki:</b>
+              <b>{pl|Wskazówki|en|Hints}:</b>
             </p>
             <p>
               1.<br/>
-              Oddział piechoty na sześciokącie (3,9) musi dotrzeć na sześciokąt (1,0), który jest na wyspie, a jak wiadomo oddział lądowy nie może samodzielnie przejść na wyspę. 
+              {pl|Oddział piechoty na sześciokącie (3,9) musi dotrzeć na sześciokąt (1,0), który jest na wyspie, a jak wiadomo oddział lądowy nie może samodzielnie przejść na wyspę.|en|An infantry unit on (3,9) hexagon have to go to the (1,0) hexagon, which is on island and ground units cannot move through water on its own.}
               <br/>
-              Można jednak poprowadzić ścieżkę przez wodę. 
+              {pl|Można jednak poprowadzić ścieżkę przez wodę.|en|Anyway, you can still lead unit's path through water.}
               <br/>
               <img src="tutorial3-1.png" style="width:200px;height:266px" />
               <br/>
               2.<br/>
-              Jednak aby oddział lądowy można było przenieść, należy doprowadzić oddział łodzi desantowych do pierwszego wodnego sześciokąta, który jest na wyznaczonej drodze (miejsce załadunku oddziału). 
+              {pl|Jednak aby oddział lądowy można było przenieść, należy doprowadzić oddział łodzi desantowych do pierwszego wodnego sześciokąta, który jest na wyznaczonej drodze (miejsce załadunku oddziału).|en|But in order to move ground unit through water, you need to move a landing craft unit to the first water hexagon which is on a leaded way (place of embarking).} 
               <br/>
               <img src="tutorial3-2.png" style="width:200px;height:150px" />
               <br/>
-              Można teraz zakończyć turę.
+              {pl|Można teraz zakończyć turę.|en|You can end turn now.}
               <br/>
-              <b>UWAGA!!!</b> Kolejność zaznaczania oddziałów będzie miała wpływ na kolejność ruchów podczas fazy przemieszczania się. Oddziały zaznaczone później wykonają ruch później. Dlatego warto najpierw zaplanować drogę tratwy, a potem dopiero drogę desantowanego oddziału. 
+              <b>{pl|UWAGA|en|NOTICE}!!!</b> {pl|Kolejność prowadzenia dróg oddziałów będzie miała wpływ na kolejność ruchów podczas fazy przemieszczania się. Oddziały zaznaczone później wykonają ruch później. Dlatego warto najpierw zaplanować drogę tratwy, a potem dopiero drogę desantowanego oddziału.|en|The order of leading paths of the units will correspond to the order in which these units are moved after the end of the turn. So it's better to plan the path of the landing craft first and then plan the path of the unit which will be embarked.}
               <br/>
               3.<br/>
               <img src="tutorial3-3.png" style="width:200px;height:150px" />
-              Ponieważ wielkość oddziału łodzi desantowych jest mniejsza, niż oddział desantowany, oddział ten będzie podzielony i jedynie część niego będzie transportowana. 
+              {pl|Ponieważ wielkość oddziału łodzi desantowych jest mniejsza, niż oddział desantowany, oddział ten będzie podzielony i jedynie część niego będzie transportowana.|en|Because the size of the landing craft unit is smaller than the unit which will be embarked, the unit will be divided and only part of it will be transported.}
               <br/>
-              Aby przenieść cały oddział na miejsce docelowe, oddział łodzi desantowych będzie musiał wrócić po wyładowaniu piechoty. 
+              {pl|Aby przenieść cały oddział na miejsce docelowe, oddział łodzi desantowych będzie musiał wrócić po wyładowaniu piechoty.|en|In order to move a whole unit through the sea, the landing craft will have to come back to move the rest of the embarked unit after the first part of it has landed on the island. }
               <br/>
               <img src="tutorial3-4.png" style="width:200px;height:266px" />
               <br/>
               4.<br/>
               <img src="tutorial3-5.png" style="width:200px;height:170px" />
               <br/>
-              Poruszanie się oddziałów wodnych po wodzie jest trywialne. Nie mogą one poruszać się po niezamieszkałym lądzie. 
+              {pl|Poruszanie się oddziałów wodnych po wodzie jest trywialne. Nie mogą one poruszać się po niezamieszkałym lądzie.|en|Moving naval units through water is trivial. They cannot move through an uninhabited land.}
             </p>
           </div>
         </div>
             
         <div id="controlfield">
-          <div id="controltitle">Uwagi</div>
+          <div id="controltitle">{pl|Uwagi|en|Notices}</div>
           <div id="controlfieldin"> 
             <br/>
             <br/>
-            Są to oddziały wodne, więc nie mogą poruszać się po niezamieszkałym lądzie lub górach. 
+            {pl|Są to oddziały wodne, więc nie mogą poruszać się po niezamieszkałym lądzie lub górach.|en|They are naval units, so they cannot move through an uninhabited land.}
             <br/>
             <br/>
-            Oddział łodzi desantowych nie może atakować i służy do transportowania wszystkich oddziałów lądowych przez morze. 
+            {pl|Oddział łodzi desantowych nie może atakować i służy do transportowania wszystkich oddziałów lądowych przez morze.|en|Landing craft units cannot attack and they are used only to transport all ground units through the water.}
             <p>
-              <b>Oddziały:</b>
+              <b>{pl|Oddziały|en|Unit}:</b>
             </p>
             <p>
-              <b>Lekkie okręty</b>
+              <b>{pl|Lekkie okręty|en|Light warships}</b>
               <br/>
               <img src="o7.png" />
               <br/>
               <table>
-                <tr><td>Szybkość</td><td>3</td></tr>
-                <tr><td>Rodzaj</td><td>wodny</td></tr>
+                <tr><td>{pl|Szybkość|en|Speed}</td><td>3</td></tr>
+                <tr><td>{pl|Rodzaj|en|Type}</td><td>{pl|wodny|en|naval}</td></tr>
               </table>
             </p>
             <hr/>
             <p>
-              <b>Pancerniki</b>
+              <b>{pl|Pancerniki|en|Battleships}</b>
               <br/>
               <img src="o8.png" />
               <br/>
               <table>
-                <tr><td>Szybkość</td><td>3</td></tr>
-                <tr><td>Rodzaj</td><td>wodny</td></tr>
+                <tr><td>{pl|Szybkość|en|Speed}</td><td>3</td></tr>
+                <tr><td>{pl|Rodzaj|en|Type}</td><td>{pl|wodny|en|naval}</td></tr>
               </table>
             </p>
             <hr/>
             <p>
-              <b>Łodzie desantowe</b>
+              <b>{pl|Łodzie desantowe|en|Landing crafts}</b>
               <br/>
               <img src="o9.png" />
               <br/>
               <table>
-                <tr><td>Szybkość</td><td>3</td></tr>
-                <tr><td>Rodzaj</td><td>wodny/transportowy</td></tr>
+                <tr><td>{pl|Szybkość|en|Speed}</td><td>3</td></tr>
+                <tr><td>{pl|Rodzaj|en|Type}</td><td>{pl|wodny/transportowy|en|naval/transport}</td></tr>
               </table>
             </p>
           </div>
@@ -935,126 +957,126 @@ p {
       
     <span id="state2lekcja4">
         <div id="controlfield">
-          <div id="controltitle">Opis lekcji</div>
+          <div id="controltitle">{pl|Opis lekcji|en|Description of the lesson}</div>
           <div id="controlfieldin"> 
             <p>
-              <b>Cel:</b> Zajmij wszystkie miasta
+              <b>{pl|Cel|en|Goal}:</b> {pl|Zajmij wszystkie miasta|en|Capture all cities}
             </p>
             <p>
-              <b>Wskazówki:</b>
+              <b>{pl|Wskazówki|en|Hints}:</b>
             </p>
             <p>
               1.<br/>
-              Zajmij jedno miasto. Przesuń jedyny twój oddział na którekolwiek z miast. 
+              {pl|Zajmij jedno miasto. Przesuń jedyny twój oddział na którekolwiek z miast.|en|Take one town. Move your only unit to any town.}
               <br/>
-              Zakończ turę.
+              {pl|Zakończ turę.|en|End turn.}
               <br/>
               <img src="tutorial4-1.png" style="width:200px;height:150px" />
               <br/>
-              Aby efektywnie zająć miasto potrzeba oddział o wielkości 10 dowolnego nie-lotniczego rodzaju. Jeśli suma oddziałów na sześciokącie będzie mniejsza, niż 10, wtedy miasto zbierze mniej pieniędzy na turę. 
+              {pl|Aby efektywnie zająć miasto potrzeba oddział o wielkości 10 dowolnego nie-lotniczego rodzaju. Jeśli suma oddziałów na sześciokącie będzie mniejsza, niż 10, wtedy miasto zbierze mniej pieniędzy na turę.|en|In order to take a town effectively you need to capture is with a non-aircraft unit of size at least 10.}
               2.<br/>
               <img src="tutorial4-2.png" style="width:200px;height:150px" />
               <br/>
-              Aby zaznaczyć zdobyte miasto, należy kliknąć na dolną część sześciokąta z miastem. Miasto (a nie oddział) będzie zaznaczone po kliknięciu, jeśli to sześciokąt z miastem będzie podświetlony, a nie oddział na nim. 
+              {pl|Aby zaznaczyć zdobyte miasto, należy kliknąć na dolną część sześciokąta z miastem. Miasto będzie zaznaczone po kliknięciu, jeśli to sześciokąt z miastem będzie podświetlony, a nie oddział na nim.|en|In order to select a captured town, you need to click the lower part of a hexagon with a town. The town will be selected after clicking it if the hexagon and not unit is highlighted.}
               <br/>
               3.<br/>
-              Po kliknięciu wyświetli się panel sterowania. 
+              {pl|Po kliknięciu wyświetli się panel sterowania miastem.|en|After clicking, the control panel for the town will appear.}
               <br/>
-              Najważniejszym zadaniem jest wybudowanie nowego oddziału. 
+              {pl|Najważniejszym zadaniem jest wybudowanie nowego oddziału.|en|The most important task is to build a new unit.}
               <br/>
               <img src="tutorial4-3.png" style="width:200px;height:150px" />
               <br/>
-              W panelu sterowania jest tablica możliwych do wybudowania oddziałów. W danej grze nie można wybudować wyszarzonych oddziałów. Suwakiem "Rozmiar" można zmienić wielkość oddziału. Aby zaplanować budowę oddziału należy kliknąć na odpowiedni oddział na panelu. 
+              {pl|W panelu sterowania jest tablica możliwych do wybudowania oddziałów. W danej grze nie można wybudować wyszarzonych oddziałów. Suwakiem "Rozmiar" można zmienić wielkość oddziału. Aby zaplanować budowę oddziału należy kliknąć na odpowiedni oddział na tablicy.|en|In the control panel there is a pane with possible unit types to build. In one play you cannot build units marked as gray. You can change the size of planned units with "Size" slider. In order to plan unit building you need to click on a proper unit type on the pane.}
               <br/>
               <img src="tutorial4-4.png" style="width:200px;height:130px" />
               <br/>
-              Po zaplanowaniu, na sześciokącie pojawią się puste oddziały z jasnoniebieską obwódką. Obwódka ta oznacza o ile docelowo oddział ma urosnąć. 
+              {pl|Po zaplanowaniu, na sześciokącie pojawią się puste oddziały z jasnoniebieską obwódką. Znajduje się tam także liczba, o ile docelowo oddział ma urosnąć.|en|After that, on the hexagon empty units with cyan border will appear. There will also be a number how much this unit will still have to grow.}
               <br/>
               4.<br/>
               <img src="tutorial4-5.png" style="width:180px;height:220px" />
               <br/>
-              Aby usunąc planowanie, gdy oddział ma wielkość 0, należy zaznaczyć ten oddział i w panelu sterowania kliknąć przycisk "ZAPRZESTAJ ROZBUDOWY". 
+              {pl|Aby usunąc planowanie, należy zaznaczyć ten oddział i w panelu sterowania kliknąć przycisk "ZAPRZESTAJ ROZBUDOWY".|en|In order to cancel planning building, you have to select this unit and click "STOP BUILDING".}
               <br/>
               5.<br/>
-              Zakończ turę. Dalsze zajmowanie miast przez ląd powinno być proste. 
+              {pl|Zakończ turę. Dalsze zajmowanie miast przez ląd powinno być proste.|en|End turn. Capturing more cities through land should be easy.}
               <br/>
               6.<br/>
               <img src="tutorial4-6.png" style="width:180px;height:120px" />
               <br/>
-              Oddziały morskie mogą też stacjonować w miastach. Oczywiście doprowadza to do takiego kuriozum, że statki mogą poruszać się ciągiem miast w głąb lądu, ale to nie błąd, tylko funkcjonalność. 
+              {pl|Oddziały morskie mogą też stacjonować w miastach. Oczywiście doprowadza to do takiego kuriozum, że statki mogą poruszać się ciągiem miast w głąb lądu, ale to nie błąd, tylko funkcjonalność.|en|Naval units can also station in towns. Obviously it leads to a weird situation where a naval unit can move through a chain of towns deeply inside a land, but it isn't a bug, it's a feature.}
               <br/>
               7.<br/>
               <img src="tutorial4-7.png" style="width:180px;height:220px" />
               <br/>
-              Jeśli na sześciokącie przy morzu jest zarówno oddział lądowy i łodzie desantowe, można poprowadzić oddział przez wodę bez stawiania łodzi desantowych na morzu. Oddział łodzi desantowych nie może być jednak wtedy rozbudowywany. 
+              {pl|Jeśli w mieście przy wodzie jest zarówno oddział lądowy i łodzie desantowe, można poprowadzić oddział przez wodę bez stawiania łodzi desantowych na morzu. Oddział łodzi desantowych nie może być jednak wtedy rozbudowywany.|en|If on a town next to the water there are both a land unit and landing crafts, you can lead the path through the water without putting landing crafts on the sea. The landing craft units cannot be in process of building in order to make embarking happen.}
             </p>
           </div>
         </div>
             
         <div id="controlfield">
-          <div id="controltitle">Uwagi</div>
+          <div id="controltitle">{pl|Uwagi|en|Notices}</div>
           <div id="controlfieldin"> 
-            W miastach można planować tworzenie oddziałów. 
+            {pl|W miastach można planować tworzenie oddziałów.|en|In towns you can plan building units.}
             <br/>
             <br/>
-            Gdy kończy się tura drużyny, wtedy oddziały są rozbudowywane za pomocą pieniędzy zgromadzonych w danym mieście. 
+            {pl|Gdy kończy się tura drużyny, wtedy oddziały są rozbudowywane za pomocą pieniędzy zgromadzonych w danym mieście.|en|When a turn of a team ends, then the units are built up with money which are gathered in a town.}
             <br/>
-            Najpierw rozbudowywane są oddziały najwyżej na stosie, jesli któryś oddział będzie rozbudowany do końca, wtedy rozbudowywany jest kolejny oddział niżej na stosie. 
+            {pl|Najpierw rozbudowywane są oddziały najwyżej na stosie. Jesli któryś oddział będzie rozbudowany do końca, wtedy rozbudowywany jest kolejny oddział niżej na stosie.|en|At first the units on the top of the stack are built up first. If an unit will be built completely, then the next unit lower on the stack will be built up.}
             <br/>
             <br/>
-            W panelu sterowania miasta przy produkcji widoczne są ceny oddziałów. Jest to cena za rozbudowę danego oddziału o wielkość 1, np. oddział piechoty o wielkości 99 kosztuje 792$.
+            {pl|W panelu sterowania miasta przy produkcji widoczne są ceny oddziałów. Jest to cena za rozbudowę danego oddziału o wielkość 1, np. oddział piechoty o wielkości 99 kosztuje 792$.|en|In the control panel of a town, in the unit production section there are costs of each of the units. It is the cost for adding 1 to its size. For example an infantry unit of 99 size costs 792$.}
             <br/>
               <img src="tutorial4-3.png" style="width:200px;height:150px" />
             <br/>
             <br/>
-            Liczbę pieniędzy dla danego miasta dostępną w danej turze można zobaczyć w górnej części panelu sterowania. 
+            {pl|Liczbę pieniędzy dla danego miasta dostępną w danej turze można zobaczyć w górnej części panelu sterowania.|en|You can see the amount of money in a town in the top part of the control panel for the town.}
             <br/>
               <img src="tutorial4-8.png" style="width:200px;height:150px" />
             <br/>
-            W tej lekcji mowa jest głównie o tworzeniu oddziałów, nie wymagających stali/produkcji. 
+            {pl|W tej lekcji mowa jest głównie o tworzeniu oddziałów, nie wymagających stali/produkcji.|en|In this lesson only building units which do not need steel/production is discussed.}
             <br/>
-            Poniżej pokazane są ceny tych oddziałów (nie licząc wojsk saperskich). 
+            {pl|Poniżej pokazane są ceny tych oddziałów (nie licząc wojsk saperskich).|en|Below, there are costs of each type of these units (besides engineering troops).}
             <br/>
             <p>
-              <b>Oddziały:</b>
+              <b>{pl|Oddziały|en|Units}:</b>
             </p>
             <p>
-              <b>Piechota</b>
+              <b>{pl|Piechota|en|Infantry}</b>
               <br/>
               <img src="o1.png" />
               
               <table>
-                <tr><td>Cena</td><td>8$</td></tr>
+                <tr><td>{pl|Cena|en|Cost}</td><td>8$</td></tr>
               </table>
             </p>
             <hr/>
             <p>
-              <b>Piechota górska</b>
+              <b>{pl|Piechota górska|en|Mountain infantry}</b>
               <br/>
               <img src="o5.png" />
               
               <table>
-                <tr><td>Cena</td><td>10$</td></tr>
+                <tr><td>{pl|Cena|en|Cost}</td><td>10$</td></tr>
               </table>
             </p>
             <hr/>
             <p>
-              <b>Lekkie okręty</b>
+              <b>{pl|Lekkie okręty|en|Light warships}</b>
               <br/>
               <img src="o7.png" />
               
               <table>
-                <tr><td>Cena</td><td>12$</td></tr>
+                <tr><td>{pl|Cena|en|Cost}</td><td>12$</td></tr>
               </table>
             </p>
             <hr/>
             <p>
-              <b>Łodzie desantowe</b>
+              <b>{pl|Łodzie desantowe|en|Landing crafts}</b>
               <br/>
               <img src="o9.png" />
               
               <table>
-                <tr><td>Cena</td><td>4$</td></tr>
+                <tr><td>{pl|Cena|en|Cost}</td><td>4$</td></tr>
               </table>
             </p>
             <hr/>
@@ -1063,13 +1085,13 @@ p {
       </span>
     <span id="state2lekcja5">
         <div id="controlfield">
-          <div id="controltitle">Opis lekcji</div>
+          <div id="controltitle">{pl|Opis lekcji|en|Description of the lesson}</div>
           <div id="controlfieldin"> 
             <p>
-              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury) i zniszcz wszystkie oddziały nieprzyjaciela
+              <b>{pl|Cel|en|Goal}:</b> {pl|Przenieś jednostki w docelowe miejsca (purpurowe kontury)|en|Move units to their destinations (purple contours)} i zniszcz wszystkie oddziały nieprzyjaciela
             </p>
             <p>
-              <b>Wskazówki:</b>
+              <b>{pl|Wskazówki|en|Hints}:</b>
             </p>
             <p>
               1.<br/>
@@ -1231,13 +1253,13 @@ p {
       
     <span id="state2lekcja6">
         <div id="controlfield">
-          <div id="controltitle">Opis lekcji</div>
+          <div id="controltitle">{pl|Opis lekcji|en|Description of the lesson}</div>
           <div id="controlfieldin"> 
             <p>
-              <b>Cel:</b> Zajmij wszystkie miasta
+              <b>{pl|Cel|en|Goal}:</b> {pl|Zajmij wszystkie miasta|en|Capture all cities}
             </p>
             <p>
-              <b>Wskazówki:</b>
+              <b>{pl|Wskazówki|en|Hints}:</b>
             </p>
             <p>
               1.<br/>
@@ -1342,13 +1364,13 @@ p {
       
     <span id="state2lekcja7">
         <div id="controlfield">
-          <div id="controltitle">Opis lekcji</div>
+          <div id="controltitle">{pl|Opis lekcji|en|Description of the lesson}</div>
           <div id="controlfieldin"> 
             <p>
-              <b>Cel:</b> Zniszcz wszystkie oddziały nieprzyjaciela
+              <b>{pl|Cel|en|Goal}:</b> Zniszcz wszystkie oddziały nieprzyjaciela
             </p>
             <p>
-              <b>Wskazówki:</b>
+              <b>{pl|Wskazówki|en|Hints}:</b>
             </p>
             <p>
               1.<br/>
@@ -1474,13 +1496,13 @@ p {
       
     <span id="state2lekcja8">
         <div id="controlfield">
-          <div id="controltitle">Opis lekcji</div>
+          <div id="controltitle">{pl|Opis lekcji|en|Description of the lesson}</div>
           <div id="controlfieldin"> 
             <p>
-              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury)
+              <b>{pl|Cel|en|Goal}:</b> {pl|Przenieś jednostki w docelowe miejsca (purpurowe kontury)|en|Move units to their destinations (purple contours)}
             </p>
             <p>
-              <b>Wskazówki:</b>
+              <b>{pl|Wskazówki|en|Hints}:</b>
             </p>
             <p>
               1.<br/>
@@ -1590,13 +1612,13 @@ p {
       
     <span id="state2lekcja9">
         <div id="controlfield">
-          <div id="controltitle">Opis lekcji</div>
+          <div id="controltitle">{pl|Opis lekcji|en|Description of the lesson}</div>
           <div id="controlfieldin"> 
             <p>
-              <b>Cel:</b> Przenieś jednostki w docelowe miejsca (purpurowe kontury) i zniszcz wszystkie oddziały nieprzyjaciela
+              <b>{pl|Cel|en|Goal}:</b> {pl|Przenieś jednostki w docelowe miejsca (purpurowe kontury)|en|Move units to their destinations (purple contours)} i zniszcz wszystkie oddziały nieprzyjaciela
             </p>
             <p>
-              <b>Wskazówki:</b>
+              <b>{pl|Wskazówki|en|Hints}:</b>
             </p>
             <p>
               1.<br/>
@@ -1732,7 +1754,7 @@ p {
       </span>
   </div>
 </div>
-<div style="float:left;clear:left"><span style="float:left;margin-top:40px">Wymiary planszy:</span>
+<div style="float:left;clear:left"><span style="float:left;margin-top:40px">{pl|Wymiary planszy|en|Board size}:</span>
   <div id="scaleButton" onclick="changeScreenWidth(600);">600x600</div>
   <div id="scaleButton" onclick="changeScreenWidth(800);">800x800</div>
   <div id="scaleButton" onclick="changeScreenWidth(1000);">1000x1000</div>

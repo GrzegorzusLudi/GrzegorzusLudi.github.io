@@ -1,6 +1,7 @@
 ﻿
 //HERE IS DECLERED MOST OF GLOBAL VARIABLES
 function initialize(sty){
+	initlanguage()
 clicked = false;
 delaj = 0;
 wielkul = 100;
@@ -128,6 +129,13 @@ defodd2 = ["Batalion piechoty","Batalion czołgów","Batalion artylerii","Batali
 defodd3 = ["Kompania piechoty","Kompania czołgów","Kompania artylerii","Kompania piechoty zmotoryzowanej","Kompania piechoty górskiej","Kompania obrony przeciwlotniczej","Dywizjon okrętów lekkich","Dywizjon pancerników","Dywizjon łodzi desantowych","Skrzydło lotnictwa bojowego","Skrzydło lotnictwa transportowego","Kompania saperów"];
 defodd4 = ["Pluton piechoty","Pluton czołgów","Pluton artylerii","Pluton piechoty zmotoryzowanej","Pluton piechoty górskiej","Pluton obrony przeciwlotniczej","Grupa okrętów lekkich","Grupa pancerników","Grupa łodzi desantowych","Klucz lotnictwa bojowego","Klucz lotnictwa transportowego","Pluton saperów"];
 defodd5 = ["Drużyna piechoty","Drużyna czołgów","Drużyna artylerii","Drużyna piechoty zmotoryzowanej","Drużyna piechoty górskiej","Drużyna obrony przeciwlotniczej","Okręt lekki","Pancernik","Łódź desantowa","Statek powietrzny lotnictwa bojowego","Statek powietrzny lotnictwa transportowego","Drużyna saperów"];
+
+defodd1en = ["Infantry regiment","Tank regiment","Artillery regiment","Motorized infantry regiment","Mountain infantry regiment","Anti-aircraft regiment","Light warship flotilla","Battleship flotilla","Landing craft flotilla","Battle aircraft divizion","Transport aircraft divizion","Engineering regiment"];
+defodd2en = ["Infantry battalion","Tank battalion","Artillery battalion","Motorized infantry battalion","Mountain infantry battalion","Anti-aircraft battalion","Light warship brigade","Battleship brigade","Landing craft brigade","Battle aircraft squadron","Transport aircraft squadron","Engineering battalion"];
+defodd3en = ["Infantry company","Tank company","Artillery company","Motorized infantry company","Mountain infantry company","Anti-aircraft company","Light warship division","Battleship division","Landing craft division","Battle aircraft wing","Transport aircraft wing","Engineering company"];
+defodd4en = ["Infantry platoon","Tank platoon","Artillery platoon","Motorized infantry platoon","Mountain infantry platoon","Anti-aircraft platoon","Light warship group","Battleship group","Landing craft group","Battle aircraft flight","Transport aircraft flight","Engineering platoon"];
+defodd5en = ["Infantry squad","Tank squad","Artillery squad","Motorized infantry squad","Mountain infantry squad","Anti-aircraft squad","Light warship","Battleship","Landing craft","Battle aircraft","Transport aircraft","Engineering squad"];
+
 okox = -1;
 okoy = -1;
 terrainChooseNumber = -1;
@@ -292,6 +300,7 @@ while(ts<12){
 	 ts++;
  ts++;
 }
+granaGra = ''
 redraw(true);
 kierk = -1.11;
 gameplay = false;
@@ -710,6 +719,7 @@ function changeState(newState){
 			campaignGraphSet = -1
 	}
 	document.getElementById('dokampanii').style.display = ((campaignGraphSet != -1) ? 'block' : 'none')
+	document.getElementById('restartgame').style.display = (tutorial ? 'none' : 'block')
 
 	if(tutorial){
 		var divnametokeep = 'state2'+lekcjaTutoriala
@@ -1886,7 +1896,7 @@ function resetDru(){
 function dowmiasta(){
 	var pczl = "";
 	var dczl = "";
-	switch(Math.floor(Math.random()*15)){
+	switch(Math.floor(Math.random()*17)){
 		case 0:
 			pczl = "Drew";
 			tabl = ["nowo","nów","niana Wola","niszki","niana Góra"];
@@ -1960,6 +1970,16 @@ function dowmiasta(){
 		case 14:
 			pczl = "Traw";
 			tabl = ["no","ków","ińsk","y Wielkie","iec"];
+			dczl = tabl[Math.floor(Math.random()*tabl.length)];
+		break;
+		case 15:
+			pczl = "Ol";
+			tabl = ["chowo","chów","chińsk","chy Wielkie","echowo","echów"];
+			dczl = tabl[Math.floor(Math.random()*tabl.length)];
+		break;
+		case 16:
+			pczl = "Jabł";
+			tabl = ["onno","onków","czyńsk","onki Wielkie","oniec"];
 			dczl = tabl[Math.floor(Math.random()*tabl.length)];
 		break;
 	}

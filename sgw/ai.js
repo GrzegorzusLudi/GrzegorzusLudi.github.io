@@ -1382,7 +1382,7 @@ function aimachine(ailevel){
             var score1 = prepareDistTable(realSfKeys, farFromFront, allowPaths, dbetter)
             var score2 = score1
             
-            var realSfKeysSorted = Object.values(realSfKeys).sort((a,b) => -a.maxPlayerScore + b.maxPlayerScore)
+            var realSfKeysSorted = Object.values(realSfKeys).sort((a,b) => a.maxPlayerScore - b.maxPlayerScore)
             //if(biggestScoreHex != null)
             //    realSfKeysSorted.push(biggestScoreHex)
 
@@ -2619,7 +2619,7 @@ function scoreOfBehinds(dm,color,behind_score){
             for(var i = 0;i<MAX_TURNS;i++){
                 if(distmap.alliegance[i] == color){
                     //console.log(behind_score[code])
-                    score += behind_score[code].value * Math.pow(1/2.1,i) * (1-distmap.bombardment[i])
+                    score += behind_score[code].value * Math.pow(1/2.1,i) 
                 }
             }
         }
@@ -4752,15 +4752,12 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
             
         if(distmaps[key].realtocome == null || distmaps[key].realtocome.length == 0){
             distmaps[key].realtocome = []
-            distmaps[key].rangeattack = []
             //distmaps[key].defence = []
             for(var t = 0;t<MAX_TURNS;t++){
                 distmaps[key].realtocome.push(allColors())
-                distmaps[key].rangeattack.push(allColors())
                 //distmaps[key].defence.push(allColors())
             }
             distmaps[key].alliegance = allTurns()
-            distmaps[key].bombardment = allTurns().map(x=>0)
             /*
             distmaps[key].fromenemy = allMoves()
             distmaps[key].fromally = allMoves()
@@ -4771,7 +4768,6 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                 for(var i = 0;i<12;i++){
 
                     distmaps[key].realtocome[t][i] = 0
-                    distmaps[key].rangeattack[t][i] = 0
                     //distmaps[key].defence[t][i] = 0
                 }
                 
@@ -5233,7 +5229,6 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                     }
                                     str = Math.max(0,str-def)
                                     distmaps[code3].realtocome[t][unit.d] -= -attak
-                                    distmaps[code3].rangeattack[t][unit.d] -= -attak
                                 }
                             }/*
                             if(action.type == 'move' && action.destination != undefined && zast[unit.rodz] == 'x'){
@@ -5376,7 +5371,6 @@ function calculateAlliegance(dm){
                 //if(distmap.realtocome[t][d] > 0)
                 //    console.log(distmap.hex.x,distmap.hex.y,d,distmap.potentialtocome[t][d], distmap.realtocome[t][d], distmap.defence[t][d])
                 powers[d] = distmappower(distmap,t,d)
-                rangea[d] = distmap.rangeattack[t][d]
                 if(powers[d] > biggestpower){
                     secondbiggestpower = biggestpower
                     secondbiggestpowercolor = biggestpowercolor
@@ -5384,12 +5378,6 @@ function calculateAlliegance(dm){
                     biggestpowercolor = d   
                 }
             }
-            var totalrangeattack = 0
-            for(var d = 0;d<12;d++){
-                if(d != biggestpowercolor)
-                    totalrangeattack += distmap.rangeattack[t][d]
-            }
-            var totalownrangeattack = distmap.rangeattack[t][biggestpowercolor]
             var percentage = 0//0.5 * (1-1/(1+totalrangeattack/200))
             var ownpercentage = 0//0.5 * (1-1/(1+totalrangeattack/200))
             /*
@@ -5409,14 +5397,13 @@ function calculateAlliegance(dm){
                 }
             }*/
             distmap.alliegance[t] = biggestpowercolor
-            distmap.bombardment[t] = biggestpowercolor == distmap.dru ? ownpercentage : percentage
             //if(distmap.hex.undr > -1){
             //    score[distmap.hex.undr] += evaluateDefenseStreng()
             //}
             if(biggestpowercolor > -1){
                 //var factor = distmap.frontline ? 1 : 1
                 //dm.score[t][biggestpowercolor] += SMALL_FRACTION*2
-                dm.score[t][biggestpowercolor] += distmap.hex.z + (distmap.hex.stali + Math.min(distmap.hex.prod,distmap.hex.stali)) * 2 * (1-distmap.bombardment[t])// * factor
+                dm.score[t][biggestpowercolor] += distmap.hex.z + (distmap.hex.stali + Math.min(distmap.hex.prod,distmap.hex.stali)) * 2 // * factor
                 if(biggestpowercolor != -1){
                     for(var d = 0;d<12;d++){
                         if(d != biggestpowercolor){

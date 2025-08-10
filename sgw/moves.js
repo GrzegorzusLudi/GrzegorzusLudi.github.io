@@ -138,16 +138,16 @@ function zaznaj(uni,changeTheState){
 		expandButton.disabled = false;
 	}
 	if(unix[kolej][uni].rozb>0){
-		expandButton.value = "ZAPRZESTAJ ROZBUDOWY";
+		expandButton.value = languagewise({'pl':"ZAPRZESTAJ ROZBUDOWY",'en':"STOP BUILDING"});
 	} else {
-		expandButton.value = "ROZBUDUJ";
+		expandButton.value = languagewise({'pl':"ROZBUDUJ",'en':"BUILD"});
 	}
 	placementDisplay = document.getElementById("placementDisplay");
 	if(heks[unix[kolej][uni].x][unix[kolej][uni].y].z>0){
 		placement = document.getElementById("placement");
 		placementDisplay.style.display = "block";
 		placement.innerHTML = heks[unix[kolej][uni].x][unix[kolej][uni].y].nazwa;
-		cityData.innerHTML = "Budżet: "+heks[unix[kolej][uni].x][unix[kolej][uni].y].kasy+"$<br/>Zasoby Stali: "+heks[unix[kolej][uni].x][unix[kolej][uni].y].stali+"t";
+		cityData.innerHTML = languagewise({pl:"Budżet: ",en:"Budget: "})+heks[unix[kolej][uni].x][unix[kolej][uni].y].kasy+"$<br/>"+languagewise({pl:"Zasoby Stali: ",en:"Steel reserves: "})+heks[unix[kolej][uni].x][unix[kolej][uni].y].stali+"t";
 	} else {
 		placementDisplay.style.display = "none";
 	}
@@ -530,7 +530,7 @@ function popodatkuj(nax,nay,zosta){
 		odzaznam(1);
 		taxRange.disabled = false;
 		pokap();
-			zatw.value = "ODWOŁAJ";
+			zatw.value = languagewise({pl:"ODWOŁAJ",en:"CANCEL"});
 	}
 }
 function odpodatkuj(jax,jay){
@@ -1313,12 +1313,12 @@ function expandUnit(uni,dost){
 			unitDivisionValue = unix[kolej][uni].il;
 			unitDivisionDraw();
 			heks[unix[kolej][uni].x][unix[kolej][uni].y].zmiana++;
-			expandButton.value = "ZAPRZESTAJ ROZBUDOWY";
+			expandButton.value = languagewise({'pl':"ZAPRZESTAJ ROZBUDOWY",'en':"STOP BUILDING"});
 		}
 	} else {
 		unix[kolej][uni].rozb = 0;
 		unitDivisionDraw();
-		expandButton.value = "ROZBUDUJ";
+		expandButton.value = languagewise({'pl':"ROZBUDUJ",'en':"BUILD"});
 		if(unix[kolej][uni].il<=0){
 
 			odzaznaj();

@@ -521,28 +521,28 @@ function pokap(){
 		redrawCanvas(teamPreview3CanvasCtx);
 		teamName3.innerHTML = defdr[kolej];
 		if(unix[kolej][zaznu].il>=80){
-			unitTypeField.innerHTML = defodd1[unix[kolej][zaznu].rodz];
+			unitTypeField.innerHTML = languagewise({'pl':defodd1[unix[kolej][zaznu].rodz],'en':defodd1en[unix[kolej][zaznu].rodz]});
 
 		} else if(unix[kolej][zaznu].il>=30){
-			unitTypeField.innerHTML = defodd2[unix[kolej][zaznu].rodz];
+			unitTypeField.innerHTML = languagewise({'pl':defodd2[unix[kolej][zaznu].rodz],'en':defodd2en[unix[kolej][zaznu].rodz]});
 		} else if(unix[kolej][zaznu].il>=10){
-			unitTypeField.innerHTML = defodd3[unix[kolej][zaznu].rodz];
+			unitTypeField.innerHTML = languagewise({'pl':defodd3[unix[kolej][zaznu].rodz],'en':defodd3en[unix[kolej][zaznu].rodz]});
 
 		} else if(unix[kolej][zaznu].il>=4){
-			unitTypeField.innerHTML = defodd4[unix[kolej][zaznu].rodz];
+			unitTypeField.innerHTML = languagewise({'pl':defodd4[unix[kolej][zaznu].rodz],'en':defodd4en[unix[kolej][zaznu].rodz]});
 
 		} else {
-			unitTypeField.innerHTML = defodd5[unix[kolej][zaznu].rodz];
+			unitTypeField.innerHTML = languagewise({'pl':defodd5[unix[kolej][zaznu].rodz],'en':defodd5en[unix[kolej][zaznu].rodz]});
 
 		}
 		if(szyt[unix[kolej][zaznu].rodz]!="l" && unix[kolej][zaznu].szyt=="l"){
-			unitTypeField.innerHTML += " (oddział transportowany)";
+			unitTypeField.innerHTML += languagewise({'pl':" (oddział transportowany)",'en':" (unit transported by air)"});
 		}
 		if(szyt[unix[kolej][zaznu].rodz]!="w" && unix[kolej][zaznu].szyt=="w"){
-			unitTypeField.innerHTML += " (oddział wodowany)";
+			unitTypeField.innerHTML += languagewise({'pl':" (oddział wodowany)",'en':" (transported unit)"});
 		}
 		if(unix[kolej][zaznu].szyt=="l" && heks[unix[kolej][zaznu].x][unix[kolej][zaznu].y].z>0){
-			remindField.innerHTML = "<br/><b>UWAGA!</b> Lotnictwo i oddziały transportowane mogą zostać zniszczone w mieście przez zwykłą artylerię/okręty!";
+			remindField.innerHTML = languagewise({'pl':"<br/><b>UWAGA!</b> Lotnictwo i oddziały transportowane mogą zostać zniszczone w mieście przez zwykłą artylerię/okręty!",'en':'<br/><b>ATTENTION!</b> Aircrafts and units transported by air can be destroyed in a city by the land artillery and warshipt!!'});
 		} else {
 			remindField.innerHTML = "";
 		}
@@ -575,13 +575,13 @@ function pokap(){
 			sk++;
 		}
 		var moneyAmount = document.getElementById("moneyAmount");
-		moneyAmount.innerHTML = "Budżet: "+heks[zaznx][zazny].kasy+"$ (+"+sciag+"$";
+		moneyAmount.innerHTML = languagewise({'pl':"Budżet: ",'en':"Budget: "})+heks[zaznx][zazny].kasy+"$ (+"+sciag+"$";
 
 		moneyAmount.innerHTML+=")";
-		steelAmount.innerHTML = "Zasoby stali: "+heks[zaznx][zazny].stali+"t (+"+heks[zaznx][zazny].hutn+"t)";
+		steelAmount.innerHTML = languagewise({'pl':"Zasoby stali: ",'en':"Steel reserves: "})+heks[zaznx][zazny].stali+"t (+"+heks[zaznx][zazny].hutn+"t)";
 		taxRange.value = heks[zaznx][zazny].podatpr;
 		var taxValue = document.getElementById("taxValue");
-		taxValue.innerHTML = "Podatek: (obecnie "+heks[zaznx][zazny].podatpr+"%)";
+		taxValue.innerHTML = languagewise({'pl':"Podatek: (obecnie ",'en':"Tax: (currently "})+heks[zaznx][zazny].podatpr+"%)";
 		changeRangeInput(taxRangeValue,taxRange.value);
 		changeRangeInput(newUnitSizeValue,newUnitSizeRange.value);
 	}
@@ -3180,19 +3180,19 @@ function changeRangeInput(sp,slaj){
 	if(sp == citySizeValue){
 		wielkul = slaj;
 		if(slaj == 39){
-			sp.innerHTML = "Mała wartość losowa";
+			sp.innerHTML = languagewise({'pl':"Mała wartość losowa",'en':"Small random value"});
 		}
 	}
 	if(sp == cityIronValue){
 		wielkuliron = slaj;
 		if(slaj == -1){
-			sp.innerHTML = "Los.";
+			sp.innerHTML = languagewise({'pl':"Los.",'en':"Rand."});
 		}
 	}
 	if(sp == cityProdValue){
 		wielkulprod = slaj;
 		if(slaj == -1){
-			sp.innerHTML = "Los.";
+			sp.innerHTML = languagewise({'pl':"Los.",'en':"Rand."})
 		}
 	}
 	if(sp == taxRangeValue){
@@ -3219,7 +3219,7 @@ function showcode(show){
 }
 
 //changes map into code
-function getCode(){
+function getCodeToString(){
 	
 	var infos = []
 	
@@ -3248,6 +3248,12 @@ function getCode(){
 		}
 		a++;
 	}
+	return code
+}
+
+//changes map into code
+function getCode(){
+	var code = getCodeToString()
 	codeField = document.getElementById("codeField");
 	codeField.value = code;
 }
@@ -3349,10 +3355,11 @@ function getHexCode(a,b){
 //				optionals.push(key+'='+hex[key])
 		}
 	}
-	if(stan >= 1){
+	if(stan >= 1 || stan == -2){
 		for(var key in hexCodeDefaultsInUnitPlacement){
 			var defvalue = hexCodeDefaultsInUnitPlacement[key]
 			if(!compareDefValue(hex[key],defvalue,hex)){
+
 				var encoded = encodedPropertyValue(key,hex[key])
 				optionals.push(encoded)
 //				optionals.push(key+'='+hex[key])
@@ -3433,8 +3440,12 @@ function compareDefValue(value,defvalue,parentvalue){
 				return false
 			}
 			for(var i in value){
-				if((defvalue.additionalMinusOne && i == -1 && value[i] != null) || !compareDefValue(value[i],defvalue.def,value)){
-					return false
+				if(defvalue.additionalMinusOne){
+					if(i == '-1' && value[i] != null || i != '-1' && !compareDefValue(value[i],defvalue.def,value))
+						return false
+				} else {
+					if(!compareDefValue(value[i],defvalue.def,value))
+						return false
 				}
 			}
 			return true
@@ -3761,8 +3772,32 @@ function sellSteel(val){
 }
 
 function tryEndGame(){
-	if(confirm("Czy na pewno chcesz zakończyć grę i wrócić do menu?")){
+	if(confirm(languagewise({pl:"Czy na pewno chcesz zakończyć grę i wrócić do menu?",en:"Do you really want to end the game and go back to the menu?"}))){
 		endGame(0)
+	}
+}
+function tryRestartGame(){
+	if(confirm(languagewise({pl:"Czy na pewno chcesz zrestartować grę?",en:"Do you really want to restart the game?"}))){
+		var gg = granaGra
+		var cgs = campaignGraphSet
+		var tut = tutorial
+		var lt = lekcjaTutoriala
+		var pt = przejszty
+		
+		removeUnits();
+		changeState(0);
+		redraw(true)
+		initialize(0)
+		changeState(1)
+		
+		granaGra = gg
+		readCodeFromString(granaGra)
+		próbujGrać()
+		campaignGraphSet = cgs
+		tutorial = tut
+		lekcjaTutoriala = lt
+		przejszty = pt
+		changeState(2)
 	}
 }
 function endGame(sty){
@@ -3964,6 +3999,7 @@ function próbujGrać(){
 	if(jestdrużyna){
 		kolej = 0;
 		changeState(2);
+		granaGra = getCodeToString()
 		gameplay = true;
 	} else {
 		alert("Ustaw chociaż jeden oddział!")
