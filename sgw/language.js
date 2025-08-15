@@ -79,4 +79,24 @@ function setLanguage(lang){
 	}
 
   }
+  const images = document.getElementsByTagName("img");  
+  for(var i in images){
+	var image = images[i]
+	  
+	if((typeof image) != 'object')
+		continue
+		
+	var contents = image.getAttribute('srclanguagewise')
+		
+	if(contents != undefined){
+		while(contents.match(/{[^}]+\|[^}]+(\|[^}]+\|[^}]+)*}/) != null){
+			var firstmatch = contents.match(/{[^}\|]+\|[^}\|]+(\|[^}\|]+\|[^}\|]+)*}/)[0]
+			
+			var newcontent = languageOfCode(firstmatch,lang)
+			contents = contents.replace(firstmatch,newcontent)
+		}
+		image.src = contents
+	}
+
+  }
 }

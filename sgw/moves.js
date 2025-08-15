@@ -339,7 +339,7 @@ function miaruj(atki,obri,pole,revenge){
 		werd = false;
 	}
 	
-	if((szyt[atki.rodz] != "l" && zast[atki.rodz]!="p") && obri.szyt=="l" && (pole.z<=0 || revenge)/*obri.x != undefined && heks[obri.x][obri.y].z<=0*/){
+	if((szyt[atki.rodz] != "l" && zast[atki.rodz]!="p") && szyt[obri.rodz]=="l" && (pole.z<=0 || revenge)/*obri.x != undefined && heks[obri.x][obri.y].z<=0*/){
 		werd = false;
 	}
 	//if(szyt[atki.rodz] == "l" && obri.szyt != "l" && pole.z == -2){
@@ -1995,9 +1995,10 @@ function graniczy(je,dw){
 function atakuj(uni,hek,dru){
 	zbor = 0;
 	robz = 0;
+	var dwa = 2
 		while(hek.unp>0 && bitni>0 && unix[kolej][uni].il>0 && (unix[dru][hek.unt[hek.unp-1]].il>0 || unix[dru][hek.unt[hek.unp-1]].rozb>0) && miaruj(uni,hek.unt[hek.unp-1],hek) && !unix[kolej][uni].kosz){
 			unic = hek.unt[hek.unp-1];
-			att = at[unix[kolej][uni].rodz]*2*ataz(unix[kolej][uni],unix[dru][unic],"a");
+			att = at[unix[kolej][uni].rodz]*dwa*ataz(unix[kolej][uni],unix[dru][unic],"a");
 			obrrr = obrr[unix[dru][unic].rodz]*ataz(unix[kolej][uni],unix[dru][unic],"o");
 			var wak = Math.floor(Math.random()*(att+1))-Math.floor(Math.random()*(obrrr+1));
 			if(wak>0){
@@ -2017,7 +2018,7 @@ function atakuj(uni,hek,dru){
 					ata++;
 				}
 			} else if(unix[kolej][uni].il>=0 && unix[dru][unic].il>=0 && miaruj(unix[dru][unic],unix[kolej][uni],heks[unix[kolej][uni].x][unix[kolej][uni].y],true) && (zas[unix[kolej][uni].rodz]<=zas[unix[dru][unic].rodz])){
-				att = at[unix[dru][unic].rodz]*2*ataz(unix[kolej][uni],unix[dru][unic],"o");
+				att = at[unix[dru][unic].rodz]*dwa*ataz(unix[kolej][uni],unix[dru][unic],"o");
 				obrrr = obrr[unix[kolej][uni].rodz]*ataz(unix[kolej][uni],unix[dru][unic],"a");
 				wak = Math.floor(Math.random()*(att+1))-Math.floor(Math.random()*(obrrr+1));
 				if(wak>0){
