@@ -418,7 +418,7 @@ function aimachine(ailevel){
             dfrou=distmapsFromUnit()
             
             simplifieddistmaps=simpledistmaps(dfrou)
-            evaluate(dfrou,2)
+            evaluate(dfrou)
             
             legalActions(dfrou,simplifieddistmaps)
             ulepszyns = 9
@@ -451,7 +451,7 @@ function aimachine(ailevel){
                 }
             }
             dbetter = copyDistmaps(dfrou)
-            evaluate(dbetter,2)
+            evaluate(dbetter)
             
             if(window.large_map == undefined)
                 large_map = {}
@@ -1177,8 +1177,9 @@ function aimachine(ailevel){
             }*/
             //console.log('pt',possible_targets)
 
-            tryMakeDestinationMap(dbetter,kolej,allowPaths)
+            tryMakeDestinationMap(dfrou,kolej,allowPaths)
             
+            destinies = prepareAllDestinies(dfrou)
             
             //possible_targets.sort(() => Math.random() - 0.5)
             overall_score_changed = false
@@ -1207,11 +1208,12 @@ function aimachine(ailevel){
                     score_2 = scoreOfBehinds(dbetter,kolej,behind_score)
                     if(score_2 > score_1 || score_1 == score_2 && score2 > score1){
                         dfrou = copyDistmaps(dbetter)
-                        evaluate(dfrou,2)
+                        evaluate(dfrou)
                         ulepszyns--
                     } else {
                         ulepszyns--
                     }
+
                     
                     
                     //console.log(dfrou)
@@ -1240,7 +1242,7 @@ function aimachine(ailevel){
                     var code = tested_target.hex.x+'#'+tested_target.hex.y
                     if(newDistmap.distmaps[code].alliegance[MAX_TURNS-1] != kolej){
                         tryMakeDestinationMap(newDistmap,kolej,allowPaths)
-                        var result = tryPutUnderAttack(newDistmap,tested_target.hex.x,tested_target.hex.y,kolej,ulepszyns % 2 == 1,embarkingTargets,behind_score)
+                        var result = tryPutUnderAttack(newDistmap,tested_target.hex.x,tested_target.hex.y,kolej,destinies,ulepszyns % 2 == 1,embarkingTargets,behind_score)
                         //if(!result){
                         //    failedUses[tested_target.hex.x+'#'+tested_target.hex.y]++
                         //}
@@ -4740,7 +4742,7 @@ function allTurns(){
     }
     return tr
 }
-function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:bestAction[dest_code], hex:distmap.hex}
+function evaluate(dm,alreadyAttacking){   //{unit:unit, action:bestAction[dest_code], hex:distmap.hex}
     var distmaps = dm.distmaps
     var codedest = undefined
     //if(interestingAction != undefined && interestingAction.action.destination != undefined){
@@ -4749,6 +4751,9 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
     for(var key in distmaps){
         //if(interestingAction != undefined && !(interestingAction.hex.x+'#'+interestingAction.hex.y == key) && !(codedest != undefined && key == codedest))
         //    continue
+            
+        if(alreadyAttacking != null && !(key in alreadyAttacking))
+            continue
             
         if(distmaps[key].realtocome == null || distmaps[key].realtocome.length == 0){
             distmaps[key].realtocome = []
@@ -4796,6 +4801,9 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
             //if(!(interestingAction == undefined || interestingAction.hex.x+'#'+interestingAction.hex.y == key))
             //    continue
             
+            if(alreadyAttacking != null && !(key in alreadyAttacking))
+                continue
+                
             var distmap = distmaps[key]
             
             if(distmap.dru == -1)
@@ -4877,7 +4885,9 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
             for(var key in distmaps){
                 //if(!(interestingAction == undefined || interestingAction.hex.x+'#'+interestingAction.hex.y == key))
                 //    continue
-                    
+                if(alreadyAttacking != null && !(key in alreadyAttacking))
+                    continue
+
                 var distmap = distmaps[key]
                 if(distmap.dru == -1 || (ownunit && distmap.dru != kolej) || (!ownunit && distmap.dru == kolej)){
                     continue
@@ -5043,13 +5053,6 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
                                 
                                 path = action.leadedPath
                                 var losses = 0
-                                
-                                if(alreadyAttacking != null)
-                                    if(action.il < unit.il){
-                                        for(var t = 0;t<MAX_TURNS;t++){
-                                            distmap.realtocome[t][unit.d] -= -Number(evalUnitDefense(unit,unit.il - action.il))
-                                        }
-                                    }
                                 
                                 var unitAttackStrength2 = action.destination[0] in dm.model.board ? evalUnitAttack(unit, action, dm.model, true, path) : 0
                                 var origUnitAttackStrength2 = unitAttackStrength2
@@ -5331,16 +5334,13 @@ function evaluate(dm,time,alreadyAttacking,destiny){   //{unit:unit, action:best
         //    }
         //}
     //}
-    if(time == undefined)
-        time = 1
-        
-    calculateAlliegance(dm)
+    calculateAlliegance(dm,alreadyAttacking)
     
     
     //dm.score = score
     //console.log(distmaps)
 }
-function calculateAlliegance(dm){
+function calculateAlliegance(dm,alreadyAttacking){
     
     var distmaps = dm.distmaps
     if(dm.score == undefined || dm.score[0] == undefined){
@@ -5360,6 +5360,9 @@ function calculateAlliegance(dm){
         for(var key in distmaps){
             var distmap = distmaps[key]
             
+            if(alreadyAttacking != null && !(key in alreadyAttacking))
+                continue
+
             var biggestpower = 0
             var biggestpowercolor = -1
             var secondbiggestpower = 0
@@ -6336,7 +6339,7 @@ function tryMakeDestinationMap(dm,color,allowedPaths){
     }
     
 }
-function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_score){
+function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTargets, behind_score){
     var distmaps = dm.distmaps
     
     var code = x+'#'+y
@@ -6477,7 +6480,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
             || x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'build'
                     //|| ((x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1)
             || (x.unit.actions[0].type == 'move' && x.action[0].type != 'aim' && x.unit.actions[0].by != 'speculation2' &&
-                 (/*x.action[0].type != 'move' || */(x.unit.actions[0].rucho.length < szy[x.unit.rodz] || x.unit.actions[0].rucho.length > x.action[0].rucho.length || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].z <= 0 || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].undr == kolej)))
+                 (/*x.action[0].type != 'move' || */(/*x.unit.actions[0].rucho.length < szy[x.unit.rodz] || */x.unit.actions[0].rucho.length > x.action[0].rucho.length || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].z <= 0 || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].undr == kolej)))
                     
             )
         )
@@ -6528,17 +6531,19 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     
     var modif = {}
     var score1 = scoreOfBehinds(dm,kolej,behind_score)
+    
+    
+    var valuesByTime = dm.distmaps[code].alliegance.slice()
+    for(var t in valuesByTime){
+        valuesByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0 
+    }
+    var value1 = valuesByTime.reduce((a,b) => a+b, 0)
 //    for(var i = 0;i<MAX_TURNS;i++){ score1 += Math.pow(1/2.1,dm.score[kolej][i]) }
     
     //var score__1 = getScore(dm)
     //score_1 = calculateStrategicMapForTeam(large_map, dm, kolej, modif)
     //var backup = getScoresAndAlliegances(dm)
     var postęp = 0
-    var valuesByTime = dm.distmaps[code].alliegance.slice()
-    for(var t in valuesByTime){
-        valuesByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0 
-    }
-    var value = valuesByTime.reduce((a,b) => a+b, 0)
     
     var oldActionArrayUnits = []
     var oldActionArrayActions = []
@@ -6552,8 +6557,13 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     }
     var interestingUnitsHexCodes = interestingUnits.map(x=>x.hex.x+'#'+x.hex.y)
 
+    var destiny = unitaction.action[0].destination[0]+'#'+unitaction.action[0].destination[1]
+
     var addedEmbarkigns = []
-    //var alreadyAttacking = {}
+    var alreadyAttacking = {}
+    alreadyAttacking[destiny] = true
+    
+    addDestinies(alreadyAttacking,destinies,destiny)
     
     var lost = false
     for(var i in interestingUnits){
@@ -6566,6 +6576,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         //    continue
         //}
             
+        
         //console.log(unitaction.potentialEmbarkings)
         var oldaction = unitaction.unit.actions
         var bark = null
@@ -6576,7 +6587,20 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
         var hexcod = unitaction.hex.x+'#'+unitaction.hex.y
         
         
+        alreadyAttacking[hexcod] = true
+        addDestinies(alreadyAttacking,destinies,hexcod)
+
+        
+        evaluate(dm,alreadyAttacking)
+        
+        var valuesByTime = dm.distmaps[code].alliegance.slice()
+        for(var t in valuesByTime){
+            valuesByTime[t] = valuesByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0 
+        }
+        var value = valuesByTime.reduce((a,b) => a+b, 0)
+        
         unitaction.unit.actions = unitaction.action
+        //addAllDestinies(dm,alreadyAttacking)
         //console.log('bz',unitaction.action)
         
         if(unitaction.action[0].embarking != null){
@@ -6591,10 +6615,8 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
             }
         }
         
-        //alreadyAttacking[unitaction.hex.x+'#'+unitaction.hex.y] = true
-        //var destiny = unitaction.action[0].destination[0]+'#'+unitaction.action[0].destination[1]
         
-        evaluate(dm)//,null,alreadyAttacking,destiny)
+        evaluate(dm,alreadyAttacking)
         
         //alreadyAttacking[hexcod] = unitaction//,null,alreadyAttacking,x+'#'+y)
         //delete alreadyAttacking[hexcod] 
@@ -6678,7 +6700,7 @@ function tryPutUnderAttack(dm, x, y, color, thinkmore, embarkingTargets, behind_
     value2 = values2ByTime.reduce((a,b) => a+b, 0)
     
 //    if(value2 == undefined || value2 <= value && !(score2 > score1 && value2 >= value)/* || lost*/){
-    if(value2 == undefined || score2 <= score1 && !(value2 > value && score2 == score1)/* || lost*/){
+    if(value2 == undefined || score2 <= score1 && !(value2 > value1 && score2 == score1)/* || lost*/){
         console.log('ech3',value2,value,color)
         for(var i in oldActionArrayUnits){
             oldActionArrayUnits[i].actions = oldActionArrayActions[i]
@@ -6896,6 +6918,55 @@ function tryRemoveUnnecessaryBuilds(dm,color){
      }
 }
 
+function prepareAllDestinies(dm){
+    var destinymap = {}
+    
+    var distmaps = dm.distmaps
+    for(var key in distmaps){
+        var distmap = distmaps[key]
+        
+        
+        for(var i in distmap.hex.units){
+            var unit = distmap.hex.units[i]
+            
+            if(unit.actions.length > 0){
+                
+                for(var j in unit.actions){
+                    var action = unit.actions[j]
+                    if(action.type == 'move' && action.destination != undefined/* && j == unit.actions.length - 1*/ && zast[unit.rodz] != 'x'){
+                        var code = action.destination[0]+'#'+action.destination[1]
+                        
+                        if(!(code in destinymap))
+                            destinymap[code] = {}
+                        destinymap[code][key] = true
+                        /*
+                        path = action.leadedPath
+                        for(var k=0;k<path.path.length-1;k++){
+                            
+                        }*/
+                    } else if(action.type == 'aim' && action.hex_x != null){
+                        var code = action.hex_x+'#'+action.hex_y
+                        
+                        if(!(code in destinymap))
+                            destinymap[code] = {}
+                        destinymap[code][key] = true
+
+                    }
+                }
+            }
+        }
+                                    
+    }
+    return destinymap
+}
+
+function addDestinies(alreadyAttacking,destinies,hexcod){
+    if(hexcod in destinies){
+        for(var key in destinies[hexcod]){
+            alreadyAttacking[key] = true
+        }
+    }
+}
 /*
  * 
  * 
