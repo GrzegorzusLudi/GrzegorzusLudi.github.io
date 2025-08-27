@@ -425,7 +425,7 @@ function aimachine(ailevel){
             aistan = 1.15
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
-            //generate_areas(mist,params)
+            generate_areas(mist,params)
         break
         case 1.15:
             aistan = 1.2
@@ -2506,12 +2506,13 @@ function aimachine(ailevel){
                         
                         //console.log(lad_needsByTurn, morze_needsByTurn)
                         
-                        if(morze_needs > lad_needs+10 && morze_needs > 0 && !bloknia[kolej][6])
-                            needed = 6
                             
                         if(tratwa_needs > morze_needs*2 && tratwa_needs > 0 && !bloknia[kolej][6])
                             needed = 8
                         
+                        if(morze_needs > lad_needs+10 && morze_needs > 0 && !bloknia[kolej][6])
+                            needed = 6
+                            
                         //mist[kolejność_miast[miastkol]].test = lad_needs+'/'+morze_needs
                         /*
                         var wb = waterbodies.filter(a => a.hexes.filter(h => h.x == mist[miastkol].x && h.y == mist[miastkol].y).length > 0)
@@ -7057,14 +7058,14 @@ function actionsToReal(dm,color,completely_used_passages){
 
                         var dodajTratwe = putPath(unid,distmap,properAction.destination[0],properAction.destination[1],undefined,completely_used_passages)
                         if(dodajTratwe && unit.szyt != 'w' && unit.szyt != 'l'){
-                            if(properAction.embarking != null && (!(properAction.embarking.x+'#'+properAction.embarking.y in potentialEmbarkingSet) || potentialEmbarkingSet[properAction.embarking.x+'#'+properAction.embarking.y] < Math.max(1,unit.il - 20)))
+                            if(properAction.embarking != null && (!(properAction.embarking.x+'#'+properAction.embarking.y in potentialEmbarkingSet) || potentialEmbarkingSet[properAction.embarking.x+'#'+properAction.embarking.y] < Math.max(1,unit.il - 20))){
                                 tratwa -= -properAction.il
-                            else
+                            } else
                                 console.log('bbbbbbb')
                         }
                         unix[kolej][unid].rozb = 0
                         
-                        if(tratwa == 0 && unit.szyt != 'w' && unit.szyt != 'l' && properAction.embarking != null && !(properAction.embarking.x+'#'+properAction.embarking.y in embarkingDestinations)){
+                        if(tratwa == 0 && unit.szyt != 'w' && unit.szyt != 'l' && properAction.embarking != null && (properAction.embarking.x+'#'+properAction.embarking.y in embarkingDestinations)){
                             tratwa -= -unit.il
                         }
                     }
