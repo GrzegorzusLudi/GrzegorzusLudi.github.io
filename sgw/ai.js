@@ -414,11 +414,14 @@ function aimachine(ailevel){
         break;
         case 1.1:
             dfrou=distmapsFromUnit()
-            tryRemoveUnnecessaryPaths(dfrou,kolej)
+            embarkingTargets = getEmbarkingTargets(dfrou,kolej)
+            tryRemoveUnnecessaryPaths(dfrou,kolej,embarkingTargets)
             dfrou=distmapsFromUnit()
             
             simplifieddistmaps=simpledistmaps(dfrou)
-            evaluate(dfrou)
+            embarkingTargets = getEmbarkingTargets(dfrou,kolej)
+
+            evaluate(dfrou,embarkingTargets)
             
             legalActions(dfrou,simplifieddistmaps)
             ulepszyns = 9
@@ -450,8 +453,10 @@ function aimachine(ailevel){
                     sidima[j] = true
                 }
             }
-            dbetter = copyDistmaps(dfrou)
-            evaluate(dbetter)
+            dbetter = copyDistmaps(dfrou)                    
+            var embarkingTargets = getEmbarkingTargets(dbetter,kolej)
+
+            evaluate(dbetter,embarkingTargets)
             
             if(window.large_map == undefined)
                 large_map = {}
@@ -1208,7 +1213,9 @@ function aimachine(ailevel){
                     score_2 = scoreOfBehinds(dbetter,kolej,behind_score)
                     if(score_2 > score_1 || score_1 == score_2 && score2 > score1){
                         dfrou = copyDistmaps(dbetter)
-                        evaluate(dfrou)
+                        var embarkingTargets = getEmbarkingTargets(dfrou,kolej)
+
+                        evaluate(dfrou,embarkingTargets)
                         ulepszyns--
                     } else {
                         ulepszyns--
@@ -1246,7 +1253,7 @@ function aimachine(ailevel){
                         //if(!result){
                         //    failedUses[tested_target.hex.x+'#'+tested_target.hex.y]++
                         //}
-                        evaluate(newDistmap)
+                        evaluate(newDistmap,embarkingTargets)
                     }
 
                     
@@ -1288,7 +1295,6 @@ function aimachine(ailevel){
                         score__1 += newDistmap.score[t][kolej] / Math.pow(2.1,t)
                         score__2 += dbetter.score[t][kolej] / Math.pow(2.1,t)
                     }*/
-                    console.log(kolej)
                     var score__1 = 0
                     for(var i = 0;i<MAX_TURNS;i++){ score__1 += newDistmap.score[kolej][i] * Math.pow(1/2.1,i) }
                     var score__2 = 0
@@ -1398,6 +1404,9 @@ function aimachine(ailevel){
 //                    continue
                      
                 dnew = copyDistmaps(dbetter)
+                var embarkingTargets = getEmbarkingTargets(dnew,kolej)
+
+                evaluate(dnew,embarkingTargets)
                 var failablevvals = {}
                 
                 var sfKey = realSfKeysSorted[i]
@@ -4743,7 +4752,7 @@ function allTurns(){
     }
     return tr
 }
-function evaluate(dm,alreadyAttacking){   //{unit:unit, action:bestAction[dest_code], hex:distmap.hex}
+function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:bestAction[dest_code], hex:distmap.hex}
     var distmaps = dm.distmaps
     var codedest = undefined
     //if(interestingAction != undefined && interestingAction.action.destination != undefined){
@@ -5042,6 +5051,7 @@ function evaluate(dm,alreadyAttacking){   //{unit:unit, action:bestAction[dest_c
                         
                         var path = null
                         var movingDelay = 0
+                        var embarkingDelay = 0
                         for(var j in unit.actions){
                             var action = unit.actions[j]
                             if(action.type == 'move' && action.destination != undefined/* && j == unit.actions.length - 1*/ && zast[unit.rodz] != 'x'){
@@ -5058,7 +5068,6 @@ function evaluate(dm,alreadyAttacking){   //{unit:unit, action:bestAction[dest_c
                                 var unitAttackStrength2 = action.destination[0] in dm.model.board ? evalUnitAttack(unit, action, dm.model, true, path) : 0
                                 var origUnitAttackStrength2 = unitAttackStrength2
 
-                                var embarkingDelay = 0
                                 var onland = hex.z != -1
                                 var embarkingPossible = 0
                                 var lastFieldX = distmap.hex.x
@@ -5087,7 +5096,13 @@ function evaluate(dm,alreadyAttacking){   //{unit:unit, action:bestAction[dest_c
                                     if(onland && heks[lastFieldX][lastFieldY].z != -1 && heks[field.x][field.y].z == -1){
                                         onland = false
                                         addEmbarkingPossibility = true
-                                        embarkingDelay += 4
+                                        if(heks[lastFieldX][lastFieldY].z > 0 && action.by != 'real' || field.x+'#'+field.y in embarkingTargets || lastFieldX+'#'+lastFieldY in embarkingTargets){
+                                            console.log('delayed')
+                                            embarkingDelay += 4
+                                        } else {
+                                            console.log('stopped')
+                                            embarkingDelay = Infinity
+                                        }
                                         
                                         if(heks[lastFieldX][lastFieldY].z > 0 && heks[field.x][field.y].z == -1){
                                             embarkingOnPlace = true
@@ -5194,7 +5209,7 @@ function evaluate(dm,alreadyAttacking){   //{unit:unit, action:bestAction[dest_c
                                     }
                                     
                                 }
-                                //if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho,unitAttackStrength))
+                                //if(true || !pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,action.ruchk,action.rucho,unitAttackStrength))
                                 if(unitAttackStrength2 > 0 && embarkingDelay < Infinity)
                                     for(var t = 0;t<MAX_TURNS;t++){
                                         if(code in distmaps && szy[unit.rodz] * (t - embarkingDelay) + ((zas[unit.rodz] <= 1 || unit.szyt != szyt[unit.rodz]) ? 0 : zas[unit.rodz]) >= dist){
@@ -5210,37 +5225,39 @@ function evaluate(dm,alreadyAttacking){   //{unit:unit, action:bestAction[dest_c
                                     }
                             }
 
-                            if(action.type == 'aim'){             
-                                if(action.celd == -2)
-                                    continue                                    
-                                var code3 = action.hex_x+'#'+action.hex_y//unix[action.celd][action.celu].x + '#' + unix[action.celd][action.celu].y//action.hex_x + '#'+ action.hex_y
-                                var def = 0
-                                for(var k in distmaps[code3].hex.units){
-                                    var unik = distmaps[code3].hex.units[k]
-                                    
-                                    if(zas[unik.rodz] >= zas[unit.rodz]){
-                                        def -= Number(evalUnitDefense(unik))
+                            if(embarkingDelay < Infinity){
+                                if(action.type == 'aim'){             
+                                    if(action.celd == -2)
+                                        continue                                    
+                                    var code3 = action.hex_x+'#'+action.hex_y//unix[action.celd][action.celu].x + '#' + unix[action.celd][action.celu].y//action.hex_x + '#'+ action.hex_y
+                                    var def = 0
+                                    for(var k in distmaps[code3].hex.units){
+                                        var unik = distmaps[code3].hex.units[k]
+                                        
+                                        if(zas[unik.rodz] >= zas[unit.rodz]){
+                                            def -= Number(evalUnitDefense(unik))
+                                        }
                                     }
-                                }
-                                var attak = 0
-                                var str = Number(unitAttackStrength)
-                                console.log('delay',movingDelay)
-                                for(var t = movingDelay;t<MAX_TURNS;t++){
-                                    if(zas[unit.rodz] > 1){
-                                        attak -= -str * (1 - Math.pow(2,-1/(t - movingDelay))/2)//Math.min(1.5,t-movingDelay+1)
-                                    } else if(t == movingDelay) {
-                                        attak -= -str//Math.min(1.5,t-movingDelay+1)
+                                    var attak = 0
+                                    var str = Number(unitAttackStrength)
+                                    console.log('delay',movingDelay)
+                                    for(var t = movingDelay;t<MAX_TURNS;t++){
+                                        if(zas[unit.rodz] > 1){
+                                            attak -= -str * (Math.pow(1/2,(t - movingDelay)))//Math.min(1.5,t-movingDelay+1)
+                                        } else if(t == movingDelay) {
+                                            attak -= -str//Math.min(1.5,t-movingDelay+1)
+                                        }
+                                        //str = Math.max(0,str-def)
+                                        distmaps[code3].realtocome[t][unit.d] -= -attak
                                     }
-                                    str = Math.max(0,str-def)
-                                    distmaps[code3].realtocome[t][unit.d] -= -attak
-                                }
-                            }/*
-                            if(action.type == 'move' && action.destination != undefined && zast[unit.rodz] == 'x'){
-                                if(szyt[unit.rodz] == 'w'){
-                                    
-                                }
-                            }*/
-                            
+                                }/*
+                                if(action.type == 'move' && action.destination != undefined && zast[unit.rodz] == 'x'){
+                                    if(szyt[unit.rodz] == 'w'){
+                                        
+                                    }
+                                }*/
+                                
+                            }
                             if(action.type == 'stay' || action.type == 'build' || (unit.actions[0].type != 'move'/* && unit.actions[0].il < unit.il-10*/ && j == 0)){
                                 for(var t = 0;t<MAX_TURNS;t++){
                                     distmap.realtocome[t][unit.d] -= -Number(unitDefenseStrength)
@@ -6528,7 +6545,7 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
     var oldEmbarkingTargets = {}
     Object.assign(oldEmbarkingTargets,embarkingTargets)
     
-    evaluate(dm)
+    evaluate(dm,embarkingTargets)
     
     var modif = {}
     var score1 = scoreOfBehinds(dm,kolej,behind_score)
@@ -6592,7 +6609,7 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
         addDestinies(alreadyAttacking,destinies,hexcod)
 
         
-        evaluate(dm,alreadyAttacking)
+        evaluate(dm,embarkingTargets,alreadyAttacking)
         
         var valuesByTime = dm.distmaps[code].alliegance.slice()
         for(var t in valuesByTime){
@@ -6617,7 +6634,7 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
         }
         
         
-        evaluate(dm,alreadyAttacking)
+        evaluate(dm,embarkingTargets,alreadyAttacking)
         
         //alreadyAttacking[hexcod] = unitaction//,null,alreadyAttacking,x+'#'+y)
         //delete alreadyAttacking[hexcod] 
@@ -6693,7 +6710,7 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
             //}
         //}
     }
-    evaluate(dm)
+    evaluate(dm,embarkingTargets)
     values2ByTime = dm.distmaps[x+'#'+y].alliegance.slice()
     for(var t in values2ByTime){
         values2ByTime[t] = values2ByTime[t] == color ? 1/Math.pow(2.1,t+1) : 0
@@ -6708,7 +6725,7 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
         }
         
         Object.assign(embarkingTargets,oldEmbarkingTargets)
-        evaluate(dm)
+        evaluate(dm,embarkingTargets)
         //setScoresAndAlliegances(dm,backup)
         return false
     }
@@ -6798,10 +6815,12 @@ function addEmbarking(unitaction,embarkingTargets,distmaps,hexcod,dm,oldActionAr
     }
     return {bark:bark,oldEmbarkingCode:oldEmbarkingCode,oldEmbarkingAction:oldEmbarkingAction}
 }
-function tryRemoveUnnecessaryPaths(dm,color){
+function tryRemoveUnnecessaryPaths(dm,color,embarkingTargets){
     
     var distmaps = dm.distmaps
-    evaluate(dm)
+    var embarkingTargets = getEmbarkingTargets(dm,kolej)
+
+    evaluate(dm,embarkingTargets)
     var destMap = {}
     for(var key in distmaps){
          var distmap = distmaps[key]
@@ -6824,24 +6843,92 @@ function tryRemoveUnnecessaryPaths(dm,color){
             var jhex = null
             var jndex = -1
             
+            /*
+                                var onland = hex.z != -1
+                                var embarkingPossible = 0
+                                var lastFieldX = distmap.hex.x
+                                var lastFieldY = distmap.hex.y
+                                var addEmbarkingPossibility = false
+                                var embarkingOnPlace = false
+                                for(var k=0;k<path.path.length-1;k++){
+                                    
+                                    if(unitAttackStrength2 <= 0)
+                                        break
+                                    
+                                    var field = path.path[k]
+                                    var code2 = field.x+'#'+field.y
+                                        
+                                    if(code2 in distmaps && distmaps[code2].hex.dru == -1 && distmaps[code2].hex.z <= 0)
+                                        continue
+                                        
+                                    if(code2 in distmaps && distmaps[code2].hex.units.length == 4 && distmaps[code2].hex.dru == unit.d){
+                                        unitAttackStrength2 = 0
+                                        break
+                                    }
+                                    
+                                    addEmbarkingPossibility = false
+                                    embarkingOnPlace = false
+                                    
+                                    if(onland && heks[lastFieldX][lastFieldY].z != -1 && heks[field.x][field.y].z == -1){
+                                        onland = false
+                                        addEmbarkingPossibility = true
+                                        if(heks[lastFieldX][lastFieldY].z > 0 && action.by != 'real' || field.x+'#'+field.y in embarkingTargets || lastFieldX+'#'+lastFieldY in embarkingTargets){
+                                            console.log('delayed')
+                                            embarkingDelay += 4
+                                        } else {
+                                            console.log('stopped')
+                                            embarkingDelay = Infinity
+                                        }
+                                        
+                                        if(heks[lastFieldX][lastFieldY].z > 0 && heks[field.x][field.y].z == -1){
+                                            embarkingOnPlace = true
+                                        }
+                                    }
+                                    if(!onland && heks[lastFieldX][lastFieldY].z == -1 && heks[field.x][field.y].z != -1)
+                                        onland = true
+             * */
+            
+            var lastx = distmap.hex.heks.x
+            var lasty = distmap.hex.heks.y
+            
+            var onland = distmap.hex.heks.z != -1
+
+            //console.log('eta:',embarkingTargets)
             for(var k in path.path){
                 var hx = path.path[k]
-                
+                if(unit.actions.length > 0 && unit.actions[0].embarking != null && (unit.szyt == 'n' || unit.szyt == 'c' || unit.szyt == 'g')){
+                    //console.log(lastx,lasty,hx.x,hx.y,onland,heks[lastx][lasty].z,heks[hx.x][hx.y].z)
+                    if(onland && heks[lastx][lasty].z != -1 && heks[hx.x][hx.y].z == -1){
+                        //console.log(1)
+                        onland = false
+                        
+                        if(!(hx.x+'#'+hx.y in embarkingTargets) && !(lastx+'#'+lasty in embarkingTargets)){
+                            //console.log(2)
+                            oks = false
+                        }
+                    }
+                    
+                    if(!onland && heks[lastx][lasty].z == -1 && heks[hx.x][hx.y].z != -1)
+                        onland = true
+                }
+                    
                 if(k >= 0 && /*j < path.path.length-1 && */heks[hx.x][hx.y].unp > 3 && heks[hx.x][hx.y].undr == kolej){
                     oks = false
                     jhex = hx
                     break
                 }
+                lastx = hx.x
+                lasty = hx.y
             }
             if(!oks){
                 console.log('usunięte')
-                var uni = heks[distmap.hex.x][distmap.hex.y].unt[j]
-                var unit = unix[kolej][uni]
+                var uni = heks[distmap.hex.heks.x][distmap.hex.heks.y].unt[j]
+                var unit2 = unix[kolej][uni]
                 if(zaznu != -1){
                     odzaznaj(false)
                     aktdroguj(kolej,zaznu)
-                    unit.sebix = unit.x
-                    unit.sebiy = unit.y
+                    unit2.sebix = unit2.x
+                    unit2.sebiy = unit2.y
                     zaznu = -1
                     /*
                     zaznx = -1
@@ -6873,7 +6960,9 @@ function tryRemoveUnnecessaryPaths(dm,color){
 function tryRemoveUnnecessaryBuilds(dm,color){
     
     var distmaps = dm.distmaps
-    evaluate(dm)
+    var embarkingTargets = getEmbarkingTargets(dm,kolej)
+
+    evaluate(dm,embarkingTargets)
     var destMap = {}
     for(var key in distmaps){
          var distmap = distmaps[key]
@@ -7065,7 +7154,7 @@ function actionsToReal(dm,color,completely_used_passages){
                         }
                         unix[kolej][unid].rozb = 0
                         
-                        if(tratwa == 0 && unit.szyt != 'w' && unit.szyt != 'l' && properAction.embarking != null && (properAction.embarking.x+'#'+properAction.embarking.y in embarkingDestinations)){
+                        if(tratwa == 0 && unit.szyt != 'w' && unit.szyt != 'l' && properAction.embarking != null && !(properAction.embarking.x+'#'+properAction.embarking.y in embarkingDestinations)){
                             tratwa -= -unit.il
                         }
                     }
@@ -7188,7 +7277,7 @@ function actionsToReal(dm,color,completely_used_passages){
                         }
                     }
                     if(kv != -1)
-                        heks[distmap.hex.x][distmap.hex.y].usun[kv]
+                        heks[distmap.hex.x][distmap.hex.y].usun(kv)
                     const sustainable_tratwa_growth = 99//Math.min(99, Math.floor(distmap.hex.z * 2 / 4))
                     if(heks[distmap.hex.x][distmap.hex.y].unp == 4 && unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[3]].rodz != 8){
                         heks[distmap.hex.x][distmap.hex.y].usun(3)
@@ -7410,6 +7499,21 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
 
                     if(time >= 1 && lade in possible){
                         
+                        if(lac[0].embarking != null && !((lade in dfrou.distmaps) && (dfrou.distmaps[lade].alliegance[MAX_TURNS-1] == kolej || dfrou.distmaps[lade].alliegance[MAX_TURNS-1] == -1))){
+                            var cont = false
+                            for(var ik = 1;ik<4;ik++){
+
+                                if(lac[0].leadedPath.path.length - ik >= 0){
+                                    //console.log(heks[lac[0].leadedPath.path[lac[0].leadedPath.path.length-1-ik].x][lac[0].leadedPath.path[lac[0].leadedPath.path.length-1-ik].y].z)
+                                    if(heks[lac[0].leadedPath.path[lac[0].leadedPath.path.length-ik].x][lac[0].leadedPath.path[lac[0].leadedPath.path.length-ik].y].z == -1){
+                                        cont = true
+                                    }
+                                }
+                            }
+                            if(cont)
+                                continue
+                        }
+                        //console.log('ababababaggg',lade,lac[0].embarking,dfrou.distmaps[lade].alliegance[MAX_TURNS-1],dfrou.distmaps[lade].alliegance[MAX_TURNS-1])
                         /*
                         for(var key in realSfKeys){
                             if(key != lade){
