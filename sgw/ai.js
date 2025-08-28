@@ -5087,6 +5087,7 @@ function evaluate(dm,alreadyAttacking){   //{unit:unit, action:bestAction[dest_c
                                     if(onland && heks[lastFieldX][lastFieldY].z != -1 && heks[field.x][field.y].z == -1){
                                         onland = false
                                         addEmbarkingPossibility = true
+                                        embarkingDelay += 4
                                         
                                         if(heks[lastFieldX][lastFieldY].z > 0 && heks[field.x][field.y].z == -1){
                                             embarkingOnPlace = true
@@ -5094,7 +5095,6 @@ function evaluate(dm,alreadyAttacking){   //{unit:unit, action:bestAction[dest_c
                                     }
                                     if(!onland && heks[lastFieldX][lastFieldY].z == -1 && heks[field.x][field.y].z != -1)
                                         onland = true
-                                        
                                         
                                     
                                     if(false)
@@ -6756,8 +6756,8 @@ function addEmbarking(unitaction,embarkingTargets,distmaps,hexcod,dm,oldActionAr
     //    console.log(hexcod)
     //    console.log(unitaction.potentialEmbarkings)
     //}
-    var betterEmbarkings = goodEmbarkings.filter(x=>x.move[0].il >  unitaction.action[0].il-20).sort((a,b)=>a.turn-b.turn) 
-                    .concat( goodEmbarkings.filter(x=>x.move[0].il <= unitaction.action[0].il-20).sort((a,b)=>a.turn-b.turn) )
+    var betterEmbarkings = goodEmbarkings.filter(x=>x.move[0].il >  unitaction.action[0].il-20)
+                    .concat( goodEmbarkings.filter(x=>x.move[0].il <= unitaction.action[0].il-20) ).sort((a,b)=>a.turn-b.turn) 
                     
     var betterEmbarkings2 = []
     for(var j in betterEmbarkings){
