@@ -1777,7 +1777,7 @@ function aktdroguj(kolejk,uni){
 			}
 				a = 0;
 				while(a<tph.drogn){
-					if(tph.drogg[a]==uni && tph.drogd[a]==kolejk && tph.drogh[a] <= drogow+1){
+					if(tph.drogg[a]==uni && tph.drogd[a]==kolejk && tph.drogh[a] >= drogow && tph.drogh[a] <= drogow+1){
 						if(zasieg >= 0){
 							tph.drogw[a] = uniw(kolejk,uni);
 							if(zasieg>0){
@@ -1787,7 +1787,6 @@ function aktdroguj(kolejk,uni){
 							}
 						}
 						tph.drogh[a] = drogow;
-
 					}
 
 					a++;

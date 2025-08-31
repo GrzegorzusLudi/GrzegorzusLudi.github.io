@@ -53,10 +53,12 @@ function anim(){
 					if(unix[kolej][ruchwkolejce[uniwy]].szyt=="l" && szyt[unix[kolej][ruchwkolejce[uniwy]].rodz]!="l" && unix[kolej][ruchwkolejce[uniwy]].wypax==unix[kolej][ruchwkolejce[uniwy]].x && unix[kolej][ruchwkolejce[uniwy]].wypay==unix[kolej][ruchwkolejce[uniwy]].y && unix[kolej][ruchwkolejce[uniwy]].przes>=0 && jesio>=0 && heks[unix[kolej][ruchwkolejce[uniwy]].wypax][unix[kolej][ruchwkolejce[uniwy]].wypay].unp<4){
 						unix[kolej][ruchwkolejce[uniwy]].przes = 0;
 						wyladuj(ruchwkolejce[uniwy]);
+
 						czyscc(uniwy,unix[kolej][ruchwkolejce[uniwy]].wypax,unix[kolej][ruchwkolejce[uniwy]].wypay,kolej);
 						unix[kolej][ruchwkolejce[uniwy]].wypax = -1;
 						unix[kolej][ruchwkolejce[uniwy]].wypay = -1;
 						unix[kolej][ruchwkolejce[uniwy]].przes -= szpak;
+						
 					} else if(unix[kolej][ruchwkolejce[uniwy]].przes>0 && unix[kolej][ruchwkolejce[uniwy]].rucho[0]==0 && jesio>=0){
 						czyscc(uniwy,unix[kolej][ruchwkolejce[uniwy]].x,unix[kolej][ruchwkolejce[uniwy]].y,kolej);
 						var ask = 0;
