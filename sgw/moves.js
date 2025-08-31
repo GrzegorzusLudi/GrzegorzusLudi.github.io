@@ -1193,6 +1193,7 @@ function czyscc(unu,kpx,kpy,dru,drogh){
 				heks[kpx][kpy].drogd[numu] = heks[kpx][kpy].drogd[numu+1];
 				heks[kpx][kpy].drogg[numu] = heks[kpx][kpy].drogg[numu+1];
 				heks[kpx][kpy].drogh[numu] = heks[kpx][kpy].drogh[numu+1];
+				heks[kpx][kpy].drogkol[numu] = heks[kpx][kpy].drogkol[numu+1];
 				heks[kpx][kpy].ktodro[kolej][heks[kpx][kpy].drogg[numu]] = numu;
 
 				numu++;
@@ -1206,12 +1207,12 @@ function czyscc(unu,kpx,kpy,dru,drogh){
 	while(numa<4){
 	
 		if(heks[kpx][kpy].wylad[numa] == unu && heks[kpx][kpy].wyladr[numa] == dru){
-			heks[kpx][kpy].wylad[numu] = -1;
-			heks[kpx][kpy].wyladr[numu] = -1;
+			heks[kpx][kpy].wylad[numa] = -1;
+			heks[kpx][kpy].wyladr[numa] = -1;
 		}
 		if(heks[kpx][kpy].wyladr[numa] != -1 && heks[kpx][kpy].wylad[numa] in unix[heks[kpx][kpy].wyladr[numa]] && (unix[heks[kpx][kpy].wyladr[numa]][heks[kpx][kpy].wylad[numa]].szyt != 'l' && szyt[unix[heks[kpx][kpy].wyladr[numa]][heks[kpx][kpy].wylad[numa]].rodz] != 'l' || unix[heks[kpx][kpy].wyladr[numa]][heks[kpx][kpy].wylad[numa]].ruchy == 0)){
-			heks[kpx][kpy].wylad[numu] = -1;
-			heks[kpx][kpy].wyladr[numu] = -1;
+			heks[kpx][kpy].wylad[numa] = -1;
+			heks[kpx][kpy].wyladr[numa] = -1;
 		}
 		numa++;
 	}
@@ -2058,7 +2059,7 @@ function atakuj(uni,hek,dru){
 	}
 	if(hek.unp>0){
 		jesio = -1;
-	} else {
+	} else if(unix[kolej][uni].celu != -1 && /*unix[unix[kolej][uni].celd][unix[kolej][uni].celu].x != -1 && */heks[unix[unix[kolej][uni].celd][unix[kolej][uni].celu].x][unix[unix[kolej][uni].celd][unix[kolej][uni].celu].y] == hek) {
 		unix[kolej][uni].celd = -1;
 		unix[kolej][uni].celu = -1;
 		unix[kolej][uni].celk = -1;

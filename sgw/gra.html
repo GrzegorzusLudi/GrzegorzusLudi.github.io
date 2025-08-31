@@ -73,8 +73,14 @@ input[type=range]::-moz-range-thumb {
 }
 #canv {
 	border: 1px solid white;
-	position: absolute
-}
+	position: absolute;
+    user-drag: none; 
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+  }
 #aroundcanv {
 	float: left;
 	width: 800px;

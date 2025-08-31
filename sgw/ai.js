@@ -2103,18 +2103,27 @@ function aimachine(ailevel){
                     rest.push(Number(ruchwkolejce[i]))
             }
 
+            var restrest = rest.concat(newDivide)
+            
+            var restfar = []
+            var restland = []
+            for(var i in restrest){
+                if(zas[unix[kolej][ruchwkolejce[i]].rodz] >= 1){
+                    restfar.push(restrest[i])
+                } else {
+                    restland.push(restrest[i])  
+                }
+            }
+            restrest = restfar.concat(restland)
+            
             ruchwkolejcen = 0
             ruchwkolejce = []
             for(var i in ruchy_tratw){
                 ruchwkolejce.push(ruchy_tratw[i])
                 ruchwkolejcen++
             }
-            for(var i in rest){
-                ruchwkolejce.push(rest[i])
-                ruchwkolejcen++
-            }
-            for(var i in newDivide){
-                ruchwkolejce.push(newDivide[i])
+            for(var i in restrest){
+                ruchwkolejce.push(restrest[i])
                 ruchwkolejcen++
             }
             //console.log(newDivide)
@@ -2351,6 +2360,7 @@ function aimachine(ailevel){
                     } else if(unix[kolej][mist[kolejność_miast[miastkol]].unt[mist[kolejność_miast[miastkol]].unp-1]].ruchy != 0 || unix[kolej][mist[kolejność_miast[miastkol]].unt[mist[kolejność_miast[miastkol]].unp-1]].celu != -1) {
                         mist[kolejność_miast[miastkol]].tasuj()
                     }
+                    there_is_possible_coastline = false
                     if(v>0 || true){
                         var needed = bloknia[kolej].indexOf(false);		//todo
                         
@@ -2380,6 +2390,11 @@ function aimachine(ailevel){
                             if(hks.water > 0 || hks.dist <= 0)
                                 continue
                                 
+                            if(possible_coastline != null){
+                                if(hks.hex.heks.x == possible_coastline.x && hks.hex.heks.y == possible_coastline.y){
+                                    there_is_possible_coastline = true
+                                }
+                            }
                             var hdru = hks.hex.d != undefined ? hks.hex.d : hks.hex.dru
                             
                             if(hdru != kolej){
@@ -2428,7 +2443,8 @@ function aimachine(ailevel){
                                             }
                                         }
                                     } else if(zast[unit.rodz] == 'm'){
-                                        sapper_prod += unit.il+unit.rozb
+                                        if(unit.il+unit.rozb >= 60)
+                                            sapper_prod += unit.il+unit.rozb
                                     } else if(zast[unit.rodz] == 'x' && szyt[unit.rodz] == 'w'){
                                         tratwa_needs -= unit.il
                                     }
@@ -2436,13 +2452,15 @@ function aimachine(ailevel){
                                 for(var j = 0;j<heks[hks.hex.x][hks.hex.y].unp;j++){
                                     if(zast[unit.rodz] == 'm'){
                                         var unit = unix[kolej][heks[hks.hex.x][hks.hex.y].unt[j]]
-                                        sapper_prod += unit.il+unit.rozb
+                                        if(unit.il+unit.rozb >= 60)
+                                            sapper_prod += unit.il+unit.rozb
                                     }
                                 }
                                 for(var j = 0;j<heks[hks.hex.x][hks.hex.y].unp;j++){
                                     var unigz = unix[kolej][heks[hks.hex.x][hks.hex.y].unt[j]]
                                     if(zast[unigz.rodz] == 'm'){
-                                        sapper_prod += unigz.il+unigz.rozb
+                                        if(unit.il+unit.rozb >= 60)
+                                            sapper_prod += unigz.il+unigz.rozb
                                     }
                                 }
                             }
@@ -2558,7 +2576,7 @@ function aimachine(ailevel){
                         var enough_units_produced = Math.max(lad_needs,morze_needs) <= local_prod// && miast_dist[kolejność_miast[miastkol]] > 0
                         
                         //var mistkod = mist[kolejność_miast[miastkol]].x+'#'+mist[kolejność_miast[miastkol]].y
-                        if(enough_units_produced && possible_coastline != null && sapper_prod <= 20 && !bloknia[kolej][11]){
+                        if(enough_units_produced && possible_coastline != null && there_is_possible_coastline && sapper_prod <= 100 && !bloknia[kolej][11]){
                             //console.log([enough_units_produced,possible_coastline,sapper_prod])
                             needed = 11
                             needednum = 60
@@ -5093,7 +5111,7 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                     addEmbarkingPossibility = false
                                     embarkingOnPlace = false
                                     
-                                    if(onland && heks[lastFieldX][lastFieldY].z != -1 && heks[field.x][field.y].z == -1){
+                                    if(onland && action.embarking != null && heks[lastFieldX][lastFieldY].z != -1 && heks[field.x][field.y].z == -1){
                                         onland = false
                                         addEmbarkingPossibility = true
                                         if(heks[lastFieldX][lastFieldY].z > 0 && action.by != 'real' || field.x+'#'+field.y in embarkingTargets || lastFieldX+'#'+lastFieldY in embarkingTargets){
@@ -5234,7 +5252,7 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                     for(var k in distmaps[code3].hex.units){
                                         var unik = distmaps[code3].hex.units[k]
                                         
-                                        if(zas[unik.rodz] >= zas[unit.rodz]){
+                                        if(zas[unik.rodz] > zas[unit.rodz]){
                                             def -= Number(evalUnitDefense(unik))
                                         }
                                     }
@@ -5243,11 +5261,13 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                     console.log('delay',movingDelay)
                                     for(var t = movingDelay;t<MAX_TURNS;t++){
                                         if(zas[unit.rodz] > 1){
-                                            attak -= -str * (Math.pow(1/2,(t - movingDelay)))//Math.min(1.5,t-movingDelay+1)
+                                            attak -= -str * (Math.pow(0.85,(t - movingDelay)))//Math.min(1.5,t-movingDelay+1)
                                         } else if(t == movingDelay) {
-                                            attak -= -str//Math.min(1.5,t-movingDelay+1)
+                                            attak -= -str/2//Math.min(1.5,t-movingDelay+1)
+                                        } else if(t == movingDelay+1){
+                                            attak -= -str/2
                                         }
-                                        //str = Math.max(0,str-def)
+                                        str = Math.max(0,str-def/2)
                                         distmaps[code3].realtocome[t][unit.d] -= -attak
                                     }
                                 }/*
@@ -7154,7 +7174,7 @@ function actionsToReal(dm,color,completely_used_passages){
                         }
                         unix[kolej][unid].rozb = 0
                         
-                        if(tratwa == 0 && unit.szyt != 'w' && unit.szyt != 'l' && properAction.embarking != null && !(properAction.embarking.x+'#'+properAction.embarking.y in embarkingDestinations)){
+                        if(tratwa == 0 && unit.szyt != 'w' && unit.szyt != 'l' && properAction.embarking != null && !(properAction.embarking.x+'#'+properAction.embarking.y in embarkingDestinations) && distance(properAction.embarking.x,properAction.embarking.y,distmap.hex.heks.x,distmap.hex.heks.y) <= 1){
                             tratwa -= -unit.il
                         }
                     }
