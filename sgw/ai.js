@@ -414,14 +414,14 @@ function aimachine(ailevel){
         break;
         case 1.1:
             dfrou=distmapsFromUnit()
-            embarkingTargets = getEmbarkingTargets(dfrou,kolej)
-            tryRemoveUnnecessaryPaths(dfrou,kolej,embarkingTargets)
+            dfrouEmbarkingTargets = getEmbarkingTargets(dfrou,kolej)
+            tryRemoveUnnecessaryPaths(dfrou,kolej,dfrouEmbarkingTargets)
             dfrou=distmapsFromUnit()
             
             simplifieddistmaps=simpledistmaps(dfrou)
-            embarkingTargets = getEmbarkingTargets(dfrou,kolej)
+            dfrouEmbarkingTargets = getEmbarkingTargets(dfrou,kolej)
 
-            evaluate(dfrou,embarkingTargets)
+            evaluate(dfrou,dfrouEmbarkingTargets)
             
             legalActions(dfrou,simplifieddistmaps)
             ulepszyns = 9
@@ -454,7 +454,7 @@ function aimachine(ailevel){
                 }
             }
             dbetter = copyDistmaps(dfrou)                    
-            var embarkingTargets = getEmbarkingTargets(dbetter,kolej)
+            embarkingTargets = getEmbarkingTargets(dbetter,kolej)
 
             evaluate(dbetter,embarkingTargets)
             
@@ -1213,9 +1213,9 @@ function aimachine(ailevel){
                     score_2 = scoreOfBehinds(dbetter,kolej,behind_score)
                     if(score_2 > score_1 || score_1 == score_2 && score2 > score1){
                         dfrou = copyDistmaps(dbetter)
-                        var embarkingTargets = getEmbarkingTargets(dfrou,kolej)
+                        dfrouEmbarkingTargets = getEmbarkingTargets(dfrou,kolej)
 
-                        evaluate(dfrou,embarkingTargets)
+                        evaluate(dfrou,dfrouEmbarkingTargets)
                         ulepszyns--
                     } else {
                         ulepszyns--
@@ -1229,6 +1229,8 @@ function aimachine(ailevel){
                     aistan = 1.2
                 } else {
                     dfrou = dbetter
+                    dfrouEmbarkingTargets = getEmbarkingTargets(dfrou,kolej)
+
                     
                     aistan = 1.33
                 }
@@ -1243,12 +1245,12 @@ function aimachine(ailevel){
                     //evaluate(newDistmap,2)
                     //legalActions(newDistmap)
                     
-                    var embarkingTargets = getEmbarkingTargets(newDistmap,kolej)
                     //console.log(embarkingTargets)
                     
                     var code = tested_target.hex.x+'#'+tested_target.hex.y
                     if(newDistmap.distmaps[code].alliegance[MAX_TURNS-1] != kolej){
                         tryMakeDestinationMap(newDistmap,kolej,allowPaths)
+                        embarkingTargets = Object.assign({},dfrouEmbarkingTargets)
                         var result = tryPutUnderAttack(newDistmap,tested_target.hex.x,tested_target.hex.y,kolej,destinies,ulepszyns % 2 == 1,embarkingTargets,behind_score)
                         //if(!result){
                         //    failedUses[tested_target.hex.x+'#'+tested_target.hex.y]++
@@ -1332,6 +1334,8 @@ function aimachine(ailevel){
                             overall_score_changed = true
                         //}
                     }
+                    
+                    //embarkingTargets = getEmbarkingTargets(dfrou,kolej)
                     //}
                     //if(maxBetter > minBetter)
                     //    dbetter = newDistmap
@@ -1395,6 +1399,7 @@ function aimachine(ailevel){
             //    realSfKeysSorted.push(biggestScoreHex)
 
             
+            var embarkingTargets = getEmbarkingTargets(dbetter,kolej)
             for(var i in realSfKeysSorted){
                 usedvvals = {}
                 //if(realSfKeysSorted[i].maxPlayerScore > 5000 && i < realSfKeysSorted.length-1)
@@ -1404,10 +1409,8 @@ function aimachine(ailevel){
 //                    continue
                      
                 dnew = copyDistmaps(dbetter)
-                var embarkingTargets = getEmbarkingTargets(dnew,kolej)
 
-                evaluate(dnew,embarkingTargets)
-                var failablevvals = {}
+                //evaluate(dnew,embarkingTargets)
                 
                 var sfKey = realSfKeysSorted[i]
                 if(sfKey != undefined && sfKey.hex != undefined){
@@ -1434,9 +1437,6 @@ function aimachine(ailevel){
                             //console.log(firstVal)
                             //console.log(firstVal.action[0])
                             
-                            var fcode = firstVal.hex_from+'#'+firstVal.unitIx+'#'+firstVal.action[0].destination[0]+'#'+firstVal.action[0].destination[1]
-                            //console.log(fcode)
-                            failablevvals[fcode] = true
                             //if((fcode in failedvvals)){
                             //    continue
                             //}
@@ -1477,6 +1477,7 @@ function aimachine(ailevel){
                                 //var score_1 = scoreOfBehinds(dnew,kolej,behind_score)
 
                                 //var oldaction = dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions
+                                newaction.somethingAlong = false
                                 dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions = newaction
                                 //evaluate(dnew)
                                 
@@ -1523,6 +1524,8 @@ function aimachine(ailevel){
                 console.log('a: '+score2+'\t'+score1)
                 
                 dfrou = dbetter
+                dfrouEmbarkingTargets = getEmbarkingTargets(dfrou,kolej)
+
             } else {
                 scorenotchanged++
             }
@@ -1738,7 +1741,7 @@ function aimachine(ailevel){
                             if(liczba < 5)
                                 continue
                         
-                            var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:liczba,from:[pole_z_tratwami.x,pole_z_tratwami.y],destination:leadPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho),leadedPath:getLeadedPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho)*/}
+                            var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:liczba,from:[pole_z_tratwami.x,pole_z_tratwami.y],somethingAlong:true,destination:leadPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho),leadedPath:getLeadedPath(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(pole_z_tratwami.hex.x,pole_z_tratwami.hex.y,ruchk,rucho)*/}
                             
                             var turnsToGo = Math.floor(ruchk.length/unit.szy)
                             
@@ -1941,7 +1944,7 @@ function aimachine(ailevel){
                                         var lepakod = lepa[0]+'#'+lepa[1]
                                         
                                         if(!(lepakod in alreadyDestination)){
-                                            var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-additil,from:[distmap.hex.x,distmap.hex.y],destination:lepa,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk,rucho)*/}
+                                            var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-additil,from:[distmap.hex.x,distmap.hex.y],destination:lepa,somethingAlong:true,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk,rucho)*/}
 
                                             unit.actions = [ action ]
                                         }
@@ -4365,7 +4368,7 @@ class UnitAction extends Copyable {
             if(this.ruchy > 0){
                 var rucho = this.rucho.slice(0,this.ruchy)
                 var ruchk = this.ruchk.slice(0,this.ruchy)
-                this.actions.push({type:'move',by:'real',rucho:rucho,ruchk:ruchk,il:unit.il,from:[hex.x,hex.y],destination:leadPath(hex.x,hex.y,ruchk,rucho),embarking:embarkingPointFromLeadedPath(hex.x,hex.y,ruchk,rucho),distant:false,leadedPath:getLeadedPath(hex.x,hex.y,ruchk,rucho)/*,collisional:isPathCollisional(hex.x,hex.y,ruchk,rucho)*/})
+                this.actions.push({type:'move',by:'real',rucho:rucho,ruchk:ruchk,il:unit.il,from:[hex.x,hex.y],destination:leadPath(hex.x,hex.y,ruchk,rucho),embarking:embarkingPointFromLeadedPath(hex.x,hex.y,ruchk,rucho),somethingAlong:thereIsSomethingAlongThePath(hex.x,hex.y,ruchk,rucho),distant:false,leadedPath:getLeadedPath(hex.x,hex.y,ruchk,rucho)/*,collisional:isPathCollisional(hex.x,hex.y,ruchk,rucho)*/})
             }
             if(this.celu != -1 && this.celd in unix){
                 var aimedunit = unix[this.celd][this.celu]
@@ -4435,6 +4438,30 @@ function getLeadedPath(x,y,ruchk,rucho,stopBefore){
         }
     }
     return {x:x,y:y,path:leadedPath}
+}
+function thereIsSomethingAlongThePath(x,y,ruchk,rucho,stopBefore){    
+    var kol1 = heks[x][y].undr
+    var he = heks[x][y]
+    if(stopBefore == undefined)
+        stopBefore = 0
+    for(var i in ruchk){
+        if(i >= ruchk.length-stopBefore)
+            break
+        for(var j = 0;j<rucho[i];j++){
+            he = he.border[ruchk[i]]
+            if(he == undefined)
+                return false
+            if(he.undr != -1 && he.undr != kol1){
+                return true
+            }
+            if(he.unp>= 4){
+                return true
+            }
+        }
+    }
+    if(he.z >= 1)
+        return true
+    return false
 }
 function embarkingPointFromLeadedPath(x,y,ruchk,rucho,stopBefore){
     var he = heks[x][y]
@@ -4836,8 +4863,10 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
             
             if(distmap.dru == -1)
                 continue
-            
-            var hex = distmap.hex
+            var hex = distmap.hex.heks
+            if(hex.z <= 0)
+                continue
+                
             var peoplePotential = hex.z / ced[0]    //produkcja piechoty
             var productionPotential = Math.min(hex.z / ced[1], Math.min(hex.prod / ces[1], hex.hutn / ces[1]))    //produkcja czougów
             
@@ -5072,6 +5101,7 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                         var embarkingDelay = 0
                         for(var j in unit.actions){
                             var action = unit.actions[j]
+                            if(action.somethingAlong)
                             if(action.type == 'move' && action.destination != undefined/* && j == unit.actions.length - 1*/ && zast[unit.rodz] != 'x'){
                                 var code = action.destination[0]+'#'+action.destination[1]
                                 
@@ -5092,6 +5122,7 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                 var lastFieldY = distmap.hex.y
                                 var addEmbarkingPossibility = false
                                 var embarkingOnPlace = false
+                                
                                 for(var k=0;k<path.path.length-1;k++){
                                     
                                     if(unitAttackStrength2 <= 0)
@@ -5278,6 +5309,7 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                 }*/
                                 
                             }
+                            if(action.somethingAlong)
                             if(action.type == 'stay' || action.type == 'build' || (unit.actions[0].type != 'move'/* && unit.actions[0].il < unit.il-10*/ && j == 0)){
                                 for(var t = 0;t<MAX_TURNS;t++){
                                     distmap.realtocome[t][unit.d] -= -Number(unitDefenseStrength)
@@ -5687,6 +5719,7 @@ function legalActions(dm,simplifieddistmaps){
                                 }
                             }
                         }
+                        var somethingAlong = thereIsSomethingAlongThePath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
                         
                         var frontline = hex.hex.dru != -1 && hex.hex.dru != kolej ? getFrontLine(distmap.hex.x,distmap.hex.y,unit,ruchk,rucho) : null
                         
@@ -5696,9 +5729,9 @@ function legalActions(dm,simplifieddistmaps){
                         if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,ruchk,rucho)){
                             var lnp = leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
                             if(frontline == undefined || true){
-                                unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:lnp,embarking:embarking,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk,rucho)*/}])
+                                unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:lnp,embarking:embarking,somethingAlong:somethingAlong,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk,rucho)*/}])
                                 if(unit.il > 10 && distmap.hex.units.length <= 3)
-                                    unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:lnp,embarking:embarking,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk,rucho)*/}])
+                                    unit.legalActions.push([{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:lnp,embarking:embarking,somethingAlong:somethingAlong,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk,rucho)*/}])
                                 //if(unit.il > 20 && distmap.hex.units.length <= 2 && distmap.frontline)
                                 //    unit.legalActions.push([{type:'move',by:'speculation',rucho:rucho,ruchk:ruchk,il:Math.floor(unit.il/2),from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}])
                                 
@@ -5714,6 +5747,9 @@ function legalActions(dm,simplifieddistmaps){
                                             
                                             var lp = leadPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)
                                             var embarking2 = embarkingPointFromLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)
+                                            
+                                            var somethingAlong2 = thereIsSomethingAlongThePath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)
+
                                             /*
                                             if(embarking2 != null){
                                                 var kod = embarking2.x + '#' + embarking2.y
@@ -5726,12 +5762,12 @@ function legalActions(dm,simplifieddistmaps){
                                             var ds = distance(lnp[0],lnp[1],hex.hex.x,hex.hex.y)
                                             if(ds != undefined && ds <= zas[unit.rodz] && turnPrediction < 2 && rucho2.length+1 <= szy[unit.rodz]){
                                                 unit.legalActions.push([
-                                                    {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)*/},  //not a real situation, but it solves some problem
+                                                    {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2,somethingAlong:somethingAlong2,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)*/},  //not a real situation, but it solves some problem
                                                     {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,destination:[hex.hex.x,hex.hex.y],hex_x:hex.hex.x,hex_y:hex.hex.y},
                                                 ])
                                                 if(unit.il > 10 && distmap.hex.units.length <= 3)
                                                     unit.legalActions.push([
-                                                        {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)*/},
+                                                        {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il-10,from:[distmap.hex.x,distmap.hex.y],destination:[hex.hex.x,hex.hex.y],embarking:embarking2,somethingAlong:somethingAlong2,distant:false,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)*/},
                                                         {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il-10,destination:[hex.hex.x,hex.hex.y],hex_x:hex.hex.x,hex_y:hex.hex.y},
                                                     ])
                                             }
@@ -5846,9 +5882,21 @@ function legalActions(dm,simplifieddistmaps){
                         var il = distmap.hex.units.length <= 1 ? unit.il-10 : unit.il
                         //if(il < 10)
                         //    continue
-                        var move = [{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho),embarking:null,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)}]
+                        var leadedPath = getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
+                        var move = [{type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il,from:[distmap.hex.x,distmap.hex.y],destination:leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho),embarking:null,somethingAlong:true,leadedPath:leadedPath}]
                         
+                        var olej = false
+                        for(var l in leadedPath){
+                            var koi = leadedPath[l].x+'#'+leadedPath[l].y
+                            if(koi in distmaps && distmaps[koi].hex.dru != kolej){
+                                olej = true
+                            }
+                        }
+                        if(olej)
+                            continue
+                            
                         var turn = rucho.length / szy[unit.rodz]
+                        
                         
                         var pemb = {distmap:key, dru:unit.d, embarking:hexkey, unitIndex:j, turn:turn, move:move}
                         
@@ -6930,6 +6978,9 @@ function tryRemoveUnnecessaryPaths(dm,color,embarkingTargets){
                     
                     if(!onland && heks[lastx][lasty].z == -1 && heks[hx.x][hx.y].z != -1)
                         onland = true
+                }
+                if(unit.actions.length > 0 && szyt[unit.rodz] == 'w' && zast[unit.rodz] == 'x' && hx.undr != unit.d && hx != -1){
+                    oks = false
                 }
                     
                 if(k >= 0 && /*j < path.path.length-1 && */heks[hx.x][hx.y].unp > 3 && heks[hx.x][hx.y].undr == kolej){
