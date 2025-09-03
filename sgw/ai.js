@@ -424,7 +424,9 @@ function aimachine(ailevel){
             evaluate(dfrou,dfrouEmbarkingTargets)
             
             legalActions(dfrou,simplifieddistmaps)
-            ulepszyns = 9
+            iterations = 0
+            orig_ulepszyns = 5
+            ulepszyns = orig_ulepszyns
             aistan = 1.15
             //distmap = aidistmap()
             //checkDistmapDistance(distmap)
@@ -1182,8 +1184,8 @@ function aimachine(ailevel){
             }*/
             //console.log('pt',possible_targets)
 
-            
-            legalActions(dfrou,simplifieddistmaps)
+            if(iterations == 0)
+                legalActions(dfrou,simplifieddistmaps)
             tryMakeDestinationMap(dfrou,kolej,allowPaths)
             
             destinies = prepareAllDestinies(dfrou)
@@ -1229,6 +1231,7 @@ function aimachine(ailevel){
                     
                     //legalActions(dfrou)
                     aistan = 1.2
+                    iterations++
                 } else {
                     dfrou = dbetter
                     dfrouEmbarkingTargets = getEmbarkingTargets(dfrou,kolej)
@@ -1555,7 +1558,7 @@ function aimachine(ailevel){
         case 1.34:
             var cele_tratw = {}
             
-            legalActions(dfrou,simplifieddistmaps)
+            //legalActions(dfrou,simplifieddistmaps)
 
             for(var key in dfrou.distmaps){
                 var distmap = dfrou.distmaps[key]
@@ -5294,10 +5297,10 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                         if(zas[unit.rodz] > 1){
                                             attak -= -str * (Math.pow(0.85,(t - movingDelay)))//Math.min(1.5,t-movingDelay+1)
                                         } else if(t == movingDelay) {
-                                            attak -= -str/2//Math.min(1.5,t-movingDelay+1)
-                                        } else if(t == movingDelay+1){
+                                            attak -= -str//2//Math.min(1.5,t-movingDelay+1)
+                                        }// else if(t == movingDelay+1){
                                             attak -= -str/2
-                                        }
+                                        //}
                                         str = Math.max(0,str-def/2)
                                         distmaps[code3].realtocome[t][unit.d] -= -attak
                                     }
@@ -5615,14 +5618,15 @@ function legalActions(dm,simplifieddistmaps){
         //    continue
        
        distmap.potentialEmbarkings.length = 0
-       for(var movement_type in distmap.maps){
+       
+       /*for(var movement_type in distmap.maps){
             var map_of_movement_type = distmap.maps[movement_type].hexmap
 
             //var hexesToCheck = map_of_movement_type.filter(x => x.hex.z > 0 || x.hex.units.length > 0)
             
-            var range_map_of_movement_type = distmap.maps[movement_type].rangemap
+            //var range_map_of_movement_type = distmap.maps[movement_type].rangemap
 
-            var range_hexesToCheck = range_map_of_movement_type.filter(x => x.hex.units.length > 0)
+            //var range_hexesToCheck = range_map_of_movement_type.filter(x => x.hex.units.length > 0)
 
             /*
             var unitDistDict = {}
@@ -5630,12 +5634,12 @@ function legalActions(dm,simplifieddistmaps){
                 var elem = map_of_movement_type[i]
                 unitDistDict[elem.hex.x+'#'+elem.hex.y] = elem
             }*/
-            for(var j in distmap.hex.units){
-                var unit = distmap.hex.units[j]
-                
-                unit.legalActions.length = 0
-            }
-       }
+       //}
+        for(var j in distmap.hex.units){
+            var unit = distmap.hex.units[j]
+            
+            unit.legalActions = []
+        }
     }
     /*
     for(var i = 0;i<scian;i++){
@@ -5662,11 +5666,11 @@ function legalActions(dm,simplifieddistmaps){
 
             var mapmapmap = mapmap(map_of_movement_type,'hex')
             
-            var hexesToCheck = map_of_movement_type//.filter(x => x)
+            var hexesToCheck = map_of_movement_type.filter(a => (a.hex.x+'#'+a.hex.y in potar2))
             
             var range_map_of_movement_type = distmap.maps[movement_type].rangemap
 
-            var range_hexesToCheck = range_map_of_movement_type//.filter(x => x.hex.units.length > 0)
+            var range_hexesToCheck = range_map_of_movement_type.filter(a => (a.hex.x+'#'+a.hex.y in potar2))
 
             /*
             var unitDistDict = {}
@@ -5684,9 +5688,9 @@ function legalActions(dm,simplifieddistmaps){
                     var hex = hexesToCheck[i]
                     var hexkey = hex.hex.x + '#' + hex.hex.y
                     
-                    if(potar != undefined && !(hexkey in potar2)){
-                        continue
-                    }
+                    //if(potar != undefined && !(hexkey in potar2)/* && !(hexkey in realSfKeys)*/){
+                    //    continue
+                    //}
                     /*==
                     if(!(key in simplifieddistmaps && hexkey in simplifieddistmaps[key]))
                         continue
