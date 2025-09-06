@@ -34,6 +34,19 @@ const tutorialWinning = {
 	lekcja8: {method:'positions-taken'},
 	lekcja9: {method:'positions-taken-and-enemy-removed'},
 }
+function nazwyLekcji(lekcja){
+	switch(lekcja){
+		case 'lekcja1':return languagewise({pl:'Poruszanie oddziałów',en:'Moving units'})
+		case 'lekcja2':return languagewise({pl:'Dzielenie i łączenie oddziałów',en:'Dividing and merging units'})
+		case 'lekcja3':return languagewise({pl:'Oddziały wodne i desant',en:'Marine units and landing operations'})
+		case 'lekcja4':return languagewise({pl:'Miasta i budowa oddziałów',en:'Towns and building units'})
+		case 'lekcja5':return languagewise({pl:'Atakowanie oddziałów nieprzyjaciela',en:'Attacking units of the opponent'})
+		case 'lekcja6':return languagewise({pl:'Desant',en:'Landing operation'})
+		case 'lekcja7':return languagewise({pl:'Podatki i przemysł',en:'Taxes and industry'})
+		case 'lekcja8':return languagewise({pl:'Oddziały saperskie',en:'Engineering units'})
+		case 'lekcja9':return languagewise({pl:'Oddziały lotnicze',en:'Airforce'})
+	}
+}
 
 function setTutorial(value){
 	var selectedValue = value ? value : document.getElementById('select-tutorial').value

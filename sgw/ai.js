@@ -425,7 +425,7 @@ function aimachine(ailevel){
             
             legalActions(dfrou,simplifieddistmaps)
             iterations = 0
-            orig_ulepszyns = 5
+            orig_ulepszyns = 9
             ulepszyns = orig_ulepszyns
             aistan = 1.15
             //distmap = aidistmap()
@@ -1287,6 +1287,7 @@ function aimachine(ailevel){
                     
                     if(dbetter == null)
                         dbetter = newDistmap
+                    
                     var maxBetter = 0
                     var minBetter = 0
                     
@@ -1385,6 +1386,7 @@ function aimachine(ailevel){
             usedvvals = {}
             aistan = 1.331
             //aistan=1.34
+            legalActions(dfrou,simplifieddistmaps)
             dbetter = copyDistmaps(dfrou)
             break
         case 1.331:
@@ -1392,7 +1394,6 @@ function aimachine(ailevel){
             dbetter = copyDistmaps(dfrou)
             
 
-            
             farFromFront = []
 
             tryMakeDestinationMap(dbetter,kolej,allowPaths)
@@ -1483,7 +1484,7 @@ function aimachine(ailevel){
 
                                 //var oldaction = dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions
                                 newaction.somethingAlong = false
-                                dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions = newaction
+                                dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions = newaction.map(x=>Object.assign(new Object(),x))
                                 //evaluate(dnew)
                                 
                                 //var score_2 = scoreOfBehinds(dnew,kolej,behind_score)
@@ -1547,8 +1548,10 @@ function aimachine(ailevel){
                         var unit = distmap.hex.units[i]
                         for(var j in unit.actions){
                             var action = unit.actions[j]
-                            if(action.by == 'speculation2')
-                                action.by = 'speculation'
+                            if(action.by == 'speculation2'){
+                                unit.actions[j] = Object.assign({},action)
+                                unit.actions[j].by = 'speculation'
+                            }
                         }
                     }
                 }
@@ -1951,7 +1954,7 @@ function aimachine(ailevel){
                                         if(!(lepakod in alreadyDestination)){
                                             var action = {type:'move',by:'speculation2',rucho:rucho,ruchk:ruchk,il:unit.il-additil,from:[distmap.hex.x,distmap.hex.y],destination:lepa,somethingAlong:true,leadedPath:getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk,rucho)*/}
 
-                                            unit.actions = [ action ]
+                                            unit.actions = [ action ].map(x=>Object.assign(new Object(),x))
                                         }
                                     }
                                 }
@@ -4359,32 +4362,44 @@ function copyDict(dict){
     return newDict
 }
 class UnitAction extends Copyable {
-    constructor(unit,hex){
+    constructor(unit){
         super(['d','il','id','rodz','ata','atakt','celd','celu','ruchk','ruchy','rucho','zalad','rozb','kolor','szy','szyt','atakt'])
         
-        //this.unit = unit
+        this.unit = unit
         this.setFields(this.getFields(unit))
-        this.actions = []   //np. {type:'przenies',size:'10',x:4,y:6}
-        this.legalActions = []
-        if(unit.actions != undefined){
-            this.actions = unit.actions.map(dict => copyDict(dict))
-            this.legalActions = unit.legalActions.map(array => array.map(dict => copyDict(dict)))
-        } else {
-            if(this.ruchy > 0){
-                var rucho = this.rucho.slice(0,this.ruchy)
-                var ruchk = this.ruchk.slice(0,this.ruchy)
-                this.actions.push({type:'move',by:'real',rucho:rucho,ruchk:ruchk,il:unit.il,from:[hex.x,hex.y],destination:leadPath(hex.x,hex.y,ruchk,rucho),embarking:embarkingPointFromLeadedPath(hex.x,hex.y,ruchk,rucho),somethingAlong:thereIsSomethingAlongThePath(hex.x,hex.y,ruchk,rucho),distant:false,leadedPath:getLeadedPath(hex.x,hex.y,ruchk,rucho)/*,collisional:isPathCollisional(hex.x,hex.y,ruchk,rucho)*/})
-            }
-            if(this.celu != -1 && this.celd in unix){
-                var aimedunit = unix[this.celd][this.celu]
-                this.actions.push({type:'aim',by:'real',celu:this.celu,celd:this.celd,hex_x:aimedunit.x,hex_y:aimedunit.y,kolor:this.kolor,distant:false})
-            }
-            if(this.rozb > 0){
-                this.actions.push({type:'build',by:'real',size:this.rozb,distant:false})
-            }
-            
-        }
     }
+}
+function newUnitAction(unit,hex){
+    var newunit = new UnitAction(unit)
+    
+    newunit.actions = []   //np. {type:'przenies',size:'10',x:4,y:6}
+    newunit.legalActions = []
+    if(unit.actions != undefined){
+        newunit.actions = unit.actions.map(dict => copyDict(dict))
+        newunit.legalActions = unit.legalActions.map(array => array.map(dict => copyDict(dict)))
+    } else {
+        if(newunit.ruchy > 0){
+            var rucho = newunit.rucho.slice(0,newunit.ruchy)
+            var ruchk = newunit.ruchk.slice(0,newunit.ruchy)
+            newunit.actions.push({type:'move',by:'real',rucho:rucho,ruchk:ruchk,il:unit.il,from:[hex.x,hex.y],destination:leadPath(hex.x,hex.y,ruchk,rucho),embarking:embarkingPointFromLeadedPath(hex.x,hex.y,ruchk,rucho),somethingAlong:thereIsSomethingAlongThePath(hex.x,hex.y,ruchk,rucho),distant:false,leadedPath:getLeadedPath(hex.x,hex.y,ruchk,rucho)/*,collisional:isPathCollisional(hex.x,hex.y,ruchk,rucho)*/})
+        }
+        if(newunit.celu != -1 && newunit.celd in unix){
+            var aimedunit = unix[newunit.celd][newunit.celu]
+            newunit.actions.push({type:'aim',by:'real',celu:newunit.celu,celd:newunit.celd,hex_x:aimedunit.x,hex_y:aimedunit.y,kolor:newunit.kolor,distant:false})
+        }
+        if(newunit.rozb > 0){
+            newunit.actions.push({type:'build',by:'real',size:newunit.rozb,distant:false})
+        }
+        
+    }
+    return newunit
+}
+function copyUnitAction(unitaction,hex){
+    var newunitaction = new UnitAction(unitaction.unit,hex)
+    
+    newunitaction.actions = unitaction.actions.slice()
+    newunitaction.legalActions = unitaction.legalActions
+    return newunitaction
 }
 function leadPath(x,y,ruchk,rucho,stopBefore){
     var he = heks[x][y]
@@ -4527,7 +4542,6 @@ function pathIsThroughCrowdedCity(dm,x,y,ruchk,rucho,unitAttackStrength,unit){
 class BoardHex extends Copyable {
     constructor(x,y,oldheks){
         super(['z','hutn','prod','zpl','hutnpl','prodpl','kasy','stali','zmiana'])
-        
         this.x = x
         this.y = y
         this.heks = heks[x][y]
@@ -4540,7 +4554,7 @@ class BoardHex extends Copyable {
                 var unit = oldheks.units[i]
                 if(unit.x == -1)
                     continue
-                this.units.push(new UnitAction(unit,this.heks))
+                this.units.push(copyUnitAction(unit,this.heks))
             }
             //this.border = oldheks.border.slice().map(x=>x == null ? null : x.slice())
         } else {
@@ -4549,10 +4563,13 @@ class BoardHex extends Copyable {
                 var unit = unix[this.heks.undr][this.heks.unt[i]]
                 if(unit.x == -1)
                     continue
-                this.units.push(new UnitAction(unit,this.heks))
+                this.units.push(newUnitAction(unit,this.heks))
             }
             //this.border = this.heks.border.map(x=>x == null ? null : [x.x,x.y])
         }
+    }
+    selfCopy(){
+        
     }
 }
 function mapToModel(){
@@ -4589,7 +4606,16 @@ function copyModel(model){
     for(var i = 0;i<scian;i++){
         newBoard[i] = []
         for(var j = 0;j<scian;j++){
-            newBoard[i][j] = new BoardHex(i,j,board[i][j])
+            if(board[i][j].units.length > 0){
+                newBoard[i][j] = new BoardHex(i,j,board[i][j])
+            } else {
+                newBoard[i][j] = board[i][j]
+            }
+            /*var units = newBoard[i][j].units
+            for(var k in units){
+                units[k].legalActions = board[i][j].units[k].legalActions
+                units[k].actions = board[i][j].units[k].actions
+            }*/
         }
     }
     for(var i = 0;i<scian;i++){
@@ -4637,7 +4663,7 @@ function copyDistmaps(dm){
             //var unit = bhex.units[j]
             //var szybt = szyt[unit.rodz]
             //if(!(szybt in newDistmaps[code].maps)){
-                newDistmaps[code].maps[szybt] = {hexmap:/*copyHexdistmap(distmaps[code].maps[szybt].hexmap,board)*/distmaps[code].maps[szybt].hexmap, rangemap:/*copyHexrangemap(distmaps[code].maps[szybt].rangemap,board)*/distmaps[code].maps[szybt].rangemap}    
+                newDistmaps[code].maps[szybt] = {hexmap:/*copyHexdistmap(distmaps[code].maps[szybt].hexmap,board)*/distmaps[code].maps[szybt].hexmap, rangemap:/*copyHexrangemap(distmaps[code].maps[szybt].rangemap,board)*/distmaps[code].maps[szybt].rangemap,hexmapmap:distmaps[code].maps[szybt].hexmapmap,rangemapmap:distmaps[code].maps[szybt].rangemapmap}    
                 /*
                 for(var ks in newDistmaps[code].maps[szybt].hexmap){
                     
@@ -4685,15 +4711,22 @@ function distmapsFromUnit(){
             
             if(!(szybt in distmaps[code])){
                 distmaps[code].maps[szybt] = {hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w' || szybt == 'x',szybt == 'g',szybt == 'l',szybt == 'c',szybt == 'x',szybt == 'm',board),rangemap:hexrangemap(bhex.x,bhex.y,szybt == 'w' || szybt == 'x',szybt == 'g',szybt == 'l',szybt == 'c',board)}
+                //distmaps[code].maps[szybt].hexmapmap = mapmap(distmaps[code].maps[szybt].hexmap,'hex')
+                //distmaps[code].maps[szybt].rangemapmap = mapmap(distmaps[code].maps[szybt].rangemap,'hex')
+
             }
             
         }
         
         if(!('w' in distmaps[code].maps) && (heks[coord[0]][coord[1]].z == -1 || heks[coord[0]][coord[1]].z > 0)){
             distmaps[code].maps['w'] = {hexmap:hexdistmap(bhex.x,bhex.y,true,false,false,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,true,false,false,false,board)}
+            //distmaps[code].maps['w'].hexmapmap = mapmap(distmaps[code].maps['w'].hexmap,'hex')
+            //distmaps[code].maps['w'].rangemapmap = mapmap(distmaps[code].maps['w'].rangemap,'hex')
         }
         if(!('n' in distmaps[code].maps)){
             distmaps[code].maps['n'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,false,false,false,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,false,false,false,board)}
+            //distmaps[code].maps['n'].hexmapmap = mapmap(distmaps[code].maps['n'].hexmap,'hex')
+            //distmaps[code].maps['n'].rangemapmap = mapmap(distmaps[code].maps['n'].rangemap,'hex')
         }/*
         if(distmaps[code].maps['c'] == undefined){
             distmaps[code].maps['c'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,false,false,true,board),rangemap:hexrangemap(bhex.x,bhex.y,false,false,false,true,board)}
@@ -4704,6 +4737,16 @@ function distmapsFromUnit(){
         if(distmaps[code].maps['g'] == undefined){
             distmaps[code].maps['g'] = {hexmap:hexdistmap(bhex.x,bhex.y,false,true,false,false,board),rangemap:hexrangemap(bhex.x,bhex.y,false,true,false,false,board)}
         }*/
+    }
+    for(var i in hexesWithUnits){
+        var coord = hexesWithUnits[i]
+        var bhex = board[coord[0]][coord[1]]
+        var code = coord[0]+'#'+coord[1]
+        //distmaps[code] = {maps:{}, hex:bhex, potentialEmbarkings:[], realtocome:[], defence:[],alliegance:allTurns(),fromenemy:allMoves(),fromally:allMoves(),frontline:false}
+        for(var szybt in distmaps[code].maps){
+            distmaps[code].maps[szybt].hexmapmap = mapmap(distmaps[code].maps[szybt].hexmap,'hex')
+            distmaps[code].maps[szybt].rangemapmap = mapmap(distmaps[code].maps[szybt].rangemap,'hex')
+        }
     }
     /*
     for(var code in distmaps){
@@ -5648,11 +5691,12 @@ function legalActions(dm,simplifieddistmaps){
         }
     }*/
     
+    /*
     var potar = window.possible_targets != undefined ? possible_targets.map(a=>a.hex.x+'#'+a.hex.y) : null
     var potar2 = {}
     for(var i in potar){
         potar2[potar[i]] = true
-    }
+    }*/
     
     var possibleEmbarkings = allColorTables()
     for(var key in distmaps){
@@ -5664,13 +5708,13 @@ function legalActions(dm,simplifieddistmaps){
        for(var movement_type in distmap.maps){
             var map_of_movement_type = distmap.maps[movement_type].hexmap
 
-            var mapmapmap = mapmap(map_of_movement_type,'hex')
+            var mapmapmap = distmap.maps[movement_type].hexmapmap//mapmap(map_of_movement_type,'hex')
             
-            var hexesToCheck = map_of_movement_type.filter(a => (a.hex.x+'#'+a.hex.y in potar2))
+            var hexesToCheck = map_of_movement_type//.filter(a => (a.hex.x+'#'+a.hex.y in potar2))
             
             var range_map_of_movement_type = distmap.maps[movement_type].rangemap
 
-            var range_hexesToCheck = range_map_of_movement_type.filter(a => (a.hex.x+'#'+a.hex.y in potar2))
+            var range_hexesToCheck = range_map_of_movement_type//.filter(a => (a.hex.x+'#'+a.hex.y in potar2))
 
             /*
             var unitDistDict = {}
@@ -5686,7 +5730,6 @@ function legalActions(dm,simplifieddistmaps){
                     
                 for(var i in hexesToCheck){
                     var hex = hexesToCheck[i]
-                    var hexkey = hex.hex.x + '#' + hex.hex.y
                     
                     //if(potar != undefined && !(hexkey in potar2)/* && !(hexkey in realSfKeys)*/){
                     //    continue
@@ -5697,6 +5740,8 @@ function legalActions(dm,simplifieddistmaps){
                     */
                     if(hex.hex.units.length == 0 && hex.hex.z <= 0 && (hex.from == null || !(hex.hex.z == -1 && hex.from.z != -1)))
                         continue
+                        
+                    var hexkey = hex.hex.x + '#' + hex.hex.y
                     
                     //if(!distmaps[hexkey].frontline)
                     //    continue
@@ -5849,7 +5894,7 @@ function legalActions(dm,simplifieddistmaps){
             
         var map_of_movement_type = distmap.maps['x'].hexmap
 
-        var mapmapmap = mapmap(map_of_movement_type,'hex')
+        var mapmapmap = distmap.maps['x'].hexmapmap//mapmap(map_of_movement_type,'hex')
         
         var hexesToCheck = map_of_movement_type//.filter(x => x)
         
@@ -6585,7 +6630,6 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
                     //|| ((x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1)
             || (x.unit.actions[0].type == 'move' && x.action[0].type != 'aim' && x.unit.actions[0].by != 'speculation2' &&
                  (/*x.action[0].type != 'move' || */(/*x.unit.actions[0].rucho.length < szy[x.unit.rodz] || */x.unit.actions[0].rucho.length > x.action[0].rucho.length || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].z <= 0 || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].undr == kolej)))
-                    
             )
         )
     //console.log(interestingUnits.map(a => new Object({type:a.action[0].type,by:a.action[0].by,rucho:a.action[0].type == 'move' ? a.action[0].rucho.length : null})))
@@ -6703,14 +6747,14 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
         }
         var value = valuesByTime.reduce((a,b) => a+b, 0)
         
-        unitaction.unit.actions = unitaction.action
+        unitaction.unit.actions = unitaction.action.map(x=>Object.assign(new Object(),x))
         //addAllDestinies(dm,alreadyAttacking)
         //console.log('bz',unitaction.action)
         
         if(unitaction.action[0].embarking != null){
             var obj = addEmbarking(unitaction,embarkingTargets,distmaps,hexcod,dm,oldActionArrayUnits,oldActionArrayActions,addedEmbarkigns,bark,oldEmbarkingCode,oldEmbarkingAction)
             if(obj == null){
-                unitaction.unit.actions = oldaction
+                unitaction.unit.actions = oldaction.map(x=>Object.assign(new Object(),x))
                 continue
             } else {
                 bark = obj.bark
@@ -6781,7 +6825,7 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
             //if(value2 < value){
             if(value2 < value/* || score2 < score1 && value2 <= value/* || lost*/){
             console.log('ech2')
-                unitaction.unit.actions = oldaction
+                unitaction.unit.actions = oldaction.map(x=>Object.assign(new Object(),x))
                 if(bark != null){
                     bark.actions = oldEmbarkingAction
                     embarkingTargets[oldEmbarkingCode]--
@@ -6807,7 +6851,7 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
     if(value2 == undefined || score2 <= score1 && !(value2 > value1 && score2 == score1)/* || lost*/){
         console.log('ech3',value2,value,color)
         for(var i in oldActionArrayUnits){
-            oldActionArrayUnits[i].actions = oldActionArrayActions[i]
+            oldActionArrayUnits[i].actions = oldActionArrayActions[i].map(x=>Object.assign(new Object(),x))
         }
         
         Object.assign(embarkingTargets,oldEmbarkingTargets)
@@ -6885,7 +6929,7 @@ function addEmbarking(unitaction,embarkingTargets,distmaps,hexcod,dm,oldActionAr
         bark = dm.distmaps[betterEmbarkings[0].distmap].hex.units[betterEmbarkings[0].unitIndex]
         oldEmbarkingAction = bark.actions
         oldEmbarkingCode = embarkingcode
-        bark.actions = betterEmbarkings[0].move
+        bark.actions = betterEmbarkings[0].move.map(x=>Object.assign(new Object(),x))
         //if(oldEmbarkingAction == undefined)
         //    console.log('added')
         betterEmbarkings[0].move.il = unitaction.action[0].il

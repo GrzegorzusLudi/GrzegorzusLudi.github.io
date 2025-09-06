@@ -737,9 +737,12 @@ function changeState(newState){
 			}
 		}
 		
-		document.getElementById('tutorial-lekcja').innerHTML = lekcjaTutoriala.slice(6)+'/'+Object.values(tutorialWinning).length
+		document.getElementById('tutorial-lekcja').innerHTML = lekcjaTutoriala.slice(6)+'/'+Object.values(tutorialWinning).length + '<br/><p>'+nazwyLekcji(lekcjaTutoriala)+'</p>'
+		document.getElementById('mountPercentageInputa').style.width = '1340px'
 	} else {
 		document.getElementById('tutorial').style.display = 'none'
+		document.getElementById('mountPercentageInputa').style.width = '1075px'
+
 	}
 	if((stan>=1 || stan == -2) && newState==2){
 		for(var i = 0;i<12;i++){

@@ -108,7 +108,8 @@ input[type=range]::-moz-range-thumb {
 	overflow-y:scroll;
 }
 #mountPercentageInputa {
-	float: left
+	float: left;
+	width:1340px;
 }
 h3 {
 	margin: 10px 10px -10px 10px
@@ -193,6 +194,11 @@ p {
 .flaga:hover {
   border:3px solid yellow;
 }
+#nazwamisji {
+  position:absolute;
+  top:60px;
+  width:190px;
+}
 </style>
 </head>
 <body onload="initialize(0);terrainChooseDraw();teamChooseDraw();unitChoiceDraw();unitDivisionDraw();anim()">
@@ -212,11 +218,17 @@ p {
       <div style="height:60px">
         <h3>{pl|KAMPANIA|en|CAMPAIGN}</h3>
       </div>
+      <div>
+        <p>
+          <span id="nazwamisji"></span>
+        </p>
+      </div>
       <div id="controlfield">
         <div id="controltitle">{pl|Misje|en|Missions}</div>
+        
         <div id="controlfieldin">
          <div class="scrollable">
-          <canvas width="220px" height="850px" id="campaignChooseCanvas"  onclick="gmp(campaignChooseCanvas,event);campaignChooseCanvasClick();" onmousemove="gmp(campaignChooseCanvas,event);campaignChooseCanvasMove();" onmouseout="campaignChooseCanvasNumber = -1;campaignChooseCanvasDraw();"></canvas>
+          <canvas width="220px" height="920px" id="campaignChooseCanvas"  onclick="gmp(campaignChooseCanvas,event);campaignChooseCanvasClick();" onmousemove="gmp(campaignChooseCanvas,event);campaignChooseCanvasMove();" onmouseout="campaignChooseCanvasNumber = -1;campaignChooseCanvasDraw();"></canvas>
          </div>
         </div>
       </div>
