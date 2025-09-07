@@ -3730,8 +3730,17 @@ function changeScreenWidth(w){
 	}*/
 	prawo.style.height = w+"px"
 	tutorial.style.height = w+"px"
+	changeMountPercentageInputa()
 	ctx=mainCanvas.getContext("2d");
 	redraw(true);
+}
+function changeMountPercentageInputa(){
+	var width = mainCanvas.width
+	if(tutorial){
+		document.getElementById('mountPercentageInputa').style.width = (540+Number(width))+'px'
+	} else {
+		document.getElementById('mountPercentageInputa').style.width = (275+Number(width))+'px'
+	}
 }
 function makeTaxPath(){
 	if(zaznx>-1){

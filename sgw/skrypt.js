@@ -738,10 +738,10 @@ function changeState(newState){
 		}
 		
 		document.getElementById('tutorial-lekcja').innerHTML = lekcjaTutoriala.slice(6)+'/'+Object.values(tutorialWinning).length + '<br/><p>'+nazwyLekcji(lekcjaTutoriala)+'</p>'
-		document.getElementById('mountPercentageInputa').style.width = '1340px'
+		changeMountPercentageInputa()
 	} else {
 		document.getElementById('tutorial').style.display = 'none'
-		document.getElementById('mountPercentageInputa').style.width = '1075px'
+		changeMountPercentageInputa()
 
 	}
 	if((stan>=1 || stan == -2) && newState==2){
