@@ -442,8 +442,8 @@ function aimachine(ailevel){
                 inaccessible_path[i] = {}
                 for(var j = 0;j<scian;j++){
                     inaccessible_path[i][j] = {x:i,y:j,inaccessible:true,coast:-1}
-                    if(ulepszyns == 3)
-                    heks[i][j].test = ""
+                    //if(ulepszyns == 3)
+                    //heks[i][j].test = ""
                 }
             }
             
@@ -948,7 +948,7 @@ function aimachine(ailevel){
             var sfkeys = []
             for(var mountainous = false, swicz = false;!swicz;swicz = mountainous,mountainous = true){
                 for(var key in strictly_forward[mountainous]){
-                    heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
+                    //heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
                     sfkeys.push({hex:strictly_forward[mountainous][key].hex, key:key, score:strictly_forward[mountainous][key].value})
                     if(!(key in realSfKeys))
                         realSfKeys[key] = {hex:strictly_forward[mountainous][key].hex, distTable:allColorTables(), maxPlayer: -1, maxPlayerScore: 0, mountainous: mountainous}
@@ -974,7 +974,7 @@ function aimachine(ailevel){
             for(var key in realSfKeys){
                 var sts = realSfKeys[key]
                 
-                heks[sts.hex.x][sts.hex.y].test = 'Q'
+                //heks[sts.hex.x][sts.hex.y].test = 'Q'
             }
              
             allowPaths = {}
@@ -2633,7 +2633,7 @@ function aimachine(ailevel){
 			*/
 			while(checkedunit<oddid[kolej] && unix[kolej][checkedunit].kosz)
 				checkedunit++;
-			if(checkedunit<oddid[kolej]){
+			if(checkedunit<oddid[kolej] && false /*kek*/){
 
 				checkedunit++;
 			} else {
@@ -6063,7 +6063,7 @@ function findWastedLegalActionsWithNoLanding(dfrou,allowPaths,realSfKeys){
         var needsFulfiled = portPotential(empoem.x,empoem.y,false)
         
         var needs = empo.hexes.length * 99
-        heks[empoem.x][empoem.y].test = needsFulfiled + '/' + needs
+        //heks[empoem.x][empoem.y].test = needsFulfiled + '/' + needs
         
         for(var i in empo.hexes){
             var h = empo.hexes[i]
@@ -7401,7 +7401,7 @@ function actionsToReal(dm,color,completely_used_passages){
             if(tratwa > 0 && !bloknia[kolej][8]){
                 //function dodai(unx,uny,ilo,typ,rosn){
                 console.log('tratwa:',tratwa)
-                if(heks[distmap.hex.x][distmap.hex.y].z >= 1){
+                if(heks[distmap.hex.x][distmap.hex.y].z >= 1 && heks[distmap.hex.x][distmap.hex.y].unp >= 4){
                     var kv = -1
                     for(var i = 0;i<distmap.hex.unp;i++){
                         if(unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rodz != 8 && unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].il == 0 && unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rozb > 0){
