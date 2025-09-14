@@ -473,7 +473,7 @@ p {
             <input type="button" value="{pl|PODZIEL|en|DIVIDE}" id="divideButton" onclick="divideUnit(zaznu,unitDivisionValue);" />
             <input type="button" value="{pl|ROZBUDUJ|en|BUILD}" id="expandButton" onclick="expandUnit(zaznu,unitDivisionValue);" />
             <input type="button" value="{pl|ZOSTAW 10|en|LEAVE 10}" onclick="divideUnit(zaznu,10);" />
-            <input type="button" value="{pl|ROZBUDUJ DO 99|en|BUILD UP TO 99}" onclick="expandUnit(zaznu,99);" />
+            <input type="button" value="{pl|ROZBUDUJ DO 99|en|BUILD UP TO 99}" onclick="expandUnit(zaznu,99,true);" />
 
             <canvas width="220px" height="90px" id="unitDivisionCanvas" onclick="gmp(unitDivisionCanvas,event);unitDivisionClick();" onmousemove="gmp(unitDivisionCanvas,event);unitDivisionMove();" onmouseout="unitDivisionHighlight=unitDivisionValue;unitDivisionDraw()"></canvas>
           <div> {pl|Połącz z jednostkami z tego samego hexa|en|Merge with units from the same hex}:<br/>

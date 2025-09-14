@@ -1302,11 +1302,11 @@ function divideUnit(uni,zost,changeTheState){
 	}
 	return -1
 }
-function expandUnit(uni,dost){
+function expandUnit(uni,dost,niezamykaj){
 	var uax,uay;
 	if(bloknia[kolej][unix[kolej][uni].rodz])
 		return
-	if(unix[kolej][uni].rozb==0){
+	if(unix[kolej][uni].rozb==0 || niezamykaj){
 		if(unix[kolej][uni].il<dost){
 			oddroguj(uni,kolej,false);
 			odceluj(uni,kolej);
@@ -2017,7 +2017,7 @@ function atakuj(uni,hek,dru){
 					}
 					ata++;
 				}
-			} else if(unix[kolej][uni].il>=0 && unix[dru][unic].il>=0 && miaruj(unix[dru][unic],unix[kolej][uni],heks[unix[kolej][uni].x][unix[kolej][uni].y],true) && (zas[unix[kolej][uni].rodz]<=zas[unix[dru][unic].rodz])){
+			} else if(unix[kolej][uni].il>=0 && unix[dru][unic].il>=0 && miaruj(unix[dru][unic],unix[kolej][uni],hek/*heks[unix[kolej][uni].x][unix[kolej][uni].y]*/,true) && (zas[unix[kolej][uni].rodz]<=zas[unix[dru][unic].rodz])){
 				att = at[unix[dru][unic].rodz]*dwa*ataz(unix[kolej][uni],unix[dru][unic],"o");
 				obrrr = obrr[unix[kolej][uni].rodz]*ataz(unix[kolej][uni],unix[dru][unic],"a");
 				wak = Math.floor(Math.random()*(att+1))-Math.floor(Math.random()*(obrrr+1));

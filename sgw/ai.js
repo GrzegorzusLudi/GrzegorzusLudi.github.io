@@ -894,7 +894,7 @@ function aimachine(ailevel){
                                     var d2 = chexes[j].dmap[closcode].dist// - curr_hexes[j].dmap[closcode].water*2
                                     var d3 = (chexes[i].dmap[chexes[j].x+'#'+chexes[j].y].dist)// - curr_hexes[i].dmap[curr_hexes[j].x+'#'+curr_hexes[j].y].dist*2
                                     
-                                    var prst = d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)/* && d1 > 3*/ && /*distance(chexes[i].x,chexes[i].y,chexes[j].x,chexes[j].y)*/d2 > 2// && d1-1 > d2
+                                    var prst = d1 > (d2 + d3)*0.7 && !(d2 > (d1 + d3)*0.7)/* && d1 > 3*/ && /*distance(chexes[i].x,chexes[i].y,chexes[j].x,chexes[j].y)*/d2 > 1// && d1-1 > d2
                                     if(prst){
                                         ok2_ = false
                                         i_am_behind[mountainous][d1code].codes.push(d2code)
@@ -2612,6 +2612,7 @@ function aimachine(ailevel){
                                 dodai(mist[kolejność_miast[miastkol]].x,mist[kolejność_miast[miastkol]].y,0,needed,needednum);
                                 odzaz(); 
                             }
+                            
                         //}
                         //mist[kolejność_miast[miastkol]].test = String(Math.max(lad_needs,morze_needs)).split('.')[0]+'/'+String(local_prod).split('.')[0]
                     }
@@ -4833,7 +4834,7 @@ function evalUnitAttack(unit,actions,model,oneaction,path){
 function evalUnitDefense(unit,il){
     if(il == undefined)
         il = unit.il
-    return (at[unit.rodz]+0.001) * (0.5+obrr[unit.rodz]) * exponentiel(il)
+    return (at[unit.rodz]+0.001) * (0.5+obrr[unit.rodz] /** Math.pow(1.4,zas[unit.rodz])*/) * exponentiel(il)
 }
 MAX_TURNS = 10
 MAX_PLAYERS = 12
@@ -5329,7 +5330,7 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                     for(var k in distmaps[code3].hex.units){
                                         var unik = distmaps[code3].hex.units[k]
                                         
-                                        if(zas[unik.rodz] > zas[unit.rodz]){
+                                        if(zas[unik.rodz] >= zas[unit.rodz]){
                                             def -= Number(evalUnitDefense(unik))
                                         }
                                     }
@@ -6629,7 +6630,7 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
             || x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'build'
                     //|| ((x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1)
             || (x.unit.actions[0].type == 'move' && x.action[0].type != 'aim' && x.unit.actions[0].by != 'speculation2' &&
-                 (/*x.action[0].type != 'move' || */(/*x.unit.actions[0].rucho.length < szy[x.unit.rodz] || */x.unit.actions[0].rucho.length > x.action[0].rucho.length || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].z <= 0 || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].undr == kolej)))
+                 (x.action[0].type == 'aim' || (/*x.unit.actions[0].rucho.length < szy[x.unit.rodz] || */x.unit.actions[0].rucho.length > x.action[0].rucho.length/* || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].z <= 0 || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].undr == kolej*/)))
             )
         )
     //console.log(interestingUnits.map(a => new Object({type:a.action[0].type,by:a.action[0].by,rucho:a.action[0].type == 'move' ? a.action[0].rucho.length : null})))
@@ -7401,7 +7402,7 @@ function actionsToReal(dm,color,completely_used_passages){
             if(tratwa > 0 && !bloknia[kolej][8]){
                 //function dodai(unx,uny,ilo,typ,rosn){
                 console.log('tratwa:',tratwa)
-                if(heks[distmap.hex.x][distmap.hex.y].z >= 1 && heks[distmap.hex.x][distmap.hex.y].unp >= 4){
+                if(heks[distmap.hex.x][distmap.hex.y].z >= 1){
                     var kv = -1
                     for(var i = 0;i<distmap.hex.unp;i++){
                         if(unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rodz != 8 && unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].il == 0 && unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rozb > 0){

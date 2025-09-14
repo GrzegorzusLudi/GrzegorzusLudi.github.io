@@ -1445,7 +1445,7 @@ function redrawCanvas(rtx){
 					a++;
 				}
 			}
-      		rtx.fillText(unitMergeChoice, 10, 10);
+      		//rtx.fillText(unitMergeChoice, 10, 10);
 
 		break;
 		case statisticsCanvasCtx:
@@ -3105,6 +3105,7 @@ function createUnitClick(){
 		if(createUnitNumber>=0){
 			dodai(zaznx,zazny,0,createUnitNumber,newUnitSizeRange.value);
 			redrawCanvas(createUnitCanvasCtx);
+			redrawCanvas(unitsInCityCanvasCtx)
 		}
 	}
 }
