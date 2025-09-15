@@ -2372,9 +2372,8 @@ function aimachine(ailevel){
                         mist[kolejność_miast[miastkol]].tasuj()
                     }
                     there_is_possible_coastline = false
-                    if(v>0 || true){
-                        var needed = bloknia[kolej].indexOf(false);		//todo
-                        
+                    var needed = bloknia[kolej].indexOf(false);		//todo
+                    if(needed != -1){
                         var code = mist[kolejność_miast[miastkol]].x+'#'+mist[kolejność_miast[miastkol]].y
                         var dm_lad = dfrou.distmaps[code].maps['n'].hexmap
                         var dm_morze = dfrou.distmaps[code].maps['w'].hexmap
@@ -2460,17 +2459,18 @@ function aimachine(ailevel){
                                         tratwa_needs -= unit.il
                                     }
                                 }
+                                /*
                                 for(var j = 0;j<heks[hks.hex.x][hks.hex.y].unp;j++){
                                     if(zast[unit.rodz] == 'm'){
                                         var unit = unix[kolej][heks[hks.hex.x][hks.hex.y].unt[j]]
                                         if(unit.il+unit.rozb >= 60)
                                             sapper_prod += unit.il+unit.rozb
                                     }
-                                }
+                                }*/
                                 for(var j = 0;j<heks[hks.hex.x][hks.hex.y].unp;j++){
                                     var unigz = unix[kolej][heks[hks.hex.x][hks.hex.y].unt[j]]
                                     if(zast[unigz.rodz] == 'm'){
-                                        if(unit.il+unit.rozb >= 60)
+                                        if(unigz.il+unigz.rozb >= 60)
                                             sapper_prod += unigz.il+unigz.rozb
                                     }
                                 }
