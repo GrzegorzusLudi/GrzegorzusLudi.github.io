@@ -948,7 +948,7 @@ function aimachine(ailevel){
             var sfkeys = []
             for(var mountainous = false, swicz = false;!swicz;swicz = mountainous,mountainous = true){
                 for(var key in strictly_forward[mountainous]){
-                    //heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
+                    heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
                     sfkeys.push({hex:strictly_forward[mountainous][key].hex, key:key, score:strictly_forward[mountainous][key].value})
                     if(!(key in realSfKeys))
                         realSfKeys[key] = {hex:strictly_forward[mountainous][key].hex, distTable:allColorTables(), maxPlayer: -1, maxPlayerScore: 0, mountainous: mountainous}
@@ -974,7 +974,7 @@ function aimachine(ailevel){
             for(var key in realSfKeys){
                 var sts = realSfKeys[key]
                 
-                //heks[sts.hex.x][sts.hex.y].test = 'Q'
+                heks[sts.hex.x][sts.hex.y].test = 'Q'
             }
              
             allowPaths = {}
@@ -7536,13 +7536,15 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     var ok = true
                     var disttime,disttime2
                     for(var key in realSfKeysOriginal){
-                        //console.log('czyjest',unit.actions[0].destination[0]+'#'+unit.actions[0].destination[1] in dfrou.distmaps)
-                        var disttime = Math.max(0,distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx,udisty)-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz]
-                        var disttime2 = Math.max(0,distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx2,udisty2)-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz]
+                        if(szyt[unit.rodz] != 'c' || heks[realSfKeysOriginal[key].hex.x][realSfKeysOriginal[key].hex.y].z != -2){
+                            //console.log('czyjest',unit.actions[0].destination[0]+'#'+unit.actions[0].destination[1] in dfrou.distmaps)
+                            var disttime = Math.max(0,distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx,udisty)-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz]
+                            var disttime2 = Math.max(0,distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx2,udisty2)-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz]
 
-                        if(disttime < 2 || disttime2-szy[unit.rodz] > disttime && dist > 0/* && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length > 0*/){
-                            ok = false
-                            break
+                            if(disttime < 2 || disttime2-szy[unit.rodz] > disttime && dist > 0/* && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length > 0*/){
+                                ok = false
+                                break
+                            }
                         }
                     }
                     if(!ok){
@@ -7563,13 +7565,14 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                         possibleDestinations[dest] = true
                 }
             }
+            var heavy = szyt[unit.rodz] == 'c'
             var possible = {}
             for(var key1 in realSfKeysOriginal){
                 if(key1 in possibleDestinations){
                     possible[key1] = realSfKeysOriginal[key1]
                     for(var key2 in realSfKeysOriginal){
                         //console.log(key1, key2, dfrou.distmaps[key2].alliegance)
-                        if(key2 in possibleDestinations && (szyt[unit.rodz] != 'c' || (heks[realSfKeysOriginal[key1].hex.x][realSfKeysOriginal[key1].hex.y].z != -2 && heks[realSfKeysOriginal[key2].hex.x][realSfKeysOriginal[key2].hex.y].z != -2)) && key1 != key2 && key2 in dfrou.distmaps/* && dfrou.distmaps[key2].alliegance[MAX_TURNS-1] != -1/* && dfrou.distmaps[fff.code].alliegance[MAX_TURNS-1] != kolej*/){
+                        if(key2 in possibleDestinations && key1 != key2 && key2 in dfrou.distmaps && (szyt[unit.rodz] != 'c' || (heks[realSfKeysOriginal[key1].hex.x][realSfKeysOriginal[key1].hex.y].z != -2 && heks[realSfKeysOriginal[key2].hex.x][realSfKeysOriginal[key2].hex.y].z != -2))/* && dfrou.distmaps[key2].alliegance[MAX_TURNS-1] != -1/* && dfrou.distmaps[fff.code].alliegance[MAX_TURNS-1] != kolej*/){
                             var d1 = distmapsearch(dfrou,fff.code,key1,unit.rodz)
                             var d2 = distmapsearch(dfrou,fff.code,key2,unit.rodz)
                             var d3 = distmapsearch(dfrou,key1,key2,unit.rodz)
@@ -7602,6 +7605,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                     }
                 }
             }*/
+            //console.log('ulega',unit.legalActions)
             for(var j in unit.legalActions){
                 var lac = unit.legalActions[j]
                 if(lac[0].type == 'move' && lac.length == 1 && (lac[0].il < unit.il || !actionil)){
