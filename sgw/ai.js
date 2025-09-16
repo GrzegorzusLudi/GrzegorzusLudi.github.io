@@ -948,7 +948,7 @@ function aimachine(ailevel){
             var sfkeys = []
             for(var mountainous = false, swicz = false;!swicz;swicz = mountainous,mountainous = true){
                 for(var key in strictly_forward[mountainous]){
-                    heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
+                    //heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
                     sfkeys.push({hex:strictly_forward[mountainous][key].hex, key:key, score:strictly_forward[mountainous][key].value})
                     if(!(key in realSfKeys))
                         realSfKeys[key] = {hex:strictly_forward[mountainous][key].hex, distTable:allColorTables(), maxPlayer: -1, maxPlayerScore: 0, mountainous: mountainous}
@@ -974,7 +974,7 @@ function aimachine(ailevel){
             for(var key in realSfKeys){
                 var sts = realSfKeys[key]
                 
-                heks[sts.hex.x][sts.hex.y].test = 'Q'
+                //heks[sts.hex.x][sts.hex.y].test = 'Q'
             }
              
             allowPaths = {}
