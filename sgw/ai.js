@@ -447,6 +447,12 @@ function aimachine(ailevel){
                 }
             }
             
+    
+            for(var i = 0;i<scian;i++){
+                for(var j = 0;j<scian;j++){
+                    heks[i][j].test = ''
+                }
+            }
             
             
             var sidima = {}
@@ -948,7 +954,7 @@ function aimachine(ailevel){
             var sfkeys = []
             for(var mountainous = false, swicz = false;!swicz;swicz = mountainous,mountainous = true){
                 for(var key in strictly_forward[mountainous]){
-                    //heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
+                    heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
                     sfkeys.push({hex:strictly_forward[mountainous][key].hex, key:key, score:strictly_forward[mountainous][key].value})
                     if(!(key in realSfKeys))
                         realSfKeys[key] = {hex:strictly_forward[mountainous][key].hex, distTable:allColorTables(), maxPlayer: -1, maxPlayerScore: 0, mountainous: mountainous}
@@ -974,7 +980,7 @@ function aimachine(ailevel){
             for(var key in realSfKeys){
                 var sts = realSfKeys[key]
                 
-                //heks[sts.hex.x][sts.hex.y].test = 'Q'
+                heks[sts.hex.x][sts.hex.y].test = 'Q'
             }
              
             allowPaths = {}
@@ -1456,7 +1462,15 @@ function aimachine(ailevel){
                                 
                                 if(j > 0 && j < path.path.length-1 && heks[hx.x][hx.y].unp > 3 && heks[hx.x][hx.y].undr == kolej){
                                     oks = false
-                                    break
+                                    for(var k = 0;k<heks[hx.x][hx.y].unp;k++){
+                                        var unitoa = unix[kolej][heks[hx.x][hx.y].unt[k]]
+                                        
+                                        if(unitoa.ruchk.length > 0 && !((unitoa.ruchk[0]+3)%6 == hx.ruchk))
+                                            oks = true
+                                    }
+                                    if(oks == false){
+                                        break
+                                    }
                                 }
                             }
                             if(!oks){
@@ -3275,7 +3289,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                             continue
                         }*/
                         //console.log('disttotown:',disttotown,(disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz])
-                        if((disttotown-Math.max(0,zas[unit.rodz]))/szy[unit.rodz] <= 2){
+                        if((disttotown-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz] <= 2){
                         
                             var ndist = dist + disttotown
                             /*
@@ -4455,7 +4469,7 @@ function getLeadedPath(x,y,ruchk,rucho,stopBefore){
             he = he.border[ruchk[i]]
             if(he == undefined)
                 return undefined
-            leadedPath.push({x:he.x, y:he.y})
+            leadedPath.push({x:he.x, y:he.y,ruchk:ruchk[i]})
         }
     }
     return {x:x,y:y,path:leadedPath}
