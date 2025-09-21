@@ -1388,8 +1388,10 @@ function aimachine(ailevel){
             
             dodawane = 10
             scorenotchanged = 0
-            failedvvals = {}
+            //failedvvals = {}
             usedvvals = {}
+            
+            puadict = {}
             aistan = 1.331
             //aistan=1.34
             legalActions(dfrou,simplifieddistmaps)
@@ -1412,6 +1414,9 @@ function aimachine(ailevel){
 
             
             var embarkingTargets = getEmbarkingTargets(dbetter,kolej)
+            
+            var pUnitActions = tryGetFarUnitsToFront(farFromFront, allowPaths, dbetter, realSfKeys)
+
             for(var i in realSfKeysSorted){
                 usedvvals = {}
                 //if(realSfKeysSorted[i].maxPlayerScore > 5000 && i < realSfKeysSorted.length-1)
@@ -1426,10 +1431,10 @@ function aimachine(ailevel){
                 
                 var sfKey = realSfKeysSorted[i]
                 if(sfKey != undefined && sfKey.hex != undefined){
-                    var newSfKeys = {}
-                    newSfKeys[sfKey.hex.x+'#'+sfKey.hex.y] = sfKey
+                    //var newSfKeys = {}
+                    //newSfKeys[sfKey.hex.x+'#'+sfKey.hex.y] = sfKey
                     //console.log(newSfKeys)
-                    var pUnitActions = tryGetFarUnitsToFront(newSfKeys, farFromFront, allowPaths, dnew, failedvvals, realSfKeys)
+                    //var pUnitActions = tryGetFarUnitsToFront(farFromFront, allowPaths, dnew, realSfKeys)
 
                     var vals = Object.values(pUnitActions)
                     
@@ -1499,6 +1504,10 @@ function aimachine(ailevel){
                                 //var oldaction = dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions
                                 newaction.somethingAlong = false
                                 dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions = newaction.map(x=>Object.assign(new Object(),x))
+
+                                for(var key in pUnitActions){
+                                    pUnitActions[key] = pUnitActions[key].filter(puact => !(puact.unitIx == firstVal.unitIx && puact.hex_from == firstVal.hex_from))
+                                }
                                 //evaluate(dnew)
                                 
                                 //var score_2 = scoreOfBehinds(dnew,kolej,behind_score)
@@ -3146,6 +3155,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
         //if(!(interestingAction == undefined || interestingAction.hex.x+'#'+interestingAction.hex.y == key))
         //    continue
         var distmap = distmaps[key]
+        /*
         var embars = {}
         
         for(var s in distmap.potentialEmbarkings){
@@ -3154,7 +3164,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
             if(!(poe.embarking in embars))
                 embars[poe.embarking] = []
             embars[poe.embarking].push(poe)
-        }
+        }*/
         
         if(distmap.hex.dru == -1){
             continue
@@ -3202,7 +3212,7 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                 }
             }*/
             
-            var infantrytime = {}
+            //var infantrytime = {}
             var sfkeysToAdd = {}
 
             var farFromFrontBool = unit.d == kolej
@@ -3233,9 +3243,9 @@ function prepareDistTable(realSfKeys, farFromFront, allowPaths, dfrou){
                                 //continue
                             }
                             mintime = Math.min(time2,mintime)
-                            if(infantrytime[lade] == null){
+                            /*if(infantrytime[lade] == null){
                                 infantrytime[lade] = Math.ceil(dist/szy[unit.rodz])
-                            }
+                            }*/
                             for(var t = Math.ceil(time);t<MAX_TURNS;t++){
                                 if(!(t in sfkeysToAdd))
                                     sfkeysToAdd[t] = []
@@ -5353,7 +5363,10 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                     console.log('delay',movingDelay)
                                     for(var t = movingDelay;t<MAX_TURNS;t++){
                                         if(zas[unit.rodz] > 1){
-                                            attak -= -str * (Math.pow(0.85,(t - movingDelay)))//Math.min(1.5,t-movingDelay+1)
+                                            if(at[unit.rodz] > 1)   //nieelegancko, ale co tam
+                                                attak -= -str * (Math.pow(0.85,(t - movingDelay)))//Math.min(1.5,t-movingDelay+1)
+                                            else
+                                                attak -= -str * (Math.pow(0.5,(t - movingDelay)))//Math.min(1.5,t-movingDelay+1)
                                         } else if(t == movingDelay) {
                                             attak -= -str//2//Math.min(1.5,t-movingDelay+1)
                                         }// else if(t == movingDelay+1){
@@ -6633,6 +6646,9 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
                     
             )
         )*/
+    
+    
+    
         interestingUnits = interestingUnits.filter(x=>
         (x.action[0].type != 'move'
         
@@ -6643,8 +6659,8 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
             
             || x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'build'
                     //|| ((x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1)
-            || (x.unit.actions[0].type == 'move' && x.action[0].type != 'aim' && x.unit.actions[0].by != 'speculation2' &&
-                 (x.action[0].type == 'aim' || (/*x.unit.actions[0].rucho.length < szy[x.unit.rodz] || */x.unit.actions[0].rucho.length > x.action[0].rucho.length/* || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].z <= 0 || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].undr == kolej*/)))
+            || (x.unit.actions[0].type == 'move' && /*x.action[0].type != 'aim' && */x.unit.actions[0].by != 'speculation2' &&
+                 (x.action[0].type == 'aim' || (/*x.unit.actions[0].rucho.length < szy[x.unit.rodz] || */x.unit.actions[0].rucho.length > x.action[0].rucho.length || (x.unit.actions[0].rucho.length < szy[x.unit.rodz] && x.action[0].rucho.length <= szy[x.unit.rodz] && x.unit.actions[0].by == 'real' && (heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].z <= 0 && heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].unp <= 0)))))
             )
         )
     //console.log(interestingUnits.map(a => new Object({type:a.action[0].type,by:a.action[0].by,rucho:a.action[0].type == 'move' ? a.action[0].rucho.length : null})))
@@ -7453,7 +7469,7 @@ function unitActionDistant(action, unit){
     return time > 2
 }
 
-function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,failedvvals,realSfKeysOriginal){
+function tryGetFarUnitsToFront(farFromFront, allowPaths, dfrou,realSfKeysOriginal){
     
     var fffdict = {}
 //    farFromFront.sort((a,b)=>-a.il/Math.pow(2.1,a.time)+b.il/Math.pow(2.1,b.time))
@@ -7555,7 +7571,7 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                             var disttime = Math.max(0,distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx,udisty)-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz]
                             var disttime2 = Math.max(0,distance(realSfKeysOriginal[key].hex.x,realSfKeysOriginal[key].hex.y,udistx2,udisty2)-Math.max(0,zas[unit.rodz]-1))/szy[unit.rodz]
 
-                            if(disttime < 2 || disttime2-szy[unit.rodz] > disttime && dist > 0/* && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length > 0*/){
+                            if(disttime < 2 || disttime-szy[unit.rodz] > disttime && dist > 0/* && unit.actions.length > 0 && unit.actions[0].type == 'move' && unit.actions[0].rucho.length > 0*/){
                                 ok = false
                                 break
                             }
@@ -7673,8 +7689,11 @@ function tryGetFarUnitsToFront(realSfKeys, farFromFront, allowPaths, dfrou,faile
                             }
                         }*/
                         //console.log(['xle', fff.code, lade])
-                        
-                        possibleUnitActions[lade].push({hex_from:fff.code,hex_to:lade,unitIx:fff.unitIx,action:lac,time:time,unitrodz:unit.rodz})
+                        var kot = fff.code+'#'+lade+'#'+fff.unitIx+'#'+lac.il
+                        if(!(kot in puadict))
+                            puadict[kot] = {hex_from:fff.code,hex_to:lade,unitIx:fff.unitIx,action:lac,time:time,unitrodz:unit.rodz}
+                        possibleUnitActions[lade].push(puadict[kot])
+                        //hex_from,hex_to,unitIx,il
                     } else if(lade in possible) {
                         //console.log(['xle2', time, fff.code, lade])
                         //console.log(time,lade,lade in possible)
