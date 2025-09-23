@@ -5898,7 +5898,7 @@ function legalActions(dm,simplifieddistmaps){
                         var hex = range_hexesToCheck[i]
                         var hede = [hex.hex.x,hex.hex.y]
                         
-                        if(zas[unit.rodz]>1 || hex.hex.heks.z <= -1)
+                        if(zas[unit.rodz]>1 || hex.hex.heks.z == -1)
                             if(hex.hex.units.length > 0){
                                 var hexkey = hex.hex.x + '#' + hex.hex.y
                                 
