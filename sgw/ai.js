@@ -954,7 +954,7 @@ function aimachine(ailevel){
             var sfkeys = []
             for(var mountainous = false, swicz = false;!swicz;swicz = mountainous,mountainous = true){
                 for(var key in strictly_forward[mountainous]){
-                    heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
+                    //heks[strictly_forward[mountainous][key].hex.x][strictly_forward[mountainous][key].hex.y].test = 'H'
                     sfkeys.push({hex:strictly_forward[mountainous][key].hex, key:key, score:strictly_forward[mountainous][key].value})
                     if(!(key in realSfKeys))
                         realSfKeys[key] = {hex:strictly_forward[mountainous][key].hex, distTable:allColorTables(), maxPlayer: -1, maxPlayerScore: 0, mountainous: mountainous}
@@ -977,11 +977,12 @@ function aimachine(ailevel){
                 
             }
             
+            /*
             for(var key in realSfKeys){
                 var sts = realSfKeys[key]
                 
                 heks[sts.hex.x][sts.hex.y].test = 'Q'
-            }
+            }*/
              
             allowPaths = {}
              
@@ -1506,7 +1507,15 @@ function aimachine(ailevel){
                                 dnew.distmaps[firstVal.hex_from].hex.units[firstVal.unitIx].actions = newaction.map(x=>Object.assign(new Object(),x))
 
                                 for(var key in pUnitActions){
-                                    pUnitActions[key] = pUnitActions[key].filter(puact => !(puact.unitIx == firstVal.unitIx && puact.hex_from == firstVal.hex_from))
+                                    var zmień = false
+                                    for(var l in pUnitActions[key]){
+                                        if(pUnitActions[key][l].unitIx == firstVal.unitIx && pUnitActions[key][l].hex_from == firstVal.hex_from){
+                                            zmień = true
+                                            break
+                                        }
+                                    }
+                                    if(zmień)
+                                        pUnitActions[key] = pUnitActions[key].filter(puact => !(puact.unitIx == firstVal.unitIx && puact.hex_from == firstVal.hex_from))
                                 }
                                 //evaluate(dnew)
                                 
@@ -5884,30 +5893,33 @@ function legalActions(dm,simplifieddistmaps){
                 }
                 
                                 //console.log(unit.legalActions)
-                if(zas[unit.rodz]>1)
+
                     for(var i in range_hexesToCheck){
                         var hex = range_hexesToCheck[i]
-                        if(hex.hex.units.length > 0){
-                            var hexkey = hex.hex.x + '#' + hex.hex.y
-                            
-                            if(hex.hex.units.length == 0)
-                                continue
+                        var hede = [hex.hex.x,hex.hex.y]
+                        
+                        if(zas[unit.rodz]>1 || hex.hex.heks.z <= -1)
                             if(hex.hex.units.length > 0){
-                                var aimedunit = hex.hex.units[hex.hex.units.length-1]
+                                var hexkey = hex.hex.x + '#' + hex.hex.y
                                 
-                                var ds = distance(hex.hex.x,hex.hex.y,distmap.hex.x,distmap.hex.y)
+                                if(hex.hex.units.length == 0)
+                                    continue
+                                if(hex.hex.units.length > 0){
+                                    var aimedunit = hex.hex.units[hex.hex.units.length-1]
+                                    
+                                    var ds = distance(hex.hex.x,hex.hex.y,distmap.hex.x,distmap.hex.y)
 
-                                //tprh.unp>0 && lookedUpUnit.d==kolej && lookedUpUnit.rodz==10 && tprh.unt[tprh.unp-1]!=aimingUnit.id && aimingUnit.szyt!="w" && aimingUnit.szyt!="c" && aimingUnit.szyt!="l"
-                                if(aimedunit != null && aimedunit.d != unit.d && miaruj(unit,aimedunit,hex.hex) && ds != undefined && ds <= zas[unit.rodz]){
-                                    unit.legalActions.push([
-                                        {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,from:dimap,hex_x:hex.hex.x,hex_y:hex.hex.y,destination:hede},
-                                    ])
+                                    //tprh.unp>0 && lookedUpUnit.d==kolej && lookedUpUnit.rodz==10 && tprh.unt[tprh.unp-1]!=aimingUnit.id && aimingUnit.szyt!="w" && aimingUnit.szyt!="c" && aimingUnit.szyt!="l"
+                                    if(aimedunit != null && aimedunit.d != unit.d && miaruj(unit,aimedunit,hex.hex) && ds != undefined && ds <= zas[unit.rodz]){
+                                        unit.legalActions.push([
+                                            {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,from:dimap,hex_x:hex.hex.x,hex_y:hex.hex.y,destination:hede},
+                                        ])
+
+                                    }
+                                            //this.actions.push({type:'aim',celu:this.celu,celd:this.celd,hex_x:aimedunit.x,hex_y:aimedunit.y,kolor:this.kolor})
 
                                 }
-                                        //this.actions.push({type:'aim',celu:this.celu,celd:this.celd,hex_x:aimedunit.x,hex_y:aimedunit.y,kolor:this.kolor})
-
                             }
-                        }
                     }
                 
             }
