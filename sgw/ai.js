@@ -2657,7 +2657,7 @@ function aimachine(ailevel){
                     break
                 }
             }
-            tryRemoveUnnecessaryBuilds(dfrou,kolej)
+            //tryRemoveUnnecessaryBuilds(dfrou,kolej)
 		break;
 		case 5:
 			/*checkedunitstage:
@@ -6678,7 +6678,7 @@ function tryPutUnderAttack(dm, x, y, color, destinies, thinkmore, embarkingTarge
             || x.unit.actions[0].type != 'move' && x.unit.actions[0].type != 'build'
                     //|| ((x.unit.actions[0].rucho.length) / szy[x.unit.rodz] <= 1)
             || (x.unit.actions[0].type == 'move' && /*x.action[0].type != 'aim' && */x.unit.actions[0].by != 'speculation2' &&
-                 (x.action[0].type == 'aim' || (/*x.unit.actions[0].rucho.length < szy[x.unit.rodz] || */x.unit.actions[0].rucho.length > x.action[0].rucho.length || (x.unit.actions[0].rucho.length < szy[x.unit.rodz] && x.action[0].rucho.length <= szy[x.unit.rodz] && x.unit.actions[0].by == 'real' && (heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].z <= 0 && heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].unp <= 0)))))
+                 (x.action[0].type == 'aim' || (/*x.unit.actions[0].rucho.length < szy[x.unit.rodz] || */x.unit.actions[0].rucho.length > x.action[0].rucho.length || (x.unit.actions[0].rucho.length <= szy[x.unit.rodz] && x.action[0].rucho.length <= szy[x.unit.rodz] && x.unit.actions[0].by == 'real' && x.unit.actions.length == 1 && (heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].z <= 0 && (heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].undr == kolej || heks[x.unit.actions[0].destination[0]][x.unit.actions[0].destination[1]].undr == -1))))))
             )
         )
     //console.log(interestingUnits.map(a => new Object({type:a.action[0].type,by:a.action[0].by,rucho:a.action[0].type == 'move' ? a.action[0].rucho.length : null})))

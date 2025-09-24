@@ -1761,7 +1761,12 @@ function aktdroguj(kolejk,uni){
 			//console.log(tph.x+'#'+tph.y+'#'+unix[kolejk][uni].ruchk[ajk])
 			drogow++
 			//console.log(tph,unix[kolejk][uni].ruchk[ajk])
-			tph = hexOfUnit(tph).border[unix[kolejk][uni].ruchk[ajk]];
+			var hou = hexOfUnit(tph)
+			if(hou == null){
+				ajk = unix[kolejk][uni].ruchy
+				break
+			}
+			tph = hou.border[unix[kolejk][uni].ruchk[ajk]];
 			if(tph == undefined)
 				break
 			if(zasieg>=0){
