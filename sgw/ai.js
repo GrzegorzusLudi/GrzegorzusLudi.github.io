@@ -3720,7 +3720,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                         step = 0.8
                         if(hexto.z == -2 || hexto.z == 0)
                             continue
-                            
+                          
                         if(transporting && dru_to != -1 && dru_to != kolej){
                             continue
                         }
@@ -3761,7 +3761,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                                 //}
                             }
                         }
-                        if(hexto.z != -1 && dru_to != -1 && dru_to != kolej && hexfrom.z == -1 && transporting){
+                        if(hexto.z != -1 && dru_to != -1 && dru_to != kolej && (hexfrom.z == -1 || hexfrom.z > 0) && transporting){
                             continue//step *= 3
                         }
                         //if(hexfrom.z == -1 && dru_to != -1 && dru_to != kolej)
@@ -4743,7 +4743,10 @@ function distmapsFromUnit(){
             if(szybt == 'n' && zast[unit.rodz] == 'm')
                 szybt = 'm'
             
-            if(!(szybt in distmaps[code])){
+                //function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekstable){
+            //if(szybt == 'x')
+            //    alert('x')
+            if(!(szybt in distmaps[code].maps)){
                 distmaps[code].maps[szybt] = {hexmap:hexdistmap(bhex.x,bhex.y,szybt == 'w' || szybt == 'x',szybt == 'g',szybt == 'l',szybt == 'c',szybt == 'x',szybt == 'm',board),rangemap:hexrangemap(bhex.x,bhex.y,szybt == 'w' || szybt == 'x',szybt == 'g',szybt == 'l',szybt == 'c',board)}
                 //distmaps[code].maps[szybt].hexmapmap = mapmap(distmaps[code].maps[szybt].hexmap,'hex')
                 //distmaps[code].maps[szybt].rangemapmap = mapmap(distmaps[code].maps[szybt].rangemap,'hex')
@@ -5823,7 +5826,6 @@ function legalActions(dm,simplifieddistmaps){
                     //    heks[frontline[0]][frontline[1]].test = 'S'
                     
                     if(!pathIsThroughCrowdedCity(dm,distmap.hex.x,distmap.hex.y,ruchk,rucho)){
-                        var hede = [hex.hex.x,hex.hex.y]
                         var lnp = leadPath(distmap.hex.x,distmap.hex.y,ruchk,rucho)
                         
                         //if(frontline == undefined || true){
@@ -5860,6 +5862,7 @@ function legalActions(dm,simplifieddistmaps){
 
                                         var ds = distance(lnp[0],lnp[1],hex.hex.x,hex.hex.y)
                                         if(ds != undefined && ds <= zas[unit.rodz] && turnPrediction < 2 && rucho2.length+1 <= szy[unit.rodz]){
+                                            var hede = [hex.hex.x,hex.hex.y]
                                             var glp2 = getLeadedPath(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)
                                             unit.legalActions.push([
                                                 {type:'move',by:'speculation2',rucho:rucho2,ruchk:ruchk2,il:unit.il,from:dimap,destination:hede,embarking:embarking2,somethingAlong:somethingAlong2,distant:false,leadedPath:glp2/*,collisional:isPathCollisional(distmap.hex.x,distmap.hex.y,ruchk2,rucho2)*/},  //not a real situation, but it solves some problem
@@ -5896,7 +5899,6 @@ function legalActions(dm,simplifieddistmaps){
 
                     for(var i in range_hexesToCheck){
                         var hex = range_hexesToCheck[i]
-                        var hede = [hex.hex.x,hex.hex.y]
                         
                         if(zas[unit.rodz]>1 || hex.hex.heks.z == -1)
                         if(hex.hex.units.length > 0){
@@ -5914,6 +5916,7 @@ function legalActions(dm,simplifieddistmaps){
 
                                 //tprh.unp>0 && lookedUpUnit.d==kolej && lookedUpUnit.rodz==10 && tprh.unt[tprh.unp-1]!=aimingUnit.id && aimingUnit.szyt!="w" && aimingUnit.szyt!="c" && aimingUnit.szyt!="l"
                                 if(aimedunit != null && aimedunit.d != unit.d && miaruj(unit,aimedunit,hex.hex) && ds != undefined && ds <= zas[unit.rodz]){
+                                    var hede = [hex.hex.x,hex.hex.y]
                                     unit.legalActions.push([
                                         {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,from:dimap,hex_x:hex.hex.x,hex_y:hex.hex.y,destination:hede},
                                     ])
