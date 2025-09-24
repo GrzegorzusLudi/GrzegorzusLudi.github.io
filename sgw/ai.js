@@ -3762,7 +3762,7 @@ function hexdistmap(x,y,water,mountain,air,heavy,transporting,bridgemaking,hekst
                             }
                         }
                         if(hexto.z != -1 && dru_to != -1 && dru_to != kolej && hexfrom.z == -1 && transporting){
-                            step *= 3
+                            continue//step *= 3
                         }
                         //if(hexfrom.z == -1 && dru_to != -1 && dru_to != kolej)
                         //    continue
@@ -5899,27 +5899,30 @@ function legalActions(dm,simplifieddistmaps){
                         var hede = [hex.hex.x,hex.hex.y]
                         
                         if(zas[unit.rodz]>1 || hex.hex.heks.z == -1)
+                        if(hex.hex.units.length > 0){
+                            var hexkey = hex.hex.x + '#' + hex.hex.y
+                            
+                            if(hex.hex.units.length == 0)
+                                continue
                             if(hex.hex.units.length > 0){
-                                var hexkey = hex.hex.x + '#' + hex.hex.y
+                                var aimedunit = hex.hex.units[hex.hex.units.length-1]
                                 
-                                if(hex.hex.units.length == 0)
+                                var ds = distance(hex.hex.x,hex.hex.y,distmap.hex.x,distmap.hex.y)
+                                
+                                if(zas[unit.rodz]<=1 && hex.hex.heks.z == -1 && ds > 1)
                                     continue
-                                if(hex.hex.units.length > 0){
-                                    var aimedunit = hex.hex.units[hex.hex.units.length-1]
-                                    
-                                    var ds = distance(hex.hex.x,hex.hex.y,distmap.hex.x,distmap.hex.y)
 
-                                    //tprh.unp>0 && lookedUpUnit.d==kolej && lookedUpUnit.rodz==10 && tprh.unt[tprh.unp-1]!=aimingUnit.id && aimingUnit.szyt!="w" && aimingUnit.szyt!="c" && aimingUnit.szyt!="l"
-                                    if(aimedunit != null && aimedunit.d != unit.d && miaruj(unit,aimedunit,hex.hex) && ds != undefined && ds <= zas[unit.rodz]){
-                                        unit.legalActions.push([
-                                            {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,from:dimap,hex_x:hex.hex.x,hex_y:hex.hex.y,destination:hede},
-                                        ])
-
-                                    }
-                                            //this.actions.push({type:'aim',celu:this.celu,celd:this.celd,hex_x:aimedunit.x,hex_y:aimedunit.y,kolor:this.kolor})
+                                //tprh.unp>0 && lookedUpUnit.d==kolej && lookedUpUnit.rodz==10 && tprh.unt[tprh.unp-1]!=aimingUnit.id && aimingUnit.szyt!="w" && aimingUnit.szyt!="c" && aimingUnit.szyt!="l"
+                                if(aimedunit != null && aimedunit.d != unit.d && miaruj(unit,aimedunit,hex.hex) && ds != undefined && ds <= zas[unit.rodz]){
+                                    unit.legalActions.push([
+                                        {type:'aim',by:'speculation2',celu:aimedunit.id,celd:aimedunit.d,il:unit.il,from:dimap,hex_x:hex.hex.x,hex_y:hex.hex.y,destination:hede},
+                                    ])
 
                                 }
+                                        //this.actions.push({type:'aim',celu:this.celu,celd:this.celd,hex_x:aimedunit.x,hex_y:aimedunit.y,kolor:this.kolor})
+
                             }
+                        }
                     }
                 
             }
@@ -6496,7 +6499,7 @@ function tryMakeDestinationMap(dm,color,allowedPaths){
                         //bestAction[dest_code][0].distant && bestAction[dest_code][0].type == 'move' && !legalAction[0].distant && legalAction[0].type == 'move' ||
                         //(evalUnitAttack(unit,legalAction,dm.model) > evalUnitAttack(unit,bestAction[dest_code],dm.model)) || 
                         (evalUnitAttack(unit,legalAction,dm.model) > evalUnitAttack(unit,bestAction[dest_code],dm.model)) || 
-                        (zas[unit.rodz] > 1)/* && (destdef > 0 && destdef > evatak*0.5)*/ && 
+                        (zas[unit.rodz] > 1 || legalAction[0].type == 'aim' && heks[legalAction[0].hex_x][legalAction[0].hex_y].z == -1)/* && (destdef > 0 && destdef > evatak*0.5)*/ && 
                             bestAction[dest_code].length <= 1 && legalAction[legalAction.length-1].type == 'aim'
                             //legalAction.length == 1 && bestAction[dest_code].length == 1 && zas[unit.rodz] == 1 && legalAction[0].type == 'move'  
                             /*
@@ -7448,8 +7451,10 @@ function actionsToReal(dm,color,completely_used_passages){
                     var kv = -1
                     for(var i = 0;i<distmap.hex.unp;i++){
                         if(unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rodz != 8 && unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].il == 0 && unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rozb > 0){
-                            kv = i
-                            unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rozb = 0
+                            if(kv == -1 || unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].il < unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[kv]]){
+                                kv = i
+                                //unix[kolej][heks[distmap.hex.x][distmap.hex.y].unt[i]].rozb = 0
+                            }
                         }
                     }
                     if(kv != -1)
