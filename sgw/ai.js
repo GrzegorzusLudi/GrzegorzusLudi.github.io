@@ -5208,8 +5208,10 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                 //var addEmbarkingPossibility = false
                                 //var embarkingOnPlace = false
                                 
-                                for(var k=0;k<path.path.length-1;k++){
-                                    
+                                for(var k=0;k<path.path.length;k++){
+                                    if(k == path.path.length-1 && unit.actions.length == 1)
+                                        break
+                                        
                                     if(unitAttackStrength2 <= 0)
                                         break
                                     
@@ -5367,7 +5369,7 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                         var unik = distmaps[code3].hex.units[k]
                                         
                                         if(zas[unik.rodz] >= zas[unit.rodz]){
-                                            def -= Number(evalUnitDefense(unik))
+                                            def -= -Number(evalUnitDefense(unik))
                                         }
                                     }
                                     var attak = 0
@@ -5382,9 +5384,9 @@ function evaluate(dm,embarkingTargets,alreadyAttacking){   //{unit:unit, action:
                                         } else if(t == movingDelay) {
                                             attak -= -str//2//Math.min(1.5,t-movingDelay+1)
                                         }// else if(t == movingDelay+1){
-                                            attak -= -str/2
+                                            //attak -= -str/2
                                         //}
-                                        str = Math.max(0,str-def/2)
+                                        str = Math.max(0,str/*-def/2*/)
                                         distmaps[code3].realtocome[t][unit.d] -= -attak
                                     }
                                 }/*
