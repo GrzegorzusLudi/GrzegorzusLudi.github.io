@@ -1,0 +1,1201 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf8">
+<style type="text/css">
+* {border-collapse:collapse;border-collapse:collapse;
+-moz-box-sizing:border-box;
+-webkit-box-sizing:border-box;
+box-sizing:border-box;margin:0px;padding:0px}
+html,body {color:white;background-color:black;font-family:Courier;width:100%; height:100%;}
+#whole {margin:auto}
+@media (max-aspect-ratio: 1/1) {
+    #whole {width:100vw;height:100vw}
+}
+@media (min-aspect-ratio: 1/1) {
+    #whole {width:100vh;height:100vh}
+}
+#canv {border:1px solid white;width:100%;height:100%;display:block}
+</style>
+<script>
+
+function pointInsideVerticalLinearLimit(x,x0,left){
+    return (x < x0) && left || (x > x0) && !left
+}
+function pointInsideNonVerticalLinearLimit(x,y,a,b,bottom){
+    return (a*x + b < y) && bottom || (a*x + b > y) && !bottom
+}
+function lineFromTwoPoints(x1,y1,x2,y2){
+    if(x1 == x2){
+        if(y1 == y2)
+            throw new Error('Two points are in the same places: '+x1+', '+y1)
+        return {vertical:true,x:x1}
+    }
+    
+    var a = (y1-y2) / (x1-x2)
+    return {vertical:false, a:a, b: y1 - x1 * a}
+}
+function bisectorFromTwoPoints(x1,y1,x2,y2){
+    if(y1 == y2){
+        if(y1 == y2)
+            throw new Error('Two points are in the same places: '+x1+', '+y1)
+        return {vertical:true,x:(x1+x2)/2,firstLeftBottom:x1 < x2}
+    }
+    
+    var a = (x2-x1) / (y1-y2)
+    return {vertical:false, a:a, b: (y1 + y2 - a * (x1 + x2)) / 2,firstLeftBottom: y1 > y2}
+}
+
+function intersectionOfNonVerticalLineAndVerticalLine(a,b,x){    
+    return [x, a * x + b]
+}
+function intersectionOfTwoNonVerticalLines(a1,b1,a2,b2){    
+    if(a1-a2 == 0)
+        return null
+    var x = (b2 - b1) / (a1 - a2)
+    return [x, a1 * x + b1]
+}
+
+function intersectionOfVerticalLineAndLineEquation(x,eq){
+    if(eq.vertical){
+        return null
+    } else {
+        return intersectionOfNonVerticalLineAndVerticalLine(eq.a,eq.b,x)
+    }
+}
+function intersectionOfNonVerticalLineAndLineEquation(a,b,eq){
+    if(eq.vertical){
+        return intersectionOfNonVerticalLineAndVerticalLine(a,b,eq.x)
+    } else {
+        return intersectionOfTwoNonVerticalLines(a,b,eq.a,eq.b)
+    }
+}
+function pointsEqual(p1,p2){
+    return Math.abs(p1[0]-p2[0]) < 0.00000001 && Math.abs(p1[1]-p2[1]) < 0.00000001
+}
+
+function mergePolygons(poly1,poly2){
+    var pointFound1
+    var pointFound2
+    
+    var graph = {}
+    for(var i in poly1){
+        graph['a'+i] = 'a'+((i-(-1))%poly1.length)
+    }
+    for(var i in poly2){
+        graph['b'+i] = 'b'+((i-(-1))%poly2.length)
+    }
+    //console.log(JSON.stringify(graph))
+    
+    var thereWasBorder = false
+    for(var i in poly1){
+        for(var j in poly2){
+            var s1 = [poly1[i], poly1[(i-(-1))%poly1.length]]
+            var s2 = [poly2[j], poly2[(j-(-1))%poly2.length]]
+            
+            //if(dist(s1[0][0],s1[0][1],s2[0][0],s2[0][1]) < 1 && dist(s1[1][0],s1[1][1],s2[1][0],s2[1][1]) < 1){
+            //    graph[i][j] = true
+            //    graph[j][i] = true
+            //}
+            
+            if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 0.000001 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 0.000001){
+                graph['a'+i] = graph['b'+((j-(-1))%poly2.length)]
+                graph['b'+j] = graph['a'+((i-(-1))%poly1.length)]
+                
+                delete graph['b'+((j-(-1))%poly2.length)]
+                delete graph['a'+((i-(-1))%poly1.length)]
+                
+                thereWasBorder = true
+            }
+        }
+    }
+    if(!thereWasBorder){
+        if(poly1.length > poly2.length){
+            return poly1
+        } else {
+            return poly2
+        }
+    }
+    
+    var newPolygons = []
+    var k = 0
+    while(Object.keys(graph).length > 0 && k < 100){
+        var firstKey = Object.keys(graph)[0]
+        
+        var subcycle = [firstKey]
+        var key = graph[firstKey]
+        delete graph[firstKey]
+        
+        var l = 0
+        while(key != firstKey && key != undefined && l < 1000){
+            subcycle.push(key)
+            var oldkey = key
+            key = graph[key]
+            delete graph[oldkey]
+
+            l++
+        }
+        
+        //console.log(subcycle)
+        if(key != undefined){
+            var subpolygon = []
+            for(var j in subcycle){
+                var point
+                var pgon = subcycle[j][0]
+                var ix = Number(subcycle[j].substring(1))
+                if(pgon == 'a'){
+                    point = poly1[ix]
+                } else {
+                    point = poly2[ix]
+                }
+                
+                subpolygon.push(point)
+            }
+            newPolygons.push(subpolygon)
+        }
+        
+        k++
+    }
+
+    if(newPolygons.length > 1){
+        return newPolygons.filter(a => polygonOrder(a) != 1)[0]
+    }
+    return newPolygons[0]
+}
+
+function verticalLinearLimitPolygons(polygons,x,left){
+    var newPolygons = []
+    
+    for(var i in polygons){
+        var polygon = polygons[i]
+        
+        var newPolygon = []
+        
+        var polygonIntersectionIndexes = []
+                    
+        var ix = 0
+        for(var j = 0;j<polygon.length;j++){
+            var point1 = polygon[j]
+            var point2 = polygon[(j-(-1)) % polygon.length]
+            
+            var p1inside = pointInsideVerticalLinearLimit(point1[0],x,left)
+            var p2inside = pointInsideVerticalLinearLimit(point2[0],x,left)
+            
+            if(p1inside && p2inside){
+                newPolygon.push(point1)
+                ix++
+            } else if(p1inside && !p2inside){
+                newPolygon.push(point1)
+                ix++
+                var lineEquation = lineFromTwoPoints(point1[0],point1[1],point2[0],point2[1])
+                
+                var pointInside = intersectionOfVerticalLineAndLineEquation(x,lineEquation)
+                if (!pointsEqual(point1,pointInside) && pointInside != null){
+                    newPolygon.push(pointInside)
+                    polygonIntersectionIndexes.push([ix,pointInside])
+                    ix++
+                }
+            } else if(!p1inside && p2inside){
+                var lineEquation = lineFromTwoPoints(point1[0],point1[1],point2[0],point2[1])
+                
+                var pointInside = intersectionOfVerticalLineAndLineEquation(x,lineEquation)
+                newPolygon.push(pointInside)
+                
+                polygonIntersectionIndexes.push([ix,pointInside])
+                ix++
+
+            }
+        }
+        
+        if(newPolygon.length < 3)
+            continue
+        if(polygonIntersectionIndexes.length == 0){
+            newPolygons.push(newPolygon)
+        } else {
+            polygonIntersectionIndexes = polygonIntersectionIndexes.sort((a,b)=>a[1][1]-b[1][1])    
+            polygonIntersectionIndexes = polygonIntersectionIndexes.map(a => a[0])
+            
+            splitPolygonsByIntersectionsAndAddToNewPolygons(newPolygon,polygonIntersectionIndexes,left,newPolygons)
+        }
+    }
+    return newPolygons
+}
+function polygonOrder(polygon){
+    var minY = polygon.map(a=>a[1]).reduce((a,b)=>Math.min(a,b),Infinity)
+    
+    var minimal = polygon.filter(a => a[1] == minY).sort((a,b)=>b[0]-a[0])[0]
+    
+    var ix = -1
+    for(var i in polygon){
+        if(polygon[i] == minimal){
+            ix = i
+            break
+        }
+    }
+    var p1 = polygon[ix]
+    var p2 = polygon[(ix-1+polygon.length)%polygon.length]
+    var p3 = polygon[(ix-(-1))%polygon.length]
+    
+    var v1 = [p2[0]-p1[0],p2[1]-p1[1]]
+    var v2 = [p3[0]-p1[0],p3[1]-p1[1]]
+    
+    return -Math.sign(v1[0]*v2[1]-v1[1]*v2[0])
+}
+function nonVerticalLinearLimitPolygons(polygons,a,b,bottom){
+    var newPolygons = []
+    
+    for(var i in polygons){
+        var polygon = polygons[i]
+        try {
+        if(polygonOrder(polygon) != -1)
+            polygon = polygon.reverse()
+        } catch(e){
+            
+        console.log('poly',polygon)
+        }
+        var newPolygon = []
+        
+        var polygonIntersectionIndexes = []
+                    
+        var ix = 0
+        for(var j = 0;j<polygon.length;j++){
+            var point1 = polygon[j]
+            var point2 = polygon[(j-(-1)) % polygon.length]
+            
+            var p1inside = pointInsideNonVerticalLinearLimit(point1[0],point1[1],a,b,bottom)
+            var p2inside = pointInsideNonVerticalLinearLimit(point2[0],point2[1],a,b,bottom)
+            
+            if(p1inside && p2inside){
+                newPolygon.push(point1)
+                ix++
+            } else if(p1inside && !p2inside){
+                newPolygon.push(point1)
+                ix++
+                var lineEquation = lineFromTwoPoints(point1[0],point1[1],point2[0],point2[1])
+                
+                var pointInside = intersectionOfNonVerticalLineAndLineEquation(a,b,lineEquation)
+                if (/*!pointsEqual(point1,pointInside) && */pointInside != null){
+                    newPolygon.push(pointInside)
+                    polygonIntersectionIndexes.push([ix,pointInside])
+                    ix++
+                }
+
+            } else if(!p1inside && p2inside){
+                var lineEquation = lineFromTwoPoints(point1[0],point1[1],point2[0],point2[1])
+                
+                var pointInside = intersectionOfNonVerticalLineAndLineEquation(a,b,lineEquation)
+                
+                newPolygon.push(pointInside)
+                polygonIntersectionIndexes.push([ix,pointInside])
+                ix++
+            }
+        }
+        if(newPolygon.length < 3)
+            continue
+        if(polygonIntersectionIndexes.length == 0){
+            newPolygons.push(newPolygon)
+        } else {    
+            polygonIntersectionIndexes = polygonIntersectionIndexes.sort((a,b)=>a[1][0]-b[1][0])    
+            polygonIntersectionIndexes = polygonIntersectionIndexes.map(a => a[0])
+
+            splitPolygonsByIntersectionsAndAddToNewPolygons(newPolygon,polygonIntersectionIndexes,bottom,newPolygons)
+        }
+        
+    }
+    return newPolygons
+}
+function splitPolygonsByIntersectionsAndAddToNewPolygons(newPolygon,polygonIntersectionIndexes,leftBottom,newPolygons){
+    
+    var cycles = {}
+    for(var j = 0;j<newPolygon.length-1;j++){
+        cycles[j] = j+1
+    }
+    cycles[newPolygon.length-1] = 0
+
+    var ogpolygonIntersectionIndexes = polygonIntersectionIndexes.slice()
+    while(polygonIntersectionIndexes.length > 0){
+        var index1 = polygonIntersectionIndexes.pop()
+        var index2 = polygonIntersectionIndexes.pop()
+        if(!pointsEqual(newPolygon[index1],newPolygon[index2])){
+            if(!leftBottom){
+                cycles[index2] = index1
+            } else {
+                cycles[index1] = index2
+            }
+        }
+    }
+    var ogcycles = Object.assign({},cycles)
+    
+    //nonVerticalLinearLimitPolygons([[[0,0],[2,0],[2,2],[0,2]]],0,2,false) 
+    
+    var k = 0
+    while(Object.keys(cycles).length > 0 && k < 100){
+        var firstKey = Object.keys(cycles)[0]
+        
+        var subcycle = [firstKey]
+        var key = cycles[firstKey]
+        delete cycles[firstKey]
+        
+        var l = 0
+        while(key != firstKey && l < 1000){
+            subcycle.push(key)
+            var oldkey = key
+            key = cycles[key]
+            delete cycles[oldkey]
+
+            l++
+        }
+        if(subcycle.length > 0 && subcycle[subcycle.length-1] == undefined){
+            console.log(ogpolygonIntersectionIndexes)
+            console.log(ogcycles,subcycle)
+            for(var i in ogpolygonIntersectionIndexes){
+                console.log(newPolygon[ogpolygonIntersectionIndexes[i]])
+            }
+
+        }
+        //console.log(subcycle)
+        var subpolygon = []
+        for(var j in subcycle){
+            var point = newPolygon[subcycle[j]]
+            
+            subpolygon.push(point)
+        }
+        newPolygons.push(subpolygon)
+        
+        k++
+    }
+}
+function hitTest(poly,x,y){
+    var segmentsToCheck = []
+    for(var i in poly){
+        var s = [poly[i], poly[(i-(-1))%poly.length]]
+        if(s[0][0] > s[1][0])
+            s = s.reverse()
+        
+        if(s[0][0] < x && s[1][0] > x){
+            segmentsToCheck.push(s)
+        }
+    }
+    var number = 0
+    for(var i in segmentsToCheck){
+        var segment = segmentsToCheck[i]
+        
+        var lf2p = lineFromTwoPoints(segment[0][0],segment[0][1],segment[1][0],segment[1][1])
+        
+        //    return {vertical:false, a:a, b: y1 - x1 * a}
+
+        if(y < lf2p.a*x+lf2p.b)
+            number++
+    }
+    return number % 2 != 0
+}
+function getLandInside(lands,x,y){
+    for(var i in lands){
+        var land = lands[i]
+        if(hitTest(land,x,y)){
+            return land
+        }
+    }
+    return null
+}
+function landInside(landInside_, landOutside){
+    for(var i in landInside_){
+        var point = landInside_[i]
+        if(!hitTest(landOutside,point[0],point[1])){
+            return false
+        }
+    }
+    return true
+}
+function normalizePolygons(polygons){
+    for(var i in polygons){
+        var poly = polygons[i]
+        if(polygonOrder(poly) != -1){
+            polygons[i] = poly.reverse()
+        }
+    }
+}
+function dist(x1,y1,x2,y2){
+    return Math.max(Math.abs(x2-x1), Math.abs(y2-y1))
+}
+function polygonEdgeHalfPointMoved(polygon,index){
+    var p1 = polygon[index]
+    var p2 = polygon[(index-(-1))%polygon.length]
+    
+    var angle = Math.atan2(p2[1]-p1[1],p2[0]-p1[0])
+    
+    return [(p1[0]+p2[0])/2 + Math.sin(angle)*2,(p1[1]+p2[1])/2 - Math.cos(angle)]
+}
+function hexadecagonalLimit(x,y,polygon, limit){
+    var SIDES = 32
+    var polygons = [polygon]
+    for(var i = 0;i<SIDES;i++){
+        var angle = (0.5+i) / SIDES * Math.PI * 2
+        
+        var x1 = x
+        var y1 = y
+        
+        var x2 = x+Math.sin(angle) * limit * 2/2
+        var y2 = y-Math.cos(angle) * limit * 2/2
+
+        var a = (x2-x1) / (y1-y2)
+        var b = (y1 + y2 - a * (x1 + x2)) / 2
+
+        var firstLeftBottom = y2 < y1
+
+//        try {
+//            console.log(polygons.length,polygons)
+        //console.log(i,polygons[0])
+        polygons = nonVerticalLinearLimitPolygons(polygons,a,b,firstLeftBottom)
+//        } catch(e){
+//            return polygon
+//        }
+    }
+//    console.log(polygons)
+//    if(polygons.filter(a => a[a.length - 1] == undefined).length > 0)
+//        return null
+    return polygons[0]//polygonHittingPoints(polygons,x,y)
+}
+function polygonHittingPoints(polygons,x,y){
+    for(var k in polygons){
+        var polygon = polygons[k]
+        if(hitTest(polygon,x,y)){
+            return polygon
+        }
+    }
+}
+const vectorNumbers = {
+    0:[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],],
+    1:[[0.0,0.0],[0.5,0.0],[0.5,1.0],[0.0,1.0],[1.0,1.0],],
+    2:[[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],[0.0,1.0],[1.0,1.0],],
+    3:[[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],[1.0,0.5],[1.0,1.0],[0.0,1.0],],
+    4:[[0.0,0.0],[0.0,0.5],[1.0,0.5],[1.0,0.0],[1.0,1.0],],
+    5:[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[1.0,1.0],[0.0,1.0],],
+    6:[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.0,0.5],],
+    7:[[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],[0.0,1.0],],
+    8:[[1.0,0.5],[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.0,0.5],],
+    9:[[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],],
+}
+//ax+b = 0  a = 1, b = -x_o
+class Chunk {
+    constructor(x,y,polygons,l,t,r,b){
+        polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
+        polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
+        polygons = verticalLinearLimitPolygons(polygons,l,false)
+        polygons = verticalLinearLimitPolygons(polygons,r,true)
+    
+        this.polygons = polygons
+        this.l = l
+        this.t = t
+        this.r = r
+        this.b = b
+        
+        this.x = x
+        this.y = y
+        
+        this.nearChunkCodes = this.createNearChunkCodes()
+    }
+    createNearChunkCodes(){
+        var nearChunkCodes = []
+        for(var i = -1;i<=1;i++){
+            for(var j = -1;j<=1;j++){
+                nearChunkCodes.push((this.x-(-i))+'#'+(this.y-(-j)))
+            }
+        }
+        return nearChunkCodes
+    }
+}
+class GenerationalPoint {
+    constructor(x,y,land){
+        this.x = x
+        this.y = y
+        this.land = land
+    }
+}
+
+class Team {
+    constructor(color,player){
+        this.color = color
+        this.player = player
+    }
+}
+class Town {
+    constructor(x,y,land,port){
+        this.x = x
+        this.y = y
+        this.land = land
+        
+        this.port = port
+        
+        this.occupyingUnit = null
+        
+        this.voronoi = null
+    }
+    setChunk(chunk){
+        this.chunk = chunk
+    }
+    setOccupyingUnit(unit){
+        this.occupyingUnit = unit
+        unit.setTownTaken(this)
+    }
+}
+class Unit {
+    constructor(x,y,size,team,land){
+        this.x = x
+        this.y = y
+        this.size = size
+        this.team = team
+        this.land = land
+        
+        this.towntaken = null
+        
+        this.voronoi = null
+    }
+    setTownTaken(town){
+        this.towntaken = town
+    }
+    setChunk(chunk){
+        this.chunk = chunk
+    }
+}
+class Model {
+    constructor(){
+        this.WIDTH = 800
+        this.CHUNKS_PER_SIDE = 8
+        this.NUMBER_OF_POINTS = 250
+        this.TOWN_DISTANCE_LIMIT = 25
+                
+        this.graph = {}
+        this.oldlands
+        this.oldgenerationPoints
+        this.lands = this.initLands()
+        
+        this.chunks = this.generateChunks()
+        this.towns = this.initTowns()
+        
+        this.teams = []
+        this.units = []
+        
+        this.populateTowns()
+        this.generateVoronois()
+//        window.lands = this.lands
+        //this.drawLands()//debug
+
+    }
+    initGenerationPoints(){
+        var points = []
+        
+        for(var i = 0;i<this.NUMBER_OF_POINTS;i++){
+            points.push(new GenerationalPoint(Math.random() * this.WIDTH, Math.random() * this.WIDTH, Math.random() < 0.57))
+        }
+        
+        return points
+    }
+    adjustGenerationPointsToLands(generationPoints,lands){
+        for(var i in lands){
+            var land = lands[i]
+            var avg_x = land.map(a=>a[0]).reduce((a,b) => a+b,0)/land.length
+            var avg_y = land.map(a=>a[1]).reduce((a,b) => a+b,0)/land.length
+            generationPoints[i].x = avg_x
+            generationPoints[i].y = avg_y
+        }
+        return generationPoints
+    }
+    makeLandsFromGenerationPoints(generationPoints){
+        var lands = []
+        for(var i in generationPoints){
+            lands.push([[0,0],[0,this.WIDTH],[this.WIDTH,this.WIDTH],[this.WIDTH,0]])
+        }
+        for(var i in generationPoints){
+            for(var j in generationPoints){
+                if(i == j)
+                    continue
+                var point1 = generationPoints[i]
+                var point2 = generationPoints[j]
+                
+                var bisector = bisectorFromTwoPoints(point1.x,point1.y,point2.x,point2.y)
+
+                var land = lands[i]
+                var newLands
+                if(bisector.vertical){
+                    newLands = verticalLinearLimitPolygons([land],bisector.x,bisector.firstLeftBottom)
+                } else {
+                    newLands = nonVerticalLinearLimitPolygons([land],bisector.a,bisector.b,bisector.firstLeftBottom)
+                }
+                //console.log(newLands)
+                lands[i] = newLands[0]
+                //console.log(lands[i])
+            }
+            //continue
+        }
+        return lands
+    }
+    getLands(){
+    /*
+        return [
+            [[149.4140625,33.6959148],[102.796875,33.6959148],[49.0078125,62.9268714],[99.2109375,125.76863759999999],[98.015625,133.612584],[72.9140625,166.1011686],[83.671875,258.4133268],[143.4375,222.96189900000002],[187.6640625,244.2837348],[178.1015625,269.0417442],[138.65625,269.0417442],[138.65625,297.6642594],[197.2265625,307.076058],[196.03125,328.6520754],[241.453125,321.2418444],[241.453125,289.3480356],[218.7421875,276.43938360000004],[242.6484375,247.46863380000002],[286.875,267.5428032],[277.3125,375.5600448],[384.890625,363.5218038],[451.828125,385.0086414],[492.46875,362.48311440000003],[457.8046875,297.6642594],[415.96875,267.5428032],[479.3203125,191.7129732],[472.1484375,139.4480766],[421.9453125,48.3553776],[308.390625,121.820505],[286.875,44.1748014],[225.9140625,33.6959148],[185.2734375,18.974733],[150.609375,39.9876456]],
+            [[101,432],[89,389],[124,392],[165,417]]
+        ]*/
+        this.generationPoints = this.initGenerationPoints()
+
+        var lands = this.makeLandsFromGenerationPoints(this.generationPoints)
+        
+        this.generationPoints = this.adjustGenerationPointsToLands(this.generationPoints,lands)
+        
+        lands = this.makeLandsFromGenerationPoints(this.generationPoints)
+
+        return lands
+    }
+    initLands(){
+        var lands = this.getLands()
+        this.oldlands = lands.slice()
+        
+        this.graph = {}
+        for(var i = 0;i<lands.length;i++){
+            this.graph[i] = {}
+        }
+        for(var i = 0;i<lands.length;i++){
+            var land1 = lands[i]
+            var point1 = this.generationPoints[i]
+            for(var j = 0;j<i;j++){
+                var land2 = lands[j]
+                var point2 = this.generationPoints[j]
+                
+                if(dist(point1[0],point1[1],point2[0],point2[1]) > this.GENERATION_POINTS_REVERSE_DENSITY*2)
+                    continue
+                
+                for(var k in land1){
+                    for(var l in land2){
+                        var s1 = [land1[k], land1[(k-(-1))%land1.length]]
+                        var s2 = [land2[l], land2[(l-(-1))%land2.length]]
+                        /*
+                        if(dist(s1[0][0],s1[0][1],s2[0][0],s2[0][1]) < 1 && dist(s1[1][0],s1[1][1],s2[1][0],s2[1][1]) < 1){
+                            graph[i][j] = true
+                            graph[j][i] = true
+                        }*/
+                        
+                        if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 0.0001 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 0.0001){
+                            this.graph[i][j] = true
+                            this.graph[j][i] = true
+                        }
+                    }
+                }
+            }
+        }
+        
+        for(var round = 0;round<2;round++){
+            var newlands = {}
+            for(var key1 in this.graph){
+                var point1 = this.generationPoints[key1]
+                var landsAround = 0
+                for(var key2 in this.graph[key1]){
+                    var point2 = this.generationPoints[key2]
+                    
+                    if(point2.land)
+                        landsAround++
+                }
+                newlands[key1] = landsAround > Object.keys(this.graph[key1]).length*0.5// || landsAround == 0
+            }
+            for(var key1 in this.graph){
+                this.generationPoints[key1].land = newlands[key1]
+            }
+        }
+        
+        for(var i in lands){
+            var land = lands[i]
+            for(var j in land){
+                var point = land[j]
+                
+                if(point[0] <= 1 || point[1] <= 1 || point[0] >= this.WIDTH-1 || point[1] >= this.WIDTH-1)
+                    this.generationPoints[i].land = false
+            }
+        }
+        
+        for(var i in this.graph){
+            for(var j in this.graph[i]){
+                if(!this.generationPoints[j].land)
+                    delete this.graph[i][j]                
+            }
+        }
+        for(var i in this.graph){
+            if(!this.generationPoints[i].land){
+                delete this.graph[i]
+            }
+        }
+        this.oldgenerationPoints = this.generationPoints.slice()
+
+        var k = 0
+        while(Object.keys(this.graph).length > 0 && k<=100){
+            var key1 = Object.keys(this.graph)[0]
+            if(Object.keys(this.graph[key1]).length == 0){
+                delete this.graph[key1]
+                continue
+            }
+            for(var key2 in this.graph[key1]){
+                if(key2 in lands){
+                    var merged = mergePolygons(lands[key1],lands[key2])
+                    if(merged != null)
+                        lands[key1] = merged
+                }
+                for(var key3 in this.graph[key2]){
+                    if(key3 != key1){
+                        this.graph[key1][key3] = true
+                        if(key3 in this.graph)
+                            this.graph[key3][key1] = true
+                    }
+                }
+                delete this.graph[key1][key2]
+                delete this.graph[key2]
+                delete lands[key2]
+                delete this.generationPoints[key2]
+                //}
+            }
+            k++
+        }
+        
+        for(var i in this.generationPoints){
+            if(!this.generationPoints[i].land){
+                delete this.generationPoints[i]
+                delete this.graph[i]
+                delete lands[i]
+            }
+        }
+        for(var i in lands){
+            for(var j in lands){
+                if(i != j){
+                    if(landInside(i,j)){
+                        delete this.generationPoints[i]
+                        delete this.graph[i]
+                        delete lands[i]
+                    }
+                }
+            }
+        }
+        
+        this.generationPoints = this.generationPoints.filter(a => a != undefined)
+        lands = lands.filter(a => a != undefined)
+/*
+        for(var i in lands){
+            var land = lands[i]
+            if(polygonOrder(land) != -1){
+                lands[i] = land//.reverse()
+            }
+        }
+*/        
+        return lands
+    }
+    initTowns(){
+        var towns = []
+        for(var i in this.lands){
+            var land = this.lands[i]
+            
+            var indexStart = Math.floor(Math.random() * land.length)
+            
+            var point = polygonEdgeHalfPointMoved(land, indexStart)
+            this.tryAddTown(towns,point[0],point[1],land,true)
+            
+            for(var j = 1;j<land.length;j+=2){
+                if(Math.random() < 0.5){
+                    var ix  = (indexStart - (-j)) % land.length
+                    
+                    point = polygonEdgeHalfPointMoved(land, ix)
+                    this.tryAddTown(towns,point[0],point[1],land,true)
+                }
+            }
+        }
+        for(var i in this.oldgenerationPoints){
+            var point = this.oldgenerationPoints[i]
+            
+            if(Math.random() < 0.5){
+                var landAround = getLandInside(this.lands,point.x,point.y)
+                if(landAround != null)
+                    this.tryAddTown(towns,point.x,point.y,landAround,false)
+            }
+        }
+        return towns
+    }
+    tryAddTown(towns,x,y,landAround,port){
+        for(var i in towns){
+            var town = towns[i]
+            if(Math.abs(town.x - x) < this.TOWN_DISTANCE_LIMIT && Math.abs(town.y - y) < this.TOWN_DISTANCE_LIMIT && town.land == landAround)
+                return
+        }
+        var town = new Town(x,y,landAround,port)
+        var chunk = this.getChunkFromCoords(x,y)
+        town.setChunk(this.chunks[chunk])
+        towns.push(town)
+    }
+    getChunkFromCoords(x,y){
+        var chunk_x = Math.max(0,Math.min(Math.floor(x / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
+        var chunk_y = Math.max(0,Math.min(Math.floor(y / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
+        return chunk_x+'#'+chunk_y
+    }
+    generateChunks(){
+        var chunkLookup = {}
+        for(var i = 0;i<this.CHUNKS_PER_SIDE-1;i++){
+            for(var j = 0;j<this.CHUNKS_PER_SIDE-1;j++){
+                var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
+                var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
+                var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+2)
+                var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+2)
+
+                var key = i+'#'+j
+                var chunk = new Chunk(i,j,this.lands,l,t,r,b)
+//                if(chunk.polygons.length > 0)
+                chunkLookup[key] = chunk
+            }
+        }
+        return chunkLookup
+    }
+    populateTowns(){
+        for(var i in this.towns){
+            var town = this.towns[i]                
+            var chunk = this.getChunkFromCoords(town.x,town.y)
+            town.setChunk(this.chunks[chunk])
+
+            if(i % 4 == 0 || i == 1 || true){
+                var teamColor = getRandomColor()
+                while(this.teams.filter(a => a.color == teamColor).length > 0)
+                    teamColor = getRandomColor()
+                    
+                var newTeam = new Team(teamColor,true)
+                
+                this.teams.push(newTeam)
+                
+                var newUnit = new Unit(town.x,town.y,Math.ceil(Math.random()*99),newTeam,town.land)
+                
+                newUnit.setChunk(this.chunks[chunk])
+                
+                this.units.push(newUnit)
+                
+                town.setOccupyingUnit(newUnit)
+            }
+        }
+    }
+    getVoronoiables(){
+        return this.towns.filter(a => a.occupyingUnit == null).concat(this.units)
+    }
+    generateVoronois(){
+        var voronoiables = this.getVoronoiables()
+        
+        var voronoiableByChunk = {}
+        for(var key in this.chunks){
+            voronoiableByChunk[key] = []
+        }
+        for(var i in voronoiables){
+            var voronoiable = voronoiables[i]
+            
+            var chunk = voronoiable.chunk
+            var nearbyCodes = chunk.nearChunkCodes
+            for(var j in nearbyCodes){
+                var nearbyCode = nearbyCodes[j]
+                if(nearbyCode in this.chunks){
+                    voronoiableByChunk[nearbyCode].push(voronoiable)
+                }
+            }
+        }
+        
+        for(var i in voronoiables){
+            var voronoiable = voronoiables[i]
+            
+            var chunk = voronoiable.chunk
+
+            var chunkcode = chunk.x+'#'+chunk.y
+            
+            var defaultPolygon = null
+            for(var j in chunk.polygons){
+                var poly = chunk.polygons[j]
+                if(hitTest(poly,voronoiable.x,voronoiable.y)){
+                    defaultPolygon = poly
+                    break
+                }
+            }
+            voronoiable.voronoi = defaultPolygon
+            var vbc = voronoiableByChunk[chunkcode]
+            for(var j in vbc){
+
+                if(voronoiable.voronoi == null)
+                    break
+                
+                var point1 = voronoiable
+                var point2 = vbc[j]
+                
+                if(point1 == point2 || point1.land != point2.land)
+                    continue
+                    
+                var bisector = bisectorFromTwoPoints(point1.x,point1.y,point2.x,point2.y)
+
+                var land = voronoiable.voronoi
+                var newLands
+                if(bisector.vertical){
+                    newLands = verticalLinearLimitPolygons([land],bisector.x,bisector.firstLeftBottom)
+                } else {
+                    newLands = nonVerticalLinearLimitPolygons([land],bisector.a,bisector.b,bisector.firstLeftBottom)
+                }
+                
+                voronoiable.voronoi = polygonHittingPoints(newLands,voronoiable.x,voronoiable.y)
+
+            }
+            var limit = this.WIDTH / this.CHUNKS_PER_SIDE
+            voronoiable.voronoi = hexadecagonalLimit(voronoiable.x,voronoiable.y,voronoiable.voronoi, limit)
+
+            
+        }
+    }
+    click(x,y){
+        for(var i in this.lands){
+            var htest = hitTest(this.lands[i],x,y)
+            if(htest){
+                //alert(i)
+            }
+        }
+    }
+    
+    
+    drawLands(){
+        this.canv = document.getElementById('canv')
+        this.ctx = this.canv.getContext('2d')
+
+        /*
+        for(var i in this.oldlands){
+            if(!(i in this.oldgenerationPoints) || this.oldgenerationPoints[i].land){
+                this.drawLand(this.oldlands[i],'#800')
+            } else {
+                //this.drawLand(this.model.lands[i],'#fff4')
+            }
+        }*/
+        for(var i in this.lands){
+            if(!(i in this.generationPoints) || this.generationPoints[i].land){
+                this.drawLand(this.lands[i],'#ffffff')
+            } else {
+                //this.drawLand(this.model.lands[i],'#fff4')
+            }
+        }
+    }
+    drawLand(land,strokeStyle){
+        this.ctx.strokeStyle = strokeStyle
+        this.ctx.fillStyle = strokeStyle + '44'
+        this.ctx.beginPath()
+        for(var i in land){
+            var point = land[i]
+            if(i == 0){
+                this.ctx.moveTo(point[0],point[1])
+            } else {
+                this.ctx.lineTo(point[0],point[1])
+            }
+        }
+        this.ctx.closePath()
+        this.ctx.stroke()
+        this.ctx.fill()
+    }
+}
+const COLOR_LETTERS = '123456789ABCDE'
+function getRandomColor() {
+  var color = '#';
+  for (var i = 0; i < 6; i++) {
+    color += COLOR_LETTERS[Math.floor(Math.random() * COLOR_LETTERS.length)];
+  }
+  return color;
+}
+class View {
+    constructor(canv,model){
+        this.canv = canv
+        this.ctx = this.canv.getContext('2d')
+        
+        this.model = model
+    }
+    draw(){
+        this.ctx.fillStyle = '#fff'
+        this.ctx.fillRect(0,0,this.canv.width,this.canv.height)
+        this.drawLands(true)
+        this.drawVoronois()
+        this.drawLands(false)
+
+        //this.drawChunks()
+        //this.drawGenerationPoints()
+        this.drawTowns()
+        this.drawUnits()
+    }
+    drawChunks(){
+        for(var key in this.model.chunks){
+            for(var i in this.model.chunks[key].polygons){
+                this.drawLand(this.model.chunks[key].polygons[i],getRandomColor())
+            }
+        }
+    }
+    drawLands(fill){/*
+        for(var i in this.model.oldlands){
+            if(!(i in this.model.oldgenerationPoints) || this.model.oldgenerationPoints[i].land){
+                this.drawLand(this.model.oldlands[i],'#800')
+            } else {
+                //this.drawLand(this.model.lands[i],'#fff4')
+            }
+        }*/        
+        this.ctx.lineWidth = 2
+
+        for(var i in this.model.lands){
+            if(!(i in this.model.generationPoints) || this.model.generationPoints[i].land){
+                if(fill){
+                    this.drawLand(this.model.lands[i],'#000000')
+                } else {
+                    this.drawLand(this.model.lands[i],'#000000','#00000000')
+                }
+            } else {
+                //this.drawLand(this.model.lands[i],'#fff4')
+            }
+        }
+        this.ctx.lineWidth = 1
+
+    }
+    drawVoronois(){
+        var voronoiables = this.model.getVoronoiables()
+        for(var i in voronoiables){
+            var voronoiable = voronoiables[i]
+            if(voronoiable.voronoi != null){
+                if('team' in voronoiable){
+                    this.drawLand(voronoiable.voronoi,'#000000',voronoiable.team.color+'88')
+                }
+            }
+        }
+    }
+    drawLand(land,strokeStyle,fillStyle){
+        this.ctx.strokeStyle = strokeStyle
+        this.ctx.fillStyle = fillStyle ? fillStyle : strokeStyle + '44'
+        this.ctx.beginPath()
+        for(var i in land){
+            var point = land[i]
+            if(i == 0){
+                this.ctx.moveTo(point[0],point[1])
+            } else {
+                this.ctx.lineTo(point[0],point[1])
+            }
+        }
+        this.ctx.closePath()
+        this.ctx.fill()
+        this.ctx.stroke()
+    }
+    drawGenerationPoints(){
+        this.ctx.strokeStyle = '#ffffff'
+        for(var i in this.model.generationPoints){
+            var point = this.model.generationPoints[i]
+            if(point.land)
+                this.ctx.strokeRect(point.x-2,point.y-2,4,4)
+        }
+    }
+    drawTowns(){
+        var WIDTH = 6
+        for(var i in this.model.towns){
+            var town = this.model.towns[i]
+
+            this.ctx.strokeStyle = town.occupyingUnit ? '#000' : '#333'
+            this.ctx.fillStyle = town.occupyingUnit ? town.occupyingUnit.team.color : '#ccc'
+            
+            
+            this.ctx.fillRect(town.x-WIDTH*5/4,town.y-WIDTH,WIDTH,WIDTH)
+            this.ctx.strokeRect(town.x-WIDTH,town.y-WIDTH,WIDTH,WIDTH)
+            
+            this.ctx.fillRect(town.x+WIDTH/4,town.y-WIDTH*1.5,WIDTH,WIDTH*1.5)
+            this.ctx.strokeRect(town.x+WIDTH/4,town.y-WIDTH*1.5,WIDTH,WIDTH*1.5)
+            
+            this.ctx.fillRect(town.x-WIDTH/2,town.y-WIDTH*2,WIDTH,WIDTH*2)
+            this.ctx.strokeRect(town.x-WIDTH/2,town.y-WIDTH*2,WIDTH,WIDTH*2)
+        }
+    }
+    drawUnits(){
+        var WIDTH = 20
+        var HEIGHT = 16
+        var OFFSET = 16
+        var PADDING = 3.5
+        for(var i in this.model.units){
+            var unit = this.model.units[i]
+            var teamColor = unit.team.color
+            
+            this.ctx.strokeStyle = '#000'
+            this.ctx.fillStyle = teamColor
+            
+            this.ctx.fillRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-OFFSET,WIDTH,HEIGHT)
+            this.ctx.strokeRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-OFFSET,WIDTH,HEIGHT)
+
+            this.ctx.strokeStyle = !'BCDEF'.includes(teamColor[1]) && !'ABCDEF'.includes(teamColor[3]) && !'CDEF'.includes(teamColor[5]) ? '#fffa' : '#000'
+            
+            if(unit.size >= 10){
+                var firstNumber = (''+unit.size)[0]
+                var secondNumber = (''+unit.size)[1]
+                    
+                this.drawNumber(firstNumber , unit.x-WIDTH/2 + PADDING  ,unit.y-HEIGHT/2-OFFSET + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
+                this.drawNumber(secondNumber, unit.x         + PADDING/2,unit.y-HEIGHT/2-OFFSET + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
+            } else {                
+                this.drawNumber(unit.size   , unit.x-WIDTH/8            ,unit.y-HEIGHT/2-OFFSET + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
+            }
+            
+        }
+    }
+    drawNumber(num,x,y,w,h){
+        var coords = vectorNumbers[num]
+        this.ctx.beginPath()
+        for(var i in coords){
+            var point = coords[i]
+            if(i == 0){
+                this.ctx.moveTo(x+point[0]*w,y+point[1]*h)
+            } else {
+                this.ctx.lineTo(x+point[0]*w,y+point[1]*h)
+            }
+        }
+        this.ctx.stroke()
+    }
+}
+class Controller {
+    constructor(){
+        this.canv = document.getElementById('canv')
+        
+        this.model = new Model()
+        this.view = new View(this.canv,this.model)
+                
+        this.view.draw()
+        
+        this.prepareListeners()
+    }
+    prepareListeners(){
+        this.canv.addEventListener('click',(e) => this.click(e))
+    }
+    click(e){
+        e.preventDefault()
+        var coords = this.getCoordsFromEvent(e)
+        
+        this.clicked = false
+        if(coords != null)
+            this.model.click(coords.x,coords.y)
+        else
+            this.model.click(null,null)
+    }
+    getCoordsFromEvent(e){
+        var rect = this.canv.getBoundingClientRect()
+        
+        var x,y
+        if(e.touches != undefined && e.touches.length > 0){
+            x = (e.touches[0].clientX - rect.left) / rect.width * this.canv.width
+            y = (e.touches[0].clientY - rect.top) / rect.height * this.canv.height
+        } else {
+            x = (e.clientX - rect.left) / rect.width * this.canv.width
+            y = (e.clientY - rect.top) / rect.height * this.canv.height
+        }
+        
+        return {x:x,y:y}
+    }
+}
+function init(){
+    var controller = new Controller()
+}
+</script>
+</head>
+<body>
+<div id="whole">
+<canvas id="canv" width="800" height="800">
+
+</canvas>
+</div>
+<script>
+	init();
+</script>
+</body>
+</html>
