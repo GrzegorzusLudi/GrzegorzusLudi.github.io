@@ -8,14 +8,16 @@
 -webkit-box-sizing:border-box;
 box-sizing:border-box;margin:0px;padding:0px}
 html,body {color:white;background-color:black;font-family:Courier;width:100%; height:100%;}
-#whole {margin:auto}
+#whole {margin:auto;width:990px}/*
 @media (max-aspect-ratio: 1/1) {
     #whole {width:100vw;height:100vw}
 }
 @media (min-aspect-ratio: 1/1) {
     #whole {width:100vh;height:100vh}
-}
-#canv {border:1px solid white;width:100%;height:100%;display:block}
+}*/
+/*#canv {border:1px solid white;width:100%;height:100%;display:block}
+*/
+#canv {border:1px solid white;display:inline-block}
 </style>
 <script>
 
@@ -476,6 +478,17 @@ const vectorNumbers = {
     8:[[1.0,0.5],[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.0,0.5],],
     9:[[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],],
 }
+const vectorLetters = {
+    'A':[[0.0,1.0],[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],[1.0,0.5],[1.0,1.0],],
+    'E':[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[0.0,0.5],[0.0,1.0],[1.0,1.0],],
+    'G':[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.5,0.5],],
+    'M':[[0.0,1.0],[0.0,0.0],[0.5,0.5],[1.0,0.0],[1.0,1.0],],
+    'N':[[0.0,1.0],[0.0,0.0],[1.0,1.0],[1.0,0.0],],
+    'R':[[0.0,1.0],[0.0,0.0],[0.75,0.0],[0.75,0.5],[0.0,0.5],[1.0,0.5],[1.0,1.0],],
+    'S':[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[1.0,1.0],[0.0,1.0],],
+    'T':[[0.0,0.0],[1.0,0.0],[0.5,0.0],[0.5,1.0],],
+    'W':[[0.0,0.0],[0.0,1.0],[0.5,0.5],[1.0,1.0],[1.0,0.0],],
+}
 //ax+b = 0  a = 1, b = -x_o
 class Chunk {
     constructor(x,y,polygons,l,t,r,b){
@@ -560,7 +573,7 @@ class Unit {
 }
 class Model {
     constructor(){
-        this.WIDTH = 800
+        this.WIDTH = 650
         this.CHUNKS_PER_SIDE = 8
         this.NUMBER_OF_POINTS = 250
         this.TOWN_DISTANCE_LIMIT = 25
@@ -853,7 +866,7 @@ class Model {
             var chunk = this.getChunkFromCoords(town.x,town.y)
             town.setChunk(this.chunks[chunk])
 
-            if(i % 4 == 0 || i == 1 || true){
+            if(i % 4 == 0 || i == 1){
                 var teamColor = getRandomColor()
                 while(this.teams.filter(a => a.color == teamColor).length > 0)
                     teamColor = getRandomColor()
@@ -998,15 +1011,38 @@ function getRandomColor() {
   return color;
 }
 class View {
-    constructor(canv,model){
+    constructor(canv,model,state){
+        this.PADDING = 20
+        
         this.canv = canv
         this.ctx = this.canv.getContext('2d')
-        
+        this.ctx.translate(this.PADDING,this.PADDING)
         this.model = model
+        
+        this.state = state
+    }
+    updateModel(model){
+        this.model = model
+        this.draw()
     }
     draw(){
+        this.drawBackground()
+        this.drawModel()
+        this.drawPanel()
+    }
+    drawBackground(){
+        this.ctx.fillStyle = '#55f'
+        this.ctx.fillRect(-this.PADDING,-this.PADDING,this.canv.width,this.canv.height)
+
+    }
+    drawModel(){
         this.ctx.fillStyle = '#fff'
-        this.ctx.fillRect(0,0,this.canv.width,this.canv.height)
+        this.ctx.fillRect(0,0,this.model.WIDTH,this.model.WIDTH)
+        this.ctx.strokeStyle = '#000'
+        this.ctx.lineWidth = 2
+        this.ctx.strokeRect(0,0,this.model.WIDTH,this.model.WIDTH)
+        this.ctx.lineWidth = 1
+        
         this.drawLands(true)
         this.drawVoronois()
         this.drawLands(false)
@@ -1015,6 +1051,26 @@ class View {
         //this.drawGenerationPoints()
         this.drawTowns()
         this.drawUnits()
+    }
+    drawPanel(){
+        const PANEL_X = this.state.state.PANEL_X
+        
+        this.ctx.fillStyle = '#22a'
+        this.ctx.fillRect(PANEL_X,0,this.canv.width-this.model.WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
+        this.ctx.strokeStyle = '#000'
+        this.ctx.lineWidth = 2
+        this.ctx.strokeRect(PANEL_X,0,this.canv.width-this.model.WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
+        this.ctx.lineWidth = 1
+        
+        this.ctx.translate(PANEL_X,0)
+        
+        var mouseCoordsTransformed = this.state.state.mouseCoordsTransformed()
+        for(var i in this.state.state.panelControls){
+            var control = this.state.state.panelControls[i]
+            
+            control.draw(this.ctx,mouseCoordsTransformed)
+        }
+        this.ctx.translate(-PANEL_X,0)
     }
     drawChunks(){
         for(var key in this.model.chunks){
@@ -1144,29 +1200,168 @@ class View {
         this.ctx.stroke()
     }
 }
+class State {
+    constructor(controller){
+        this.controller = controller
+        this.panelControls = []
+        this.mouseCoords = null
+        
+        this.PANEL_X = 670
+    }
+    setMouseCoords(coords){
+        this.mouseCoords = coords
+    }
+    mouseCoordsTransformed(){
+        var PANEL_X = this.PANEL_X
+        return this.mouseCoords ? new Object({x:this.mouseCoords.x-PANEL_X-20,y:this.mouseCoords.y-20}) : null
+    }
+    mouseDown(coords){
+        var mouseCoordsTransformed = this.mouseCoordsTransformed()
+        for(var i in this.panelControls){
+            var control = this.panelControls[i]
+            
+            control.tryClick(mouseCoordsTransformed)
+        }
+    }
+}
+class GamePrepareState extends State {
+    constructor(controller){
+        super(controller)
+        let t = this
+        this.panelControls = [
+            new TextControl(20,35,240,30,'NEW GAME','#000022'),
+            new Button(40,560,200,60,'START','#6666cc','#000022',()=>{var a = 4}),
+            new Button(30,140,220,40,'GENERATE','#6666cc','#000022',()=>{t.controller.regenerateModel()}),
+        ]
+    }
+}
+class Control {
+    constructor(x,y,w,h){
+        this.x = x
+        this.y = y
+        this.w = w
+        this.h = h
+    }
+    focus(mouseCoordsTransformed){
+        return mouseCoordsTransformed != null && mouseCoordsTransformed.x > this.x && mouseCoordsTransformed.x < this.x+this.w && mouseCoordsTransformed.y > this.y && mouseCoordsTransformed.y < this.y+this.h
+    }
+    tryClick(mouseCoordsTransformed){
+        return false
+    }
+}
+class TextControl extends Control {
+    constructor(x,y,w,h,text,color){
+        super(x,y,w,h)
+        this.text = text
+        this.color = color
+    }
+    draw(ctx,mouseCoordsTransformed){
+        var twidth = this.w / (this.text.length + (this.text.length-1) / 3)
+        var pause = twidth / 3
+
+        ctx.strokeStyle = this.color
+        ctx.lineWidth = 2
+        for(var i in this.text){
+            var letter = this.text[i]
+
+            var coords = vectorLetters[letter]
+            
+            if(coords != undefined){
+                ctx.beginPath()
+                for(var j in coords){
+                    var point = coords[j]
+                    if(j == 0){
+                        ctx.moveTo(this.x + point[0]*twidth + i*(twidth+pause), this.y + point[1]*this.h)
+                    } else {
+                        ctx.lineTo(this.x + point[0]*twidth + i*(twidth+pause), this.y + point[1]*this.h)
+                    }
+                }
+                ctx.stroke()
+            }
+        }
+        ctx.lineWidth = 1
+    }
+}
+class Button extends Control {
+    constructor(x,y,w,h,text,color,borderColor,func){
+        super(x,y,w,h)
+        this.text = text
+        this.color = color
+        this.borderColor = borderColor
+        this.func = func
+        this.textControl = new TextControl(x+h*0.2,y+h*0.2,w-h*0.4,h-h*0.4,text,borderColor)
+    }
+    draw(ctx,mouseCoordsTransformed){
+        ctx.strokeStyle = this.borderColor
+        ctx.fillStyle = this.color
+        
+        ctx.fillRect(this.x,this.y,this.w,this.h)
+        if(this.focus(mouseCoordsTransformed)){
+            ctx.fillStyle = '#ffffff88'
+            ctx.fillRect(this.x,this.y,this.w,this.h)
+        }
+        ctx.strokeRect(this.x,this.y,this.w,this.h)
+        
+        ctx.lineWidth = 2
+        this.textControl.draw(ctx,mouseCoordsTransformed)
+        ctx.lineWidth = 1
+    }
+    tryClick(mouseCoordsTransformed){
+        if(this.focus(mouseCoordsTransformed)){
+            return this.func()
+        }
+    }
+}
 class Controller {
     constructor(){
         this.canv = document.getElementById('canv')
         
+        this.state = {state:new GamePrepareState(this),mouseCoords:null}
+        
         this.model = new Model()
-        this.view = new View(this.canv,this.model)
+        this.view = new View(this.canv,this.model,this.state)
                 
         this.view.draw()
         
         this.prepareListeners()
     }
+    regenerateModel(){
+        this.model = new Model()
+        this.view.updateModel(this.model)
+    }
     prepareListeners(){
         this.canv.addEventListener('click',(e) => this.click(e))
+        this.canv.addEventListener('mousedown',(e) => this.mouseDown(e))
+        this.canv.addEventListener('mousemove',(e) => this.mouseMove(e))
+        this.canv.addEventListener('mouseup',(e) => this.mouseUp(e))
     }
     click(e){
         e.preventDefault()
         var coords = this.getCoordsFromEvent(e)
         
-        this.clicked = false
-        if(coords != null)
-            this.model.click(coords.x,coords.y)
-        else
-            this.model.click(null,null)
+        if(coords.x > this.view.PADDING && coords.y > this.view.PADDING && coords.x < this.model.WIDTH+this.view.PADDING && coords.y < this.model.WIDTH+this.view.PADDING){
+            this.clicked = false
+            if(coords != null)
+                this.model.click(coords.x-this.view.PADDING,coords.y-this.view.PADDING)
+            else
+                this.model.click(null,null)
+        }
+    }
+    mouseDown(e){
+        e.preventDefault()
+        var coords = this.getCoordsFromEvent(e)
+        this.state.state.setMouseCoords(coords)
+        this.state.state.mouseDown(coords)
+    }
+    mouseMove(e){
+        e.preventDefault()
+        var coords = this.getCoordsFromEvent(e)
+        this.state.state.setMouseCoords(coords)
+        this.view.draw()
+    }
+    mouseUp(e){
+        e.preventDefault()
+        var coords = this.getCoordsFromEvent(e)
     }
     getCoordsFromEvent(e){
         var rect = this.canv.getBoundingClientRect()
@@ -1190,7 +1385,7 @@ function init(){
 </head>
 <body>
 <div id="whole">
-<canvas id="canv" width="800" height="800">
+<canvas id="canv" width="990" height="690">
 
 </canvas>
 </div>
