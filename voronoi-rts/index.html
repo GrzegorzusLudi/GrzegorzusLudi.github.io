@@ -21,6 +21,20 @@ html,body {color:white;background-color:black;font-family:Courier;width:100%; he
 </style>
 <script>
 
+function townData(){
+    return {
+        WIDTH: 6,
+    }
+}
+function unitData(){
+    return {
+        WIDTH: 20,
+        HEIGHT: 16,
+        OFFSET: 16,
+        PADDING: 3.5
+    }
+}
+    
 function pointInsideVerticalLinearLimit(x,x0,left){
     return (x < x0) && left || (x > x0) && !left
 }
@@ -367,6 +381,12 @@ function splitPolygonsByIntersectionsAndAddToNewPolygons(newPolygon,polygonInter
         k++
     }
 }
+function ccw(a,b,c){
+    return (c[1]-a[1]) * (b[0]-a[0]) > (b[1]-a[1]) * (c[0]-a[0])
+}
+function segmentsIntersecting(a1,a2,b1,b2){
+    return ccw(a1,b1,b2) != ccw(a2,b1,b2) && ccw(a1,a2,b1) != ccw(a1,a2,b2)
+}
 function hitTest(poly,x,y){
     var segmentsToCheck = []
     for(var i in poly){
@@ -474,20 +494,30 @@ const vectorNumbers = {
     4:[[0.0,0.0],[0.0,0.5],[1.0,0.5],[1.0,0.0],[1.0,1.0],],
     5:[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[1.0,1.0],[0.0,1.0],],
     6:[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.0,0.5],],
-    7:[[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],[0.0,1.0],],
+    7:[[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.5,0.5],[0.5,1.0],],
     8:[[1.0,0.5],[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.0,0.5],],
     9:[[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],],
 }
 const vectorLetters = {
     'A':[[0.0,1.0],[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],[1.0,0.5],[1.0,1.0],],
+    'B':[[0.0,0.0],[1.0,0.0],[1.0,1.0],[0.0,1.0],[0.5,1.0],[0.5,0.0],[0.5,0.5],[1.0,0.5],],
+    'C':[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],],
     'E':[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[0.0,0.5],[0.0,1.0],[1.0,1.0],],
     'G':[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.5,0.5],],
+    'H':[[0.0,0.0],[0.0,1.0],[0.0,0.5],[1.0,0.5],[1.0,0.0],[1.0,1.0],],
+    'I':[[0.5,0.0],[0.5,1.0],],
+    'K':[[0.0,0.0],[0.0,1.0],[0.0,0.5],[1.0,0.0],[0.0,0.5],[1.0,1.0],],
+    'L':[[0.0,0.0],[0.0,1.0],[1.0,1.0],],
     'M':[[0.0,1.0],[0.0,0.0],[0.5,0.5],[1.0,0.0],[1.0,1.0],],
     'N':[[0.0,1.0],[0.0,0.0],[1.0,1.0],[1.0,0.0],],
+    'O':[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],],
+    'P':[[0.0,1.0],[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],],
     'R':[[0.0,1.0],[0.0,0.0],[0.75,0.0],[0.75,0.5],[0.0,0.5],[1.0,0.5],[1.0,1.0],],
     'S':[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[1.0,1.0],[0.0,1.0],],
     'T':[[0.0,0.0],[1.0,0.0],[0.5,0.0],[0.5,1.0],],
+    'U':[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],],
     'W':[[0.0,0.0],[0.0,1.0],[0.5,0.5],[1.0,1.0],[1.0,0.0],],
+    'Y':[[0.0,0.0],[0.5,0.5],[1.0,0.0],[0.5,0.5],[0.5,1.0],],
 }
 //ax+b = 0  a = 1, b = -x_o
 class Chunk {
@@ -551,6 +581,22 @@ class Town {
         this.occupyingUnit = unit
         unit.setTownTaken(this)
     }
+    checkPathThrough(x1,y1,x2,y2){
+        var {WIDTH} = townData()
+        var l = this.x-WIDTH*5/4
+        var r = this.x+WIDTH*5/4
+        var t = this.y-WIDTH*2
+        var b = this.y
+
+        return  segmentsIntersecting([x1,y1],[x2,y2],[l,t],[r,t])
+                || 
+                segmentsIntersecting([x1,y1],[x2,y2],[l,b],[r,b])
+                || 
+                segmentsIntersecting([x1,y1],[x2,y2],[l,t],[l,b])
+                || 
+                segmentsIntersecting([x1,y1],[x2,y2],[r,t],[r,b])
+
+    }
 }
 class Unit {
     constructor(x,y,size,team,land){
@@ -563,12 +609,53 @@ class Unit {
         this.towntaken = null
         
         this.voronoi = null
+        
+        this.path = []
+        
+        this.target = null
     }
     setTownTaken(town){
         this.towntaken = town
     }
     setChunk(chunk){
         this.chunk = chunk
+    }
+    setPath(x,y,target){
+        if(this.towntaken != null){
+            this.towntaken.occupyingUnit = null
+            this.towntaken = null
+        }
+        if(target != null)
+            this.target = target
+        else
+            this.target = null
+        this.path = [[x,y]]
+    }
+    removePath(){
+        this.path = []
+    }
+    setTargetAsTown(){
+        this.towntaken = this.target
+        this.target.occupyingUnit = this
+        this.target = null
+    }
+    checkPathThrough(x1,y1,x2,y2){
+        var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
+        var l = this.x-WIDTH/2
+        var r = this.x+WIDTH/2
+        var t = this.y-HEIGHT/2
+        var b = this.y+HEIGHT/2
+        //        return mouseCoords != null && mouseCoords.x > unit.x-WIDTH/2 && mouseCoords.x < unit.x+WIDTH/2 && mouseCoords.y > unit.y-HEIGHT/2-OFFSET && mouseCoords.y < unit.y+HEIGHT/2-OFFSET
+
+
+        return  segmentsIntersecting([x1,y1],[x2,y2],[l,t],[r,t])
+                || 
+                segmentsIntersecting([x1,y1],[x2,y2],[l,b],[r,b])
+                || 
+                segmentsIntersecting([x1,y1],[x2,y2],[l,t],[l,b])
+                || 
+                segmentsIntersecting([x1,y1],[x2,y2],[r,t],[r,b])
+
     }
 }
 class Model {
@@ -591,6 +678,9 @@ class Model {
         
         this.populateTowns()
         this.generateVoronois()
+        
+        this.playerChoosen = null
+        this.selectedUnit = null
 //        window.lands = this.lands
         //this.drawLands()//debug
 
@@ -602,7 +692,14 @@ class Model {
             points.push(new GenerationalPoint(Math.random() * this.WIDTH, Math.random() * this.WIDTH, Math.random() < 0.57))
         }
         
-        return points
+        var sorted = points.sort((a,b) => a.x-b.x)
+        var newPoints = []
+        for(var i = 0;i<this.NUMBER_OF_POINTS-1;i++){
+            if(sorted[i].x != sorted[i-(-1)].x && sorted[i].y != sorted[i-(-1)].y)
+                newPoints.push(sorted[i])
+        }
+        
+        return newPoints
     }
     adjustGenerationPointsToLands(generationPoints,lands){
         for(var i in lands){
@@ -875,7 +972,7 @@ class Model {
                 
                 this.teams.push(newTeam)
                 
-                var newUnit = new Unit(town.x,town.y,Math.ceil(Math.random()*99),newTeam,town.land)
+                var newUnit = new Unit(town.x,town.y,10+Math.ceil(Math.random()*89),newTeam,town.land)
                 
                 newUnit.setChunk(this.chunks[chunk])
                 
@@ -955,6 +1052,44 @@ class Model {
             
         }
     }
+    selectUnit(unit){
+        this.selectedUnit = unit
+    }
+    deselectUnit(){
+        this.selectedUnit = null
+    }
+    
+    pathPossible(unit,x,y,objectToBePressed){
+        var land = unit.land
+        
+        for(var i in this.towns){
+            var town = this.towns[i]
+            if((town.occupyingUnit == null || town.occupyingUnit != unit) && objectToBePressed != town)
+                if(town.checkPathThrough(unit.x,unit.y,x,y))
+                    return false
+        }
+        for(var i in this.units){
+            var unit2 = this.units[i]
+            
+            if(unit2 != unit && objectToBePressed != unit)
+                if(unit2.checkPathThrough(unit.x,unit.y,x,y))
+                    return false
+        }
+        return true
+    }
+    trySetPathForUnit(unit,x,y,objectToBePressed){
+        var possible = this.pathPossible(unit,x,y,objectToBePressed)
+        if(possible){
+            if(objectToBePressed){
+                if(dist(unit.x,unit.y,objectToBePressed.x,objectToBePressed.y) < 1){
+                    possible = false
+                } else
+                    unit.setPath(objectToBePressed.x,objectToBePressed.y,objectToBePressed)
+            } else
+                unit.setPath(x,y)
+        }
+        return possible
+    }
     click(x,y){
         for(var i in this.lands){
             var htest = hitTest(this.lands[i],x,y)
@@ -1001,6 +1136,41 @@ class Model {
         this.ctx.stroke()
         this.ctx.fill()
     }
+    update(){
+        const SPEED = 5
+        var change = false
+        for(var i in this.units){
+            var unit = this.units[i]
+            
+            if(unit.path.length > 0){
+                
+                var point = unit.path[0]
+                var angle = Math.atan2(unit.y - point[1], unit.x - point[0])
+                if(dist(unit.x,unit.y,point[0],point[1]) < SPEED){
+                    unit.x = point[0]
+                    unit.y = point[1]
+                    unit.path = unit.path.slice(1)
+                    
+                    if(unit.target != null){
+                        if(unit.target instanceof Town){
+                            unit.setTargetAsTown()
+                        }
+                    }
+                } else {
+                    unit.x -= SPEED * Math.cos(angle)
+                    unit.y -= SPEED * Math.sin(angle)
+                }
+                this.updateChunkForUnit(unit)
+                change = true
+            }
+        }
+        if(change)
+            this.generateVoronois()
+    }
+    updateChunkForUnit(unit){
+        var newChunk = this.getChunkFromCoords(unit.x,unit.y)
+        unit.setChunk(this.chunks[newChunk])
+    }
 }
 const COLOR_LETTERS = '123456789ABCDE'
 function getRandomColor() {
@@ -1009,6 +1179,9 @@ function getRandomColor() {
     color += COLOR_LETTERS[Math.floor(Math.random() * COLOR_LETTERS.length)];
   }
   return color;
+}
+function darkColor(color){
+    return !'BCDEF'.includes(color[1]) && !'ABCDEF'.includes(color[3]) && !'CDEF'.includes(color[5])
 }
 class View {
     constructor(canv,model,state){
@@ -1020,6 +1193,9 @@ class View {
         this.model = model
         
         this.state = state
+        
+        this.GLOW_COLOR = '#fff'
+        this.SELECTED_COLOR = '#ff6'
     }
     updateModel(model){
         this.model = model
@@ -1031,9 +1207,25 @@ class View {
         this.drawPanel()
     }
     drawBackground(){
-        this.ctx.fillStyle = '#55f'
+        this.ctx.fillStyle = this.state.state.backgroundColor
         this.ctx.fillRect(-this.PADDING,-this.PADDING,this.canv.width,this.canv.height)
 
+        this.ctx.fillStyle = '#00000022'
+        this.ctx.fillRect(-this.PADDING,-this.PADDING,this.canv.width,this.canv.height)
+
+    }
+    modelMouseCoords(){
+        if(this.state.state.mouseCoords != null){
+            var raw_x = this.state.state.mouseCoords.x
+            var raw_y = this.state.state.mouseCoords.y
+            
+            var x = raw_x - this.PADDING
+            var y = raw_y - this.PADDING
+            
+            if(x > 0 && y > 0 && x < this.model.WIDTH && y < this.model.WIDTH)
+                return {x: x, y: y}
+        }
+        return null
     }
     drawModel(){
         this.ctx.fillStyle = '#fff'
@@ -1055,8 +1247,11 @@ class View {
     drawPanel(){
         const PANEL_X = this.state.state.PANEL_X
         
-        this.ctx.fillStyle = '#22a'
+        this.ctx.fillStyle = this.state.state.backgroundColor
         this.ctx.fillRect(PANEL_X,0,this.canv.width-this.model.WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
+        this.ctx.fillStyle = '#ffffff44'
+        this.ctx.fillRect(PANEL_X,0,this.canv.width-this.model.WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
+
         this.ctx.strokeStyle = '#000'
         this.ctx.lineWidth = 2
         this.ctx.strokeRect(PANEL_X,0,this.canv.width-this.model.WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
@@ -1138,14 +1333,29 @@ class View {
                 this.ctx.strokeRect(point.x-2,point.y-2,4,4)
         }
     }
+    mouseOnTown(mouseCoords, town){
+        var {WIDTH} = townData()
+        
+        return mouseCoords != null && mouseCoords.x > town.x-WIDTH*5/4 && mouseCoords.x < town.x+WIDTH*5/4 && mouseCoords.y > town.y-WIDTH*2 && mouseCoords.y < town.y
+    }
     drawTowns(){
         var WIDTH = 6
+        
+        var mouseCoords = this.modelMouseCoords()
+        var focusedUnit = this.getUnitByMouse(mouseCoords)
+        
+        var focusedTown = focusedUnit == null ? this.getTownByMouse(mouseCoords) : null
+
         for(var i in this.model.towns){
             var town = this.model.towns[i]
 
+            var focused = /*town.occupyingUnit != null && town.occupyingUnit == focusedUnit || */town == focusedTown
+            
             this.ctx.strokeStyle = town.occupyingUnit ? '#000' : '#333'
             this.ctx.fillStyle = town.occupyingUnit ? town.occupyingUnit.team.color : '#ccc'
             
+            if(focused)
+                this.ctx.strokeStyle = this.GLOW_COLOR
             
             this.ctx.fillRect(town.x-WIDTH*5/4,town.y-WIDTH,WIDTH,WIDTH)
             this.ctx.strokeRect(town.x-WIDTH,town.y-WIDTH,WIDTH,WIDTH)
@@ -1157,22 +1367,94 @@ class View {
             this.ctx.strokeRect(town.x-WIDTH/2,town.y-WIDTH*2,WIDTH,WIDTH*2)
         }
     }
+    mouseOnUnit(mouseCoords, unit){
+        var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
+        
+        return mouseCoords != null && mouseCoords.x > unit.x-WIDTH/2 && mouseCoords.x < unit.x+WIDTH/2 && mouseCoords.y > unit.y-HEIGHT/2-OFFSET && mouseCoords.y < unit.y+HEIGHT/2-OFFSET
+    }
+    getUnitByMouse(mouseCoords){
+        var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
+        
+        var units = this.model.units.sort((a,b) => b.y - a.y)
+        for(var i in units){
+            var unit = units[i]
+            if(this.mouseOnUnit(mouseCoords, unit))
+                return unit
+        }
+        return null
+    }
+    getTownByMouse(mouseCoords){
+        var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
+        
+        var towns = this.model.towns.sort((a,b) => b.y - a.y)
+        for(var i in towns){
+            var town = towns[i]
+            if(this.mouseOnTown(mouseCoords, town))
+                return town
+        }
+        return null
+    }
     drawUnits(){
-        var WIDTH = 20
-        var HEIGHT = 16
-        var OFFSET = 16
-        var PADDING = 3.5
+        var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
+        
+        var mouseCoords = this.modelMouseCoords()
+        
+        var focusedUnit = this.getUnitByMouse(mouseCoords)
+        var focusedTown = focusedUnit == null ? this.getTownByMouse(mouseCoords) : null
+
         for(var i in this.model.units){
             var unit = this.model.units[i]
             var teamColor = unit.team.color
             
-            this.ctx.strokeStyle = '#000'
+            var selected = unit == this.model.selectedUnit
+            var focused = unit == focusedUnit
+
+            if(unit.path.length > 0){
+                this.ctx.lineWidth = 2
+                
+                this.ctx.strokeStyle = '#f00'
+                
+                this.ctx.beginPath()
+                this.ctx.moveTo(unit.x,unit.y)
+                
+                var point
+                var lastPoint = [unit.x,unit.y]
+                for(var j in unit.path){
+                    point = unit.path[j]
+                    this.ctx.lineTo(point[0],point[1])
+                    if(j < unit.path.length - 1)
+                        lastPoint = point
+                }
+                var ARROW_SIZE = 10
+                var ARROW_ANGLE = Math.PI/8
+                var angle = Math.atan2(lastPoint[1] - point[1], lastPoint[0] - point[0])
+                this.ctx.lineTo(point[0],point[1])
+                this.ctx.lineTo(point[0] + Math.cos(angle - ARROW_ANGLE)*ARROW_SIZE,point[1] + Math.sin(angle - ARROW_ANGLE)*ARROW_SIZE)
+                this.ctx.lineTo(point[0],point[1])
+                this.ctx.lineTo(point[0] + Math.cos(angle + ARROW_ANGLE)*ARROW_SIZE,point[1] + Math.sin(angle + ARROW_ANGLE)*ARROW_SIZE)
+                this.ctx.stroke()
+                
+                this.ctx.lineWidth = 1
+            }
+            
+            this.ctx.strokeStyle = focused ? this.GLOW_COLOR :'#000'
             this.ctx.fillStyle = teamColor
             
+            if(focused || selected)
+                this.ctx.lineWidth = 2
+                
+            if(focused)
+                this.ctx.strokeStyle = this.GLOW_COLOR
+            
+            if(selected)
+                this.ctx.strokeStyle = this.SELECTED_COLOR
+                
             this.ctx.fillRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-OFFSET,WIDTH,HEIGHT)
             this.ctx.strokeRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-OFFSET,WIDTH,HEIGHT)
 
-            this.ctx.strokeStyle = !'BCDEF'.includes(teamColor[1]) && !'ABCDEF'.includes(teamColor[3]) && !'CDEF'.includes(teamColor[5]) ? '#fffa' : '#000'
+            if(!selected && !focused)
+                this.ctx.strokeStyle = darkColor(teamColor) ? '#fffa' : '#000'
+            
             
             if(unit.size >= 10){
                 var firstNumber = (''+unit.size)[0]
@@ -1183,6 +1465,7 @@ class View {
             } else {                
                 this.drawNumber(unit.size   , unit.x-WIDTH/8            ,unit.y-HEIGHT/2-OFFSET + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
             }
+            this.ctx.lineWidth = 1
             
         }
     }
@@ -1206,6 +1489,8 @@ class State {
         this.panelControls = []
         this.mouseCoords = null
         
+        this.backgroundColor = '#AAAAAA'
+        
         this.PANEL_X = 670
     }
     setMouseCoords(coords){
@@ -1223,15 +1508,34 @@ class State {
             control.tryClick(mouseCoordsTransformed)
         }
     }
+    borderColor(){
+        return darkColor(this.backgroundColor) ? '#ffffffcc' : '#000000cc'
+    }
 }
 class GamePrepareState extends State {
     constructor(controller){
         super(controller)
+        this.gameplay = false
+        
         let t = this
         this.panelControls = [
-            new TextControl(20,35,240,30,'NEW GAME','#000022'),
-            new Button(40,560,200,60,'START','#6666cc','#000022',()=>{var a = 4}),
-            new Button(30,140,220,40,'GENERATE','#6666cc','#000022',()=>{t.controller.regenerateModel()}),
+            new TextControl(20,35,240,30,'NEW GAME',this.borderColor()),
+            new TextControl(30,520,220,80,['CLICK ON AN ','UNIT TO PLAY',"WITH IT    "],this.borderColor()),
+            new Button(30,140,220,40,'GENERATE',this.backgroundColor,this.borderColor(),()=>{t.controller.regenerateModel()}),
+        ]
+    }
+}
+class GamePlayUnselected extends State {
+    constructor(controller){
+        super(controller)
+        this.gameplay = true
+        
+        this.backgroundColor = this.controller.playingTeam.color
+        
+        let t = this
+        this.panelControls = [
+            new TextControl(20,35,240,30,'PLAY',this.borderColor()),
+            new Button(30,540,220,40,'GO BACK',this.backgroundColor,this.borderColor(),()=>{t.controller.goToMenu()}),
         ]
     }
 }
@@ -1252,31 +1556,42 @@ class Control {
 class TextControl extends Control {
     constructor(x,y,w,h,text,color){
         super(x,y,w,h)
-        this.text = text
+        
+        if(typeof text == 'string')
+            this.text = [text]
+        else
+            this.text = text
         this.color = color
     }
     draw(ctx,mouseCoordsTransformed){
-        var twidth = this.w / (this.text.length + (this.text.length-1) / 3)
-        var pause = twidth / 3
-
         ctx.strokeStyle = this.color
         ctx.lineWidth = 2
+        
+        var theight = this.h / (this.text.length + (this.text.length-1) / 3)
+        var hpause = theight / 3
+        
         for(var i in this.text){
-            var letter = this.text[i]
-
-            var coords = vectorLetters[letter]
+            var row = this.text[i]
             
-            if(coords != undefined){
-                ctx.beginPath()
-                for(var j in coords){
-                    var point = coords[j]
-                    if(j == 0){
-                        ctx.moveTo(this.x + point[0]*twidth + i*(twidth+pause), this.y + point[1]*this.h)
-                    } else {
-                        ctx.lineTo(this.x + point[0]*twidth + i*(twidth+pause), this.y + point[1]*this.h)
+            var twidth = this.w / (row.length + (row.length-1) / 3)
+            var wpause = twidth / 3
+            for(var j in row){
+                var letter = row[j]
+
+                var coords = vectorLetters[letter]
+                
+                if(coords != undefined){
+                    ctx.beginPath()
+                    for(var k in coords){
+                        var point = coords[k]
+                        if(k == 0){
+                            ctx.moveTo(this.x + point[0]*twidth + j*(twidth+wpause), this.y + point[1]*theight + i*(theight+hpause))
+                        } else {
+                            ctx.lineTo(this.x + point[0]*twidth + j*(twidth+wpause), this.y + point[1]*theight + i*(theight+hpause))
+                        }
                     }
+                    ctx.stroke()
                 }
-                ctx.stroke()
             }
         }
         ctx.lineWidth = 1
@@ -1323,10 +1638,25 @@ class Controller {
                 
         this.view.draw()
         
+        this.pressedUnit = null
+        this.dragStart = null
+        
+        this.playingTeam = null
+        
         this.prepareListeners()
+        
+        this.loop()
+    }
+    changeState(state){
+        this.state.state = state
     }
     regenerateModel(){
         this.model = new Model()
+        this.view.updateModel(this.model)
+    }
+    goToMenu(){
+        this.model = new Model()
+        this.changeState(new GamePrepareState(this))
         this.view.updateModel(this.model)
     }
     prepareListeners(){
@@ -1338,30 +1668,76 @@ class Controller {
     click(e){
         e.preventDefault()
         var coords = this.getCoordsFromEvent(e)
-        
+        /*
         if(coords.x > this.view.PADDING && coords.y > this.view.PADDING && coords.x < this.model.WIDTH+this.view.PADDING && coords.y < this.model.WIDTH+this.view.PADDING){
             this.clicked = false
             if(coords != null)
                 this.model.click(coords.x-this.view.PADDING,coords.y-this.view.PADDING)
             else
                 this.model.click(null,null)
-        }
+        }*/
     }
     mouseDown(e){
         e.preventDefault()
         var coords = this.getCoordsFromEvent(e)
+        
         this.state.state.setMouseCoords(coords)
+        
+        this.pressedUnit = this.view.getUnitByMouse(this.view.modelMouseCoords())
+        if(this.pressedUnit == null)
+            this.dragStart = coords
+        
         this.state.state.mouseDown(coords)
     }
     mouseMove(e){
         e.preventDefault()
         var coords = this.getCoordsFromEvent(e)
+        
         this.state.state.setMouseCoords(coords)
         this.view.draw()
     }
     mouseUp(e){
         e.preventDefault()
         var coords = this.getCoordsFromEvent(e)
+        var modelCoords = this.view.modelMouseCoords()
+        
+        if(this.model.selectedUnit == null){
+            if(this.pressedUnit != null){
+                var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
+
+                if(currentlyPressedUnit == this.pressedUnit){
+                    this.model.selectUnit(this.pressedUnit)
+                    if(!this.state.state.gameplay){
+                        this.playingTeam = this.model.selectedUnit.team
+                        this.changeState(new GamePlayUnselected(this))
+                    }
+                }
+            }
+        } else {
+            var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
+
+            if(this.pressedUnit != null && this.pressedUnit == currentlyPressedUnit){
+                
+            } else {
+                var pressedTown = this.view.getTownByMouse(modelCoords)
+                var pathCreated
+                if(pressedTown != null){
+                    pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,pressedTown)
+                } else if(currentlyPressedUnit != null) {
+                    pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,currentlyPressedUnit)
+                } else {
+                    pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y)
+                }
+                if(!pathCreated)
+                    this.model.selectedUnit.removePath()
+            }
+
+            this.model.deselectUnit()
+        }
+        
+        this.pressedUnit = null
+        this.dragStart = false
+        this.view.draw()
     }
     getCoordsFromEvent(e){
         var rect = this.canv.getBoundingClientRect()
@@ -1376,6 +1752,12 @@ class Controller {
         }
         
         return {x:x,y:y}
+    }
+    loop(){
+        this.model.update()
+        this.view.draw()
+        let t = this
+        setTimeout(()=>{t.loop()},100)
     }
 }
 function init(){
