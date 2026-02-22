@@ -680,8 +680,8 @@ class Unit {
         if(this.target.occupyingUnit == null){
             this.setTargetAsTown()
         } else if(this.target.occupyingUnit.team == this.team) {
-            this.target.occupyingUnit.die()
             this.size -= -this.target.occupyingUnit.size
+            this.target.occupyingUnit.die()
             this.setTargetAsTown()
         }
     }
@@ -1153,8 +1153,11 @@ class Model {
                     objectToBePressed = objectToBePressed.towntaken
                 if(dist(unit.x,unit.y,objectToBePressed.x,objectToBePressed.y) < 1){
                     possible = false
-                } else
+                } else if(objectToBePressed instanceof Town) {
                     unit.setPath(objectToBePressed.x,objectToBePressed.y,objectToBePressed)
+                } else {
+                    unit.setPath(objectToBePressed.x,objectToBePressed.y)
+                }
             } else
                 unit.setPath(x,y)
         }
