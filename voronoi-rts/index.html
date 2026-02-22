@@ -387,6 +387,17 @@ function ccw(a,b,c){
 function segmentsIntersecting(a1,a2,b1,b2){
     return ccw(a1,b1,b2) != ccw(a2,b1,b2) && ccw(a1,a2,b1) != ccw(a1,a2,b2)
 }
+function segmentsIntersectingWithPolygon(a,b,polygon){
+    for(var i = 0;i<polygon.length;i++){
+        var p1 = polygon[i]
+        var p2 = polygon[(i-(-1))%polygon.length]
+        
+        if(segmentsIntersecting(a,b,p1,p2))
+            return true
+
+    }
+    return false
+}
 function hitTest(poly,x,y){
     var segmentsToCheck = []
     for(var i in poly){
@@ -570,6 +581,8 @@ class Town {
         
         this.port = port
         
+        this.team = null
+        
         this.occupyingUnit = null
         
         this.voronoi = null
@@ -579,6 +592,7 @@ class Town {
     }
     setOccupyingUnit(unit){
         this.occupyingUnit = unit
+        this.team = unit.team
         unit.setTownTaken(this)
     }
     checkPathThrough(x1,y1,x2,y2){
@@ -613,6 +627,14 @@ class Unit {
         this.path = []
         
         this.target = null
+        
+        this.dead = false
+        
+        this.attackingFloat = 0
+    }
+    die(){
+        this.dead = true
+        this.leaveTown()
     }
     setTownTaken(town){
         this.towntaken = town
@@ -620,11 +642,31 @@ class Unit {
     setChunk(chunk){
         this.chunk = chunk
     }
-    setPath(x,y,target){
+    leaveTown(){
         if(this.towntaken != null){
             this.towntaken.occupyingUnit = null
             this.towntaken = null
         }
+    }
+    leavePartOfUnit(division){
+        var size1 = this.sizeAfterDivision(division)
+        var size2 = this.size - size1
+        
+        this.size = size1
+        if(size2 > 0){
+            var newUnit = new Unit(this.x,this.y,size2,this.team,this.land)
+            newUnit.setChunk(this.chunk)
+            if(this.towntaken != null){
+                this.towntaken.setOccupyingUnit(newUnit)
+                this.towntaken = null
+            }
+            return newUnit
+        } else {
+            this.leaveTown()
+            return null
+        }
+    }
+    setPath(x,y,target){
         if(target != null)
             this.target = target
         else
@@ -634,10 +676,24 @@ class Unit {
     removePath(){
         this.path = []
     }
+    tryTakeOverTown(){
+        if(this.target.occupyingUnit == null){
+            this.setTargetAsTown()
+        } else if(this.target.occupyingUnit.team == this.team) {
+            this.target.occupyingUnit.die()
+            this.size -= -this.target.occupyingUnit.size
+            this.setTargetAsTown()
+        }
+    }
     setTargetAsTown(){
         this.towntaken = this.target
-        this.target.occupyingUnit = this
+        this.target.setOccupyingUnit(this)
         this.target = null
+    }
+    tooClose(unit2){
+        var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
+        
+        return Math.abs(this.x - unit2.x) < WIDTH && Math.abs(this.y - unit2.y) < HEIGHT
     }
     checkPathThrough(x1,y1,x2,y2){
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
@@ -656,6 +712,9 @@ class Unit {
                 || 
                 segmentsIntersecting([x1,y1],[x2,y2],[r,t],[r,b])
 
+    }
+    sizeAfterDivision(division){
+        return Math.ceil(this.size * division)
     }
 }
 class Model {
@@ -681,6 +740,8 @@ class Model {
         
         this.playerChoosen = null
         this.selectedUnit = null
+        
+        this.selectedUnitDivision = 1
 //        window.lands = this.lands
         //this.drawLands()//debug
 
@@ -983,7 +1044,7 @@ class Model {
         }
     }
     getVoronoiables(){
-        return this.towns.filter(a => a.occupyingUnit == null).concat(this.units)
+        return this.towns.filter(a => a.occupyingUnit == null).concat(this.units.filter(a => !a.dead))
     }
     generateVoronois(){
         var voronoiables = this.getVoronoiables()
@@ -1033,17 +1094,19 @@ class Model {
                 if(point1 == point2 || point1.land != point2.land)
                     continue
                     
-                var bisector = bisectorFromTwoPoints(point1.x,point1.y,point2.x,point2.y)
+                if(point1.x != point2.x || point1.y != point2.y){
+                    var bisector = bisectorFromTwoPoints(point1.x,point1.y,point2.x,point2.y)
 
-                var land = voronoiable.voronoi
-                var newLands
-                if(bisector.vertical){
-                    newLands = verticalLinearLimitPolygons([land],bisector.x,bisector.firstLeftBottom)
-                } else {
-                    newLands = nonVerticalLinearLimitPolygons([land],bisector.a,bisector.b,bisector.firstLeftBottom)
+                    var land = voronoiable.voronoi
+                    var newLands
+                    if(bisector.vertical){
+                        newLands = verticalLinearLimitPolygons([land],bisector.x,bisector.firstLeftBottom)
+                    } else {
+                        newLands = nonVerticalLinearLimitPolygons([land],bisector.a,bisector.b,bisector.firstLeftBottom)
+                    }
+                    
+                    voronoiable.voronoi = polygonHittingPoints(newLands,voronoiable.x,voronoiable.y)
                 }
-                
-                voronoiable.voronoi = polygonHittingPoints(newLands,voronoiable.x,voronoiable.y)
 
             }
             var limit = this.WIDTH / this.CHUNKS_PER_SIDE
@@ -1054,6 +1117,7 @@ class Model {
     }
     selectUnit(unit){
         this.selectedUnit = unit
+        this.selectedUnitDivision = 1
     }
     deselectUnit(){
         this.selectedUnit = null
@@ -1064,16 +1128,20 @@ class Model {
         
         for(var i in this.towns){
             var town = this.towns[i]
-            if((town.occupyingUnit == null || town.occupyingUnit != unit) && objectToBePressed != town)
+            if(town.occupyingUnit == null && objectToBePressed != town && !(objectToBePressed != null && 'towntaken' in objectToBePressed && objectToBePressed.towntaken == town))
                 if(town.checkPathThrough(unit.x,unit.y,x,y))
                     return false
         }
         for(var i in this.units){
             var unit2 = this.units[i]
             
-            if(unit2 != unit && objectToBePressed != unit)
+            if(unit2 != unit && objectToBePressed != unit && objectToBePressed != unit2 && !(objectToBePressed != null && 'occupyingUnit' in objectToBePressed && (objectToBePressed.occupyingUnit == unit || objectToBePressed.occupyingUnit == unit2)))
                 if(unit2.checkPathThrough(unit.x,unit.y,x,y))
                     return false
+        }
+        if(unit.land != null){
+            if(segmentsIntersectingWithPolygon([unit.x,unit.y],[x,y],unit.land))
+                return false
         }
         return true
     }
@@ -1081,6 +1149,8 @@ class Model {
         var possible = this.pathPossible(unit,x,y,objectToBePressed)
         if(possible){
             if(objectToBePressed){
+                if(objectToBePressed instanceof Unit && objectToBePressed.towntaken != null)
+                    objectToBePressed = objectToBePressed.towntaken
                 if(dist(unit.x,unit.y,objectToBePressed.x,objectToBePressed.y) < 1){
                     possible = false
                 } else
@@ -1136,13 +1206,63 @@ class Model {
         this.ctx.stroke()
         this.ctx.fill()
     }
+    fightBetweenUnits(unit1,unit2){
+        var unit1defenceFactor = 1
+        var unit2defenceFactor = 1
+        
+        var STANDARD_HIT = 1
+        
+        if(unit1.towntaken != null)
+            unit1defenceFactor *= 1.25
+        if(unit2.towntaken != null)
+            unit2defenceFactor *= 1.25
+        
+        var unit1attackingFloatBefore = unit1.attackingFloat
+        var unit2attackingFloatBefore = unit2.attackingFloat
+        
+        unit1.attackingFloat += STANDARD_HIT / unit2defenceFactor
+        unit2.attackingFloat += STANDARD_HIT / unit1defenceFactor
+        
+        unit1.size -= Math.floor(unit2.attackingFloat) - Math.floor(unit2attackingFloatBefore)
+        unit2.size -= Math.floor(unit1.attackingFloat) - Math.floor(unit1attackingFloatBefore)
+        
+        if(unit1.size <= 0){
+            unit1.size = 0
+            unit1.die()
+        }
+        if(unit2.size <= 0){
+            unit2.size = 0
+            unit2.die()
+        }
+    }
     update(){
-        const SPEED = 5
+        var unitsByChunk = {}
+        
+        for(var key in this.chunks){
+            unitsByChunk[key] = []
+        }
+        for(var i in this.units){
+            var unit = this.units[i]
+            
+            var chunk = unit.chunk
+            var nearbyCodes = chunk.nearChunkCodes
+            for(var j in nearbyCodes){
+                var nearbyCode = nearbyCodes[j]
+                if(nearbyCode in this.chunks){
+                    unitsByChunk[nearbyCode].push(unit)
+                }
+            }
+        }
+        
+        const SPEED = 2
         var change = false
         for(var i in this.units){
             var unit = this.units[i]
             
             if(unit.path.length > 0){
+                var pushback = false
+                var oldx = unit.x
+                var oldy = unit.y
                 
                 var point = unit.path[0]
                 var angle = Math.atan2(unit.y - point[1], unit.x - point[0])
@@ -1153,7 +1273,7 @@ class Model {
                     
                     if(unit.target != null){
                         if(unit.target instanceof Town){
-                            unit.setTargetAsTown()
+                            unit.tryTakeOverTown()
                         }
                     }
                 } else {
@@ -1161,9 +1281,28 @@ class Model {
                     unit.y -= SPEED * Math.sin(angle)
                 }
                 this.updateChunkForUnit(unit)
-                change = true
+
+                var chunkcode = unit.chunk.x+'#'+unit.chunk.y
+                var unitsToCheck = unitsByChunk[chunkcode]
+                for(var j in unitsToCheck){
+                    var unit2 = unitsToCheck[j]
+                    
+                    if(unit.team != unit2.team && unit.tooClose(unit2)){
+                        this.fightBetweenUnits(unit,unit2)
+                        pushback = true
+                    }
+                }
+                if(pushback){
+                    unit.x = oldx
+                    unit.y = oldy
+                    change = false
+                    this.updateChunkForUnit(unit)
+                } else {
+                    change = true
+                }
             }
         }
+        this.units = this.units.filter(a => !a.dead)
         if(change)
             this.generateVoronois()
     }
@@ -1303,7 +1442,7 @@ class View {
         for(var i in voronoiables){
             var voronoiable = voronoiables[i]
             if(voronoiable.voronoi != null){
-                if('team' in voronoiable){
+                if(voronoiable.team != null){
                     this.drawLand(voronoiable.voronoi,'#000000',voronoiable.team.color+'88')
                 }
             }
@@ -1351,8 +1490,8 @@ class View {
 
             var focused = /*town.occupyingUnit != null && town.occupyingUnit == focusedUnit || */town == focusedTown
             
-            this.ctx.strokeStyle = town.occupyingUnit ? '#000' : '#333'
-            this.ctx.fillStyle = town.occupyingUnit ? town.occupyingUnit.team.color : '#ccc'
+            this.ctx.strokeStyle = town.team ? '#000' : '#333'
+            this.ctx.fillStyle = town.team ? town.team.color : '#ccc'
             
             if(focused)
                 this.ctx.strokeStyle = this.GLOW_COLOR
@@ -1370,7 +1509,9 @@ class View {
     mouseOnUnit(mouseCoords, unit){
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
         
-        return mouseCoords != null && mouseCoords.x > unit.x-WIDTH/2 && mouseCoords.x < unit.x+WIDTH/2 && mouseCoords.y > unit.y-HEIGHT/2-OFFSET && mouseCoords.y < unit.y+HEIGHT/2-OFFSET
+        var realOffset = unit.towntaken ? OFFSET : 0
+        
+        return mouseCoords != null && mouseCoords.x > unit.x-WIDTH/2 && mouseCoords.x < unit.x+WIDTH/2 && mouseCoords.y > unit.y-HEIGHT/2-realOffset && mouseCoords.y < unit.y+HEIGHT/2-realOffset
     }
     getUnitByMouse(mouseCoords){
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
@@ -1449,8 +1590,9 @@ class View {
             if(selected)
                 this.ctx.strokeStyle = this.SELECTED_COLOR
                 
-            this.ctx.fillRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-OFFSET,WIDTH,HEIGHT)
-            this.ctx.strokeRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-OFFSET,WIDTH,HEIGHT)
+            var realOffset = unit.towntaken ? OFFSET : 0
+            this.ctx.fillRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-realOffset,WIDTH,HEIGHT)
+            this.ctx.strokeRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-realOffset,WIDTH,HEIGHT)
 
             if(!selected && !focused)
                 this.ctx.strokeStyle = darkColor(teamColor) ? '#fffa' : '#000'
@@ -1460,10 +1602,31 @@ class View {
                 var firstNumber = (''+unit.size)[0]
                 var secondNumber = (''+unit.size)[1]
                     
-                this.drawNumber(firstNumber , unit.x-WIDTH/2 + PADDING  ,unit.y-HEIGHT/2-OFFSET + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
-                this.drawNumber(secondNumber, unit.x         + PADDING/2,unit.y-HEIGHT/2-OFFSET + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
+                this.drawNumber(firstNumber , unit.x-WIDTH/2 + PADDING  ,unit.y-HEIGHT/2-realOffset + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
+                this.drawNumber(secondNumber, unit.x         + PADDING/2,unit.y-HEIGHT/2-realOffset + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
             } else {                
-                this.drawNumber(unit.size   , unit.x-WIDTH/8            ,unit.y-HEIGHT/2-OFFSET + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
+                this.drawNumber(unit.size   , unit.x-WIDTH/8            ,unit.y-HEIGHT/2-realOffset + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
+            }
+            if(selected && this.model.selectedUnitDivision != 1){
+                
+                var dividedSize = unit.sizeAfterDivision(this.model.selectedUnitDivision)
+                
+                var newerOffset = realOffset + 5
+                this.ctx.fillRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-newerOffset,WIDTH,HEIGHT)
+                this.ctx.strokeRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-newerOffset,WIDTH,HEIGHT)
+
+                if(!selected && !focused)
+                    this.ctx.strokeStyle = darkColor(teamColor) ? '#fffa' : '#000'
+            
+                if(dividedSize >= 10){
+                    var firstNumber = (''+dividedSize)[0]
+                    var secondNumber = (''+dividedSize)[1]
+                        
+                    this.drawNumber(firstNumber , unit.x-WIDTH/2 + PADDING  ,unit.y-HEIGHT/2-newerOffset + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
+                    this.drawNumber(secondNumber, unit.x         + PADDING/2,unit.y-HEIGHT/2-newerOffset + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
+                } else {                
+                    this.drawNumber(dividedSize   , unit.x-WIDTH/8            ,unit.y-HEIGHT/2-newerOffset + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
+                }
             }
             this.ctx.lineWidth = 1
             
@@ -1717,7 +1880,24 @@ class Controller {
             var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
 
             if(this.pressedUnit != null && this.pressedUnit == currentlyPressedUnit){
-                
+                if(this.pressedUnit == this.model.selectedUnit){
+                    if(this.model.selectedUnit.sizeAfterDivision(this.model.selectedUnitDivision) == 1)
+                        this.model.selectedUnitDivision = 1
+                    //else if(this.model.selectedUnitDivision > 0.5 && this.model.selectedUnit.size >= 4)
+                    //    this.model.selectedUnitDivision -= 0.25
+                    else
+                        this.model.selectedUnitDivision /= 2
+                } else {
+                    var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,currentlyPressedUnit)
+
+                    if(pathCreated){
+                        var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
+                        if(newUnit != null)
+                            this.model.units.push(newUnit)
+                    } else
+                        this.model.selectedUnit.removePath()
+                    this.model.deselectUnit()
+                }
             } else {
                 var pressedTown = this.view.getTownByMouse(modelCoords)
                 var pathCreated
@@ -1728,11 +1908,15 @@ class Controller {
                 } else {
                     pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y)
                 }
-                if(!pathCreated)
+                if(pathCreated){
+                    var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
+                    if(newUnit != null)
+                        this.model.units.push(newUnit)
+                } else
                     this.model.selectedUnit.removePath()
+                this.model.deselectUnit()
             }
 
-            this.model.deselectUnit()
         }
         
         this.pressedUnit = null
