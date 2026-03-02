@@ -865,6 +865,9 @@ class Unit {
     sizeAfterDivision(division){
         return Math.ceil(this.size * division)
     }
+    inProcessOfEmbarking(){
+        return this.embarking && this.embarkingProgress < this.size
+    }
 }
 class Model {
     constructor(){
@@ -1248,6 +1251,11 @@ class Model {
                     break
                 }
             }
+            if(defaultPolygon == null){             //so much fix
+                voronoiable.voronoi = null
+                continue
+            }
+
             voronoiable.voronoi = defaultPolygon.map(a => a.slice())
             var vbc = voronoiableByChunk[chunkcode]
             for(var j in vbc){
@@ -1348,12 +1356,12 @@ class Model {
             var land = this.lands[i]
             numberOfSegmentsCrossed += segmentsIntersectingWithPolygonCount([ux,uy],[x,y],land)
         }
-        return numberOfSegmentsCrossed <= 1
+        return numberOfSegmentsCrossed <= 0 || unit.embarking && !unit.inProcessOfEmbarking() && numberOfSegmentsCrossed <= 1
     }
     trySetPathForUnit(unit,x,y,objectToBePressed){
-        var possible = this.pathPossible(unit,x,y,objectToBePressed)
+        var possible = !unit.embarking && this.pathPossible(unit,x,y,objectToBePressed)
         var seaPossible = false
-        if(!possible && unit.towntaken && unit.towntaken.port || unit.embarking){
+        if(!possible && unit.towntaken && unit.towntaken.port || unit.embarking && !unit.inProcessOfEmbarking()){
             seaPossible = this.seaPathPossible(unit,x,y,objectToBePressed)
             possible = seaPossible
         }
@@ -1548,12 +1556,13 @@ class Model {
                         unit.y = oldy
                         this.updateChunkForUnit(unit)
                     } else {
-                        if(unit.embarking){
-                            var land = getPolygonInside(this.lands,unit.x,unit.y)
-                            if(land != null){
-                                unit.land = land
-                                unit.embarking = false
-                            }
+                        var land = getPolygonInside(this.lands,unit.x,unit.y)
+                        if(land != null){
+                            unit.land = land
+                            unit.embarking = false
+                        } else {
+                            unit.land = null
+                            unit.embarking = true
                         }
                         change = true
                     }
@@ -1589,6 +1598,9 @@ class Model {
         }
         for(var i in this.units){
             var unit = this.units[i]
+            if(unit.embarking)
+                continue
+                
             var growingFloatBefore = unit.growingFloat
             if(unit.towntaken){
                 unit.growingFloat += this.TOWN_GROWING_RATE
@@ -1855,7 +1867,8 @@ class View {
         var focusedUnit = this.getUnitByMouse(mouseCoords)
         var focusedTown = focusedUnit == null ? this.getTownByMouse(mouseCoords) : null
 
-        for(var i=this.model.units.length - 1;i>=0;i--){
+        for(var i=0;i<this.model.units.length;i++){
+        //for(var i=this.model.units.length - 1;i>=0;i--){
             var unit = this.model.units[i]
             var teamColor = unit.team.color
             
@@ -2222,7 +2235,7 @@ class Controller {
             if(this.pressedUnit != null){
                 var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
 
-                if(currentlyPressedUnit == this.pressedUnit){
+                if(currentlyPressedUnit == this.pressedUnit && !currentlyPressedUnit.inProcessOfEmbarking()){
                     this.model.selectUnit(this.pressedUnit)
                     if(!this.state.state.gameplay){
                         this.playingTeam = this.model.selectedUnit.team
@@ -2252,6 +2265,9 @@ class Controller {
                             if(!this.model.selectedUnit.embarking){
                                 newUnit.path = oldPath
                                 newUnit.target = oldTarget
+                            } else if(newUnit.towntaken != null) {
+                                this.model.selectedUnit.x = newUnit.towntaken.x
+                                this.model.selectedUnit.y = newUnit.towntaken.y
                             }
                             this.model.units.push(newUnit)
                         }
@@ -2278,10 +2294,12 @@ class Controller {
                         if(!this.model.selectedUnit.embarking){
                             newUnit.path = oldPath
                             newUnit.target = oldTarget
+                        } else if(newUnit.towntaken != null) {
+                            this.model.selectedUnit.x = newUnit.towntaken.x
+                            this.model.selectedUnit.y = newUnit.towntaken.y
                         }
                         this.model.units.push(newUnit)
                     }
-                    console.log(this.model.selectedUnit, newUnit)
                 } else
                     this.model.selectedUnit.removePath()
                 this.model.deselectUnit()
