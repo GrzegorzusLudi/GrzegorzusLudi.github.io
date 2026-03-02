@@ -813,6 +813,7 @@ class Unit {
         var unitTarget = this.target instanceof Town ? this.target.occupyingUnit : this.target
         this.tryToMergeWithUnit(unitTarget)
         this.target = null
+        this.removePath()
     }
     tryToMergeWithUnit(unit){
         if(this.size + unit.size > 99){
@@ -1218,7 +1219,17 @@ class Model {
         return this.towns.filter(a => a.occupyingUnit == null).concat(this.units.filter(a => !a.dead && !a.embarking))
     }
     generateVoronois(){
-        var voronoiables = this.getVoronoiables()
+        var rawVoronoiables = this.getVoronoiables()
+        var voronoiables = []
+        if(rawVoronoiables.length > 0)
+            voronoiables[0] = rawVoronoiables[0]
+        for(var i=1;i<rawVoronoiables.length;i++){
+            var previous = rawVoronoiables[i-1]
+            var present = rawVoronoiables[i]
+            if(previous.x != present.x || previous.y != present.y){
+                voronoiables.push(present)
+            }
+        }
         
         var voronoiableByChunk = {}
         for(var key in this.chunks){
