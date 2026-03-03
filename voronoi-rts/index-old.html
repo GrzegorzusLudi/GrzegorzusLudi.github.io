@@ -436,33 +436,10 @@ function splitPolygonsByIntersectionsAndAddToNewPolygons(newPolygon,polygonInter
     }
 }
 function ccw(a,b,c){
-    return (c[1]-a[1]) * (b[0]-a[0]) >= (b[1]-a[1]) * (c[0]-a[0])
+    return (c[1]-a[1]) * (b[0]-a[0]) > (b[1]-a[1]) * (c[0]-a[0])
 }
 function segmentsIntersecting(a1,a2,b1,b2){
     return ccw(a1,b1,b2) != ccw(a2,b1,b2) && ccw(a1,a2,b1) != ccw(a1,a2,b2)
-}
-function segmentsIntersectingWithPolygons(a,b,polygons){
-    for(var i in polygons){
-        var polygon = polygons[i]
-        if(segmentsIntersectingWithPolygon(a,b,polygon))
-            return true
-    }
-    return false
-}
-function segmentsOnTheGoodSideOfPolygon(a,b,polygons,inside){
-    var halfPoint1 = edgeHalfPointMoved(a,b,-0.1)
-    var halfPoint2 = edgeHalfPointMoved(a,b, 0.1)
-    
-    for(var i in polygons){
-        var polygon = polygons[i]
-
-        if(!inside && (hitTest(polygon,halfPoint1[0],halfPoint1[1]) && hitTest(polygon,halfPoint2[0],halfPoint2[1])))
-            return false
-            
-        if(inside && (!hitTest(polygon,halfPoint1[0],halfPoint1[1]) && !hitTest(polygon,halfPoint2[0],halfPoint2[1])))
-            return false
-    }
-    return true
 }
 function segmentsIntersectingWithPolygon(a,b,polygon){
     for(var i = 0;i<polygon.length;i++){
@@ -597,12 +574,6 @@ function polygonEdgeHalfPointMoved(polygon,index,radiusMoved){
     
     return [(p1[0]+p2[0])/2 + Math.sin(angle)*radiusMoved,(p1[1]+p2[1])/2 - Math.cos(angle)*radiusMoved]
 }
-function edgeHalfPointMoved(p1,p2,radiusMoved){    
-    var angle = Math.atan2(p2[1]-p1[1],p2[0]-p1[0])
-    
-    return [(p1[0]+p2[0])/2 + Math.sin(angle)*radiusMoved,(p1[1]+p2[1])/2 - Math.cos(angle)*radiusMoved]
-}
-
 function hexadecagonalLimit(x,y,polygon, limit){
     var SIDES = 32
     var polygons = [polygon]
@@ -640,97 +611,6 @@ function polygonHittingPoints(polygons,x,y){
             return polygon
         }
     }
-}
-function getVectorPath(unit,x,y,lands){
-    var inside = unit.land != null
-    
-    if(unit.land != null){
-        lands = [unit.land]
-    }
-    var pointDestinations = [{point:[unit.x,unit.y],dist:0,from:null}]
-    
-    var firstCode = unit.x+'#'+unit.y
-    var pointDestinationStack = {}
-    pointDestinationStack[firstCode] = pointDestinations[0]
-    var lastCode = x+'#'+y
-    pointDestinationStack[lastCode] = {point:[x,y],dist:null,from:null}
-
-    var usedPoints = {}
-    usedPoints[firstCode] = true
-    for(var i in lands){
-        var land = lands[i]
-        for(var j in land){
-            var band = land[j]
-            for(var k in band){
-                var point = band[k]
-                var code = point[0]+'#'+point[1]
-                pointDestinationStack[code] = {point:[point[0],point[1]],dist:null,from:null}
-            }
-        }
-    }
-    var tries = 5
-    while(pointDestinations.length > 0 && tries > 0){
-        var pointDestinations2 = []
-        
-        for(var i in pointDestinations){
-            var destination = pointDestinations[i]
-            
-            var key = destination.point[0]+'#'+destination.point[1]
-            for(var code in pointDestinationStack){
-                var potentialPointDestination = pointDestinationStack[code]
-                
-                if(!(code in usedPoints) && key != code && (!segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands))
-                && segmentsOnTheGoodSideOfPolygon(destination.point, potentialPointDestination.point, lands, inside)){
-                    var distance = Math.sqrt(Math.pow(destination.point[0] - potentialPointDestination.point[0],2) + Math.pow(destination.point[1] - potentialPointDestination.point[1],2))
-                    var newDistance = destination.dist + distance
-
-                    if(potentialPointDestination.dist == null || potentialPointDestination.dist > newDistance){
-                        if(potentialPointDestination.from == null)
-                            pointDestinations2.push(potentialPointDestination)
-                        potentialPointDestination.dist = newDistance
-                        potentialPointDestination.from = destination
-                    }
-                }
-            }
-            //usedPoints[key] = true
-        }
-        
-        pointDestinations = pointDestinations2
-        tries--
-    }
-    var path = []
-    var stackPoint = pointDestinationStack[lastCode]
-    while(stackPoint != null){
-        path.push(stackPoint.point)
-        stackPoint = stackPoint.from
-    }
-    path = path.reverse()
-    /*
-    console.log(path)
-    drawPathTemp(path)
-    console.log(path[0] == pointDestinationStack[firstCode].point)
-    throw new Error('gaga')
-    */
-    if(path[0] == pointDestinationStack[firstCode].point)
-        return path
-    return null
-}
-function drawPathTemp(path){
-    this.canv = document.getElementById('canv')
-    this.ctx = this.canv.getContext('2d')
-
-    this.ctx.strokeStyle = '#000'
-    this.ctx.beginPath()
-
-    for(var j in path){
-        var point = path[j]
-        if(j == 0){
-            this.ctx.moveTo(point[0],point[1])
-        } else {
-            this.ctx.lineTo(point[0],point[1])
-        }
-    }
-    this.ctx.stroke()
 }
 const vectorNumbers = {
     0:[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],],
@@ -832,7 +712,7 @@ class Town {
         this.team = unit.team
         unit.setTownTaken(this)
     }
-    checkSegmentThrough(x1,y1,x2,y2){
+    checkPathThrough(x1,y1,x2,y2){
         var {WIDTH} = townData()
         var l = this.x-WIDTH*5/4
         var r = this.x+WIDTH*5/4
@@ -847,16 +727,6 @@ class Town {
                 || 
                 segmentsIntersecting([x1,y1],[x2,y2],[r,t],[r,b])
 
-    }
-    checkPathThrough(path){
-        for(var i = 1;i<path.length;i++){
-            var p1 = path[i-1]
-            var p2 = path[i]
-            
-            if(checkSegmentThrough(p1[0],p1[1],p2[0],p2[1]))
-                return true
-        }
-        return false
     }
 }
 class Unit {
@@ -928,13 +798,6 @@ class Unit {
             this.target = null
         this.path = [[x,y]]
     }
-    setLinePath(path,target){
-        if(target != null)
-            this.target = target
-        else
-            this.target = null
-        this.path = path.slice()
-    }
     removePath(){
         this.path = []
     }
@@ -982,7 +845,7 @@ class Unit {
                (this.y < unit2.y && this.y < pathTarget[1] || this.y > unit2.y && this.y > pathTarget[1]) &&
                 Math.abs(this.x - pathTarget[0]) < WIDTH*2 && Math.abs(this.y - pathTarget[1]) < HEIGHT*2
     }
-    checkSegmentThrough(x1,y1,x2,y2){
+    checkPathThrough(x1,y1,x2,y2){
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
         var l = this.x-WIDTH/2
         var r = this.x+WIDTH/2
@@ -999,16 +862,6 @@ class Unit {
                 || 
                 segmentsIntersecting([x1,y1],[x2,y2],[r,t],[r,b])
 
-    }
-    checkPathThrough(path){
-        for(var i = 1;i<path.length;i++){
-            var p1 = path[i-1]
-            var p2 = path[i]
-            
-            if(checkSegmentThrough(p1[0],p1[1],p2[0],p2[1]))
-                return true
-        }
-        return false
     }
     sizeAfterDivision(division){
         return Math.ceil(this.size * division)
@@ -1366,7 +1219,7 @@ class Model {
         return this.towns.filter(a => a.occupyingUnit == null).concat(this.units.filter(a => !a.dead && !a.embarking))
     }
     generateVoronois(){
-        var rawVoronoiables = this.getVoronoiables().sort((a,b) => a.x - b.x)
+        var rawVoronoiables = this.getVoronoiables()
         var voronoiables = []
         if(rawVoronoiables.length > 0)
             voronoiables[0] = rawVoronoiables[0]
@@ -1459,35 +1312,28 @@ class Model {
     pathPossible(unit,x,y,objectToBePressed){
         var land = unit.land
         
-        if(objectToBePressed != null){
-            x = objectToBePressed.x
-            y = objectToBePressed.y
-        }
-        
-        var vectorPath = getVectorPath(unit,x,y,this.lands)
-        
-        if(vectorPath == null)
-            return false
-            
         for(var i in this.towns){
             var town = this.towns[i]
             if(town.color != unit.color && town.occupyingUnit == null && objectToBePressed != town && !(objectToBePressed != null && 'towntaken' in objectToBePressed && objectToBePressed.towntaken == town))
-                if(town.checkPathThrough(vectorPath))
-                    return null
+                if(town.checkPathThrough(unit.x,unit.y,x,y))
+                    return false
         }
         for(var i in this.units){
             var unit2 = this.units[i]
             
             if(unit2.color != unit.color && unit2 != unit && objectToBePressed != unit && objectToBePressed != unit2 && !(objectToBePressed != null && 'occupyingUnit' in objectToBePressed && (objectToBePressed.occupyingUnit == unit || objectToBePressed.occupyingUnit == unit2)))
-                if(unit2.checkPathThrough(vectorPath))
-                    return null
+                if(unit2.checkPathThrough(unit.x,unit.y,x,y))
+                    return false
         }
-        /*
+        if(objectToBePressed != null){
+            x = objectToBePressed.x
+            y = objectToBePressed.y
+        }
         if(unit.land != null){
             if(segmentsIntersectingWithPolygon([unit.x,unit.y],[x,y],unit.land))
                 return false
-        }*/
-        return vectorPath
+        }
+        return true
     }
     seaPathPossible(unit,x,y,objectToBePressed){
         var land = unit.land
@@ -1502,14 +1348,14 @@ class Model {
         for(var i in this.towns){
             var town = this.towns[i]
             if(town.color != unit.color && town.occupyingUnit == null && objectToBePressed != town && !(objectToBePressed != null && 'towntaken' in objectToBePressed && objectToBePressed.towntaken == town))
-                if(town.checkSegmentThrough(ux,uy,x,y))
+                if(town.checkPathThrough(ux,uy,x,y))
                     return false
         }
         for(var i in this.units){
             var unit2 = this.units[i]
             
             if(unit2.color != unit.color && unit2 != unit && objectToBePressed != unit && objectToBePressed != unit2 && !(objectToBePressed != null && 'occupyingUnit' in objectToBePressed && (objectToBePressed.occupyingUnit == unit || objectToBePressed.occupyingUnit == unit2)))
-                if(unit2.checkSegmentThrough(ux,uy,x,y))
+                if(unit2.checkPathThrough(ux,uy,x,y))
                     return false
         }
         if(objectToBePressed != null){
@@ -1521,12 +1367,10 @@ class Model {
             var land = this.lands[i]
             numberOfSegmentsCrossed += segmentsIntersectingWithPolygonCount([ux,uy],[x,y],land)
         }
-        return numberOfSegmentsCrossed <= 1 || unit.embarking && !unit.inProcessOfEmbarking() && numberOfSegmentsCrossed <= 1
+        return numberOfSegmentsCrossed <= 0 || unit.embarking && !unit.inProcessOfEmbarking() && numberOfSegmentsCrossed <= 1
     }
     trySetPathForUnit(unit,x,y,objectToBePressed){
-        var possiblePath = this.pathPossible(unit,x,y,objectToBePressed)
-        
-        var possible = !unit.embarking && possiblePath != null
+        var possible = !unit.embarking && this.pathPossible(unit,x,y,objectToBePressed)
         var seaPossible = false
         if(!possible && unit.towntaken && unit.towntaken.port || unit.embarking && !unit.inProcessOfEmbarking()){
             seaPossible = this.seaPathPossible(unit,x,y,objectToBePressed)
@@ -1542,14 +1386,10 @@ class Model {
                 } else {
                     if(objectToBePressed instanceof Unit && objectToBePressed.towntaken != null)
                         objectToBePressed = objectToBePressed.towntaken
-                    //unit.setPath(objectToBePressed.x,objectToBePressed.y,objectToBePressed)
-                    unit.setLinePath(possiblePath.slice(1),objectToBePressed)
+                    unit.setPath(objectToBePressed.x,objectToBePressed.y,objectToBePressed)
                 }
             } else {
-//                unit.setPath(x,y)
-                console.log(possiblePath)
-
-                unit.setLinePath(possiblePath.slice(1))
+                unit.setPath(x,y)
             }
         }
         if(possible && seaPossible && !unit.embarking){
@@ -2237,8 +2077,6 @@ class GamePlayUnselected extends State {
         this.panelControls = [
             new TextControl(20,35,240,30,'PLAY',this.borderColor()),
             new Button(30,540,220,40,'GO BACK',this.backgroundColor,this.borderColor(),()=>{t.controller.goToMenu()}),
-            new Button(50,135,180,60,'PAUSE',this.backgroundColor,this.borderColor(),()=>{t.controller.pausePlay()}),
-
         ]
     }
 }
@@ -2346,8 +2184,6 @@ class Controller {
         
         this.playingTeam = null
         
-        this.pause = false
-        
         this.prepareListeners()
         
         this.loop()
@@ -2357,7 +2193,6 @@ class Controller {
     }
     regenerateModel(){
         this.model = new Model()
-        this.pause = false
         this.view.updateModel(this.model)
     }
     goToMenu(){
@@ -2501,14 +2336,9 @@ class Controller {
         
         return {x:x,y:y}
     }
-    pausePlay(){
-        this.pause = !this.pause
-    }
     loop(){
-        if(!this.pause){
-            this.model.update()
-            this.view.draw()
-        }
+        this.model.update()
+        this.view.draw()
         let t = this
         setTimeout(()=>{t.loop()},100)
     }
