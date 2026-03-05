@@ -308,6 +308,8 @@ function nonVerticalLinearLimitPolygons(polygons,a,b,bottom){
         var arrayToAdd = []
         var polygonIntersectionIndexes = []
                     
+        if(polygon == undefined || !('length' in polygon))
+            console.log(polygons)
         for(var ii = 0;ii<polygon.length;ii++){
             var band = polygon[ii]
             
@@ -623,6 +625,8 @@ function hexadecagonalLimit(x,y,polygon, limit){
 //        try {
 //            console.log(polygons.length,polygons)
         //console.log(i,polygons[0])
+        if(polygons == null)
+            return null
         polygons = nonVerticalLinearLimitPolygons(polygons,a,b,firstLeftBottom)
 //        } catch(e){
 //            return polygon
@@ -631,6 +635,9 @@ function hexadecagonalLimit(x,y,polygon, limit){
 //    console.log(polygons)
 //    if(polygons.filter(a => a[a.length - 1] == undefined).length > 0)
 //        return null
+    if(polygons == null)
+        return null
+
     return polygons[0]//polygonHittingPoints(polygons,x,y)
 }
 function polygonHittingPoints(polygons,x,y){
@@ -641,15 +648,23 @@ function polygonHittingPoints(polygons,x,y){
         }
     }
 }
-function getVectorPath(unit,x,y,lands){
+function getVectorPath(unit,x,y,lands,port){
     var inside = unit.land != null
     
-    if(unit.land != null){
+    if(unit.land != null && !port){
         lands = [unit.land]
     }
-    var pointDestinations = [{point:[unit.x,unit.y],dist:0,from:null}]
     
-    var firstCode = unit.x+'#'+unit.y
+    var unitx = unit.x
+    var unity = unit.y
+    if(port){
+        unitx = unit.towntaken.port[0]
+        unity = unit.towntaken.port[1]
+    }
+    
+    var pointDestinations = [{point:[unitx,unity],dist:0,from:null}]
+    
+    var firstCode = unitx+'#'+unity
     var pointDestinationStack = {}
     pointDestinationStack[firstCode] = pointDestinations[0]
     var lastCode = x+'#'+y
@@ -1467,7 +1482,7 @@ class Model {
         var vectorPath = getVectorPath(unit,x,y,this.lands)
         
         if(vectorPath == null)
-            return false
+            return null
             
         for(var i in this.towns){
             var town = this.towns[i]
@@ -1499,29 +1514,29 @@ class Model {
             uy = unit.towntaken.port[1]
         }
         
-        for(var i in this.towns){
-            var town = this.towns[i]
-            if(town.color != unit.color && town.occupyingUnit == null && objectToBePressed != town && !(objectToBePressed != null && 'towntaken' in objectToBePressed && objectToBePressed.towntaken == town))
-                if(town.checkSegmentThrough(ux,uy,x,y))
-                    return false
-        }
-        for(var i in this.units){
-            var unit2 = this.units[i]
-            
-            if(unit2.color != unit.color && unit2 != unit && objectToBePressed != unit && objectToBePressed != unit2 && !(objectToBePressed != null && 'occupyingUnit' in objectToBePressed && (objectToBePressed.occupyingUnit == unit || objectToBePressed.occupyingUnit == unit2)))
-                if(unit2.checkSegmentThrough(ux,uy,x,y))
-                    return false
-        }
         if(objectToBePressed != null){
             x = objectToBePressed.x
             y = objectToBePressed.y
         }
+        
+        var vectorPath = [[ux,uy],[x,y]]
+        
+        if(vectorPath == null)
+            return null
+            
         var numberOfSegmentsCrossed = 0
         for(var i in this.lands){
             var land = this.lands[i]
-            numberOfSegmentsCrossed += segmentsIntersectingWithPolygonCount([ux,uy],[x,y],land)
+            for(var j=1;j<vectorPath.length;j++){
+                var point1 = vectorPath[j-1]
+                var point2 = vectorPath[j]
+                numberOfSegmentsCrossed += segmentsIntersectingWithPolygonCount(point1,point2,land)
+            }
         }
-        return numberOfSegmentsCrossed <= 1 || unit.embarking && !unit.inProcessOfEmbarking() && numberOfSegmentsCrossed <= 1
+        if(numberOfSegmentsCrossed <= 1 || unit.embarking && !unit.inProcessOfEmbarking() && numberOfSegmentsCrossed <= 1)
+            return vectorPath
+            
+        return null
     }
     trySetPathForUnit(unit,x,y,objectToBePressed){
         var possiblePath = this.pathPossible(unit,x,y,objectToBePressed)
@@ -1530,7 +1545,10 @@ class Model {
         var seaPossible = false
         if(!possible && unit.towntaken && unit.towntaken.port || unit.embarking && !unit.inProcessOfEmbarking()){
             seaPossible = this.seaPathPossible(unit,x,y,objectToBePressed)
-            possible = seaPossible
+            console.log(seaPossible)
+            possible = seaPossible != null
+            if(possible)
+                possiblePath = seaPossible
         }
 
         if(possible){
@@ -2407,34 +2425,65 @@ class Controller {
         var coords = this.getCoordsFromEvent(e)
         var modelCoords = this.view.modelMouseCoords()
         
-        if(this.model.selectedUnit == null){
-            if(this.pressedUnit != null){
-                var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
+        if(modelCoords != null)
+            if(this.model.selectedUnit == null){
+                if(this.pressedUnit != null){
+                    var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
 
-                if(currentlyPressedUnit == this.pressedUnit && !currentlyPressedUnit.inProcessOfEmbarking()){
-                    this.model.selectUnit(this.pressedUnit)
-                    if(!this.state.state.gameplay){
-                        this.playingTeam = this.model.selectedUnit.team
-                        this.changeState(new GamePlayUnselected(this))
+                    if(currentlyPressedUnit == this.pressedUnit && !currentlyPressedUnit.inProcessOfEmbarking()){
+                        this.model.selectUnit(this.pressedUnit)
+                        if(!this.state.state.gameplay){
+                            this.playingTeam = this.model.selectedUnit.team
+                            this.changeState(new GamePlayUnselected(this))
+                        }
                     }
                 }
-            }
-        } else {
-            var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
+            } else {
+                var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
 
-            if(this.pressedUnit != null && this.pressedUnit == currentlyPressedUnit){
-                if(this.pressedUnit == this.model.selectedUnit){
-                    if(this.model.selectedUnit.sizeAfterDivision(this.model.selectedUnitDivision) == 1)
-                        this.model.selectedUnitDivision = 1
-                    else if(this.model.selectedUnitDivision > 0.5 && this.model.selectedUnit.size >= 4)
-                        this.model.selectedUnitDivision -= 0.25
-                    else
-                        this.model.selectedUnitDivision /= 2
+                if(this.pressedUnit != null && this.pressedUnit == currentlyPressedUnit){
+                    if(this.pressedUnit == this.model.selectedUnit){
+                        if(this.model.selectedUnit.sizeAfterDivision(this.model.selectedUnitDivision) == 1)
+                            this.model.selectedUnitDivision = 1
+                        else if(this.model.selectedUnitDivision > 0.5 && this.model.selectedUnit.size >= 4)
+                            this.model.selectedUnitDivision -= 0.25
+                        else
+                            this.model.selectedUnitDivision /= 2
+                    } else {
+                        var oldPath = this.model.selectedUnit.path
+                        var oldTarget = this.model.selectedUnit.target
+                        var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,currentlyPressedUnit)
+
+                        if(pathCreated){
+                            var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
+                            if(newUnit != null){
+                                newUnit.voronoi = null
+                                if(!this.model.selectedUnit.embarking){
+                                    newUnit.path = oldPath
+                                    newUnit.target = oldTarget
+                                } else if(newUnit.towntaken != null) {
+                                    this.model.selectedUnit.x = newUnit.towntaken.x
+                                    this.model.selectedUnit.y = newUnit.towntaken.y
+                                }
+                                this.model.units.push(newUnit)
+                            }
+                        } else
+                            this.model.selectedUnit.removePath()
+                        this.model.deselectUnit()
+                    }
                 } else {
                     var oldPath = this.model.selectedUnit.path
                     var oldTarget = this.model.selectedUnit.target
-                    var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,currentlyPressedUnit)
 
+                    var pressedTown = this.view.getTownByMouse(modelCoords)
+                    var pathCreated
+                    if(pressedTown != null){
+                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,pressedTown)
+                    } else if(currentlyPressedUnit != null) {
+                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,currentlyPressedUnit)
+                    } else {
+                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y)
+                    }
                     if(pathCreated){
                         var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
                         if(newUnit != null){
@@ -2451,37 +2500,8 @@ class Controller {
                         this.model.selectedUnit.removePath()
                     this.model.deselectUnit()
                 }
-            } else {
-                var oldPath = this.model.selectedUnit.path
-                var oldTarget = this.model.selectedUnit.target
 
-                var pressedTown = this.view.getTownByMouse(modelCoords)
-                var pathCreated
-                if(pressedTown != null){
-                    pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,pressedTown)
-                } else if(currentlyPressedUnit != null) {
-                    pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,currentlyPressedUnit)
-                } else {
-                    pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y)
-                }
-                if(pathCreated){
-                    var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
-                    if(newUnit != null){
-                        if(!this.model.selectedUnit.embarking){
-                            newUnit.path = oldPath
-                            newUnit.target = oldTarget
-                        } else if(newUnit.towntaken != null) {
-                            this.model.selectedUnit.x = newUnit.towntaken.x
-                            this.model.selectedUnit.y = newUnit.towntaken.y
-                        }
-                        this.model.units.push(newUnit)
-                    }
-                } else
-                    this.model.selectedUnit.removePath()
-                this.model.deselectUnit()
             }
-
-        }
         
         this.pressedUnit = null
         this.dragStart = false
