@@ -1105,7 +1105,7 @@ class Unit {
                     this.barkingPoint = null
                     this.barkingLand = null
                 }
-            } else {
+            } else if(this.path.length == 0 && this.target != null && this.x == this.target.x && this.y == this.target.y){
                 this.embarking = false
                 this.land = this.barkingLand
                 this.barkingPoint = null
@@ -1723,18 +1723,17 @@ class Model {
         else
             vectorPath = [[path[path.length-2][0],path[path.length-2][1]],[x,y]]
             
+        var point1 = vectorPath[0]
+        var point2 = vectorPath[1]
             
         var numberOfSegmentsCrossed = 0
         for(var i in this.lands){
             var land = this.lands[i]
-            for(var j=1;j<vectorPath.length;j++){
-                var point1 = vectorPath[j-1]
-                var point2 = vectorPath[j]
-                if(segmentsIntersectingWithPolygonCount(point1,point2,land)){
-                    var crossing = getCrossingSegmentsIntersectingWithPolygon(point1,point2,land)
-                    if(crossing != null)
-                        return {barkingPoint: crossing, land: land}
-                }
+            var j = -1
+            if(segmentsIntersectingWithPolygonCount(point1,point2,land)){
+                var crossing = getCrossingSegmentsIntersectingWithPolygon(point1,point2,land)
+                if(crossing != null)
+                    return {barkingPoint: crossing, land: land}
             }
         }
         return null
@@ -1777,9 +1776,12 @@ class Model {
             unit.embarking = true
             unit.embarkingProgress = 0
         }
-        if(possibleBarking != null){
+        if(possible && seaPossible && possibleBarking != null){
             unit.barkingPoint = possibleBarking.barkingPoint
             unit.barkingLand = possibleBarking.land
+        } else {
+            unit.barkingPoint = null
+            unit.barkingLand = null
         }
 
         return possible
