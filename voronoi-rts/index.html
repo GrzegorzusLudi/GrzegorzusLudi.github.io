@@ -507,7 +507,10 @@ function getCrossingSegmentsIntersectingWithPolygon(a,b,polygon){
             var p2 = band[(j-(-1))%band.length]
             
             if(segmentsIntersecting(a,b,p1,p2)){
-                return segmentsIntersection(a,b,p1,p2)
+                var intersection = segmentsIntersection(a,b,p1,p2)
+                
+                if(dist(intersection[0],intersection[1],a[0],a[1]) >= 0.0001)
+                    return intersection
             }
         }
     }
@@ -1034,6 +1037,10 @@ class Unit {
         this.target.setOccupyingUnit(this)
         this.target = null
         this.land = this.towntaken.land
+
+        this.embarking = false
+        this.barkingPoint = null
+        this.barkingLand = null
     }
     tooClose(unit2){
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
@@ -1086,27 +1093,20 @@ class Unit {
         return this.embarking && this.embarkingProgress < this.size
     }
     tryDisembark(){
-        if(this.barkingPoint != null){
-            if(this.path.length == 1){
-                var p1 = [this.x,this.y]
-                var p2 = this.path[0]
-                
-                if( this.embarking && this.embarkingProgress >= this.size && 
-                    (p1[0] < p2[0] && p1[0] > this.barkingPoint[0] || p1[0] > p2[0] && p1[0] < this.barkingPoint[0])
-                        &&
-                    (p1[1] < p2[1] && p1[1] > this.barkingPoint[1] || p1[1] > p2[1] && p1[1] < this.barkingPoint[1])
-                ){
-                    this.embarking = false
-                    this.land = this.barkingLand
-                    this.barkingPoint = null
-                    this.barkingLand = null
-                } else if(!this.embarking){
-                    this.land = this.barkingLand
-                    this.barkingPoint = null
-                    this.barkingLand = null
-                }
-            } else if(this.path.length == 0 && this.target != null && this.x == this.target.x && this.y == this.target.y){
+        if(this.barkingPoint != null && this.path.length == 1){
+            var p1 = [this.x,this.y]
+            var p2 = this.path[0]
+            
+            if( this.embarking && this.embarkingProgress >= this.size && 
+                (p1[0] < p2[0] && p1[0] > this.barkingPoint[0] || p1[0] > p2[0] && p1[0] < this.barkingPoint[0])
+                    &&
+                (p1[1] < p2[1] && p1[1] > this.barkingPoint[1] || p1[1] > p2[1] && p1[1] < this.barkingPoint[1])
+            ){
                 this.embarking = false
+                this.land = this.barkingLand
+                this.barkingPoint = null
+                this.barkingLand = null
+            } else if(!this.embarking){
                 this.land = this.barkingLand
                 this.barkingPoint = null
                 this.barkingLand = null
@@ -2665,20 +2665,26 @@ class Controller {
                     } else {
                         var oldPath = this.model.selectedUnit.path
                         var oldTarget = this.model.selectedUnit.target
+                        var oldLand = this.model.selectedUnit.land
+                        var oldEmbarking = this.model.selectedUnit.embarking
+                        var oldBarkingPoint = this.model.selectedUnit.barkingPoint
+                        var oldBarkingLand = this.model.selectedUnit.barkingLand
+                        
                         var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,currentlyPressedUnit)
 
                         if(pathCreated){
                             var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
                             if(newUnit != null){
-                                if(!(this.model.selectedUnit.embarking && this.model.selectedUnit.inProcessOfEmbarking())){
-                                    newUnit.path = oldPath
-                                    newUnit.target = oldTarget
-                                    
-                                    newUnit.land = this.model.selectedUnit.land
-                                    newUnit.embarking = this.model.selectedUnit.embarking
-                                    newUnit.barkingPoint = this.model.selectedUnit.barkingPoint
-                                    newUnit.barkingLand = this.model.selectedUnit.barkingLand
-                                }
+                                //if(!(this.model.selectedUnit.embarking && this.model.selectedUnit.inProcessOfEmbarking())){
+                                newUnit.path = oldPath
+                                newUnit.target = oldTarget
+                                
+                                newUnit.land = oldLand
+                                newUnit.embarking = oldEmbarking
+                                newUnit.embarkingProgress = newUnit.size
+                                newUnit.barkingPoint = oldBarkingPoint
+                                newUnit.barkingLand = oldBarkingLand
+                                //}
                                 if(newUnit.towntaken != null) {
                                     this.model.selectedUnit.x = newUnit.towntaken.x
                                     this.model.selectedUnit.y = newUnit.towntaken.y
@@ -2692,6 +2698,10 @@ class Controller {
                 } else {
                     var oldPath = this.model.selectedUnit.path
                     var oldTarget = this.model.selectedUnit.target
+                    var oldLand = this.model.selectedUnit.land
+                    var oldEmbarking = this.model.selectedUnit.embarking
+                    var oldBarkingPoint = this.model.selectedUnit.barkingPoint
+                    var oldBarkingLand = this.model.selectedUnit.barkingLand
 
                     var pressedTown = this.view.getTownByMouse(modelCoords)
                     var pathCreated
@@ -2705,16 +2715,16 @@ class Controller {
                     if(pathCreated){
                         var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
                         if(newUnit != null){
-                            if(!(this.model.selectedUnit.embarking && this.model.selectedUnit.inProcessOfEmbarking())){
-                                newUnit.path = oldPath
-                                newUnit.target = oldTarget
-                                
-                                newUnit.land = this.model.selectedUnit.land
-                                newUnit.embarking = this.model.selectedUnit.embarking
-                                newUnit.embarkingProgress = this.model.selectedUnit.embarkingProgress
-                                newUnit.barkingPoint = this.model.selectedUnit.barkingPoint
-                                newUnit.barkingLand = this.model.selectedUnit.barkingLand
-                            }
+                            //if(!(this.model.selectedUnit.embarking && this.model.selectedUnit.inProcessOfEmbarking())){
+                            newUnit.path = oldPath
+                            newUnit.target = oldTarget
+                            
+                            newUnit.land = oldLand
+                            newUnit.embarking = oldEmbarking
+                            newUnit.embarkingProgress = newUnit.size
+                            newUnit.barkingPoint = oldBarkingPoint
+                            newUnit.barkingLand = oldBarkingLand
+                            //}
                             if(newUnit.towntaken != null) {
                                 this.model.selectedUnit.x = newUnit.towntaken.x
                                 this.model.selectedUnit.y = newUnit.towntaken.y
