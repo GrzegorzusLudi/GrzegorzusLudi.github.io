@@ -51,6 +51,22 @@ function lineFromTwoPoints(x1,y1,x2,y2){
     var a = (y1-y2) / (x1-x2)
     return {vertical:false, a:a, b: y1 - x1 * a}
 }
+function distanceFromLine(px,py,l1,l2){
+    var x1 = l1[0]
+    var y1 = l1[1]
+    var x2 = l2[0]
+    var y2 = l2[1]
+    if(x1 == x2){
+        if(y1 == y2)
+            throw new Error('Two points are in the same places: '+x1+', '+y1)
+        return Math.abs(x1-px)
+    }
+    
+    var a = (y1-y2) / (x1-x2)
+    var b = y1 - x1 * a
+    
+    return Math.abs( a * px + py + b ) / Math.sqrt( a*a + b*b )
+}
 function bisectorFromTwoPoints(x1,y1,x2,y2){
     if(y1 == y2){
         if(x1 == x2)
@@ -135,7 +151,7 @@ function mergePolygonsOnSides(poly1,poly2){
                     //    graph[j][i] = true
                     //}
                     
-                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 0.000001 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 0.000001){
+                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 0.001 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 0.001){
                         graph['a'+i+'#'+ii] = graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
                         graph['b'+j+'#'+jj] = graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
                         
@@ -598,6 +614,16 @@ function hitTest(poly,x,y,inclusive){
     }
     return result
 }
+function almostHitTest(poly,x,y,inclusive){
+    for(var i = -1;i<=1;i++){
+        for(var j = -1;j<=1;j++){
+            if(hitTest(poly,x-(-i),y-(-j),inclusive)){
+                return true
+            }
+        }
+    }
+    return false
+}
 function getPolygonInside(lands,x,y){
     for(var i in lands){
         var land = lands[i]
@@ -1031,6 +1057,8 @@ class Unit {
             unit.size -= -this.size
             this.die()
         }
+        this.embarkingProgress = this.size
+        unit.embarkingProgress = unit.size
     }
     setTargetAsTown(){
         this.towntaken = this.target
@@ -1117,7 +1145,7 @@ class Unit {
 class Model {
     constructor(){
         this.WIDTH = 650
-        this.CHUNKS_PER_SIDE = 6
+        this.CHUNKS_PER_SIDE = 8
         this.NUMBER_OF_POINTS = 250
         this.TOWN_DISTANCE_LIMIT = 25
         
@@ -1142,6 +1170,9 @@ class Model {
         
         this.playerChoosen = null
         this.selectedUnit = null
+        
+        this.voronoiGraph = {}
+        this.mergedVoronois = []
         
         this.selectedUnitDivision = 1
 //        window.lands = this.lands
@@ -1511,7 +1542,7 @@ class Model {
             var defaultPolygon = null
             for(var j in chunk.polygons){
                 var poly = chunk.polygons[j]
-                if(hitTest(poly,voronoiable.x,voronoiable.y)){
+                if(almostHitTest(poly,voronoiable.x,voronoiable.y)){
                     defaultPolygon = poly
                     break
                 }
@@ -1550,10 +1581,106 @@ class Model {
 
             }
             var limit = this.WIDTH / this.CHUNKS_PER_SIDE
-            if(voronoiable.voronoi != null)
-                voronoiable.voronoi = triacontadigonalLimit(voronoiable.x,voronoiable.y,voronoiable.voronoi, limit)
+            //if(voronoiable.voronoi != null)
+                //voronoiable.voronoi = triacontadigonalLimit(voronoiable.x,voronoiable.y,voronoiable.voronoi, limit)
 
             
+        }
+        this.generateVoronoiGraph()
+        this.mergevoronoisByGraphs()
+    }
+    generateVoronoiGraph(){
+        var voronoiables = this.getVoronoiables().filter(a => a.voronoi != null && a.team != null && a.occupyingUnit == null)
+        
+        var voronoiableByChunk = {}
+        for(var key in this.chunks){
+            voronoiableByChunk[key] = []
+        }
+        for(var i in voronoiables){
+            var voronoiable = voronoiables[i]
+            
+            var chunk = voronoiable.chunk
+            var nearbyCodes = chunk.nearChunkCodes
+            for(var j in nearbyCodes){
+                var nearbyCode = nearbyCodes[j]
+                if(nearbyCode in this.chunks){
+                    voronoiableByChunk[nearbyCode].push({ix:i,voronoiable:voronoiable})
+                }
+            }
+        }
+
+        this.mergedVoronois = []
+        this.voronoiGraph = {}
+        for(var i = 0;i<voronoiables.length;i++){
+            this.mergedVoronois[i] = {team:voronoiables[i].team,voronoi:voronoiables[i].voronoi}
+            this.voronoiGraph[i] = {}
+        }
+        for(var i = 0;i<voronoiables.length;i++){
+            var voronoiable1 = voronoiables[i]
+            
+            var chunk = voronoiable1.chunk
+
+            var chunkcode = chunk.x+'#'+chunk.y
+
+            var vbc = voronoiableByChunk[chunkcode]
+            for(var j in vbc){
+                var key2 = vbc[j].ix
+                var voronoiable2 = vbc[j].voronoiable
+                
+                if(/*dist(voronoiable1.x,voronoiable1.y,voronoiable2.x,voronoiable2.y) > this.GENERATION_POINTS_REVERSE_DENSITY*2 || */voronoiable1.team != voronoiable2.team)
+                    continue
+                
+                var land1Segments = getPolygonSegments(voronoiable1.voronoi)
+                var land2Segments = getPolygonSegments(voronoiable2.voronoi)
+                for(var k in land1Segments){
+                    for(var l in land2Segments){
+                        var s1 = land1Segments[k]
+                        var s2 = land2Segments[l]
+                        /*
+                        if(dist(s1[0][0],s1[0][1],s2[0][0],s2[0][1]) < 1 && dist(s1[1][0],s1[1][1],s2[1][0],s2[1][1]) < 1){
+                            graph[i][j] = true
+                            graph[j][i] = true
+                        }*/
+                        
+                        if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 0.001 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 0.001){
+                        //if(distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.001){
+                            this.voronoiGraph[i][key2] = true
+                            this.voronoiGraph[key2][i] = true
+                        }
+                    }
+                }
+            }
+        }
+    }
+    mergevoronoisByGraphs(){
+        var k = 0
+        while(Object.values(this.voronoiGraph).filter(x=>Object.values(x).length > 0).length > 0 && k<=1000){
+            var key1 = Object.keys(this.voronoiGraph)[0]
+            if(Object.keys(this.voronoiGraph[key1]).length == 0){
+                delete this.voronoiGraph[key1]
+                continue
+            }
+            for(var key2 in this.voronoiGraph[key1]){
+                //if(key2 in this.mergedVoronois/* && this.mergedVoronois[key1].team == this.mergedVoronois[key2].team*/){
+                    if(key2 in this.mergedVoronois){
+                        var merged = mergePolygonsOnSides(this.mergedVoronois[key1].voronoi,this.mergedVoronois[key2].voronoi)
+                        if(merged != null){
+                            this.mergedVoronois[key1].voronoi = merged
+                        }
+                    }
+                    for(var key3 in this.voronoiGraph[key2]){
+                        if(key3 != key1){
+                            this.voronoiGraph[key1][key3] = true
+                            if(key3 in this.voronoiGraph)
+                                this.voronoiGraph[key3][key1] = true
+                        }
+                    }
+                    delete this.voronoiGraph[key1][key2]
+                    delete this.voronoiGraph[key2]
+                    delete this.mergedVoronois[key2]
+                //}
+            }
+            k++
         }
     }
     selectUnit(unit){
@@ -2143,7 +2270,7 @@ class View {
 
     }
     drawVoronois(){
-        var voronoiables = this.model.getVoronoiables()
+        var voronoiables = this.model.mergedVoronois//this.model.getVoronoiables()
         for(var i in voronoiables){
             var voronoiable = voronoiables[i]
             if(voronoiable.voronoi != null){
