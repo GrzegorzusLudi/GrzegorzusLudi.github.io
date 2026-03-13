@@ -119,7 +119,7 @@ function getPolygonSegments(poly){
     }
     return segments
 }
-function mergePolygonsOnSides(poly1,poly2){
+function mergePolygonsOnSides(poly1,poly2,looseRules){
     var pointFound1
     var pointFound2
     
@@ -150,8 +150,9 @@ function mergePolygonsOnSides(poly1,poly2){
                     //    graph[i][j] = true
                     //    graph[j][i] = true
                     //}
+                    var distLimit = looseRules != undefined ? 1 : 0.001
                     
-                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 0.001 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 0.001){
+                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit){
                         graph['a'+i+'#'+ii] = graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
                         graph['b'+j+'#'+jj] = graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
                         
@@ -164,12 +165,16 @@ function mergePolygonsOnSides(poly1,poly2){
             }
         }
     }
+    try {
     if(!thereWasBorder){
         if(poly1[0].length > poly2[0].length){
             return poly1
         } else {
             return poly2
         }
+    }
+    } catch(e){
+        console.log(poly1,poly2)
     }
     
     var newPolygonBands = []
@@ -677,10 +682,10 @@ function edgeHalfPointMoved(p1,p2,radiusMoved){
 }
 
 function triacontadigonalLimit(x,y,polygon, limit){
-    var SIDES = 32
+    var SIDES = 16
     var polygons = [polygon]
     for(var i = 0;i<SIDES;i++){
-        var angle = (0.5+i) / SIDES * Math.PI * 2
+        var angle = (0.5+i) * Math.PI * 2 / SIDES
         
         var x1 = x
         var y1 = y
@@ -1581,8 +1586,8 @@ class Model {
 
             }
             var limit = this.WIDTH / this.CHUNKS_PER_SIDE
-            //if(voronoiable.voronoi != null)
-                //voronoiable.voronoi = triacontadigonalLimit(voronoiable.x,voronoiable.y,voronoiable.voronoi, limit)
+            if(voronoiable.voronoi != null)
+                voronoiable.voronoi = triacontadigonalLimit(voronoiable.x,voronoiable.y,voronoiable.voronoi, limit)
 
             
         }
@@ -1642,7 +1647,7 @@ class Model {
                             graph[j][i] = true
                         }*/
                         
-                        if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 0.001 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 0.001){
+                        if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 1 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 1 && i != key2){
                         //if(distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.001){
                             this.voronoiGraph[i][key2] = true
                             this.voronoiGraph[key2][i] = true
@@ -1663,7 +1668,7 @@ class Model {
             for(var key2 in this.voronoiGraph[key1]){
                 //if(key2 in this.mergedVoronois/* && this.mergedVoronois[key1].team == this.mergedVoronois[key2].team*/){
                     if(key2 in this.mergedVoronois){
-                        var merged = mergePolygonsOnSides(this.mergedVoronois[key1].voronoi,this.mergedVoronois[key2].voronoi)
+                        var merged = mergePolygonsOnSides(this.mergedVoronois[key1].voronoi,this.mergedVoronois[key2].voronoi,true)
                         if(merged != null){
                             this.mergedVoronois[key1].voronoi = merged
                         }
@@ -2595,7 +2600,7 @@ class GamePlayUnselected extends State {
         this.panelControls = [
             new TextControl(20,35,240,30,'PLAY',this.borderColor()),
             new Button(30,540,220,40,'GO BACK',this.backgroundColor,this.borderColor(),()=>{t.controller.goToMenu()}),
-            new Button(50,135,180,60,'PAUSE',this.backgroundColor,this.borderColor(),()=>{t.controller.pausePlay()}),
+            new Button(30,95,220,40,'PAUSE',this.backgroundColor,this.borderColor(),()=>{t.controller.pausePlay()}),
 
         ]
     }
