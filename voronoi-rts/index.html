@@ -584,28 +584,6 @@ function hitTestBand(poly,x,y,inclusive){
     return number % 2 != 0
 }
 function hitTest(poly,x,y,inclusive){
-    /*
-    var segmentsToCheck = []
-    for(var i in poly){
-        var s = [poly[i], poly[(i-(-1))%poly.length]]
-        if(s[0][0] > s[1][0])
-            s = s.reverse()
-        
-        if(s[0][0] < x && s[1][0] > x){
-            segmentsToCheck.push(s)
-        }
-    }
-    var number = 0
-    for(var i in segmentsToCheck){
-        var segment = segmentsToCheck[i]
-        
-        var lf2p = lineFromTwoPoints(segment[0][0],segment[0][1],segment[1][0],segment[1][1])
-        
-        //    return {vertical:false, a:a, b: y1 - x1 * a}
-
-        if(y < lf2p.a*x+lf2p.b || inclusive && y <= lf2p.a*x+lf2p.b)
-            number++
-    }*/
     var result = false
     for(var i in poly){
         var band = poly[i]
@@ -616,6 +594,28 @@ function hitTest(poly,x,y,inclusive){
             else
                 return false
         }
+    }
+    return result
+}
+function bandArea(poly){
+    var result = 0
+    for(var i in poly){
+        var s1 = poly[i]
+        var s2 = poly[(i-(-1))%poly.length]
+        
+        result += (s2[0]-s1[0])*(s1[1]+s2[1])/2
+    }
+    return result
+}
+function polygonArea(poly){
+    var result = 0
+    for(var i in poly){
+        var band = poly[i]
+        
+        if(i == 0)
+            result += bandArea(band)
+        else
+            result -= bandArea(band)
     }
     return result
 }
@@ -1179,6 +1179,8 @@ class Model {
         this.voronoiGraph = {}
         this.mergedVoronois = []
         
+        this.groupedMergedVoronois = []
+        
         this.selectedUnitDivision = 1
 //        window.lands = this.lands
         //this.drawLands()//debug
@@ -1593,6 +1595,7 @@ class Model {
         }
         this.generateVoronoiGraph()
         this.mergevoronoisByGraphs()
+        this.calculateMergedVoronoiValue()
     }
     generateVoronoiGraph(){
         var voronoiables = this.getVoronoiables().filter(a => a.voronoi != null && a.team != null && a.occupyingUnit == null)
@@ -1617,7 +1620,13 @@ class Model {
         this.mergedVoronois = []
         this.voronoiGraph = {}
         for(var i = 0;i<voronoiables.length;i++){
-            this.mergedVoronois[i] = {team:voronoiables[i].team,voronoi:voronoiables[i].voronoi}
+            var voronoiable = voronoiables[i]
+            var units = []
+            if(voronoiable instanceof Unit)
+                units.push(voronoiable)
+            if(voronoiable.occupyingUnit != undefined)
+                units.push(voronoiable.occupyingUnit)
+            this.mergedVoronois[i] = {team:voronoiable.team,voronoi:voronoiable.voronoi,units:units,landArea:0,unitCount:0}
             this.voronoiGraph[i] = {}
         }
         for(var i = 0;i<voronoiables.length;i++){
@@ -1671,6 +1680,7 @@ class Model {
                         var merged = mergePolygonsOnSides(this.mergedVoronois[key1].voronoi,this.mergedVoronois[key2].voronoi,true)
                         if(merged != null){
                             this.mergedVoronois[key1].voronoi = merged
+                            this.mergedVoronois[key1].units = this.mergedVoronois[key1].units.concat(this.mergedVoronois[key2].units.slice())
                         }
                     }
                     for(var key3 in this.voronoiGraph[key2]){
@@ -1687,6 +1697,43 @@ class Model {
             }
             k++
         }
+        this.mergedVoronois = this.mergedVoronois.filter(a=>a != undefined)
+    }
+    calculateMergedVoronoiValue(){
+        for(var i in this.mergedVoronois){
+            var voronoi = this.mergedVoronois[i]
+            
+            voronoi.landArea = polygonArea(voronoi.voronoi)
+            voronoi.unitCount = voronoi.units.map(a=>a.size).reduce((a,b)=>a+b,0)
+        }
+        this.groupedMergedVoronois = []
+        var mergedAndGroupedVoronois = {}
+        for(var i in this.mergedVoronois){
+            var voronoi = this.mergedVoronois[i]
+            
+            var teamColor = voronoi.team.color
+            if(!(teamColor in mergedAndGroupedVoronois))
+                mergedAndGroupedVoronois[teamColor] = []
+                
+            mergedAndGroupedVoronois[teamColor].push(voronoi)
+            
+        }
+        for(var key in mergedAndGroupedVoronois){
+            var magv = mergedAndGroupedVoronois[key]
+            var team = magv[0].team
+            this.groupedMergedVoronois.push({
+                team:team,
+                voronois:magv,
+                unitCount:magv.map(a=>a.unitCount).reduce((a,b) => a+b,0),
+                area:magv.map(a=>a.landArea).reduce((a,b) => a+b,0),
+                embarkedCount:this.units.filter(a => a.team == team && a.embarking).map(a=>a.size).reduce((a,b) => a+b,0)
+            })
+        }
+        this.groupedMergedVoronois.sort((a,b)=>(b.area-a.area))
+        //if(Math.random()<0.05)
+        //    console.log(this.groupedMergedVoronois)
+        
+        
     }
     selectUnit(unit){
         this.selectedUnit = unit
@@ -2016,6 +2063,7 @@ class Model {
         }
         
         const SPEED = 2
+        const SEA_SPEED = 4
         var change = false
         for(var i in this.units){
             var unit = this.units[i]
@@ -2040,7 +2088,8 @@ class Model {
                                 unit.target = null
                         }
                     }
-                    if(dist(unit.x,unit.y,point[0],point[1]) < SPEED){
+                    var speed = unit.embarking ? SEA_SPEED : SPEED
+                    if(dist(unit.x,unit.y,point[0],point[1]) < speed){
                         unit.x = point[0]
                         unit.y = point[1]
                         unit.path = unit.path.slice(1)
@@ -2056,8 +2105,8 @@ class Model {
                             }
                         }
                     } else {
-                        unit.x -= SPEED * Math.cos(angle)
-                        unit.y -= SPEED * Math.sin(angle)
+                        unit.x -= speed * Math.cos(angle)
+                        unit.y -= speed * Math.sin(angle)
                     }
                     this.updateChunkForUnit(unit)
 
@@ -2113,6 +2162,12 @@ class Model {
         var newChunk = this.getChunkFromCoords(unit.x,unit.y)
         unit.setChunk(this.chunks[newChunk])
     }
+    wholeRealLandArea(teamStat){
+        return teamStat.area/25 - teamStat.embarkedCount
+    }
+    realLandArea(voronoi,teamStat){
+        return voronoi.landArea/25 - teamStat.embarkedCount * voronoi.unitCount / teamStat.unitCount
+    }
     growUnits(){
         var change = false
         for(var i in this.towns){
@@ -2130,8 +2185,30 @@ class Model {
                 }
             }
         }
-        for(var i in this.units){
-            var unit = this.units[i]
+        var units = []
+        for(var i in this.groupedMergedVoronois){
+            var teamStat = this.groupedMergedVoronois[i]
+            var embarkingBurden = teamStat.embarkedCount
+            
+            for(var j in teamStat.voronois){
+                var voronoi = teamStat.voronois[j]
+                if(voronoi.unitCount < this.realLandArea(voronoi,teamStat))//voronoi.landArea/25 - teamStat.embarkedCount * voronoi.unitCount / teamStat.unitCount)
+                    units.push(voronoi.units)
+            }
+        }
+        units = units.flat()
+    /*
+        this.groupedMergedVoronois.push({
+        team:team,
+        voronois:magv,
+        unitCount:this.units.filter(a => a.team == team).map(a=>a.size).reduce((a,b) => a+b,0),
+        area:magv.map(a=>a.landArea).reduce((a,b) => a+b,0),
+        embarkedCount:this.units.filter(a => a.team == team && a.embarked).map(a=>a.size).reduce((a,b) => a+b,0)
+    */
+            
+
+        for(var i in units){
+            var unit = units[i]
             if(unit.embarking)
                 continue
                 
@@ -2601,7 +2678,7 @@ class GamePlayUnselected extends State {
             new TextControl(20,35,240,30,'PLAY',this.borderColor()),
             new Button(30,540,220,40,'GO BACK',this.backgroundColor,this.borderColor(),()=>{t.controller.goToMenu()}),
             new Button(30,95,220,40,'PAUSE',this.backgroundColor,this.borderColor(),()=>{t.controller.pausePlay()}),
-
+            new StatisticsPanel(30,145,220,380,this.backgroundColor,this.borderColor(),t.controller.model)
         ]
     }
 }
@@ -2691,6 +2768,129 @@ class Button extends Control {
         if(this.focus(mouseCoordsTransformed)){
             return this.func()
         }
+    }
+}
+class StatisticsPanel extends Control {
+    constructor(x,y,w,h,color,borderColor,model){
+        super(x,y,w,h)
+        this.color = color
+        this.borderColor = borderColor
+        this.model = model
+        //this.func = func
+        //this.textControl = new TextControl(x+h*0.2,y+h*0.2,w-h*0.4,h-h*0.4,text,borderColor)
+    }
+    draw(ctx,mouseCoordsTransformed){
+        ctx.strokeStyle = this.borderColor
+        ctx.fillStyle = this.color
+        
+//        ctx.fillRect(this.x,this.y,this.w,this.h)
+        ctx.strokeRect(this.x,this.y,this.w,this.h)
+        
+//        ctx.lineWidth = 2
+//        this.textControl.draw(ctx,mouseCoordsTransformed)
+//        ctx.lineWidth = 1
+        const COLUMNS = 2
+        const ROWS = 20
+        const BORDER_PADDING = 1
+        const PADDING = 4
+        const PADDING_SMALL = 6
+        var row = 0
+        var column = 0
+        for(var i in this.model.groupedMergedVoronois){
+            var teamStat = this.model.groupedMergedVoronois[i]
+            
+            var height = teamStat.voronois.length
+            if(teamStat.voronois.length > 1)
+                height++
+            if(teamStat.embarkedCount > 0)
+                height++
+            if(row+height>ROWS){
+                column++
+                row = 0
+            }
+            
+            var w = this.w / COLUMNS
+            var h = this.h / ROWS
+
+            var border = darkColor(teamStat.team.color) ? '#ffffffcc' : '#000000cc'
+            var fill = teamStat.team.color
+            
+            ctx.fillStyle = this.borderColor
+            ctx.fillRect(this.x + w * column,this.y + h * row,w,h*height)
+            ctx.fillStyle = fill
+            ctx.fillRect(this.x + w * column+BORDER_PADDING,this.y + h * row+BORDER_PADDING,w-BORDER_PADDING*2,h*height-BORDER_PADDING*2)
+            
+            ctx.strokeStyle = border
+            var totalRealArea = this.model.wholeRealLandArea(teamStat)
+            this.drawNumber(ctx,teamStat.unitCount,this.x + w * column + PADDING, this.y + h * row  + PADDING, w*2/5 - PADDING * 2, h - PADDING * 2, 4)
+            this.drawSlash(ctx,this.x + w*2/5 + w * column + PADDING, this.y + h * row  + PADDING, w/5 - PADDING * 2, h - PADDING * 2)
+            this.drawNumber(ctx,totalRealArea,this.x + w*3/5 + w * column + PADDING, this.y + h * row  + PADDING, w*2/5 - PADDING * 2, h - PADDING * 2, 4)
+            if(teamStat.voronois.length > 1){
+                var tsv = teamStat.voronois.sort((a,b)=>(b.landArea-a.landArea))
+                for(var i in tsv){
+                    
+                    var voronoi = tsv[i]
+                    
+                    var realArea = this.model.realLandArea(voronoi,teamStat)
+                    
+                    this.drawNumber(ctx,voronoi.unitCount,this.x + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
+                    this.drawSlash(ctx,this.x + w*2/5 + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2)
+                    this.drawNumber(ctx,realArea,this.x + w*3/5 + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
+                }
+            }
+            if(teamStat.embarkedCount > 0){
+                this.drawNumber(ctx,teamStat.embarkedCount,this.x + w * column + PADDING_SMALL, this.y + h * (row + height - 1)  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
+            }
+
+            row += height
+        }
+    }
+    /*
+        this.groupedMergedVoronois.push({
+        team:team,
+        voronois:magv,
+        unitCount:this.units.filter(a => a.team == team).map(a=>a.size).reduce((a,b) => a+b,0),
+        area:magv.map(a=>a.landArea).reduce((a,b) => a+b,0),
+        embarkedCount:this.units.filter(a => a.team == team && a.embarked).map(a=>a.size).reduce((a,b) => a+b,0)
+    */
+    drawNumber(ctx,num,x,y,w,h,digits){
+        var strnum = String(Math.floor(num))
+        var twidth = w / (digits + (digits-1) / (3))
+        var wpause = twidth / (digits-1)
+
+        if(strnum.length <= digits){
+            for(var i = 0;i<strnum.length;i++){
+                var digit = strnum[i]
+                var pos = i + digits - strnum.length
+                this.drawDigit(ctx,digit,x + pos * (twidth+wpause),y,twidth,h)
+            }
+        } else {
+            
+        }
+    }
+    drawDigit(ctx,num,x,y,w,h){
+        var coords = vectorNumbers[num]
+        ctx.beginPath()
+        for(var i in coords){
+            var point = coords[i]
+            if(i == 0){
+                ctx.moveTo(x+point[0]*w,y+point[1]*h)
+            } else {
+                ctx.lineTo(x+point[0]*w,y+point[1]*h)
+            }
+        }
+        ctx.stroke()
+    }
+    drawSlash(ctx,x,y,w,h){
+        ctx.beginPath()
+        ctx.moveTo(x+w,y)
+        ctx.lineTo(x  ,y+h)
+        ctx.stroke()
+    }
+    tryClick(mouseCoordsTransformed){
+//        if(this.focus(mouseCoordsTransformed)){
+//            return this.func()
+//        }
     }
 }
 class Controller {
