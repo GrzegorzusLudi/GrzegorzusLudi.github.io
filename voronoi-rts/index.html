@@ -620,8 +620,8 @@ function polygonArea(poly){
     return result
 }
 function almostHitTest(poly,x,y,inclusive){
-    for(var i = -1;i<=1;i++){
-        for(var j = -1;j<=1;j++){
+    for(var i = -2;i<=2;i++){
+        for(var j = -2;j<=2;j++){
             if(hitTest(poly,x-(-i),y-(-j),inclusive)){
                 return true
             }
@@ -726,12 +726,12 @@ function triacontadigonalLimit(x,y,polygon, limit){
 function polygonHittingPoints(polygons,x,y){
     for(var k in polygons){
         var polygon = polygons[k]
-        if(hitTest(polygon,x,y)){
+        if(almostHitTest(polygon,x,y)){
             return polygon
         }
     }
 }
-function getVectorPath(unit,x,y,lands,port){
+function getVectorGraph(unit,firstDestinations,lands,port){
     var inside = !port
     
     if(unit.land != null && !port){
@@ -750,8 +750,13 @@ function getVectorPath(unit,x,y,lands,port){
     var firstCode = unitx+'#'+unity
     var pointDestinationStack = {}
     pointDestinationStack[firstCode] = pointDestinations[0]
-    var lastCode = x+'#'+y
-    pointDestinationStack[lastCode] = {point:[x,y],dist:null,from:null}
+//    var lastCode = x+'#'+y
+    var codes = {}
+    for(var i in firstDestinations){
+        var code = firstDestinations[i][0]+'#'+firstDestinations[i][1]
+        codes[code] = true
+        pointDestinationStack[code] = {point:firstDestinations[i],dist:null,from:null}
+    }
 
     var usedPoints = {}
     usedPoints[firstCode] = true
@@ -776,7 +781,7 @@ function getVectorPath(unit,x,y,lands,port){
             var key = destination.point[0]+'#'+destination.point[1]
             for(var code in pointDestinationStack){
                 var potentialPointDestination = pointDestinationStack[code]
-                var last = port && code === lastCode
+                var last = port && codes[code]//code === lastCode
                 
                 if(!(code in usedPoints) && key != code && (!segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands) || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1)
                 && (segmentsOnTheGoodSideOfPolygon(destination.point, potentialPointDestination.point, lands, inside)/* || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1*/)){
@@ -797,6 +802,32 @@ function getVectorPath(unit,x,y,lands,port){
         pointDestinations = pointDestinations2
         tries--
     }
+    /*
+    if(!port){
+        for(var key in pointDestinationStack){
+            var pds = pointDestinationStack[key]
+            
+            if(pds.from != null && pds.dist != null){
+                drawPathTemp([[pds.point[0],pds.point[1]],[pds.from.point[0],pds.from.point[1]]])
+            }
+        }
+        throw new Error('aa')
+    }*/
+
+    return pointDestinationStack
+}
+function getVectorPath(unit,x,y,lands,port){
+    var unitx = unit.x
+    var unity = unit.y
+    if(port && unit.towntaken != null){
+        unitx = unit.towntaken.port[0]
+        unity = unit.towntaken.port[1]
+    }
+    var firstCode = unitx+'#'+unity
+
+    var pointDestinationStack = getVectorGraph(unit,[[x,y]],lands,port)
+    var lastCode = x+'#'+y
+
     var path = []
     var stackPoint = pointDestinationStack[lastCode]
     while(stackPoint != null){
@@ -804,12 +835,7 @@ function getVectorPath(unit,x,y,lands,port){
         stackPoint = stackPoint.from
     }
     path = path.reverse()
-    /*
-    console.log(path)
-    drawPathTemp(path)
-    console.log(path[0] == pointDestinationStack[firstCode].point)
-    throw new Error('gaga')
-    */
+    
     if(path[0] == pointDestinationStack[firstCode].point)
         return path
     return null
@@ -819,7 +845,7 @@ function drawPathTemp(path){
     this.ctx = this.canv.getContext('2d')
 
     this.ctx.strokeStyle = '#000'
-    this.ctx.beginPath()
+    //this.ctx.beginPath()
 
     for(var j in path){
         var point = path[j]
@@ -1080,12 +1106,17 @@ class Unit {
         
         return Math.abs(this.x - unit2.x) < WIDTH && Math.abs(this.y - unit2.y) < HEIGHT
     }
-    atPathEndAndInDirection(unit2){
-        if(this.path.length == 0)
+    atPathEndAndInDirection(unit2,pathCanBeEmpty){
+        if(this.path.length == 0 && !pathCanBeEmpty)
             return false
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
 
-        var pathTarget = this.path[this.path.length - 1]
+        var pathTarget
+        if(this.path.length > 0){
+            pathTarget = this.path[this.path.length - 1]
+        } else {
+            pathTarget = [unit2.x,unit2.y]
+        }
         
         return (this.x < unit2.x && this.x < pathTarget[0] || this.x > unit2.x && this.x > pathTarget[0]) &&
                (this.y < unit2.y && this.y < pathTarget[1] || this.y > unit2.y && this.y > pathTarget[1]) &&
@@ -1155,7 +1186,7 @@ class Model {
         this.TOWN_DISTANCE_LIMIT = 25
         
         this.TOWN_GROWING_RATE = 0.05
-        this.COUNTRYSIDE_GROWING_RATE = 0.002
+        this.COUNTRYSIDE_GROWING_RATE = 0.01
         
         this.EMBARKING_PROGRESS_SPEED = 1
                 
@@ -1182,9 +1213,29 @@ class Model {
         this.groupedMergedVoronois = []
         
         this.selectedUnitDivision = 1
+        
+        this.initIntersectionCache()
 //        window.lands = this.lands
         //this.drawLands()//debug
 
+    }
+    initIntersectionCache(){
+        this.intersectionCache = {}
+        var points = []
+        for(var i in this.lands){
+            var band = this.lands[i]
+            for(var ii in band){
+                points.push(band[ii])
+            }
+        }
+        for(var i in points){
+            var point1 = points[i]
+            for(var j in points){
+                var point2 = points[j]
+                
+                
+            }
+        }
     }
     initGenerationPoints(){
         var points = []
@@ -1850,6 +1901,8 @@ class Model {
             y = objectToBePressed.y
         }
         
+        console.log(Object.values(getVectorGraph(unit,this.towns.map(a => [a.x,a.y]),this.lands)).filter(a=>a.dist != null))
+        
         var vectorPath = getVectorPath(unit,x,y,this.lands,true)
         
         if(vectorPath == null){
@@ -2124,7 +2177,12 @@ class Model {
                                 unit.tryToMergeWithTarget()
                                 pushback = true
                                 change = true
-                            }/*
+                            } else if(unit.size < 99 && unit.path.length == 0 && unit.tooClose(unit2) && unit.atPathEndAndInDirection(unit2,true)){
+                                unit.tryToMergeWithUnit(unit2)
+                            }
+                            if(unit.dead)
+                                break
+                            /*
                             if(unit2.towntaken == null && unit.target != unit2 && unit2.path.length == 0 && unit.tooClose(unit2) && unit.atPathEndAndInDirection(unit2)){
                                 pushback = true
                                 //change = false
@@ -2163,10 +2221,10 @@ class Model {
         unit.setChunk(this.chunks[newChunk])
     }
     wholeRealLandArea(teamStat){
-        return teamStat.area/25 - teamStat.embarkedCount
+        return teamStat.area/50 - teamStat.embarkedCount
     }
     realLandArea(voronoi,teamStat){
-        return voronoi.landArea/25 - teamStat.embarkedCount * voronoi.unitCount / teamStat.unitCount
+        return voronoi.landArea/50 - teamStat.embarkedCount * voronoi.unitCount / teamStat.unitCount
     }
     growUnits(){
         var change = false
@@ -2454,7 +2512,7 @@ class View {
         var units = this.model.units.sort((a,b) => b.y - a.y)
         for(var i in units){
             var unit = units[i]
-            if(this.mouseOnUnit(mouseCoords, unit))
+            if(!unit.inProcessOfEmbarking() && this.mouseOnUnit(mouseCoords, unit))
                 return unit
         }
         return null
@@ -2478,9 +2536,10 @@ class View {
         var focusedUnit = this.getUnitByMouse(mouseCoords)
         var focusedTown = focusedUnit == null ? this.getTownByMouse(mouseCoords) : null
 
+        var sortedUnits = this.model.units.filter(a => !a.inProcessOfEmbarking()).concat(this.model.units.filter(a => a.inProcessOfEmbarking()))
         //for(var i=0;i<this.model.units.length;i++){
-        for(var i=this.model.units.length - 1;i>=0;i--){
-            var unit = this.model.units[i]
+        for(var i=sortedUnits.length - 1;i>=0;i--){
+            var unit = sortedUnits[i]
             var teamColor = unit.team.color
             
             var selected = unit == this.model.selectedUnit
@@ -2807,6 +2866,8 @@ class StatisticsPanel extends Control {
             if(row+height>ROWS){
                 column++
                 row = 0
+                if(column == COLUMNS)
+                    break
             }
             
             var w = this.w / COLUMNS
