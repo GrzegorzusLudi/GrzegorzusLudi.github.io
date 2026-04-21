@@ -78,6 +78,20 @@ function bisectorFromTwoPoints(x1,y1,x2,y2){
     return {vertical:false, a:a, b: (y1 + y2 - a * (x1 + x2)) / 2,firstLeftBottom: y1 > y2}
 }
 
+function pointOutsideGabrielArea(p1,p2,x,y){
+    if(p1[1] == p2[1]){
+        if(p1[0] == p2[0])
+            throw new Error('Two points are in the same places: '+p1[0]+', '+p1[1])
+//        return {vertical:true,x:(x1+x2)/2,firstLeftBottom:x1 < x2}
+        return p1[0] >= p2[0] && x < p2[0] || p1[0] <= p2[0] && x > p2[0]
+    }
+    
+    var a = (p2[0]-p1[0]) / (p1[1]-p2[1])
+    var b = p2[1] - a*p2[0]
+    
+    return p1[1] < p2[1] ? y > a*x+b : y < a*x+b
+}
+
 function intersectionOfNonVerticalLineAndVerticalLine(a,b,x){    
     return [x, a * x + b]
 }
@@ -564,7 +578,7 @@ function hitTestBand(poly,x,y,inclusive){
     for(var i in poly){
         var s = [poly[i], poly[(i-(-1))%poly.length]]
         if(s[0][0] > s[1][0])
-            s = s.reverse()
+            s = s.slice().reverse()
         
         if(s[0][0] < x && s[1][0] > x){
             segmentsToCheck.push(s)
@@ -660,12 +674,15 @@ function normalizePolygons(polygons){
     for(var i in polygons){
         var poly = polygons[i]
         if(polygonOrder(poly) != -1){
-            polygons[i] = poly.reverse()
+            polygons[i] = poly.slice().reverse()
         }
     }
 }
 function dist(x1,y1,x2,y2){
     return Math.max(Math.abs(x2-x1), Math.abs(y2-y1))
+}
+function eucl_dist(x1,y1,x2,y2){
+    return Math.sqrt(Math.pow(x2-x1,2) + Math.pow(y2-y1,2))
 }
 function polygonEdgeHalfPointMoved(polygon,index,radiusMoved){
     var p1 = polygon[index]
@@ -731,18 +748,24 @@ function polygonHittingPoints(polygons,x,y){
         }
     }
 }
-function getVectorGraph(unit,firstDestinations,lands,port){
+function getVectorGraph(unitOrTown,firstDestinations,lands,port,max_dist,tries){
     var inside = !port
     
-    if(unit.land != null && !port){
-        lands = [unit.land]
+    if(unitOrTown.land != null && !port){
+        lands = [unitOrTown.land]
     }
-    
-    var unitx = unit.x
-    var unity = unit.y
-    if(port && unit.towntaken != null){
-        unitx = unit.towntaken.port[0]
-        unity = unit.towntaken.port[1]
+    var unitx = unitOrTown.x
+    var unity = unitOrTown.y
+    if(port){
+        if(unitOrTown instanceof Unit){
+            if(unitOrTown.towntaken != null){
+                unitx = unitOrTown.towntaken.port[0]
+                unity = unitOrTown.towntaken.port[1]
+            }
+        } else {
+            unitx = unitOrTown.port[0]
+            unity = unitOrTown.port[1]
+        }
     }
     
     var pointDestinations = [{point:[unitx,unity],dist:0,from:null}]
@@ -766,12 +789,15 @@ function getVectorGraph(unit,firstDestinations,lands,port){
             var band = land[j]
             for(var k in band){
                 var point = band[k]
-                var code = point[0]+'#'+point[1]
-                pointDestinationStack[code] = {point:[point[0],point[1]],dist:null,from:null}
+                if(max_dist == undefined || eucl_dist(point[0],point[1],unitx,unity) <= max_dist){
+                    var code = point[0]+'#'+point[1]
+                    pointDestinationStack[code] = {point:[point[0],point[1]],dist:null,from:null}
+                }
             }
         }
     }
-    var tries = 5
+    if(tries == undefined)
+        tries = 5
     while(pointDestinations.length > 0 && tries > 0){
         var pointDestinations2 = []
         
@@ -801,6 +827,18 @@ function getVectorGraph(unit,firstDestinations,lands,port){
         
         pointDestinations = pointDestinations2
         tries--
+        
+        if(firstDestinations.length > 1){ //hack
+            var unfulfiled = false
+            for(var code in codes){
+                if(pointDestinationStack[code].dist == null){
+                    unfulfiled = true
+                    break
+                }
+            }
+            if(!unfulfiled)
+                break
+        }
     }
     /*
     if(!port){
@@ -834,18 +872,20 @@ function getVectorPath(unit,x,y,lands,port){
         path.push(stackPoint.point)
         stackPoint = stackPoint.from
     }
-    path = path.reverse()
+    path = path.slice().reverse()
     
     if(path[0] == pointDestinationStack[firstCode].point)
         return path
     return null
 }
-function drawPathTemp(path){
+function drawPathTemp(path,stroke){
     this.canv = document.getElementById('canv')
     this.ctx = this.canv.getContext('2d')
 
-    this.ctx.strokeStyle = '#000'
-    //this.ctx.beginPath()
+    if(stroke == null)
+        stroke = '#ff0'
+    this.ctx.strokeStyle = stroke
+    this.ctx.beginPath()
 
     for(var j in path){
         var point = path[j]
@@ -856,6 +896,19 @@ function drawPathTemp(path){
         }
     }
     this.ctx.stroke()
+    this.ctx.closePath()
+}
+function drawTextTemp(x,y,text,fill){
+    this.canv = document.getElementById('canv')
+    this.ctx = this.canv.getContext('2d')
+
+    if(fill == null)
+        fill = '#ff0'
+        
+    this.ctx.font = '10pt serif'
+    this.ctx.fillStyle = fill
+
+    this.ctx.fillText(text,x,y)
 }
 const vectorNumbers = {
     0:[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],],
@@ -952,6 +1005,9 @@ class Town {
     setChunk(chunk){
         this.chunk = chunk
     }
+    setBigChunk(chunk){
+        this.bigChunk = chunk
+    }
     setOccupyingUnit(unit){
         this.occupyingUnit = unit
         this.team = unit.team
@@ -1022,6 +1078,9 @@ class Unit {
     setChunk(chunk){
         this.chunk = chunk
     }
+    setBigChunk(chunk){
+        this.bigChunk = chunk
+    }
     leaveTown(){
         if(this.towntaken != null){
             this.towntaken.occupyingUnit = null
@@ -1036,6 +1095,7 @@ class Unit {
         if(size2 > 0){
             var newUnit = new Unit(this.x,this.y,size2,this.team,this.land)
             newUnit.setChunk(this.chunk)
+            newUnit.setBigChunk(this.bigChunk)
             if(this.towntaken != null){
                 this.towntaken.setOccupyingUnit(newUnit)
                 this.towntaken = null
@@ -1196,6 +1256,7 @@ class Model {
         this.lands = this.initLands()
         
         this.chunks = this.generateChunks()
+        this.bigChunks = this.generateBigChunks()
         this.towns = this.initTowns()
         
         this.teams = []
@@ -1214,7 +1275,7 @@ class Model {
         
         this.selectedUnitDivision = 1
         
-        this.initIntersectionCache()
+        //this.initIntersectionCache()
 //        window.lands = this.lands
         //this.drawLands()//debug
 
@@ -1493,12 +1554,19 @@ class Model {
         }
         var town = new Town(x,y,landAround,port)
         var chunk = this.getChunkFromCoords(x,y)
+        var bigchunk = this.getBigChunkFromCoords(x,y)
         town.setChunk(this.chunks[chunk])
+        town.setBigChunk(this.bigChunks[bigchunk])
         towns.push(town)
     }
     getChunkFromCoords(x,y){
         var chunk_x = Math.max(0,Math.min(Math.floor(x / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
         var chunk_y = Math.max(0,Math.min(Math.floor(y / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
+        return chunk_x+'#'+chunk_y
+    }
+    getBigChunkFromCoords(x,y){
+        var chunk_x = Math.max(0,Math.min(Math.floor(x / this.WIDTH * this.CHUNKS_PER_SIDE - 1.5), this.CHUNKS_PER_SIDE-3))
+        var chunk_y = Math.max(0,Math.min(Math.floor(y / this.WIDTH * this.CHUNKS_PER_SIDE - 1.5), this.CHUNKS_PER_SIDE-3))
         return chunk_x+'#'+chunk_y
     }
     generateChunks(){
@@ -1519,11 +1587,31 @@ class Model {
         }
         return chunkLookup
     }
+    generateBigChunks(){
+        var chunkLookup = {}
+        for(var i = 0;i<this.CHUNKS_PER_SIDE-2;i++){
+            for(var j = 0;j<this.CHUNKS_PER_SIDE-2;j++){
+                var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
+                var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
+                var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+3)
+                var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+3)
+
+                var key = i+'#'+j
+
+                var chunk = new Chunk(i,j,this.lands,l,t,r,b)
+//                if(chunk.polygons.length > 0)
+                chunkLookup[key] = chunk
+            }
+        }
+        return chunkLookup
+    }
     populateTowns(){
         for(var i in this.towns){
             var town = this.towns[i]                
             var chunk = this.getChunkFromCoords(town.x,town.y)
+            var bigChunk = this.getBigChunkFromCoords(town.x,town.y)
             town.setChunk(this.chunks[chunk])
+            town.setBigChunk(this.bigChunks[bigChunk])
 
             if(i % 4 == 0 || i == 1){
                 var teamColor = getRandomColor()
@@ -1541,8 +1629,10 @@ class Model {
     }
     addUnitToTown(newUnit,town){
         var chunk = this.getChunkFromCoords(newUnit.x,newUnit.y)
+        var bigChunk = this.getBigChunkFromCoords(newUnit.x,newUnit.y)
 
         newUnit.setChunk(this.chunks[chunk])
+        newUnit.setBigChunk(this.bigChunks[bigChunk])
         
         this.units.push(newUnit)
         
@@ -1901,7 +1991,7 @@ class Model {
             y = objectToBePressed.y
         }
         
-        console.log(Object.values(getVectorGraph(unit,this.towns.map(a => [a.x,a.y]),this.lands)).filter(a=>a.dist != null))
+        //console.log(Object.values(getVectorGraph(unit,this.towns.map(a => [a.x,a.y]),this.lands)).filter(a=>a.dist != null))
         
         var vectorPath = getVectorPath(unit,x,y,this.lands,true)
         
@@ -1970,20 +2060,30 @@ class Model {
         }
         return null
     }
-    trySetPathForUnit(unit,x,y,objectToBePressed){
-        var possiblePath = this.pathPossible(unit,x,y,objectToBePressed)
+    trySetPathForUnit(unit,selectedUnitDivision,x,y,objectToBePressed,readyPath){
+        var oldPath = unit.path
+        var oldTarget = unit.target
+        var oldLand = unit.land
+        var oldEmbarking = unit.embarking
+        var oldBarkingPoint = unit.barkingPoint
+        var oldBarkingLand = unit.barkingLand
         
-        var possibleBarking = null
-        
-        var possible = !unit.embarking && possiblePath != null
-        var seaPossible = false
-        if(!possible && unit.towntaken && unit.towntaken.port || unit.embarking && !unit.inProcessOfEmbarking()){
-            seaPossible = this.seaPathPossible(unit,x,y,objectToBePressed)
-            possible = seaPossible != null
-            if(possible){
-                possibleBarking = this.getSeaPathCrossing(unit,seaPossible,objectToBePressed)
-                possiblePath = seaPossible
+        var possiblePath, possibleBarking = null, seaPossible = false, possible = false
+        if(readyPath == null){
+            var possiblePath = this.pathPossible(unit,x,y,objectToBePressed)
+            
+            var possible = !unit.embarking && possiblePath != null
+            if(!possible && unit.towntaken && unit.towntaken.port || unit.embarking && !unit.inProcessOfEmbarking()){
+                seaPossible = this.seaPathPossible(unit,x,y,objectToBePressed)
+                possible = seaPossible != null
+                if(possible){
+                    possibleBarking = this.getSeaPathCrossing(unit,seaPossible,objectToBePressed)
+                    possiblePath = seaPossible
+                }
             }
+        } else {
+            possiblePath = readyPath
+            possible = true
         }
 
         if(possible){
@@ -2015,6 +2115,28 @@ class Model {
             unit.barkingPoint = null
             unit.barkingLand = null
         }
+
+        if(possible){
+            var newUnit = unit.leavePartOfUnit(selectedUnitDivision)
+            if(newUnit != null){
+                //if(!(this.model.selectedUnit.embarking && this.model.selectedUnit.inProcessOfEmbarking())){
+                newUnit.path = oldPath
+                newUnit.target = oldTarget
+                
+                newUnit.land = oldLand
+                newUnit.embarking = oldEmbarking
+                newUnit.embarkingProgress = newUnit.size
+                newUnit.barkingPoint = oldBarkingPoint
+                newUnit.barkingLand = oldBarkingLand
+                //}
+                if(newUnit.towntaken != null) {
+                    unit.x = newUnit.towntaken.x
+                    unit.y = newUnit.towntaken.y
+                }
+                this.units.push(newUnit)
+            }
+        } else
+            unit.removePath()
 
         return possible
     }
@@ -2218,7 +2340,9 @@ class Model {
     }
     updateChunkForUnit(unit){
         var newChunk = this.getChunkFromCoords(unit.x,unit.y)
+        var newBigChunk = this.getBigChunkFromCoords(unit.x,unit.y)
         unit.setChunk(this.chunks[newChunk])
+        unit.setBigChunk(this.bigChunks[newBigChunk])
     }
     wholeRealLandArea(teamStat){
         return teamStat.area/50 - teamStat.embarkedCount
@@ -2730,7 +2854,7 @@ class GamePlayUnselected extends State {
         super(controller)
         this.gameplay = true
         
-        this.backgroundColor = this.controller.playingTeam.color
+        this.backgroundColor = this.controller.model.playerChoosen.color
         
         let t = this
         this.panelControls = [
@@ -2954,6 +3078,596 @@ class StatisticsPanel extends Control {
 //        }
     }
 }
+class Ai {
+    constructor(controller,state){
+        this.controller = controller
+        this.state = state
+        
+        this.standardGraph = null
+        this.graph = {}
+    }
+    model(){
+        return this.controller.model
+    }
+    think(){
+        if(this.controller.pause)
+            return
+            
+        if(this.standardGraph == null)
+            this.loadStandardGraph()
+            
+            /*
+        this.graph[target_code] = {
+            unit:target instanceof Unit ? target : null,
+            town:target instanceof Town ? target : target.towntaken != null,
+            paths:paths
+        }*//*
+        for(var code in this.standardGraph){
+            var paths = this.standardGraph[code].paths
+            for(var i in paths){
+                var pds = paths[i].path
+                for(var j = 1;j<pds.length;j++){
+                    drawPathTemp([[pds[j-1][0],pds[j-1][1]],[pds[j][0],pds[j][1]]],'#f00')
+                }
+            }
+        }*/
+        this.updateGraph()/*
+        for(var code in this.graph){
+            var paths = this.graph[code].paths
+            for(var i in paths){
+                var pds = paths[i].path
+                for(var j = 1;j<pds.length;j++){
+                    drawPathTemp([[pds[j-1][0],pds[j-1][1]],[pds[j][0],pds[j][1]]],'#ff0')
+                }
+            }
+        }*/
+        
+        var mergedGraph = this.mergedGraph(this.standardGraph,this.graph)
+        /*
+        for(var code in mergedGraph){
+            var paths = mergedGraph[code].paths
+            for(var i in paths){
+                var pds = paths[i].path
+                for(var j = 1;j<pds.length;j++){
+//                    drawPathTemp([[pds[j-1][0],pds[j-1][1]],[pds[j][0],pds[j][1]]],'#f003')
+                    drawPathTemp([
+                                    [pds[j-1][0],pds[j-1][1]],
+                                    [(pds[j][0]+pds[j-1][0])/2,(pds[j][1]+pds[j-1][1])/2]
+                                ],'#f00')
+                }
+            }
+            if(paths.length > 0){
+                drawTextTemp(paths[0].path[0][0],paths[0].path[0][1],(mergedGraph[code].town && mergedGraph[code].unit) ? 'town&unit' : (mergedGraph[code].town ? 'town' : 'unit'),'#0f0')
+            }
+        }*/
+        this.sendUnitsRandomly(mergedGraph)
+    }
+    sendUnitsRandomly(mergedGraph){
+        var model = this.model()
+        for(var code in mergedGraph){
+            var vertex = mergedGraph[code]
+            
+            var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
+            if(unit != null){
+                if(unit.team == model.playerChoosen){
+                    continue
+                }
+                
+                if(unit.size < 25){
+                    continue
+                }
+
+                if(unit.path.length > 0){
+                    continue
+                }
+                    
+                for(var i in vertex.paths){
+                    var path = vertex.paths[i]
+                    var target = mergedGraph[path.targetCode]
+                    
+                    var part = vertex.town ? 0.5 : 1
+                    if(target.town != unit.towntaken || unit.towntaken == null || target.town == null){
+                        if(target.town != null){
+                            model.trySetPathForUnit(unit, part, target.town.x, target.town.y, target.town, path.path)
+                        } else {
+                            model.trySetPathForUnit(unit, part, target.unit.x, target.unit.y, target.unit, path.path)
+                        }
+                    }
+                    if(vertex.town == null)
+                        break
+
+                }
+            }
+        }
+    }
+    /*
+    
+                paths:graphPoint.paths.map(
+                    path => new Object({
+                        target:path.target,
+                        path:path.path,
+                        dist:path.dist,
+                        sea:path.sea,
+                        targetCode:path.targetCode
+                    })
+                )
+    */
+    loadStandardGraph(){
+        var model = this.model()
+        var max_dist = model.WIDTH / model.CHUNKS_PER_SIDE//*0.8
+        var targets = model.towns.slice()
+        this.standardGraph = {}
+        
+        /*
+        var targetsByChunk = {}
+        
+        for(var key in model.chunks){
+            targetsByChunk[key] = []
+        }
+        for(var i in targets){
+            var unit = targets[i]
+            
+            var chunk = unit.chunk
+            var nearbyCodes = chunk.nearChunkCodes
+            for(var j in nearbyCodes){
+                var nearbyCode = nearbyCodes[j]
+                
+                if(nearbyCode in model.chunks){
+                    targetsByChunk[nearbyCode].push(unit)
+                }
+            }
+        }*/
+        for(var i in targets){
+            var target = targets[i]
+            
+            var paths = []
+            
+            //land
+            var landTargets = target.land != null ? targets.filter(a => a.land == target.land/* && eucl_dist(a.x,a.y,target.x,target.y) <= max_dist*2*/) : []
+
+            var ix = 0
+            while(ix < landTargets.length){
+                var t = landTargets[ix]
+                if(t != target && (t.x != target.x || t.y != target.y)){
+                    landTargets = landTargets.slice(0,ix+1).concat(landTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea([target.x,target.y],[t.x,t.y],p.x,p.y)))
+                }
+                ix++
+            }
+            
+            var closestTargetsPoints = landTargets.map(a => [a.x,a.y])
+            var lands = [target.land]
+
+            var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*2,3)
+            //var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,false,max_dist*2,3)
+
+            var paths = this.pathsFromGraph(landTargets,vectorGraph,false)
+            paths = this.toGabrielGraph(paths)
+
+                        
+            //sea
+            if(target instanceof Unit && (target.land == null || target.towntaken != null && target.towntaken.port != null) || target.port != null){
+                var seaTargets = target.land == null
+                    ? targets.filter(a => a.land == null || target instanceof Town && target.port != null || target.towntaken != null && target.towntaken.port != null) 
+                    : targets.filter(a => a.land != target.land || target instanceof Town && target.port != null || target.towntaken != null && target.towntaken.port != null)
+                    
+                var ix = 0
+                while(ix < seaTargets.length){
+                    var t = seaTargets[ix]
+                    if(t != target && (t.x != target.x || t.y != target.y)){
+                        seaTargets = seaTargets.slice(0,ix+1).concat(seaTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea([target.x,target.y],[t.x,t.y],p.x,p.y)))
+                    }
+                    ix++
+                }
+                
+                var closestTargetsPoints = seaTargets.map(a => [a.x,a.y])
+                var lands = model.lands
+
+                var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*2,1)
+//                var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,true,max_dist*2,3)
+
+                var paths2 = this.pathsFromGraph(seaTargets,vectorGraph,true)
+                paths2 = this.toGabrielGraph(this.concatPathsUnique(paths,paths2)).filter(a => a.target.land != target.land)
+                
+                paths = this.concatPathsUnique(paths,paths2)
+            }
+
+            // || target instanceof Town && target.port != null || target.towntaken != null && target.towntaken.port != null 
+            
+            
+            /*
+            var remainingTargets = target.land != null ? targets.filter(a => a.land == target.land) : targets.filter(a => a.land == null || a instanceof Town && a.port != null || a.towntaken != null && a.towntaken.port != null)
+            for(var tri = 1;tri<=1;tri++){
+                //var closestTargets = targets.filter(a => (a.land == target.land || target.land == null) && dist(a.x,a.y,target.x,target.y) <= max_dist)
+                //var chunkcode = target.chunk.x+'#'+target.chunk.y
+                var closestTargets = remainingTargets.filter(a => (a.land == target.land && target.land != null) && dist(a.x,a.y,target.x,target.y) > max_dist*(tri-1) && dist(a.x,a.y,target.x,target.y) <= max_dist * tri)
+
+                var closestTargetsPoints = closestTargets.map(a => [a.x,a.y])
+                
+                var lands = target.land == null ? [] : [target.land]//model.lands//target.land == null ? [] : target.chunk.polygons
+                
+                var vectorGraph = getVectorGraph(target,closestTargetsPoints,lands,false,max_dist*tri)
+                
+                var paths1 = this.pathsFromGraph(target,closestTargets,vectorGraph)
+                paths = this.toGabrielGraph(target,this.uniquePathTargets(paths.concat(paths1)))
+
+//                paths = this.uniquePathTargets(paths.concat(paths1))
+                for(var j in paths){
+                    var t = paths[j].target
+                    remainingTargets = remainingTargets.filter(p => p != t && (p.x != target.x || p.y != target.y) && (t.x != target.x || t.y != target.y) && (p.x != t.x || p.y != t.y) && !pointOutsideGabrielArea([target.x,target.y],[t.x,t.y],p.x,p.y))
+                }
+                if(remainingTargets.length == 0)
+                    break
+            }*/
+                /*
+                if(target.land == null || target instanceof Town && target.port != null || target.towntaken != null && target.towntaken.port != null){
+                    var realtarget = target
+                    
+                    if(target.towntaken != null)
+                        realtarget = target.towntaken
+                    var closestTargets = remainingTargets.filter(a => (realtarget.land == null || a.land != realtarget.land) && dist(a.x,a.y,realtarget.x,realtarget.y) > max_dist*(tri-1) && dist(a.x,a.y,realtarget.x,realtarget.y) <= max_dist * tri)
+                    var closestTargetsPoints = closestTargets.map(a => [a.x,a.y])
+
+                    var portLands = model.lands
+                    var vectorGraph = getVectorGraph(realtarget,closestTargetsPoints,portLands,true,max_dist*tri)
+                
+                    var paths2 = this.pathsFromGraph(realtarget,closestTargets,vectorGraph)
+                    paths = this.toGabrielGraph(realtarget,this.uniquePathTargets(paths.concat(paths2)))
+
+//                    paths = this.uniquePathTargets(paths.concat(paths2))
+                    for(var j in paths){
+                        var t = paths[j].target
+                        remainingTargets = remainingTargets.filter(p => p != t && (p.x != realtarget.x || p.y != realtarget.y) && (t.x != realtarget.x || t.y != realtarget.y) && (p.x != t.x || p.y != t.y) && !pointOutsideGabrielArea([realtarget.x,realtarget.y],[t.x,t.y],p.x,p.y))
+                    }
+                }*/
+//                console.log(paths)
+            
+            var target_code = target.x+'#'+target.y
+            
+            paths.forEach(a => { a.targetCode = a.target.x+'#'+a.target.y })
+            this.standardGraph[target_code] = {
+                unit:target instanceof Unit ? target : null,
+                town:target instanceof Town ? target : null,
+                paths:paths
+            }
+            for(var ii in paths){
+                var pds = paths[ii].path
+                
+                for(var j = 1;j<pds.length;j++){
+                    //drawPathTemp([[pds[j-1][0],pds[j-1][1]],[pds[j][0],pds[j][1]]])
+                }
+            }
+            /*
+            if(paths.length > 10){
+                console.log(paths.sort((a,b)=>(a.x-b.x)))
+                throw new Error('a')
+            }*/
+//            console.log(remainingTargets)
+            //console.log(vectorGraph)
+        }
+        //throw new Error('a')
+    }
+    updateGraph(){
+        var model = this.model()
+        var max_dist = model.WIDTH / model.CHUNKS_PER_SIDE//*0.8
+        var targets = model.units.filter(a => a.towntaken == null && !a.dead)
+        this.graph = {}
+        
+        /*
+        var targetsByChunk = {}
+        
+        for(var key in model.chunks){
+            targetsByChunk[key] = []
+        }
+        for(var i in targets){
+            var unit = targets[i]
+            
+            var chunk = unit.chunk
+            var nearbyCodes = chunk.nearChunkCodes
+            for(var j in nearbyCodes){
+                var nearbyCode = nearbyCodes[j]
+                
+                if(nearbyCode in model.chunks){
+                    targetsByChunk[nearbyCode].push(unit)
+                }
+            }
+        }*/
+        
+        var otherTargets = model.towns.concat(targets)
+        
+        for(var i in targets){
+            var target = targets[i]
+            
+            var paths = []
+            
+            //land
+            var landTargets = target.land != null ? otherTargets.filter(a => a.land == target.land && a != target/* && eucl_dist(a.x,a.y,target.x,target.y) <= max_dist*2*/) : []
+
+            var ix = 0
+            while(ix < landTargets.length){
+                var t = landTargets[ix]
+                if(t != target && (t.x != target.x || t.y != target.y)){
+                    landTargets = landTargets.slice(0,ix+1).concat(landTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea([target.x,target.y],[t.x,t.y],p.x,p.y)))
+                }
+                ix++
+            }
+            
+            var closestTargetsPoints = landTargets.map(a => [a.x,a.y])
+            var lands = [target.land]
+
+            var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*2,2)
+//            var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,false,max_dist*2,2)
+
+            var paths = this.pathsFromGraph(landTargets,vectorGraph,false)
+            paths = this.toGabrielGraph(paths)
+
+                        
+            //sea
+            
+            if(target instanceof Unit && (target.land == null || target.towntaken != null && target.towntaken.port != null) || target.port != null){
+                var seaTargets = target.land == null
+                    ? otherTargets.filter(a => a.land == null || a instanceof Town && a.port != null || a.towntaken != null && a.towntaken.port != null) 
+                    : otherTargets.filter(a => a.land != target.land || a instanceof Town && a.port != null || a.towntaken != null && a.towntaken.port != null)
+                    
+                var ix = 0
+                while(ix < seaTargets.length){
+                    var t = seaTargets[ix]
+                    if(t != target && (t.x != target.x || t.y != target.y)){
+                        seaTargets = seaTargets.slice(0,ix+1).concat(seaTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea([target.x,target.y],[t.x,t.y],p.x,p.y)))
+                    }
+                    ix++
+                }
+
+                var closestTargetsPoints = seaTargets.map(a => [a.x,a.y])
+                var lands = model.lands
+
+                var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*2,1)
+//                var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,true,max_dist*2,1)
+
+                var paths2 = this.pathsFromGraph(seaTargets,vectorGraph,true)
+                paths2 = this.toGabrielGraph(this.concatPathsUnique(paths,paths2)).filter(a => a.target.land != target.land)
+                
+                paths = this.concatPathsUnique(paths,paths2)
+            }
+
+            // || target instanceof Town && target.port != null || target.towntaken != null && target.towntaken.port != null 
+            
+            
+            /*
+            var remainingTargets = target.land != null ? targets.filter(a => a.land == target.land) : targets.filter(a => a.land == null || a instanceof Town && a.port != null || a.towntaken != null && a.towntaken.port != null)
+            for(var tri = 1;tri<=1;tri++){
+                //var closestTargets = targets.filter(a => (a.land == target.land || target.land == null) && dist(a.x,a.y,target.x,target.y) <= max_dist)
+                //var chunkcode = target.chunk.x+'#'+target.chunk.y
+                var closestTargets = remainingTargets.filter(a => (a.land == target.land && target.land != null) && dist(a.x,a.y,target.x,target.y) > max_dist*(tri-1) && dist(a.x,a.y,target.x,target.y) <= max_dist * tri)
+
+                var closestTargetsPoints = closestTargets.map(a => [a.x,a.y])
+                
+                var lands = target.land == null ? [] : [target.land]//model.lands//target.land == null ? [] : target.chunk.polygons
+                
+                var vectorGraph = getVectorGraph(target,closestTargetsPoints,lands,false,max_dist*tri)
+                
+                var paths1 = this.pathsFromGraph(target,closestTargets,vectorGraph)
+                paths = this.toGabrielGraph(target,this.uniquePathTargets(paths.concat(paths1)))
+
+//                paths = this.uniquePathTargets(paths.concat(paths1))
+                for(var j in paths){
+                    var t = paths[j].target
+                    remainingTargets = remainingTargets.filter(p => p != t && (p.x != target.x || p.y != target.y) && (t.x != target.x || t.y != target.y) && (p.x != t.x || p.y != t.y) && !pointOutsideGabrielArea([target.x,target.y],[t.x,t.y],p.x,p.y))
+                }
+                if(remainingTargets.length == 0)
+                    break
+            }*/
+                /*
+                if(target.land == null || target instanceof Town && target.port != null || target.towntaken != null && target.towntaken.port != null){
+                    var realtarget = target
+                    
+                    if(target.towntaken != null)
+                        realtarget = target.towntaken
+                    var closestTargets = remainingTargets.filter(a => (realtarget.land == null || a.land != realtarget.land) && dist(a.x,a.y,realtarget.x,realtarget.y) > max_dist*(tri-1) && dist(a.x,a.y,realtarget.x,realtarget.y) <= max_dist * tri)
+                    var closestTargetsPoints = closestTargets.map(a => [a.x,a.y])
+
+                    var portLands = model.lands
+                    var vectorGraph = getVectorGraph(realtarget,closestTargetsPoints,portLands,true,max_dist*tri)
+                
+                    var paths2 = this.pathsFromGraph(realtarget,closestTargets,vectorGraph)
+                    paths = this.toGabrielGraph(realtarget,this.uniquePathTargets(paths.concat(paths2)))
+
+//                    paths = this.uniquePathTargets(paths.concat(paths2))
+                    for(var j in paths){
+                        var t = paths[j].target
+                        remainingTargets = remainingTargets.filter(p => p != t && (p.x != realtarget.x || p.y != realtarget.y) && (t.x != realtarget.x || t.y != realtarget.y) && (p.x != t.x || p.y != t.y) && !pointOutsideGabrielArea([realtarget.x,realtarget.y],[t.x,t.y],p.x,p.y))
+                    }
+                }*/
+//                console.log(paths)
+            
+            var target_code = target.x+'#'+target.y
+            
+            paths.forEach(a => { a.targetCode = a.target.x+'#'+a.target.y })
+            this.graph[target_code] = {
+                unit:target instanceof Unit ? target : null,
+                town:target instanceof Town ? target : null,
+                paths:paths
+            }
+            for(var ii in paths){
+                var pds = paths[ii].path
+                
+                for(var j = 1;j<pds.length;j++){
+                    //drawPathTemp([[pds[j-1][0],pds[j-1][1]],[pds[j][0],pds[j][1]]])
+                }
+            }
+            /*
+            if(paths.length > 10){
+                console.log(paths.sort((a,b)=>(a.x-b.x)))
+                throw new Error('a')
+            }*/
+//            console.log(remainingTargets)
+            //console.log(vectorGraph)
+        }
+        //throw new Error('a')
+    }
+    uniquePathTargets(array){
+        if(array.length == 0)
+            return []
+        var newArray = [array[0]]
+        array.sort((a,b) => a.target.x-b.target.x)
+        for(var i=1;i<array.length;i++){
+            if(array[i].target.x != newArray[newArray.length-1].target.x/* || array[i].target.y != newArray[newArray.length-1].target.y*/)
+                newArray.push(array[i])
+        }
+        return newArray
+    }
+    pathsFromGraph(closestTargets,graph,sea){
+        var paths = []
+        for(var i in closestTargets){
+            var target = closestTargets[i]
+            
+            var code = target.x+'#'+target.y
+            
+            if(code in graph){
+                var distance = 0
+                var g1 = graph[code]
+                var path = []
+                while(g1 != null){
+                    path.push(g1.point)
+                    distance += g1.dist
+                    g1 = g1.from
+                }
+                if(distance > 0){
+//                    path.push([target.x,target.y])
+                    var newPath = path.slice().reverse()
+                    newPath[newPath.length-1] = [target.x,target.y]
+                    paths.push({target:target,targetCode:target.x+'#'+target.y,path:newPath,dist:distance,sea:sea})
+                }
+            }
+        }
+        return paths
+    }
+    toGabrielGraph(paths){
+        var newPaths = []
+        for(var i in paths){
+            var path1 = paths[i]
+            //if(point1.from == null){
+                var ok = true
+                for(var j in paths){
+                    var path2 = paths[j]
+                        //if(!(path2.target.team == null || path2.target.team == target.team))
+                    //if(point2.from == null){
+/*
+                        if(Math.pow(path1.dist,2) > Math.pow(path2.dist,2) + Math.pow(eucl_dist(path1.path[1][0],path1.path[1][1],path2.path[1][0],path2.path[1][1]),2)){
+                            ok = false
+                            break
+                        }*/
+                    if(i != j)
+                        if(Math.pow(path1.dist,2) > Math.pow(path2.dist,2) + Math.pow(eucl_dist(path1.path[path1.path.length-1][0],path1.path[path1.path.length-1][1],path2.path[path2.path.length-1][0],path2.path[path2.path.length-1][1]),2)){
+                            ok = false
+                            break
+                        }
+                    //}
+                }
+                if(ok)
+                    newPaths.push(path1)
+            //}
+        }
+        return newPaths
+    }
+    concatPathsUnique(paths1,paths2){
+        var newPaths = paths1.concat(paths2).sort((a,b)=>a.targetCode.localeCompare(b.targetCode))
+        if(newPaths.length == 0)
+            return []
+        var result = [newPaths[0]]
+        for(var i = 1;i<newPaths.length;i++){
+            if(newPaths[i-1].targetCode != newPaths[i].targetCode)
+                result.push(newPaths[i])
+        }
+        return result
+    }
+    mergedGraph(standardGraph,graph){
+        var mergedGraph = {}
+        
+        for(var target_code in standardGraph){
+            var graphPoint = standardGraph[target_code]
+
+            mergedGraph[target_code] = {
+                unit:graphPoint.unit,
+                town:graphPoint.town,
+                paths:graphPoint.paths.map(
+                    path => new Object({
+                        target:path.target,
+                        path:path.path,
+                        dist:path.dist,
+                        sea:path.sea,
+                        targetCode:path.targetCode
+                    })
+                )
+            }
+        }
+        
+        for(var target_code in graph){
+            var graphPoint = graph[target_code]
+
+            //if(!(target_code in mergedGraph))
+                mergedGraph[target_code] = {
+                    unit:graphPoint.unit,
+                    town:graphPoint.town,
+                    paths:graphPoint.paths.map(
+                        path => new Object({
+                            target:path.target,
+                            path:path.path,
+                            dist:path.dist,
+                            sea:path.sea,
+                            targetCode:path.targetCode
+                        })
+                    )
+                }
+        }
+        
+        for(var target_code in graph){
+            var mgtc = mergedGraph[target_code]
+
+            for(var i in mgtc.paths){
+                var path = mgtc.paths[i]
+                
+                var add = true
+                var targetCode = path.targetCode
+                for(var j in mergedGraph[targetCode].paths){
+                    var path2 = mergedGraph[targetCode].paths[j]
+                    
+                    if(path2.targetCode == target_code){
+                        add = false
+                        break
+                    }
+                }
+                if(mergedGraph[targetCode].town != null){
+                    if(add){
+                        mergedGraph[targetCode].paths.push(new Object({
+                            target:mgtc.unit,
+                            path:path.path.slice().reverse(),
+                            dist:path.dist,
+                            sea:path.sea,
+                            targetCode:target_code
+                        }))
+                    }
+                }
+            }
+        }
+        
+        for(var target_code in mergedGraph){
+            var vertex = mergedGraph[target_code]
+            vertex.paths = this.toGabrielGraph(vertex.paths)
+        }
+        
+        /*
+
+            this.graph[target_code] = {
+                unit:target instanceof Unit ? target : null,
+                town:target instanceof Town ? target : target.towntaken != null,
+                paths:paths
+            }
+                                paths.push({target:target,path:path.reverse(),dist:distance,sea:sea})
+
+        */
+        return mergedGraph
+    }
+}
 class Controller {
     constructor(){
         this.canv = document.getElementById('canv')
@@ -2962,15 +3676,17 @@ class Controller {
         
         this.model = new Model()
         this.view = new View(this.canv,this.model,this.state)
+        
+        this.ai = new Ai(this,this.state)
                 
         this.view.draw()
         
         this.pressedUnit = null
         this.dragStart = null
         
-        this.playingTeam = null
-        
         this.pause = false
+        
+        this.frameCounter = 0
         
         this.prepareListeners()
         
@@ -3039,7 +3755,7 @@ class Controller {
                     if(currentlyPressedUnit == this.pressedUnit && !currentlyPressedUnit.inProcessOfEmbarking()){
                         this.model.selectUnit(this.pressedUnit)
                         if(!this.state.state.gameplay){
-                            this.playingTeam = this.model.selectedUnit.team
+                            this.model.playerChoosen = this.model.selectedUnit.team
                             this.changeState(new GamePlayUnselected(this))
                         }
                     }
@@ -3056,15 +3772,18 @@ class Controller {
                         else
                             this.model.selectedUnitDivision /= 2
                     } else {
+                        /*
                         var oldPath = this.model.selectedUnit.path
                         var oldTarget = this.model.selectedUnit.target
                         var oldLand = this.model.selectedUnit.land
                         var oldEmbarking = this.model.selectedUnit.embarking
                         var oldBarkingPoint = this.model.selectedUnit.barkingPoint
                         var oldBarkingLand = this.model.selectedUnit.barkingLand
-                        
-                        var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,currentlyPressedUnit)
+                        */
+                        var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit)
+                        this.model.deselectUnit()
 
+                        /*
                         if(pathCreated){
                             var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
                             if(newUnit != null){
@@ -3086,25 +3805,30 @@ class Controller {
                             }
                         } else
                             this.model.selectedUnit.removePath()
-                        this.model.deselectUnit()
+                        this.model.deselectUnit()*/
                     }
                 } else {
+                    /*
                     var oldPath = this.model.selectedUnit.path
                     var oldTarget = this.model.selectedUnit.target
                     var oldLand = this.model.selectedUnit.land
                     var oldEmbarking = this.model.selectedUnit.embarking
                     var oldBarkingPoint = this.model.selectedUnit.barkingPoint
                     var oldBarkingLand = this.model.selectedUnit.barkingLand
-
+                    */
+                    
                     var pressedTown = this.view.getTownByMouse(modelCoords)
                     var pathCreated
                     if(pressedTown != null){
-                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,pressedTown)
+                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,pressedTown)
                     } else if(currentlyPressedUnit != null) {
-                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y,currentlyPressedUnit)
+                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit)
                     } else {
-                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, modelCoords.x, modelCoords.y)
+                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y)
                     }
+                    this.model.deselectUnit()
+
+                    /*
                     if(pathCreated){
                         var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
                         if(newUnit != null){
@@ -3127,7 +3851,7 @@ class Controller {
                         this.model.generateVoronois()
                     } else
                         this.model.selectedUnit.removePath()
-                    this.model.deselectUnit()
+                    this.model.deselectUnit()*/
                 }
 
             }
@@ -3159,6 +3883,9 @@ class Controller {
             this.view.draw()
         }
         let t = this
+        t.frameCounter++
+        if(t.frameCounter % 20 == 0 && this.state.state.gameplay)
+            t.ai.think()
         setTimeout(()=>{t.loop()},100)
     }
 }
