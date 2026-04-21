@@ -3884,7 +3884,7 @@ class Controller {
         }
         let t = this
         t.frameCounter++
-        if(t.frameCounter % 20 == 0 && this.state.state.gameplay)
+        if(t.frameCounter % 30 == 0 && this.state.state.gameplay)
             t.ai.think()
         setTimeout(()=>{t.loop()},100)
     }
