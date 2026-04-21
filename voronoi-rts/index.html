@@ -1243,7 +1243,7 @@ class Model {
         this.WIDTH = 650
         this.CHUNKS_PER_SIDE = 8
         this.NUMBER_OF_POINTS = 250
-        this.TOWN_DISTANCE_LIMIT = 25
+        this.TOWN_DISTANCE_LIMIT = 40
         
         this.TOWN_GROWING_RATE = 0.05
         this.COUNTRYSIDE_GROWING_RATE = 0.01
@@ -1718,13 +1718,16 @@ class Model {
 
                     var land = voronoiable.voronoi
                     var newLands
-                    if(bisector.vertical){
-                        newLands = verticalLinearLimitPolygons([land],bisector.x,bisector.firstLeftBottom)
-                    } else {
-                        newLands = nonVerticalLinearLimitPolygons([land],bisector.a,bisector.b,bisector.firstLeftBottom)
-                    }
-                    
-                    voronoiable.voronoi = polygonHittingPoints(newLands,voronoiable.x,voronoiable.y)
+                    try {
+                        if(bisector.vertical){
+                            newLands = verticalLinearLimitPolygons([land],bisector.x,bisector.firstLeftBottom)
+                        } else {
+                            newLands = nonVerticalLinearLimitPolygons([land],bisector.a,bisector.b,bisector.firstLeftBottom)
+                        }
+                        
+                        voronoiable.voronoi = polygonHittingPoints(newLands,voronoiable.x,voronoiable.y)
+                        
+                    } catch (e){ }
                 }
 
             }
