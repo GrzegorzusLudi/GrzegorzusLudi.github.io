@@ -2298,7 +2298,9 @@ class Model {
                             pushback = true
                         }
                         if(unit.team == unit2.team && unit.towntaken == null){
-                            if(unit.target != null && (unit.target == unit2 || unit.target.occupyingUnit != null && unit.target.occupyingUnit == unit2) && unit2.path.length == 0 && unit.tooClose(unit2) && unit.atPathEndAndInDirection(unit2)){
+                            if(/*unit.target != null && */(unit.target == null || unit.target == unit2 || unit.target.occupyingUnit != null && unit.target.occupyingUnit == unit2) && unit2.path.length == 0 && unit.tooClose(unit2) && unit.atPathEndAndInDirection(unit2)){
+                                if(unit.target == null)
+                                    unit.target = unit2
                                 unit.tryToMergeWithTarget()
                                 pushback = true
                                 change = true
@@ -3695,6 +3697,7 @@ class Ai {
                         }
                         
                     }
+                    vertexStack = vertexStack.filter(a => a.dist == Infinity || a.dist <= vertex.distanceToEnemy)
                     ix++
                 }
             }
