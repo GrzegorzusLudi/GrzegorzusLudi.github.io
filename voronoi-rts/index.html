@@ -1241,7 +1241,7 @@ class Unit {
 class Model {
     constructor(){
         this.WIDTH = 650
-        this.CHUNKS_PER_SIDE = 8
+        this.CHUNKS_PER_SIDE = 6
         this.NUMBER_OF_POINTS = 250
         this.TOWN_DISTANCE_LIMIT = 40
         
@@ -1613,7 +1613,7 @@ class Model {
             town.setChunk(this.chunks[chunk])
             town.setBigChunk(this.bigChunks[bigChunk])
 
-            if(i % 4 == 0 || i == 1){
+            if(i % 2 == 0 || i == 1){
                 var teamColor = getRandomColor()
                 while(this.teams.filter(a => a.color == teamColor).length > 0)
                     teamColor = getRandomColor()
@@ -3164,20 +3164,28 @@ class Ai {
                     continue
                 }
                     
-                for(var i in vertex.paths){
-                    var path = vertex.paths[i]
+                var paths = vertex.paths.slice().sort((a,b) => a.dist - b.dist)
+                for(var i in paths){
+                    var path = paths[i]
                     var target = mergedGraph[path.targetCode]
                     
-                    var part = vertex.town ? 0.5 : 1
-                    if(target.town != unit.towntaken || unit.towntaken == null || target.town == null){
-                        if(target.town != null){
-                            model.trySetPathForUnit(unit, part, target.town.x, target.town.y, target.town, path.path)
-                        } else {
-                            model.trySetPathForUnit(unit, part, target.unit.x, target.unit.y, target.unit, path.path)
+                    var part = vertex.town || (vertex.unit != null && vertex.unit.size > 5) ? 0.5 : 1
+                    
+                    if(i == paths.length - 1)
+                        part = 1
+                        
+                    var targetTeam = target.unit ? target.unit.team : target.town.team
+                    if(targetTeam != unit.team || target.distanceToEnemy < vertex.distanceToEnemy)
+                        if(target.town != unit.towntaken || unit.towntaken == null || target.town == null){
+                            if(target.town != null){
+                                model.trySetPathForUnit(unit, part, target.town.x, target.town.y, target.town, path.path)
+                            } else {
+                                if(target.unit.path.length == 0 || target.unit.team != unit.team)
+                                    model.trySetPathForUnit(unit, part, target.unit.x, target.unit.y, target.unit, path.path)
+                            }
                         }
-                    }
-                    if(vertex.town == null)
-                        break
+                        if(vertex.town == null)
+                            continue
 
                 }
             }
@@ -3656,6 +3664,40 @@ class Ai {
         for(var target_code in mergedGraph){
             var vertex = mergedGraph[target_code]
             vertex.paths = this.toGabrielGraph(vertex.paths)
+            vertex.distanceToEnemy = Infinity
+
+            var team = vertex.unit ? vertex.unit.team : vertex.town.team
+            if(team != null){                
+                var usedVertices = {}
+                usedVertices[vertex.targetCode] = true
+                
+                var vertexStack = vertex.paths.map(a => new Object({code:a.targetCode, dist:a.dist, vertex:mergedGraph[a.targetCode]}))
+                var ix = 0
+                while(vertexStack.length > 0 && ix < 50){
+                    var firstVertex = vertexStack[0]
+                    vertexStack = vertexStack.slice(1)
+                    
+                    usedVertices[firstVertex.vertex.code] = true
+                    var vertexTeam = firstVertex.vertex.unit ? firstVertex.vertex.unit.team : firstVertex.vertex.town.team
+                    
+                    if(vertexTeam != team && vertex.distanceToEnemy > firstVertex.dist){
+                        vertex.distanceToEnemy = firstVertex.dist
+                        continue
+                    }
+                    
+                    for(var i in firstVertex.vertex.paths){
+                        var nextPath = firstVertex.vertex.paths[i]
+                        if(!(nextPath.targetCode in usedVertices)){
+                            var nextVertex = {code:nextPath.targetCode, dist:firstVertex.dist + nextPath.dist, vertex:mergedGraph[nextPath.targetCode]}
+                            if(nextVertex.dist <= vertex.distanceToEnemy){
+                                vertexStack.push(nextVertex)
+                            }
+                        }
+                        
+                    }
+                    ix++
+                }
+            }
         }
         
         /*
