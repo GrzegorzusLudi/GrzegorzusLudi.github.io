@@ -2087,6 +2087,10 @@ class Model {
         } else {
             possiblePath = readyPath
             possible = true
+            if(unit.towntaken != null && unit.towntaken.port != null && !hitTest(unit.land,x,y) || unit.embarking){
+                possibleBarking = this.getSeaPathCrossing(unit,readyPath,objectToBePressed)
+                seaPossible = readyPath
+            }
         }
 
         if(possible){
@@ -2539,6 +2543,13 @@ class View {
 
     }
     drawVoronois(){
+        var mouseCoords = this.modelMouseCoords()
+        var x = null,y = null
+        if(mouseCoords != null){
+            x = mouseCoords.x
+            y = mouseCoords.y
+        }
+
         var voronoiables = this.model.mergedVoronois//this.model.getVoronoiables()
         for(var i in voronoiables){
             var voronoiable = voronoiables[i]
@@ -3250,7 +3261,7 @@ class Ai {
             var closestTargetsPoints = landTargets.map(a => [a.x,a.y])
             var lands = [target.land]
 
-            var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*2,3)
+            var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*3,3)
             //var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,false,max_dist*2,3)
 
             var paths = this.pathsFromGraph(landTargets,vectorGraph,false)
@@ -3275,7 +3286,7 @@ class Ai {
                 var closestTargetsPoints = seaTargets.map(a => [a.x,a.y])
                 var lands = model.lands
 
-                var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*2,1)
+                var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*3,3)
 //                var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,true,max_dist*2,3)
 
                 var paths2 = this.pathsFromGraph(seaTargets,vectorGraph,true)
@@ -3667,38 +3678,61 @@ class Ai {
             var vertex = mergedGraph[target_code]
             vertex.paths = this.toGabrielGraph(vertex.paths)
             vertex.distanceToEnemy = Infinity
+            vertex.neighborsEnemy = false
+        }
 
-            var team = vertex.unit ? vertex.unit.team : vertex.town.team
-            if(team != null){                
-                var usedVertices = {}
-                usedVertices[vertex.targetCode] = true
-                
-                var vertexStack = vertex.paths.map(a => new Object({code:a.targetCode, dist:a.dist, vertex:mergedGraph[a.targetCode]}))
-                var ix = 0
-                while(vertexStack.length > 0 && ix < 50){
-                    var firstVertex = vertexStack[0]
-                    vertexStack = vertexStack.slice(1)
+        for(var j = 0;j<6;j++){
+            for(var target_code in mergedGraph){
+                var vertex = mergedGraph[target_code]
+
+                var team = vertex.unit ? vertex.unit.team : vertex.town.team
+                if(team != null){                
+                    var usedVertices = {}
+                    usedVertices[vertex.targetCode] = true
                     
-                    usedVertices[firstVertex.vertex.code] = true
-                    var vertexTeam = firstVertex.vertex.unit ? firstVertex.vertex.unit.team : firstVertex.vertex.town.team
+//                    var vertexStack = vertex.paths.map(a => new Object({code:a.targetCode, dist:a.dist, vertex:mergedGraph[a.targetCode]}))
                     
-                    if(vertexTeam != team && vertex.distanceToEnemy > firstVertex.dist){
-                        vertex.distanceToEnemy = firstVertex.dist
-                        continue
+                    for(var i in vertex.paths){
+                        var pathObject = vertex.paths[i]
+                        
+                        var neighboringVertex = mergedGraph[pathObject.targetCode]
+                        var neighborTeam = neighboringVertex.unit ? neighboringVertex.unit.team : neighboringVertex.town.team
+
+                        if(neighborTeam != team && vertex.distanceToEnemy > pathObject.dist){
+                            vertex.distanceToEnemy = pathObject.dist
+                            vertex.neighborsEnemy = true
+                        } else if(neighborTeam == team && vertex.distanceToEnemy > pathObject.dist + neighboringVertex.distanceToEnemy){
+                            vertex.distanceToEnemy = pathObject.dist + neighboringVertex.distanceToEnemy
+                        }
                     }
                     
-                    for(var i in firstVertex.vertex.paths){
-                        var nextPath = firstVertex.vertex.paths[i]
-                        if(!(nextPath.targetCode in usedVertices)){
-                            var nextVertex = {code:nextPath.targetCode, dist:firstVertex.dist + nextPath.dist, vertex:mergedGraph[nextPath.targetCode]}
-                            if(nextVertex.dist <= vertex.distanceToEnemy){
-                                vertexStack.push(nextVertex)
-                            }
+                    /*
+                    var ix = 0
+                    while(vertexStack.length > 0 && ix < 50){
+                        var firstVertex = vertexStack[0]
+                        vertexStack = vertexStack.slice(1)
+                        
+                        usedVertices[firstVertex.vertex.code] = true
+                        var vertexTeam = firstVertex.vertex.unit ? firstVertex.vertex.unit.team : firstVertex.vertex.town.team
+                        
+                        if(vertexTeam != team && vertex.distanceToEnemy > firstVertex.dist){
+                            vertex.distanceToEnemy = firstVertex.dist
+                            continue
                         }
                         
-                    }
-                    vertexStack = vertexStack.filter(a => a.dist == Infinity || a.dist <= vertex.distanceToEnemy)
-                    ix++
+                        for(var i in firstVertex.vertex.paths){
+                            var nextPath = firstVertex.vertex.paths[i]
+                            if(!(nextPath.targetCode in usedVertices)){
+                                var nextVertex = {code:nextPath.targetCode, dist:firstVertex.dist + nextPath.dist, vertex:mergedGraph[nextPath.targetCode]}
+                                if(nextVertex.dist <= vertex.distanceToEnemy){
+                                    vertexStack.push(nextVertex)
+                                }
+                            }
+                            
+                        }
+                        vertexStack = vertexStack.filter(a => a.dist == Infinity || a.dist <= vertex.distanceToEnemy)
+                        ix++
+                    }*/
                 }
             }
         }
@@ -3800,7 +3834,7 @@ class Controller {
                 if(this.pressedUnit != null){
                     var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
 
-                    if(currentlyPressedUnit == this.pressedUnit && !currentlyPressedUnit.inProcessOfEmbarking()){
+                    if((currentlyPressedUnit.team == this.model.playerChoosen || !this.state.state.gameplay) && currentlyPressedUnit == this.pressedUnit && !currentlyPressedUnit.inProcessOfEmbarking()){
                         this.model.selectUnit(this.pressedUnit)
                         if(!this.state.state.gameplay){
                             this.model.playerChoosen = this.model.selectedUnit.team
