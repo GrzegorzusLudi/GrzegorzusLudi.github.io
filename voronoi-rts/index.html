@@ -699,7 +699,7 @@ function edgeHalfPointMoved(p1,p2,radiusMoved){
 }
 
 function triacontadigonalLimit(x,y,polygon, limit){
-    var SIDES = 16
+    var SIDES = 32
     var polygons = [polygon]
     for(var i = 0;i<SIDES;i++){
         var angle = (0.5+i) * Math.PI * 2 / SIDES
@@ -2087,7 +2087,7 @@ class Model {
         } else {
             possiblePath = readyPath
             possible = true
-            if(unit.towntaken != null && unit.towntaken.port != null && !hitTest(unit.land,x,y) || unit.embarking){
+            if(unit.towntaken != null && unit.towntaken.port != null && !almostHitTest(unit.land,x,y) || unit.embarking){
                 possibleBarking = this.getSeaPathCrossing(unit,readyPath,objectToBePressed)
                 seaPossible = readyPath
             }
