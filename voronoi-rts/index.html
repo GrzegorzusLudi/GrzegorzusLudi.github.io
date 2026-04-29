@@ -1125,6 +1125,7 @@ class Unit {
     }
     removePath(){
         this.path = []
+        this.target = null
     }
     tryTakeOverTown(){
         if(this.target.occupyingUnit == null){
@@ -2292,13 +2293,18 @@ class Model {
                     }
                     this.updateChunkForUnit(unit)
 
+                    var nopath = unit.path.length == 0
                     var chunkcode = unit.chunk.x+'#'+unit.chunk.y
                     var unitsToCheck = unitsByChunk[chunkcode]
                     for(var j in unitsToCheck){
                         var unit2 = unitsToCheck[j]
                         
                         if(unit.team != unit2.team && unit.tooClose(unit2)){
-                            this.fightBetweenUnits(unit,unit2)
+                            if(unit.size > 1 || unit.embarking){
+                                this.fightBetweenUnits(unit,unit2)
+                            } else {
+                                unit.removePath()
+                            }
                             pushback = true
                         }
                         if(unit.team == unit2.team && unit.towntaken == null){
@@ -2308,7 +2314,7 @@ class Model {
                                 unit.tryToMergeWithTarget()
                                 pushback = true
                                 change = true
-                            } else if(unit.size < 99 && unit.path.length == 0 && unit.tooClose(unit2) && unit.atPathEndAndInDirection(unit2,true)){
+                            } else if(unit.size < 99 && nopath && unit.tooClose(unit2) && unit.atPathEndAndInDirection(unit2,true)){
                                 unit.tryToMergeWithUnit(unit2)
                             }
                             if(unit.dead)
@@ -3169,7 +3175,11 @@ class Ai {
                     continue
                 }
                 
-                if(unit.size < 15){
+                if(unit.size < 15 && unit.towntaken != null){
+                    continue
+                }
+                
+                if(unit.size < 3 && unit.towntaken == null){
                     continue
                 }
 
@@ -3177,7 +3187,7 @@ class Ai {
                     continue
                 }
                     
-                var paths = vertex.paths.slice().sort((a,b) => a.dist - b.dist)
+                var paths = vertex.paths.slice().sort((a,b) => a.distanceToEnemy - b.distanceToEnemy)
                 for(var i in paths){
                     var path = paths[i]
                     var target = mergedGraph[path.targetCode]
@@ -3418,7 +3428,7 @@ class Ai {
             var closestTargetsPoints = landTargets.map(a => [a.x,a.y])
             var lands = [target.land]
 
-            var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*2,2)
+            var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist,2)
 //            var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,false,max_dist*2,2)
 
             var paths = this.pathsFromGraph(landTargets,vectorGraph,false)
@@ -3444,7 +3454,7 @@ class Ai {
                 var closestTargetsPoints = seaTargets.map(a => [a.x,a.y])
                 var lands = model.lands
 
-                var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*2,1)
+                var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist,1)
 //                var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,true,max_dist*2,1)
 
                 var paths2 = this.pathsFromGraph(seaTargets,vectorGraph,true)
