@@ -535,6 +535,7 @@ function segmentsIntersectingWithPolygon(a,b,polygon){
 }
 function getCrossingSegmentsIntersectingWithPolygon(a,b,polygon){
     var count = 0
+    var finalIntersection = null
     for(var i = 0;i<polygon.length;i++){
         var band = polygon[i]
         for(var j = 0;j<band.length;j++){
@@ -545,11 +546,11 @@ function getCrossingSegmentsIntersectingWithPolygon(a,b,polygon){
                 var intersection = segmentsIntersection(a,b,p1,p2)
                 
                 if(dist(intersection[0],intersection[1],a[0],a[1]) >= 0.0001)
-                    return intersection
+                    finalIntersection = intersection
             }
         }
     }
-    return null
+    return finalIntersection
 }
 function segmentsIntersectingWithPolygonCount(a,b,polygon){
     var count = 0
@@ -2002,7 +2003,7 @@ class Model {
         if(vectorPath == null){
             return null
         }
-            
+        /*
         for(var i in this.towns){
             var town = this.towns[i]
             if(town.color != unit.color && town.occupyingUnit == null && objectToBePressed != town && !(objectToBePressed != null && 'towntaken' in objectToBePressed && objectToBePressed.towntaken == town))
@@ -2017,7 +2018,7 @@ class Model {
                 if(unit2.checkPathThrough(vectorPath)){
                     return null
                 }
-        }
+        }*/
         /*
         if(unit.land != null){
             if(segmentsIntersectingWithPolygon([unit.x,unit.y],[x,y],unit.land))
@@ -2056,15 +2057,16 @@ class Model {
         for(var i in this.lands){
             var land = this.lands[i]
             var j = -1
-            if(segmentsIntersectingWithPolygonCount(point1,point2,land)){
+            var hittesting = almostHitTest(land,point2[0],point2[1])
+            if(hittesting && segmentsIntersectingWithPolygonCount(point1,point2,land)){
                 var crossing = getCrossingSegmentsIntersectingWithPolygon(point1,point2,land)
-                if(crossing != null)
+                if(crossing != null/* && eucl_dist(crossing[0],crossing[1],ux,uy) > 2*/)
                     return {barkingPoint: crossing, land: land}
             }
         }
         return null
     }
-    trySetPathForUnit(unit,selectedUnitDivision,x,y,objectToBePressed,readyPath){
+    trySetPathForUnit(unit,selectedUnitDivision,x,y,objectToBePressed,readyPath,sea){
         var oldPath = unit.path
         var oldTarget = unit.target
         var oldLand = unit.land
@@ -2088,10 +2090,13 @@ class Model {
         } else {
             possiblePath = readyPath
             possible = true
+            
+            //segmentsIntersectingWithPolygonCount(point1,point2,land)
             if(unit.towntaken != null && unit.towntaken.port != null && !almostHitTest(unit.land,x,y) || unit.embarking){
                 possibleBarking = this.getSeaPathCrossing(unit,readyPath,objectToBePressed)
-                seaPossible = readyPath
+//                if(possibleBarking != null/* && !almostHitTest(unit.land,possibleBarking[0],possibleBarking[1])*/){
             }
+            seaPossible = sea ? true : false
         }
 
         if(possible){
@@ -2124,8 +2129,9 @@ class Model {
             unit.barkingLand = null
         }
 
+        var newUnit = null
         if(possible){
-            var newUnit = unit.leavePartOfUnit(selectedUnitDivision)
+            newUnit = unit.leavePartOfUnit(selectedUnitDivision)
             if(newUnit != null){
                 //if(!(this.model.selectedUnit.embarking && this.model.selectedUnit.inProcessOfEmbarking())){
                 newUnit.path = oldPath
@@ -2146,7 +2152,7 @@ class Model {
         } else
             unit.removePath()
 
-        return possible
+        return {possible:possible, newUnit:newUnit}
     }
     click(x,y){
         for(var i in this.lands){
@@ -2248,6 +2254,7 @@ class Model {
         const SPEED = 2
         const SEA_SPEED = 4
         var change = false
+        var alreadyStaticUnits = {}
         for(var i in this.units){
             var unit = this.units[i]
             
@@ -2344,6 +2351,13 @@ class Model {
                         }
                         change = true*/
                     }
+                }
+            } else {
+                var code = unit.x+'#'+unit.y
+                if(code in alreadyStaticUnits){
+                    unit.tryToMergeWithUnit(alreadyStaticUnits[code])
+                } else {
+                    alreadyStaticUnits[code] = unit
                 }
             }
         }
@@ -3187,6 +3201,7 @@ class Ai {
                     continue
                 }
                     
+                var unitRemained = null
                 var paths = vertex.paths.slice().sort((a,b) => a.distanceToEnemy - b.distanceToEnemy)
                 for(var i in paths){
                     var path = paths[i]
@@ -3201,15 +3216,23 @@ class Ai {
                     if(targetTeam != unit.team || target.distanceToEnemy < vertex.distanceToEnemy)
                         if(target.town != unit.towntaken || unit.towntaken == null || target.town == null){
                             if(target.town != null){
-                                model.trySetPathForUnit(unit, part, target.town.x, target.town.y, target.town, path.path)
+                                unitRemained = model.trySetPathForUnit(unit, part, target.town.x, target.town.y, target.town, path.path, path.sea).newUnit
+
                             } else {
-                                if(target.unit.path.length == 0 || target.unit.team != unit.team)
-                                    model.trySetPathForUnit(unit, part, target.unit.x, target.unit.y, target.unit, path.path)
+                                if(target.unit.path.length == 0 || target.unit.team != unit.team){
+                                    unitRemained = model.trySetPathForUnit(unit, part, target.unit.x, target.unit.y, target.unit, path.path, path.sea).newUnit
+                                }
                             }
+                        }
+                        if(!path.sea){
+                            unit.barkingPoint = null
                         }
                         if(vertex.town == null)
                             continue
 
+                }
+                if(vertex.neighborsEnemy <= 1 && vertex.paths.length > 1 && unitRemained != null){
+                    unitRemained.tryToMergeWithUnit(unit)
                 }
             }
         }
@@ -3516,10 +3539,12 @@ class Ai {
             var target_code = target.x+'#'+target.y
             
             paths.forEach(a => { a.targetCode = a.target.x+'#'+a.target.y })
-            this.graph[target_code] = {
-                unit:target instanceof Unit ? target : null,
-                town:target instanceof Town ? target : null,
-                paths:paths
+            if(!(target_code in this.graph) || this.graph[target_code].unit != null && this.graph[target_code].unit.size < target.unit){
+                this.graph[target_code] = {
+                    unit:target instanceof Unit ? target : null,
+                    town:target instanceof Town ? target : null,
+                    paths:paths
+                }
             }
             for(var ii in paths){
                 var pds = paths[ii].path
@@ -3688,7 +3713,7 @@ class Ai {
             var vertex = mergedGraph[target_code]
             vertex.paths = this.toGabrielGraph(vertex.paths)
             vertex.distanceToEnemy = Infinity
-            vertex.neighborsEnemy = false
+            vertex.neighborsEnemy = 0
         }
 
         for(var j = 0;j<6;j++){
@@ -3710,7 +3735,7 @@ class Ai {
 
                         if(neighborTeam != team && vertex.distanceToEnemy > pathObject.dist){
                             vertex.distanceToEnemy = pathObject.dist
-                            vertex.neighborsEnemy = true
+                            vertex.neighborsEnemy++
                         } else if(neighborTeam == team && vertex.distanceToEnemy > pathObject.dist + neighboringVertex.distanceToEnemy){
                             vertex.distanceToEnemy = pathObject.dist + neighboringVertex.distanceToEnemy
                         }
@@ -3872,7 +3897,7 @@ class Controller {
                         var oldBarkingPoint = this.model.selectedUnit.barkingPoint
                         var oldBarkingLand = this.model.selectedUnit.barkingLand
                         */
-                        var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit)
+                        var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit).possible
                         this.model.deselectUnit()
 
                         /*
@@ -3912,11 +3937,11 @@ class Controller {
                     var pressedTown = this.view.getTownByMouse(modelCoords)
                     var pathCreated
                     if(pressedTown != null){
-                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,pressedTown)
+                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,pressedTown).possible
                     } else if(currentlyPressedUnit != null) {
-                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit)
+                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit).possible
                     } else {
-                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y)
+                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y).possible
                     }
                     this.model.deselectUnit()
 
