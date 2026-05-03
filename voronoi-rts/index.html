@@ -2547,6 +2547,7 @@ class Model {
                 }
             }
         }
+        var unitsToGrowEvenMore = []
         var unitsToGrow = []
         var unitsToShrink = []
         for(var i in this.groupedMergedVoronois){
@@ -2555,7 +2556,9 @@ class Model {
             
             for(var j in teamStat.voronois){
                 var voronoi = teamStat.voronois[j]
-                if(voronoi.unitCount < this.realLandArea(voronoi,teamStat)){//voronoi.landArea/25 - teamStat.embarkedCount * voronoi.unitCount / teamStat.unitCount)
+                if(voronoi.unitCount < this.realLandArea(voronoi,teamStat)/4){//voronoi.landArea/25 - teamStat.embarkedCount * voronoi.unitCount / teamStat.unitCount)
+                    unitsToGrowEvenMore.push(voronoi.units)
+                } else if(voronoi.unitCount < this.realLandArea(voronoi,teamStat)){//voronoi.landArea/25 - teamStat.embarkedCount * voronoi.unitCount / teamStat.unitCount)
                     unitsToGrow.push(voronoi.units)
                 }
                 if(voronoi.unitCount > this.realLandArea(voronoi,teamStat)){
@@ -2563,6 +2566,7 @@ class Model {
                 }
             }
         }
+        unitsToGrowEvenMore = unitsToGrowEvenMore.flat()
         unitsToGrow = unitsToGrow.flat()
         unitsToShrink = unitsToShrink.flat()
 
@@ -2576,6 +2580,21 @@ class Model {
     */
             
 
+        for(var i in unitsToGrowEvenMore){
+            var unit = unitsToGrowEvenMore[i]
+            if(unit.embarking)
+                continue
+                
+            if(unit.growingFloat < 1)
+                unit.growingFloat += 1
+            var growingFloatBefore = unit.growingFloat
+            if(unit.towntaken){
+                unit.growingFloat += this.TOWN_GROWING_RATE*2
+            } else {
+                unit.growingFloat += this.COUNTRYSIDE_GROWING_RATE*2
+            }
+            unit.size = Math.min(99, unit.size + Math.floor(unit.growingFloat) - Math.floor(growingFloatBefore))
+        }
         for(var i in unitsToGrow){
             var unit = unitsToGrow[i]
             if(unit.embarking)
@@ -3207,15 +3226,25 @@ class StatisticsPanel extends Control {
             var w = this.w / COLUMNS
             var h = this.h / ROWS
 
-            var border = darkColor(teamStat.team.color) ? '#ffffffcc' : '#000000cc'
-            var fill = teamStat.team.color
-            
-            ctx.fillStyle = this.borderColor
-            ctx.fillRect(this.x + w * column,this.y + h * row,w,h*height)
-            ctx.fillStyle = fill
-            ctx.fillRect(this.x + w * column+BORDER_PADDING,this.y + h * row+BORDER_PADDING,w-BORDER_PADDING*2,h*height-BORDER_PADDING*2)
+            var dark = darkColor(teamStat.team.color)
+            var border = dark ? '#ffffffcc' : '#000000cc'
+            var padding = BORDER_PADDING
             
             ctx.strokeStyle = border
+            
+            var borderColor = this.borderColor
+            if(teamStat.team == this.model.playerChoosen){
+                padding = BORDER_PADDING*2
+                borderColor = dark ? '#ff0' : '#a60'
+                ctx.strokeStyle = borderColor
+            }
+            var fill = teamStat.team.color
+            
+            ctx.fillStyle = borderColor
+            ctx.fillRect(this.x + w * column,this.y + h * row,w,h*height)
+            ctx.fillStyle = fill
+            ctx.fillRect(this.x + w * column+padding,this.y + h * row+padding,w-padding*2,h*height-padding*2)
+            
             var totalRealArea = this.model.wholeRealLandArea(teamStat)
             this.drawNumber(ctx,teamStat.unitCount,this.x + w * column + PADDING, this.y + h * row  + PADDING, w*2/5 - PADDING * 2, h - PADDING * 2, 4)
             this.drawSlash(ctx,this.x + w*2/5 + w * column + PADDING, this.y + h * row  + PADDING, w/5 - PADDING * 2, h - PADDING * 2)
@@ -3228,6 +3257,7 @@ class StatisticsPanel extends Control {
                     
                     var realArea = this.model.realLandArea(voronoi,teamStat)
                     
+
                     this.drawNumber(ctx,voronoi.unitCount,this.x + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
                     this.drawSlash(ctx,this.x + w*2/5 + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2)
                     this.drawNumber(ctx,realArea,this.x + w*3/5 + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
@@ -3237,7 +3267,10 @@ class StatisticsPanel extends Control {
                 this.drawNumber(ctx,teamStat.embarkedCount,this.x + w * column + PADDING_SMALL, this.y + h * (row + height - 1)  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
             }
 
+            ctx.strokeStyle = border
             row += height
+            ctx.lineWidth = 1
+
         }
     }
     /*
