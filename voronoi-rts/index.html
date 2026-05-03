@@ -65,7 +65,32 @@ function distanceFromLine(px,py,l1,l2){
     var a = (y1-y2) / (x1-x2)
     var b = y1 - x1 * a
     
-    return Math.abs( a * px + py + b ) / Math.sqrt( a*a + b*b )
+    return Math.abs( a * px - py + b ) / Math.sqrt( a*a + 1 )
+}
+function polygonBordersBand(poly,band){
+    for(var i in poly){
+        var polyBand = poly[i]
+        
+        for(var k in band){
+            var segment2_0 = band[k]
+            var segment2_1 = band[(k-(-1)) % band.length]
+            if(polyBand.length > 1)
+                for(var j in polyBand){
+                    var polyPoint = polyBand[j]
+                    
+                    if(
+                        (polyPoint[0] >= segment2_0[0] && polyPoint[0] <= segment2_1[0] || polyPoint[0] >= segment2_1[0] && polyPoint[0] <= segment2_0[0])
+                            &&
+                        (polyPoint[1] >= segment2_0[1] && polyPoint[1] <= segment2_1[1] || polyPoint[1] >= segment2_1[1] && polyPoint[1] <= segment2_0[1])
+                            &&
+                            distanceFromLine(polyPoint[0],polyPoint[1],segment2_0,segment2_1) <= 0.1
+                        )
+                            return true
+                        
+                }
+        }
+    }
+    return false
 }
 function bisectorFromTwoPoints(x1,y1,x2,y2){
     if(y1 == y2){
@@ -911,6 +936,25 @@ function drawTextTemp(x,y,text,fill){
 
     this.ctx.fillText(text,x,y)
 }
+function middlePathPoints(path,distance){
+    var middlePoints = []
+
+    var dist = 0
+    for(var i=1;i<path.length;i++){
+        var point1 = path[i-1]
+        var point2 = path[i]
+        
+        var segment_dist = eucl_dist(point1[0],point1[1],point2[0],point2[1])
+        dist += segment_dist
+        if(dist == undefined || distance == undefined){
+            console.log('uga buga')
+            throw new Error('aaah')
+        }
+        while(dist > distance){
+            dist -= distance
+        }
+    }
+}
 const vectorNumbers = {
     0:[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],],
     1:[[0.0,0.0],[0.5,0.0],[0.5,1.0],[0.0,1.0],[1.0,1.0],],
@@ -1250,12 +1294,16 @@ class Model {
         this.TOWN_GROWING_RATE = 0.05
         this.COUNTRYSIDE_GROWING_RATE = 0.01
         
+        this.UNIT_SHRINKING_RATE = 0.2
+        
         this.EMBARKING_PROGRESS_SPEED = 1
                 
         this.graph = {}
         this.oldlands
         this.oldgenerationPoints
         this.lands = this.initLands()
+        
+        this.shores = this.initShoreGraph()
         
         this.chunks = this.generateChunks()
         this.bigChunks = this.generateBigChunks()
@@ -1374,6 +1422,7 @@ class Model {
     initLands(){
         var lands = this.getLands()
         this.oldlands = lands.slice()
+        
         
         this.graph = {}
         for(var i = 0;i<lands.length;i++){
@@ -1513,6 +1562,34 @@ class Model {
         }
 */        
         return lands
+    }
+    initShoreGraph(){
+        var shores = []
+        
+        var shore0 = this.lands.map(a => a[0])
+        
+        shores.push(shore0)
+        
+        for(var i in this.lands){
+            var land1 = this.lands[i]
+            
+            for(var j=1;j<land1.length;j++){
+                var band = land1[j].slice().reverse()
+                
+                var shore = [band]
+                
+                for(var k in this.lands){
+                    var land2 = this.lands[k]
+                    
+                    if(hitTestBand(band,land2[0][0][0],land2[0][0][1])){
+                        shore.push(land2[0])
+                    }
+                }
+                shores.push(shore)
+            }
+        }
+        
+        return shores
     }
     initTowns(){
         var towns = []
@@ -1737,10 +1814,10 @@ class Model {
             if(voronoiable.voronoi != null)
                 voronoiable.voronoi = triacontadigonalLimit(voronoiable.x,voronoiable.y,voronoiable.voronoi, limit)
 
-            
         }
         this.generateVoronoiGraph()
-        this.mergevoronoisByGraphs()
+        this.mergeVoronoisByGraphs()
+        this.mergeVoronoisByShores()
         this.calculateMergedVoronoiValue()
     }
     generateVoronoiGraph(){
@@ -1772,7 +1849,7 @@ class Model {
                 units.push(voronoiable)
             if(voronoiable.occupyingUnit != undefined)
                 units.push(voronoiable.occupyingUnit)
-            this.mergedVoronois[i] = {team:voronoiable.team,voronoi:voronoiable.voronoi,units:units,landArea:0,unitCount:0}
+            this.mergedVoronois[i] = {team:voronoiable.team,voronoi:[voronoiable.voronoi],units:units,landArea:0,unitCount:0}
             this.voronoiGraph[i] = {}
         }
         for(var i = 0;i<voronoiables.length;i++){
@@ -1812,7 +1889,7 @@ class Model {
             }
         }
     }
-    mergevoronoisByGraphs(){
+    mergeVoronoisByGraphs(){
         var k = 0
         while(Object.values(this.voronoiGraph).filter(x=>Object.values(x).length > 0).length > 0 && k<=1000){
             var key1 = Object.keys(this.voronoiGraph)[0]
@@ -1823,9 +1900,9 @@ class Model {
             for(var key2 in this.voronoiGraph[key1]){
                 //if(key2 in this.mergedVoronois/* && this.mergedVoronois[key1].team == this.mergedVoronois[key2].team*/){
                     if(key2 in this.mergedVoronois){
-                        var merged = mergePolygonsOnSides(this.mergedVoronois[key1].voronoi,this.mergedVoronois[key2].voronoi,true)
+                        var merged = mergePolygonsOnSides(this.mergedVoronois[key1].voronoi[0],this.mergedVoronois[key2].voronoi[0],true)
                         if(merged != null){
-                            this.mergedVoronois[key1].voronoi = merged
+                            this.mergedVoronois[key1].voronoi = [merged]
                             this.mergedVoronois[key1].units = this.mergedVoronois[key1].units.concat(this.mergedVoronois[key2].units.slice())
                         }
                     }
@@ -1845,11 +1922,79 @@ class Model {
         }
         this.mergedVoronois = this.mergedVoronois.filter(a=>a != undefined)
     }
+    mergeVoronoisByShores(){
+        var newMergedVoronois = []
+        var groupedVoronois = {}
+        for(var i in this.mergedVoronois){
+            var voronoi = this.mergedVoronois[i]
+            
+            var teamColor = voronoi.team.color
+            if(!(teamColor in groupedVoronois))
+                groupedVoronois[teamColor] = []
+                
+            groupedVoronois[teamColor].push(voronoi)
+        }
+        for(var key in groupedVoronois){
+            var group = groupedVoronois[key]
+            
+            var newGroups = []
+            var unadded = new Set(group)
+            for(var i in this.shores){
+                var newGroup = []
+                
+                var shore = this.shores[i]
+                
+                for(var ii in group){
+                    var mergedVoronoi = group[ii]
+                    
+                    for(var j in shore){
+                        var band = shore[j]
+                        
+                        if(polygonBordersBand(mergedVoronoi.voronoi[0],band)){
+                            newGroup.push(mergedVoronoi)
+                            unadded.delete(mergedVoronoi)
+                            break
+                        }
+                    }
+                }
+                if(newGroup.length > 0)
+                    newGroups.push(newGroup)
+            }
+            
+            for(var i=0;i<newGroups.length;i++){
+                var s1 = new Set(newGroups[i])
+                for(var j=i+1;j<newGroups.length;j++){
+                    var s2 = new Set(newGroups[j])
+                    
+                    if(s1.intersection(s2).size > 0){
+                        newGroups[i] = newGroups[i].concat(newGroups[j])
+                        newGroups = newGroups.slice(0,j).concat(newGroups.slice(j+1))
+                        break
+                    }
+                }
+            }
+            unadded.forEach(a=>newGroups.push([a]))
+            //if(newGroups[0][0].team == this.playerChoosen)
+            //    console.log(newGroups)
+            for(var i in newGroups){
+                var newGroup = newGroups[i]
+                var first = newGroup[0]
+                for(var j = 1;j<newGroup.length;j++){
+                    var next = newGroup[j]
+                    first.voronoi = first.voronoi.concat(next.voronoi)
+                    first.units = first.units.concat(next.units)
+                }
+                newMergedVoronois.push(first)
+            }
+        }
+        this.mergedVoronois = newMergedVoronois
+
+    }
     calculateMergedVoronoiValue(){
         for(var i in this.mergedVoronois){
             var voronoi = this.mergedVoronois[i]
             
-            voronoi.landArea = polygonArea(voronoi.voronoi)
+            voronoi.landArea = voronoi.voronoi.map(a=>polygonArea(a)).reduce((a,b)=>a+b,0)
             voronoi.unitCount = voronoi.units.map(a=>a.size).reduce((a,b)=>a+b,0)
         }
         this.groupedMergedVoronois = []
@@ -2232,7 +2377,7 @@ class Model {
             unit2.die()
         }
     }
-    update(){
+    update(gameplay){
         var unitsByChunk = {}
         
         for(var key in this.chunks){
@@ -2365,7 +2510,8 @@ class Model {
         //if(change)
             this.generateVoronois()
             
-        this.growUnits()
+        if(gameplay)
+            this.growUnits()
     }
     updateChunkForUnit(unit){
         var newChunk = this.getChunkFromCoords(unit.x,unit.y)
@@ -2396,18 +2542,25 @@ class Model {
                 }
             }
         }
-        var units = []
+        var unitsToGrow = []
+        var unitsToShrink = []
         for(var i in this.groupedMergedVoronois){
             var teamStat = this.groupedMergedVoronois[i]
             var embarkingBurden = teamStat.embarkedCount
             
             for(var j in teamStat.voronois){
                 var voronoi = teamStat.voronois[j]
-                if(voronoi.unitCount < this.realLandArea(voronoi,teamStat))//voronoi.landArea/25 - teamStat.embarkedCount * voronoi.unitCount / teamStat.unitCount)
-                    units.push(voronoi.units)
+                if(voronoi.unitCount < this.realLandArea(voronoi,teamStat)){//voronoi.landArea/25 - teamStat.embarkedCount * voronoi.unitCount / teamStat.unitCount)
+                    unitsToGrow.push(voronoi.units)
+                }
+                if(voronoi.unitCount > this.realLandArea(voronoi,teamStat)){
+                    unitsToShrink.push(voronoi.units)
+                }
             }
         }
-        units = units.flat()
+        unitsToGrow = unitsToGrow.flat()
+        unitsToShrink = unitsToShrink.flat()
+
     /*
         this.groupedMergedVoronois.push({
         team:team,
@@ -2418,11 +2571,13 @@ class Model {
     */
             
 
-        for(var i in units){
-            var unit = units[i]
+        for(var i in unitsToGrow){
+            var unit = unitsToGrow[i]
             if(unit.embarking)
                 continue
                 
+            if(unit.growingFloat < 1)
+                unit.growingFloat += 1
             var growingFloatBefore = unit.growingFloat
             if(unit.towntaken){
                 unit.growingFloat += this.TOWN_GROWING_RATE
@@ -2430,6 +2585,18 @@ class Model {
                 unit.growingFloat += this.COUNTRYSIDE_GROWING_RATE
             }
             unit.size = Math.min(99, unit.size + Math.floor(unit.growingFloat) - Math.floor(growingFloatBefore))
+        }
+        for(var i in unitsToShrink){
+            var unit = unitsToShrink[i]
+            if(unit.embarking)
+                continue
+                
+            if(unit.growingFloat < 1)
+                unit.growingFloat += 1
+            var growingFloatBefore = unit.growingFloat
+            unit.growingFloat -= this.UNIT_SHRINKING_RATE
+            
+            unit.size = Math.max(1,unit.size + Math.floor(unit.growingFloat) - Math.floor(growingFloatBefore))
         }
         if(change)
             this.generateVoronois()
@@ -2575,7 +2742,9 @@ class View {
             var voronoiable = voronoiables[i]
             if(voronoiable.voronoi != null){
                 if(voronoiable.team != null){
-                    this.drawLand(voronoiable.voronoi,'#000000',voronoiable.team.color+'88')
+                    for(var j in voronoiable.voronoi){
+                        this.drawLand(voronoiable.voronoi[j],'#000000',voronoiable.team.color+'88')
+                    }
                 }
             }
         }
@@ -3215,14 +3384,12 @@ class Ai {
                     var targetTeam = target.unit ? target.unit.team : target.town.team
                     if(targetTeam != unit.team || target.distanceToEnemy < vertex.distanceToEnemy)
                         if(target.town != unit.towntaken || unit.towntaken == null || target.town == null){
-                            if(target.town != null){
-                                unitRemained = model.trySetPathForUnit(unit, part, target.town.x, target.town.y, target.town, path.path, path.sea).newUnit
-
-                            } else {
-                                if(target.unit.path.length == 0 || target.unit.team != unit.team){
-                                    unitRemained = model.trySetPathForUnit(unit, part, target.unit.x, target.unit.y, target.unit, path.path, path.sea).newUnit
-                                }
+                            var realTarget = target.town ? target.town : target.unit
+                            if(target.town != null || target.town != null && target.unit.path.length == 0 || target.unit.team != unit.team){
+                                var pathMiddlePoints = middlePathPoints(path.path,this.model.WIDTH / this.model.CHUNKS_PER_SIDE)
+                                unitRemained = model.trySetPathForUnit(unit, part, realTarget.x, realTarget.y, realTarget, path.path, path.sea).newUnit
                             }
+
                         }
                         if(!path.sea){
                             unit.barkingPoint = null
@@ -3996,7 +4163,7 @@ class Controller {
     }
     loop(){
         if(!this.pause){
-            this.model.update()
+            this.model.update(this.state.state.gameplay)
             this.view.draw()
         }
         let t = this
