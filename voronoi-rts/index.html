@@ -1574,16 +1574,17 @@ class Model {
             var land1 = this.lands[i]
             
             for(var j=1;j<land1.length;j++){
-                var band = land1[j].slice().reverse()
+                var band = land1[j]
                 
                 var shore = [band]
                 
                 for(var k in this.lands){
                     var land2 = this.lands[k]
                     
-                    if(hitTestBand(band,land2[0][0][0],land2[0][0][1])){
-                        shore.push(land2[0])
-                    }
+                    if(land1 != land2)
+                        if(hitTestBand(band,land2[0][0][0],land2[0][0][1])){
+                            shore.push(land2[0])
+                        }
                 }
                 shores.push(shore)
             }
@@ -1961,17 +1962,21 @@ class Model {
                     newGroups.push(newGroup)
             }
             
-            for(var i=0;i<newGroups.length;i++){
+            var i = 0
+            while(i<newGroups.length){
                 var s1 = new Set(newGroups[i])
-                for(var j=i+1;j<newGroups.length;j++){
+                var j=i+1
+                while(j<newGroups.length){
                     var s2 = new Set(newGroups[j])
                     
                     if(s1.intersection(s2).size > 0){
-                        newGroups[i] = newGroups[i].concat(newGroups[j])
+                        newGroups[i] = Array.from(new Set(newGroups[i].concat(newGroups[j])))
                         newGroups = newGroups.slice(0,j).concat(newGroups.slice(j+1))
-                        break
+                        continue
                     }
+                    j++
                 }
+                i++
             }
             unadded.forEach(a=>newGroups.push([a]))
             //if(newGroups[0][0].team == this.playerChoosen)
@@ -1981,8 +1986,8 @@ class Model {
                 var first = newGroup[0]
                 for(var j = 1;j<newGroup.length;j++){
                     var next = newGroup[j]
-                    first.voronoi = first.voronoi.concat(next.voronoi)
-                    first.units = first.units.concat(next.units)
+                    first.voronoi = Array.from(new Set(first.voronoi.concat(next.voronoi)))
+                    first.units = Array.from(new Set(first.units.concat(next.units)))
                 }
                 newMergedVoronois.push(first)
             }
