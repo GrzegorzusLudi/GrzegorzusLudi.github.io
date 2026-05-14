@@ -3760,6 +3760,9 @@ class Ai {
     model(){
         return this.controller.model
     }
+    tryReset(){
+        this.standardGraph = null
+    }
     think(){
         if(this.controller.pause)
             return
@@ -4642,8 +4645,12 @@ class Controller {
         }
         let t = this
         t.frameCounter++
-        if(t.frameCounter % 30 == 0 && this.state.state.gameplay)
-            t.ai.think()
+        if(t.frameCounter % 30 == 0){
+            if(this.state.state.gameplay)
+                t.ai.think()
+            else
+                t.ai.tryReset()
+        }
         setTimeout(()=>{t.loop()},100)
     }
 }
