@@ -67,7 +67,7 @@ function distanceFromLine(px,py,l1,l2){
     
     return Math.abs( a * px - py + b ) / Math.sqrt( a*a + 1 )
 }
-function polygonBordersBand(poly,band){
+function polygonBordersBandOld(poly,band){
     for(var i in poly){
         var polyBand = poly[i]
         
@@ -91,6 +91,137 @@ function polygonBordersBand(poly,band){
         }
     }
     return false
+}
+function getBoundsFromSegments(segments){
+    var left = Infinity
+    var right = -Infinity
+    var top = Infinity
+    var bottom = -Infinity
+    for(var i=0;i<segments.length;i++){
+        var p1 = segments[i][0]
+        var p2 = segments[i][1]
+                
+        if(p1[0] < left)
+            left = p1[0]
+        if(p1[0] > right)
+            right = p1[0]
+        if(p1[1] < top)
+            top = p1[1]
+        if(p1[1] > bottom)
+            bottom = p1[1]
+    }
+    //throw new Error('a')
+
+    return {
+        left:left,
+        right:right,
+        top:top,
+        bottom:bottom,
+    }
+}
+function boundIntersection(bounds1,bounds2){
+    var left = Math.max(bounds1.left,bounds2.left)
+    var right = Math.min(bounds1.right,bounds2.right)
+    var top = Math.max(bounds1.top,bounds2.top)
+    var bottom = Math.min(bounds1.bottom,bounds2.bottom)
+    
+    if(left > right)
+        return null
+    if(top > bottom)
+        return null
+    
+    return {
+        left:left,
+        right:right,
+        top:top,
+        bottom:bottom,
+    }
+}
+function filterSegmentsByBounds(segments, bounds){
+    return segments.filter(
+        s => s[0][0] > bounds.left && s[0][0] < bounds.right && s[0][1] > bounds.top && s[0][1] < bounds.bottom
+          || s[1][0] > bounds.left && s[1][0] < bounds.right && s[1][1] > bounds.top && s[1][1] < bounds.bottom)
+}
+function polygonBordersBand(poly,band){
+    var allSegments = getPolygonSegments(poly)
+    var segmentBounds = getBoundsFromSegments(allSegments)
+    
+    var bandSegments = getBandSegments(band)
+    var bandBounds = getBoundsFromSegments(bandSegments)
+    
+    var intersectedBounds = boundIntersection(segmentBounds, bandBounds)
+    
+    if(intersectedBounds == null)
+        return false
+        
+    //return polygonBordersBandOld(poly,band) //TODO
+    
+    var filteredSegments = filterSegmentsByBounds(allSegments,intersectedBounds)
+    var filteredBandSegments = filterSegmentsByBounds(bandSegments,intersectedBounds)
+    return polygonBordersBandRecursive(filteredSegments,filteredBandSegments,intersectedBounds,12)
+}
+function polygonBordersBandRecursive(segments,bandSegments,bounds,steps){
+    if(segments.length == 0 || bandSegments.length == 0){
+        return false
+    }
+    if(steps > 0){
+        //var segments1,segments2,bandSegments1,bandSegments2
+        var bounds1,bounds2
+        if(bounds.right - bounds.left > bounds.bottom - bounds.top){
+            bounds1 = {
+                left:bounds.left,
+                right:(bounds.left+bounds.right)/2,
+                top:bounds.top,
+                bottom:bounds.bottom,
+            }
+            bounds2 = {
+                left:(bounds.left+bounds.right)/2,
+                right:bounds.right,
+                top:bounds.top,
+                bottom:bounds.bottom,
+            }
+        } else {
+            bounds1 = {
+                left:bounds.left,
+                right:bounds.right,
+                top:bounds.top,
+                bottom:(bounds.top+bounds.bottom)/2,
+            }
+            bounds2 = {
+                left:bounds.left,
+                right:bounds.right,
+                top:(bounds.top+bounds.bottom)/2,
+                bottom:bounds.bottom,
+            }
+        }
+        var filteredSegments1 = filterSegmentsByBounds(segments,bounds1)
+        var filteredBandSegments1 = filterSegmentsByBounds(bandSegments,bounds1)
+
+        var filteredSegments2 = filterSegmentsByBounds(segments,bounds2)
+        var filteredBandSegments2 = filterSegmentsByBounds(bandSegments,bounds2)
+//        console.log(filteredSegments1, filteredSegments2)
+//        console.log(filteredBandSegments1, filteredBandSegments2)
+
+//        throw new Error('a')
+        
+        return polygonBordersBandRecursive(filteredSegments1,filteredBandSegments1,bounds1,steps-1)
+                ||
+               polygonBordersBandRecursive(filteredSegments2,filteredBandSegments2,bounds2,steps-1)
+    } else {
+        for(var i in segments){
+            var s1 = segments[i][0]
+            for(var j in bandSegments){
+                var b1 = bandSegments[j][0]
+                var b2 = bandSegments[j][1]
+                if(
+                    
+                        distanceFromLine(s1[0],s1[1],b1,b2) <= 0.1
+                    )
+                        return true
+            }
+        }
+        return false
+    }
 }
 function bisectorFromTwoPoints(x1,y1,x2,y2){
     if(y1 == y2){
@@ -155,6 +286,16 @@ function getPolygonSegments(poly){
             
             segments.push([point1,point2])
         }
+    }
+    return segments
+}
+function getBandSegments(band){
+    var segments = []
+    for(var j in band){
+        var point1 = band[j]
+        var point2 = band[(j-(-1)) % band.length]
+        
+        segments.push([point1,point2])
     }
     return segments
 }
@@ -521,12 +662,18 @@ function ccw(a,b,c){
 function segmentsIntersecting(a1,a2,b1,b2){
     return ccw(a1,b1,b2) != ccw(a2,b1,b2) && ccw(a1,a2,b1) != ccw(a1,a2,b2)
 }
-function segmentsIntersectingWithPolygons(a,b,polygons){
+function segmentsIntersectingWithPolygons(a,b,polygons,cache){
+    var key = a[0]+'#'+a[1]+'#'+b[0]+'#'+b[1]
+    if(key in cache)
+        return cache[key]
     for(var i in polygons){
         var polygon = polygons[i]
-        if(segmentsIntersectingWithPolygon(a,b,polygon))
+        if(segmentsIntersectingWithPolygon(a,b,polygon)){
+            cache[key] = true
             return true
+        }
     }
+    cache[key] = false
     return false
 }
 function segmentsOnTheGoodSideOfPolygon(a,b,polygons,inside){
@@ -544,7 +691,64 @@ function segmentsOnTheGoodSideOfPolygon(a,b,polygons,inside){
     }
     return true
 }
+/*
+polygonCache = []
+function getFromCache(polygon,cache){
+    for(var i in cache){
+        if(cache[i].object == polygon)
+            return cache[i]
+    }
+    var newInCache = {object:polygon}
+    
+    var segments = getPolygonSegments(polygon)
+    
+    newInCache.segmentTree = makeSegmentTree(segments)
+    
+    cache.push(newInCache)
+    
+    return newInCache
+}
+function makeSegmentTree(segments){
+    if(segments.length >= 4){
+
+        var bounds = getBoundsFromSegments(segments)
+        
+        var segments1,segments2
+        if(bounds.right - bounds.left > bounds.bottom - bounds.top){
+            segments = segments.sort((a,b) => a[0][0] - b[0][0])
+        } else {
+            segments = segments.sort((a,b) => a[0][1] - b[0][1])
+        }
+        segments1 = segments.slice(0,Math.floor(segments.length/2))
+        segments2 = segments.slice(Math.floor(segments.length/2))
+        
+        return {bounds:bounds, children:[makeSegmentTree(segments1),makeSegmentTree(segments2)]}
+    } else {
+        return segments.slice()
+    }
+}
+*/
+function boundIntersectionWithSegment(segment,bounds){
+    var segmentLeft = Math.min(segment[0][0],segment[1][0])
+    var segmentRight = Math.max(segment[0][0],segment[1][0])
+    var segmentTop = Math.min(segment[0][1],segment[1][1])
+    var segmentBottom = Math.max(segment[0][1],segment[1][1])
+    
+    var left = Math.max(segmentLeft,bounds.left)
+    var right = Math.min(segmentRight,bounds.right)
+    var top = Math.max(segmentTop,bounds.top)
+    var bottom = Math.min(segmentBottom,bounds.bottom)
+    
+    var result = (left <= right && top <= bottom)
+
+    return result
+}
+
 function segmentsIntersectingWithPolygon(a,b,polygon){
+//    var cached = getFromCache(polygon,polygonCache).segmentTree
+    
+//    return this.searchPolygonCacheForIntersection([a,b],cached,0)
+    
     for(var i = 0;i<polygon.length;i++){
         var band = polygon[i]
         for(var j = 0;j<band.length;j++){
@@ -556,7 +760,17 @@ function segmentsIntersectingWithPolygon(a,b,polygon){
             }
         }
     }
+    /*
+    var segments = getPolygonSegments(polygon)
+    var bounds = getBoundsFromSegments(segments)
+    var seg = [a,b]
+    for(var i in segments){
+        var segment = segments[i]
+        if(boundIntersectionWithSegment(seg,bounds) && segmentsIntersecting(a,b,segment[0],segment[1]))
+            return true
+    }
     return false
+    */
 }
 function getCrossingSegmentsIntersectingWithPolygon(a,b,polygon){
     var count = 0
@@ -591,12 +805,32 @@ function segmentsIntersectingWithPolygonCount(a,b,polygon){
     }
     return count
 }
-function segmentsIntersectingWithPolygonsCount(a,b,polygons){
+/*
+    var key = a[0]+'#'+a[1]+'#'+b[0]+'#'+b[1]
+    if(key in cache)
+        return cache[key]
+    for(var i in polygons){
+        var polygon = polygons[i]
+        if(segmentsIntersectingWithPolygon(a,b,polygon)){
+            cache[key] = true
+            return true
+        }
+    }
+    cache[key] = false
+    return false
+
+*/
+function segmentsIntersectingWithPolygonsCount(a,b,polygons,cache){
+    var key = a[0]+'#'+a[1]+'#'+b[0]+'#'+b[1]
+    if(key in cache)
+        return cache[key]
+
     var count = 0
     for(var i in polygons){
         var polygon = polygons[i]
         count += segmentsIntersectingWithPolygonCount(a,b,polygon)
     }
+    cache[key] = count
     return count
 }
 function hitTestBand(poly,x,y,inclusive){
@@ -725,6 +959,20 @@ function edgeHalfPointMoved(p1,p2,radiusMoved){
 }
 
 function triacontadigonalLimit(x,y,polygon, limit){
+    var thereIsSense = false
+    for(var i in polygon){
+        var band = polygon[i]
+        
+        for(var j in band){
+            var point = band[j]
+            
+            if(eucl_dist(x,y,point[0],point[1]) > limit)
+                thereIsSense = true
+        }
+    }
+    if(!thereIsSense)
+        return polygon
+        
     var SIDES = 32
     var polygons = [polygon]
     for(var i = 0;i<SIDES;i++){
@@ -824,6 +1072,7 @@ function getVectorGraph(unitOrTown,firstDestinations,lands,port,max_dist,tries){
     }
     if(tries == undefined)
         tries = 5
+    var cache = {},cache2 = {}
     while(pointDestinations.length > 0 && tries > 0){
         var pointDestinations2 = []
         
@@ -835,14 +1084,16 @@ function getVectorGraph(unitOrTown,firstDestinations,lands,port,max_dist,tries){
                 var potentialPointDestination = pointDestinationStack[code]
                 var last = port && codes[code]//code === lastCode
                 
-                if(!(code in usedPoints) && key != code && (!segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands) || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1)
+                if(!(code in usedPoints) && key != code && (!segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands,cache) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands,cache) || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands,cache2) <= 1)
                 && (segmentsOnTheGoodSideOfPolygon(destination.point, potentialPointDestination.point, lands, inside)/* || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1*/)){
                     var distance = Math.sqrt(Math.pow(destination.point[0] - potentialPointDestination.point[0],2) + Math.pow(destination.point[1] - potentialPointDestination.point[1],2))
                     var newDistance = destination.dist + distance
 
                     if(potentialPointDestination.dist == null || potentialPointDestination.dist > newDistance){
-                        if(potentialPointDestination.from == null)
+                        if(potentialPointDestination.from == null){
                             pointDestinations2.push(potentialPointDestination)
+                        }
+                        
                         potentialPointDestination.dist = newDistance
                         potentialPointDestination.from = destination
                     }
@@ -971,7 +1222,9 @@ const vectorLetters = {
     'A':[[0.0,1.0],[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],[1.0,0.5],[1.0,1.0],],
     'B':[[0.0,0.0],[1.0,0.0],[1.0,1.0],[0.0,1.0],[0.5,1.0],[0.5,0.0],[0.5,0.5],[1.0,0.5],],
     'C':[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],],
+    'D':[[0.0,0.0],[1.0,0.0],[1.0,1.0],[0.0,1.0],[0.5,1.0],[0.5,0.0],],
     'E':[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[0.0,0.5],[0.0,1.0],[1.0,1.0],],
+    'F':[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[0.0,0.5],[0.0,1.0],],
     'G':[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.5,0.5],],
     'H':[[0.0,0.0],[0.0,1.0],[0.0,0.5],[1.0,0.5],[1.0,0.0],[1.0,1.0],],
     'I':[[0.5,0.0],[0.5,1.0],],
@@ -991,12 +1244,8 @@ const vectorLetters = {
 //ax+b = 0  a = 1, b = -x_o
 class Chunk {
     constructor(x,y,polygons,l,t,r,b){
-        polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
-        polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
-        polygons = verticalLinearLimitPolygons(polygons,l,false)
-        polygons = verticalLinearLimitPolygons(polygons,r,true)
-    
-        this.polygons = polygons
+        this.segments = getPolygonSegments(polygons).filter(a => boundIntersectionWithSegment(a,{left:l,top:t,right:r,bottom:b}))
+        
         this.l = l
         this.t = t
         this.r = r
@@ -1005,6 +1254,12 @@ class Chunk {
         this.x = x
         this.y = y
         
+        polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
+        polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
+        polygons = verticalLinearLimitPolygons(polygons,l,false)
+        polygons = verticalLinearLimitPolygons(polygons,r,true)
+    
+        this.polygons = polygons
         this.nearChunkCodes = this.createNearChunkCodes()
     }
     createNearChunkCodes(){
@@ -1285,7 +1540,7 @@ class Unit {
     }
 }
 class Model {
-    constructor(){
+    constructor(landTownDensity,teamConfiguration,landConfiguration){
         this.WIDTH = 650
         this.CHUNKS_PER_SIDE = 6
         this.NUMBER_OF_POINTS = 250
@@ -1301,18 +1556,18 @@ class Model {
         this.graph = {}
         this.oldlands
         this.oldgenerationPoints
-        this.lands = this.initLands()
+        this.lands = this.initLands(landConfiguration)
         
         this.shores = this.initShoreGraph()
         
         this.chunks = this.generateChunks()
         this.bigChunks = this.generateBigChunks()
-        this.towns = this.initTowns()
+        this.towns = this.initTowns(landTownDensity)
         
         this.teams = []
         this.units = []
         
-        this.populateTowns()
+        this.populateTowns(teamConfiguration)
         this.generateVoronois()
         
         this.playerChoosen = null
@@ -1419,7 +1674,33 @@ class Model {
 
         return lands
     }
-    initLands(){
+    initLands(landConfiguration){
+        
+    
+        var island,landTreshold,loneIslands
+        switch(landConfiguration){
+            case 'MEDIUM ISLANDS':
+                landTreshold = 0.5
+                island = true
+                loneIslands = false
+            break;
+            case 'ADDITIONAL ISLANDS':
+                landTreshold = 0.5
+                island = true
+                loneIslands = true
+            break;
+            case 'BIG ISLANDS':
+                landTreshold = 0.4
+                island = true
+                loneIslands = false
+            break;
+            case 'MEDIUM CONTINENT':
+                landTreshold = 0.5
+                island = false
+                loneIslands = false
+            break
+        }
+    
         var lands = this.getLands()
         this.oldlands = lands.slice()
         
@@ -1470,22 +1751,23 @@ class Model {
                     if(point2.land)
                         landsAround++
                 }
-                newlands[key1] = landsAround > Object.keys(this.graph[key1]).length*0.5// || landsAround == 0
+                newlands[key1] = landsAround > Object.keys(this.graph[key1]).length * landTreshold || landsAround == 0 && loneIslands
             }
             for(var key1 in this.graph){
                 this.generationPoints[key1].land = newlands[key1]
             }
         }
         
-        for(var i in lands){
-            var land = lands[i]
-            for(var j in land){
-                var point = land[j]
-                
-                if(point[0][0] <= 1 || point[0][1] <= 1 || point[0][0] >= this.WIDTH-1 || point[0][1] >= this.WIDTH-1)
-                    this.generationPoints[i].land = false
+        if(island)
+            for(var i in lands){
+                var land = lands[i]
+                for(var j in land){
+                    var point = land[j]
+                    
+                    if(point[0][0] <= 1 || point[0][1] <= 1 || point[0][0] >= this.WIDTH-1 || point[0][1] >= this.WIDTH-1)
+                        this.generationPoints[i].land = false
+                }
             }
-        }
         
         for(var i in this.graph){
             for(var j in this.graph[i]){
@@ -1592,7 +1874,13 @@ class Model {
         
         return shores
     }
-    initTowns(){
+    initTowns(landTownDensity){
+        var probability
+        switch(landTownDensity){
+            case 'SPARSE': probability = 0.2;break;
+            case 'DENSE': probability = 0.5;break;
+            case 'FULL': probability = 1;break;
+        }
         var towns = []
         for(var i in this.lands){
             var land = this.lands[i]
@@ -1602,23 +1890,36 @@ class Model {
                 
                 var point = polygonEdgeHalfPointMoved(band, indexStart,1)
                 var port = polygonEdgeHalfPointMoved(band, indexStart,-1)
-                this.tryAddTown(towns,point[0],point[1],land,port)
+//                this.tryAddTown(towns,point[0],point[1],land,port)
                 
-                for(var j = 1;j<band.length;j+=2){
-                    if(Math.random() < 0.5){
-                        var ix  = (indexStart - (-j)) % band.length
-                        
-                        point = polygonEdgeHalfPointMoved(band, ix,1)
-                        port = polygonEdgeHalfPointMoved(band, ix,-1)
+                var first = true
+                for(var j = 0;j<band.length;j++){
+                
+                    var ix  = (indexStart - (-j)) % band.length
+                    
+                    point = polygonEdgeHalfPointMoved(band, ix,1)
+                    port = polygonEdgeHalfPointMoved(band, ix,-1)
+                    if(point[0] <= 2 || point[1] <= 2 || point[0] >= this.WIDTH-2 || point[1] >= this.WIDTH-2)
+                        continue
+
+                    if(first || Math.random() < probability){
                         this.tryAddTown(towns,point[0],point[1],land,port)
+                        first = false
                     }
                 }
             }
         }
+        
+        switch(landTownDensity){
+            case 'SPARSE': probability = 0.2;break;
+            case 'DENSE': probability = 0.5;break;
+            case 'FULL': probability = 1;break;
+        }
         for(var i in this.oldgenerationPoints){
             var point = this.oldgenerationPoints[i]
             
-            if(Math.random() < 0.5){
+            
+            if(Math.random() < probability){
                 var landAround = getPolygonInside(this.lands,point.x,point.y)
                 if(landAround != null)
                     this.tryAddTown(towns,point.x,point.y,landAround,false)
@@ -1685,15 +1986,27 @@ class Model {
         }
         return chunkLookup
     }
-    populateTowns(){
-        for(var i in this.towns){
-            var town = this.towns[i]                
+    populateTowns(teamConfiguration){
+        var amount = 0
+        switch(teamConfiguration){
+            case 'MORE': amount = Math.ceil(0.5 * this.towns.length);break;
+            case 'ALL': amount = this.towns.length;break;
+            case 'FEW': amount = Math.ceil(0.2 * this.towns.length);break;
+        }
+        
+        var shuffledTowns = this.towns.map(value => ({ value, sort: Math.random() }))
+                    .sort((a, b) => a.sort - b.sort)
+                    .map(({ value }) => value)
+                    
+        
+        for(var i in shuffledTowns){
+            var town = shuffledTowns[i]                
             var chunk = this.getChunkFromCoords(town.x,town.y)
             var bigChunk = this.getBigChunkFromCoords(town.x,town.y)
             town.setChunk(this.chunks[chunk])
             town.setBigChunk(this.bigChunks[bigChunk])
 
-            if(i % 2 == 0 || i == 1){
+            if(i < amount || i == 1){
                 var teamColor = getRandomColor()
                 while(this.teams.filter(a => a.color == teamColor).length > 0)
                     teamColor = getRandomColor()
@@ -2434,14 +2747,23 @@ class Model {
                         unit.y = point[1]
                         unit.path = unit.path.slice(1)
                         
-                        if(unit.path.length == 0 && unit.target != null){
-                            if(unit.target instanceof Town){
-                                unit.tryTakeOverTown()
-                                change = true
-                            }
-                            if(unit.target instanceof Unit && unit.team == unit.target.team){
-                                unit.tryToMergeWithTarget()
-                                change = true
+                        if(unit.path.length == 0){
+                            if(unit.target != null){
+                                if(unit.target instanceof Town){
+                                    unit.tryTakeOverTown()
+                                    change = true
+                                }
+                                if(unit.target instanceof Unit && unit.team == unit.target.team){
+                                    unit.tryToMergeWithTarget()
+                                    change = true
+                                }
+                            } else {
+                                var townsHere = this.towns.filter(a => Math.abs(a.x - unit.x) < 0.1 && Math.abs(a.y - unit.y) < 0.1)
+                                if(townsHere.length > 0){
+                                    unit.target = townsHere[0]
+                                    unit.tryTakeOverTown()
+                                    change = true
+                                }
                             }
                         }
                     } else {
@@ -2465,13 +2787,13 @@ class Model {
                             pushback = true
                         }
                         if(unit.team == unit2.team && unit.towntaken == null){
-                            if(/*unit.target != null && */(unit.target == null || unit.target == unit2 || unit.target.occupyingUnit != null && unit.target.occupyingUnit == unit2) && unit2.path.length == 0 && unit.tooClose(unit2) && unit.atPathEndAndInDirection(unit2)){
+                            if(/*unit.target != null && */(unit.target == null || unit.target == unit2 && !unit2.dead || unit.target.occupyingUnit != null && unit.target.occupyingUnit == unit2) && unit2.path.length == 0 && unit.tooClose(unit2) && unit.atPathEndAndInDirection(unit2)){
                                 if(unit.target == null)
                                     unit.target = unit2
                                 unit.tryToMergeWithTarget()
                                 pushback = true
                                 change = true
-                            } else if(unit.size < 99 && nopath && unit.tooClose(unit2) && unit.atPathEndAndInDirection(unit2,true)){
+                            } else if(unit.size < 99 && nopath && unit.tooClose(unit2) && unit2.path.length == 0 && unit.atPathEndAndInDirection(unit2,true) && !unit2.dead){
                                 unit.tryToMergeWithUnit(unit2)
                             }
                             if(unit.dead)
@@ -2767,7 +3089,7 @@ class View {
             if(voronoiable.voronoi != null){
                 if(voronoiable.team != null){
                     for(var j in voronoiable.voronoi){
-                        this.drawLand(voronoiable.voronoi[j],'#000000',voronoiable.team.color+'88')
+                        this.drawLand(voronoiable.voronoi[j],'#000000',voronoiable.team.color/*+'88'*/)
                     }
                 }
             }
@@ -3070,11 +3392,22 @@ class GamePrepareState extends State {
         super(controller)
         this.gameplay = false
         
+        this.townOptionControl
+        
         let t = this
         this.panelControls = [
             new TextControl(20,35,240,30,'NEW GAME',this.borderColor()),
             new TextControl(30,520,220,80,['CLICK ON AN ','UNIT TO PLAY',"WITH IT    "],this.borderColor()),
-            new Button(30,140,220,40,'GENERATE',this.backgroundColor,this.borderColor(),()=>{t.controller.regenerateModel()}),
+            new Button(30,110,220,40,'GENERATE',this.backgroundColor,this.borderColor(),()=>{t.controller.regenerateModel()}),
+            
+            new TextControl(60,180,160,15,'TOWNS',this.borderColor()),
+            this.townOptionControl = new OptionControl(40,205,200,20,this.backgroundColor,this.borderColor(),['DENSE','FULL','SPARSE']),
+            
+            new TextControl(60,250,160,15,'TEAMS',this.borderColor()),
+            this.teamOptionControl = new OptionControl(40,275,200,20,this.backgroundColor,this.borderColor(),['MORE','ALL','FEW']),
+            
+            new TextControl(60,320,160,15,'LAND',this.borderColor()),
+            this.landOptionControl = new OptionControl(40,345,200,20,this.backgroundColor,this.borderColor(),['MEDIUM ISLANDS','ADDITIONAL ISLANDS','BIG ISLANDS','MEDIUM CONTINENT']),
         ]
     }
 }
@@ -3118,6 +3451,12 @@ class TextControl extends Control {
             this.text = text
         this.color = color
     }
+    setText(text){
+        if(typeof text == 'string')
+            this.text = [text]
+        else
+            this.text = text
+    }
     draw(ctx,mouseCoordsTransformed){
         ctx.strokeStyle = this.color
         ctx.lineWidth = 2
@@ -3152,6 +3491,55 @@ class TextControl extends Control {
         ctx.lineWidth = 1
     }
 }
+class OptionControl extends Control {
+    constructor(x,y,w,h,color,borderColor,options){
+        super(x,y,w,h)
+        
+        this.color = color
+        this.borderColor = borderColor
+        
+        this.textControl = new TextControl(x+30,y,w-30*2,h,options[0],borderColor)
+
+        let t = this
+        this.arrowLeft = new ArrowButton(x,y,20,h,false,color,borderColor,() => {t.changeOption(false)})
+        this.arrowRight = new ArrowButton(x+w-20,y,20,h,true,color,borderColor,() => {t.changeOption(true)})
+        
+        this.options = options
+        this.currentOptionIndex = 0
+    }
+    getCurrentOption(){
+        return this.options[this.currentOptionIndex]
+    }
+    changeOption(right){
+        if(right){
+            this.currentOptionIndex++
+            if(this.currentOptionIndex >= this.options.length)
+                this.currentOptionIndex = 0
+        } else {
+            this.currentOptionIndex--
+            if(this.currentOptionIndex < 0)
+                this.currentOptionIndex = this.options.length-1
+        }
+    }
+    draw(ctx,mouseCoordsTransformed){
+        ctx.strokeStyle = this.color
+        ctx.lineWidth = 2
+        
+        this.textControl.setText(this.options[this.currentOptionIndex])
+        
+        this.textControl.draw(ctx,mouseCoordsTransformed)
+        this.arrowLeft.draw(ctx,mouseCoordsTransformed)
+        this.arrowRight.draw(ctx,mouseCoordsTransformed)
+        
+        ctx.lineWidth = 1
+    }
+    tryClick(mouseCoordsTransformed){
+        if(this.focus(mouseCoordsTransformed)){
+            this.arrowLeft.tryClick(mouseCoordsTransformed)
+            this.arrowRight.tryClick(mouseCoordsTransformed)
+        }
+    }
+}
 class Button extends Control {
     constructor(x,y,w,h,text,color,borderColor,func){
         super(x,y,w,h)
@@ -3174,6 +3562,46 @@ class Button extends Control {
         
         ctx.lineWidth = 2
         this.textControl.draw(ctx,mouseCoordsTransformed)
+        ctx.lineWidth = 1
+    }
+    tryClick(mouseCoordsTransformed){
+        if(this.focus(mouseCoordsTransformed)){
+            return this.func()
+        }
+    }
+}
+class ArrowButton extends Control {
+    constructor(x,y,w,h,right,color,borderColor,func){
+        super(x,y,w,h)
+        this.color = color
+        this.borderColor = borderColor
+        this.func = func
+        this.right = right
+    }
+    draw(ctx,mouseCoordsTransformed){
+        ctx.strokeStyle = this.borderColor
+        ctx.fillStyle = this.color
+        
+        ctx.beginPath()
+        if(this.right){
+            ctx.moveTo(this.x+this.w,this.y+this.h/2)
+            ctx.lineTo(this.x,this.y)
+            ctx.lineTo(this.x,this.y+this.h)
+        } else {
+            ctx.moveTo(this.x,this.y+this.h/2)
+            ctx.lineTo(this.x+this.w,this.y)
+            ctx.lineTo(this.x+this.w,this.y+this.h)
+        }
+        ctx.closePath()
+        
+        ctx.fill()
+        if(this.focus(mouseCoordsTransformed)){
+            ctx.fillStyle = '#ffffff88'
+            ctx.fill()
+        }
+        ctx.stroke()
+        
+        ctx.lineWidth = 2
         ctx.lineWidth = 1
     }
     tryClick(mouseCoordsTransformed){
@@ -3996,7 +4424,11 @@ class Controller {
         
         this.state = {state:new GamePrepareState(this),mouseCoords:null}
         
-        this.model = new Model()
+        var landTownDensity = this.state.state.townOptionControl.getCurrentOption()
+        var teamConfiguration = this.state.state.teamOptionControl.getCurrentOption()
+        var landConfiguration = this.state.state.landOptionControl.getCurrentOption()
+        
+        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration)
         this.view = new View(this.canv,this.model,this.state)
         
         this.ai = new Ai(this,this.state)
@@ -4018,7 +4450,11 @@ class Controller {
         this.state.state = state
     }
     regenerateModel(){
-        this.model = new Model()
+        var landTownDensity = this.state.state.townOptionControl.getCurrentOption()
+        var teamConfiguration = this.state.state.teamOptionControl.getCurrentOption()
+        var landConfiguration = this.state.state.landOptionControl.getCurrentOption()
+        
+        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration)
         this.pause = false
         this.view.updateModel(this.model)
     }
