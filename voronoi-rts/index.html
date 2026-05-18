@@ -958,7 +958,7 @@ function edgeHalfPointMoved(p1,p2,radiusMoved){
     return [(p1[0]+p2[0])/2 + Math.sin(angle)*radiusMoved,(p1[1]+p2[1])/2 - Math.cos(angle)*radiusMoved]
 }
 
-function triacontadigonalLimit(x,y,polygon, limit){
+function triacontadigonalLimit(x,y,polygon,limit){
     var thereIsSense = false
     for(var i in polygon){
         var band = polygon[i]
@@ -971,7 +971,7 @@ function triacontadigonalLimit(x,y,polygon, limit){
         }
     }
     if(!thereIsSense)
-        return polygon
+        return polygon.map(band => band.slice())
         
     var SIDES = 32
     var polygons = [polygon]
@@ -1677,25 +1677,29 @@ class Model {
     initLands(landConfiguration){
         
     
-        var island,landTreshold,loneIslands
+        var island,landTreshold,loneIslands,smoothingRounds
         switch(landConfiguration){
             case 'MEDIUM ISLANDS':
                 landTreshold = 0.5
+                smoothingRounds = 2
                 island = true
                 loneIslands = false
             break;
             case 'ADDITIONAL ISLANDS':
-                landTreshold = 0.5
+                landTreshold = 0.6
+                smoothingRounds = 2
                 island = true
                 loneIslands = true
             break;
-            case 'BIG ISLANDS':
+            case 'BIG ISLAND':
                 landTreshold = 0.4
+                smoothingRounds = 2
                 island = true
                 loneIslands = false
             break;
             case 'MEDIUM CONTINENT':
                 landTreshold = 0.5
+                smoothingRounds = 2
                 island = false
                 loneIslands = false
             break
@@ -1740,7 +1744,7 @@ class Model {
             }
         }
         
-        for(var round = 0;round<2;round++){
+        for(var round = 0;round<smoothingRounds;round++){
             var newlands = {}
             for(var key1 in this.graph){
                 var point1 = this.generationPoints[key1]
@@ -1779,6 +1783,11 @@ class Model {
             if(!this.generationPoints[i].land){
                 delete this.graph[i]
             }
+        }
+        this.oldgraph = {}
+        
+        for(var i in this.graph){
+            this.oldgraph[i] = Object.assign({},this.graph[i])
         }
         this.oldgenerationPoints = this.generationPoints.slice()
 /*        this.generationPoints = this.generationPoints.filter(a => a != undefined)
@@ -1988,10 +1997,12 @@ class Model {
     }
     populateTowns(teamConfiguration){
         var amount = 0
+        var multitown = false
         switch(teamConfiguration){
             case 'MORE': amount = Math.ceil(0.5 * this.towns.length);break;
             case 'ALL': amount = this.towns.length;break;
             case 'FEW': amount = Math.ceil(0.2 * this.towns.length);break;
+            case 'MULTITOWN': amount = Math.ceil(0.2 * this.towns.length);multitown = true;break
         }
         
         var shuffledTowns = this.towns.map(value => ({ value, sort: Math.random() }))
@@ -2019,6 +2030,33 @@ class Model {
                 this.addUnitToTown(newUnit,town)
             }
         }
+        if(multitown)
+            for(var k = 0;k<5;k++){
+                var used = new Set()
+                for(var i in this.towns){
+                    var town1 = this.towns[i]
+                    if(town1.team != null && !used.has(town1)){
+                        var closest = null
+                        var closestDist = Infinity
+                        for(var j in this.towns){
+                            var town2 = this.towns[j]
+                            if(town2.team == null){
+                                var dist = eucl_dist(town1.x,town1.y,town2.x,town2.y)
+                                if(dist < closestDist && dist < this.WIDTH / this.CHUNKS_PER_SIDE * 2){
+                                    closest = town2
+                                    closestDist = dist
+                                }
+                            }
+                            
+                        }
+                        if(closest != null){                
+                            var newUnit = new Unit(closest.x,closest.y,10+Math.ceil(Math.random()*89),town1.team,closest.land)
+                            this.addUnitToTown(newUnit,closest)
+                            used.add(closest)
+                        }
+                    }
+                }
+            }
     }
     addUnitToTown(newUnit,town){
         var chunk = this.getChunkFromCoords(newUnit.x,newUnit.y)
@@ -2833,6 +2871,33 @@ class Model {
                 }
             }
         }
+        for(var i in this.towns){
+            var town = this.towns[i]
+            
+            if(town.occupyingUnit != null)
+                continue
+                
+            var chunkcode = town.chunk.x+'#'+town.chunk.y
+            var unitsNearby = unitsByChunk[chunkcode]
+            
+            var oneTeam = true
+            var team = null
+            for(var j in unitsNearby){
+                var unit = unitsNearby[j]
+                
+                if(unit.tooClose(town)){
+                    if(oneTeam){
+                        if(team == null){
+                            team = unit.team
+                        } else {
+                            oneTeam = false
+                        }
+                    }
+                }
+            }
+            if(oneTeam && team != null)
+                town.team = team
+        }
         this.units = this.units.filter(a => !a.dead)
         //if(change)
             this.generateVoronois()
@@ -3400,14 +3465,17 @@ class GamePrepareState extends State {
             new TextControl(30,520,220,80,['CLICK ON AN ','UNIT TO PLAY',"WITH IT    "],this.borderColor()),
             new Button(30,110,220,40,'GENERATE',this.backgroundColor,this.borderColor(),()=>{t.controller.regenerateModel()}),
             
-            new TextControl(60,180,160,15,'TOWNS',this.borderColor()),
-            this.townOptionControl = new OptionControl(40,205,200,20,this.backgroundColor,this.borderColor(),['DENSE','FULL','SPARSE']),
+            new TextControl(80,180,100,13,'TOWNS',this.borderColor()),
+            this.townOptionControl = new OptionControl(40,200,200,18,this.backgroundColor,this.borderColor(),['DENSE','FULL','SPARSE']),
             
-            new TextControl(60,250,160,15,'TEAMS',this.borderColor()),
-            this.teamOptionControl = new OptionControl(40,275,200,20,this.backgroundColor,this.borderColor(),['MORE','ALL','FEW']),
+            new TextControl(80,240,100,13,'TEAMS',this.borderColor()),
+            this.teamOptionControl = new OptionControl(40,260,200,18,this.backgroundColor,this.borderColor(),['MORE','ALL','FEW','MULTITOWN']),
             
-            new TextControl(60,320,160,15,'LAND',this.borderColor()),
-            this.landOptionControl = new OptionControl(40,345,200,20,this.backgroundColor,this.borderColor(),['MEDIUM ISLANDS','ADDITIONAL ISLANDS','BIG ISLANDS','MEDIUM CONTINENT']),
+            new TextControl(80,300,100,13,'LAND',this.borderColor()),
+            this.landOptionControl = new OptionControl(40,320,200,18,this.backgroundColor,this.borderColor(),['MEDIUM ISLANDS','ADDITIONAL ISLANDS','BIG ISLAND','MEDIUM CONTINENT']),
+            
+            new TextControl(80,360,100,13,'AI',this.borderColor()),
+            this.aiOptionControl = new OptionControl(40,380,200,18,this.backgroundColor,this.borderColor(),['MEDIUM','HARD','EASY']),
         ]
     }
 }
@@ -3754,11 +3822,26 @@ class Ai {
         this.controller = controller
         this.state = state
         
+        this.ailevel = 1
+        
         this.standardGraph = null
         this.graph = {}
     }
     model(){
         return this.controller.model
+    }
+    setLevel(aiConfiguration){
+        switch(aiConfiguration){
+            case 'MEDIUM':
+                this.ailevel = 2
+            break
+            case 'HARD':
+                this.ailevel = 3
+            break
+            case 'EASY':
+                this.ailevel = 1
+            break
+        }
     }
     tryReset(){
         this.standardGraph = null
@@ -3814,9 +3897,9 @@ class Ai {
                 drawTextTemp(paths[0].path[0][0],paths[0].path[0][1],(mergedGraph[code].town && mergedGraph[code].unit) ? 'town&unit' : (mergedGraph[code].town ? 'town' : 'unit'),'#0f0')
             }
         }*/
-        this.sendUnitsRandomly(mergedGraph)
+        this.sendUnitsByAi(mergedGraph)
     }
-    sendUnitsRandomly(mergedGraph){
+    sendUnitsByAi(mergedGraph){
         var model = this.model()
         for(var code in mergedGraph){
             var vertex = mergedGraph[code]
@@ -3838,14 +3921,26 @@ class Ai {
                 if(unit.path.length > 0){
                     continue
                 }
+                
+                if(this.ailevel <= 1 && Math.random() < 0.6)
+                    continue
                     
                 var unitRemained = null
-                var paths = vertex.paths.slice().sort((a,b) => a.distanceToEnemy - b.distanceToEnemy)
+                var paths 
+                
+                if(this.ailevel >= 3)
+                    paths = vertex.paths.slice().sort((a,b) => a.distanceToEnemy - b.distanceToEnemy)
+                else
+                    paths = vertex.paths.slice().map(a=>new Object({obj:a,val:Math.random()})).sort((a,b) => a.val - b.val).map(a=>a.obj)
                 for(var i in paths){
+                    if(i > 2 && this.ailevel < 3)
+                        break
                     var path = paths[i]
                     var target = mergedGraph[path.targetCode]
                     
                     var part = vertex.town || (vertex.unit != null && vertex.unit.size > 5) ? 0.5 : 1
+                    if(this.ailevel <= 1)
+                        part *= 0.7
                     
                     if(i == paths.length - 1)
                         part = 1
@@ -3860,11 +3955,11 @@ class Ai {
                             }
 
                         }
-                        if(!path.sea){
-                            unit.barkingPoint = null
-                        }
-                        if(vertex.town == null)
-                            continue
+                    if(!path.sea){
+                        unit.barkingPoint = null
+                    }
+                    if(vertex.town == null)
+                        continue
 
                 }
                 if(vertex.neighborsEnemy <= 1 && vertex.paths.length > 1 && unitRemained != null){
@@ -4430,11 +4525,13 @@ class Controller {
         var landTownDensity = this.state.state.townOptionControl.getCurrentOption()
         var teamConfiguration = this.state.state.teamOptionControl.getCurrentOption()
         var landConfiguration = this.state.state.landOptionControl.getCurrentOption()
+        var aiConfiguration = this.state.state.aiOptionControl.getCurrentOption()
         
         this.model = new Model(landTownDensity,teamConfiguration,landConfiguration)
         this.view = new View(this.canv,this.model,this.state)
         
         this.ai = new Ai(this,this.state)
+        this.ai.setLevel(aiConfiguration)
                 
         this.view.draw()
         
@@ -4456,8 +4553,11 @@ class Controller {
         var landTownDensity = this.state.state.townOptionControl.getCurrentOption()
         var teamConfiguration = this.state.state.teamOptionControl.getCurrentOption()
         var landConfiguration = this.state.state.landOptionControl.getCurrentOption()
+        var aiConfiguration = this.state.state.aiOptionControl.getCurrentOption()
         
         this.model = new Model(landTownDensity,teamConfiguration,landConfiguration)
+        this.ai.setLevel(aiConfiguration)
+
         this.pause = false
         this.view.updateModel(this.model)
     }
