@@ -971,7 +971,7 @@ function triacontadigonalLimit(x,y,polygon,limit){
         }
     }
     if(!thereIsSense)
-        return polygon.map(band => band.slice())
+        return polygon//.map(band => band.slice())
         
     var SIDES = 32
     var polygons = [polygon]
@@ -1205,6 +1205,9 @@ function middlePathPoints(path,distance){
             dist -= distance
         }
     }
+}
+function unitInProcessOfEmbarking(unit){
+    return unit.embarking && unit.embarkingProgress < unit.size
 }
 const vectorNumbers = {
     0:[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],],
@@ -1515,7 +1518,7 @@ class Unit {
         return Math.ceil(this.size * division)
     }
     inProcessOfEmbarking(){
-        return this.embarking && this.embarkingProgress < this.size
+        return unitInProcessOfEmbarking(this) 
     }
     tryDisembark(){
         if(this.barkingPoint != null && this.path.length == 1){
@@ -2402,7 +2405,7 @@ class Model {
         
         if(vectorPath == null)
             return null
-            
+            /*
         for(var i in this.towns){
             var town = this.towns[i]
             if(town.color != unit.color && town.occupyingUnit == null && objectToBePressed != town && !(objectToBePressed != null && 'towntaken' in objectToBePressed && objectToBePressed.towntaken == town))
@@ -2415,7 +2418,7 @@ class Model {
             if(unit2.color != unit.color && unit2 != unit && objectToBePressed != unit && objectToBePressed != unit2 && !(objectToBePressed != null && 'occupyingUnit' in objectToBePressed && (objectToBePressed.occupyingUnit == unit || objectToBePressed.occupyingUnit == unit2)))
                 if(unit2.checkPathThrough(vectorPath))
                     return null
-        }
+        }*/
         /*
         if(unit.land != null){
             if(segmentsIntersectingWithPolygon([unit.x,unit.y],[x,y],unit.land))
@@ -3043,6 +3046,13 @@ class View {
         this.model = model
         this.draw()
     }
+    currentModelData(){
+        if(this.state.state.history){
+            return this.state.state.gameHistory.getCurrentModelData()
+        } else {
+            return this.model
+        }
+    }
     draw(){
         this.drawBackground()
         this.drawModel()
@@ -3085,6 +3095,25 @@ class View {
         //this.drawGenerationPoints()
         this.drawTowns()
         this.drawUnits()
+        
+        if(this.state.state.history) {
+            this.drawSlider()
+        }
+    }
+    drawSlider(){
+        var {left,top,width,height} = this.state.state.getSliderDimensions()
+
+        this.ctx.strokeStyle = '#222'
+        this.ctx.fillStyle = '#ddd8'
+        
+        this.ctx.strokeRect(left,top+height*0.4,width,height*0.2)
+        var x = left + this.state.state.gameHistory.currentTime / (this.state.state.gameHistory.states.length-1) * width
+        
+        this.ctx.fillStyle = '#ddd'
+        var sliderButtonWidth = 10
+        this.ctx.fillRect(x-sliderButtonWidth/2,top,sliderButtonWidth,height)
+        this.ctx.strokeRect(x-sliderButtonWidth/2,top,sliderButtonWidth,height)
+        
     }
     drawPanel(){
         const PANEL_X = this.state.state.PANEL_X
@@ -3109,13 +3138,15 @@ class View {
         }
         this.ctx.translate(-PANEL_X,0)
     }
+    /*
     drawChunks(){
-        for(var key in this.model.chunks){
-            for(var i in this.model.chunks[key].polygons){
-                this.drawLand(this.model.chunks[key].polygons[i],getRandomColor())
+        var modelData = this.currentModelData()
+        for(var key in modelData.chunks){
+            for(var i in modelData.chunks[key].polygons){
+                this.drawLand(modelData.chunks[key].polygons[i],getRandomColor())
             }
         }
-    }
+    }*/
     drawLands(fill){/*
         for(var i in this.model.oldlands){
             if(!(i in this.model.oldgenerationPoints) || this.model.oldgenerationPoints[i].land){
@@ -3124,6 +3155,7 @@ class View {
                 //this.drawLand(this.model.lands[i],'#fff4')
             }
         }*/        
+                
         this.ctx.lineWidth = 2
 
         for(var i in this.model.lands){
@@ -3141,6 +3173,8 @@ class View {
 
     }
     drawVoronois(){
+        var modelData = this.currentModelData()
+        
         var mouseCoords = this.modelMouseCoords()
         var x = null,y = null
         if(mouseCoords != null){
@@ -3148,7 +3182,7 @@ class View {
             y = mouseCoords.y
         }
 
-        var voronoiables = this.model.mergedVoronois//this.model.getVoronoiables()
+        var voronoiables = modelData.mergedVoronois//this.model.getVoronoiables()
         for(var i in voronoiables){
             var voronoiable = voronoiables[i]
             if(voronoiable.voronoi != null){
@@ -3197,6 +3231,7 @@ class View {
         this.ctx.fill()
         
     }
+    /*
     drawGenerationPoints(){
         this.ctx.strokeStyle = '#000000'
         for(var i in this.model.generationPoints){
@@ -3204,13 +3239,15 @@ class View {
 //            if(point.land)
                 this.ctx.strokeRect(point.x-2,point.y-2,4,4)
         }
-    }
+    }*/
     mouseOnTown(mouseCoords, town){
         var {WIDTH} = townData()
         
         return mouseCoords != null && mouseCoords.x > town.x-WIDTH*5/4 && mouseCoords.x < town.x+WIDTH*5/4 && mouseCoords.y > town.y-WIDTH*2 && mouseCoords.y < town.y
     }
     drawTowns(){
+        var modelData = this.currentModelData()
+        
         var WIDTH = 6
         
         var mouseCoords = this.modelMouseCoords()
@@ -3218,8 +3255,8 @@ class View {
         
         var focusedTown = focusedUnit == null ? this.getTownByMouse(mouseCoords) : null
 
-        for(var i in this.model.towns){
-            var town = this.model.towns[i]
+        for(var i in modelData.towns){
+            var town = modelData.towns[i]
 
             var focused = /*town.occupyingUnit != null && town.occupyingUnit == focusedUnit || */town == focusedTown
             
@@ -3247,20 +3284,24 @@ class View {
         return mouseCoords != null && mouseCoords.x > unit.x-WIDTH/2 && mouseCoords.x < unit.x+WIDTH/2 && mouseCoords.y > unit.y-HEIGHT/2-realOffset && mouseCoords.y < unit.y+HEIGHT/2-realOffset
     }
     getUnitByMouse(mouseCoords){
+        var modelData = this.currentModelData()
+        
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
         
-        var units = this.model.units.sort((a,b) => b.y - a.y)
+        var units = modelData.units.sort((a,b) => b.y - a.y)
         for(var i in units){
             var unit = units[i]
-            if(!unit.inProcessOfEmbarking() && this.mouseOnUnit(mouseCoords, unit))
+            if(!unitInProcessOfEmbarking(unit) && this.mouseOnUnit(mouseCoords, unit))
                 return unit
         }
         return null
     }
     getTownByMouse(mouseCoords){
+        var modelData = this.currentModelData()
+        
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
         
-        var towns = this.model.towns.sort((a,b) => b.y - a.y)
+        var towns = modelData.towns.sort((a,b) => b.y - a.y)
         for(var i in towns){
             var town = towns[i]
             if(this.mouseOnTown(mouseCoords, town))
@@ -3269,6 +3310,8 @@ class View {
         return null
     }
     drawUnits(){
+        var modelData = this.currentModelData()
+        
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
         
         var mouseCoords = this.modelMouseCoords()
@@ -3276,13 +3319,13 @@ class View {
         var focusedUnit = this.getUnitByMouse(mouseCoords)
         var focusedTown = focusedUnit == null ? this.getTownByMouse(mouseCoords) : null
 
-        var sortedUnits = this.model.units.filter(a => !a.inProcessOfEmbarking()).concat(this.model.units.filter(a => a.inProcessOfEmbarking()))
+        var sortedUnits = modelData.units.filter(a => !unitInProcessOfEmbarking(a)).concat(modelData.units.filter(a => unitInProcessOfEmbarking(a)))
         //for(var i=0;i<this.model.units.length;i++){
         for(var i=sortedUnits.length - 1;i>=0;i--){
             var unit = sortedUnits[i]
             var teamColor = unit.team.color
             
-            var selected = unit == this.model.selectedUnit
+            var selected = unit == modelData.selectedUnit
             var focused = unit == focusedUnit
 
             if(unit.path.length > 0){
@@ -3342,9 +3385,9 @@ class View {
             } else {                
                 this.drawNumber(unit.size   , unit.x-WIDTH/8            ,unit.y-HEIGHT/2-realOffset + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
             }
-            if(selected && this.model.selectedUnitDivision != 1){
+            if(selected && modelData.selectedUnitDivision != 1){
                 
-                var dividedSize = unit.sizeAfterDivision(this.model.selectedUnitDivision)
+                var dividedSize = unit.sizeAfterDivision(modelData.selectedUnitDivision)
                 
                 var newerOffset = realOffset + 5
                 this.ctx.fillRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-newerOffset,WIDTH,HEIGHT)
@@ -3424,10 +3467,14 @@ class View {
     }
 }
 class State {
-    constructor(controller){
+    constructor(controller,previousState){
         this.controller = controller
+        this.previousState = previousState
         this.panelControls = []
         this.mouseCoords = null
+        
+        this.interaction = true
+        this.history = false
         
         this.backgroundColor = '#AAAAAA'
         
@@ -3440,6 +3487,9 @@ class State {
         var PANEL_X = this.PANEL_X
         return this.mouseCoords ? new Object({x:this.mouseCoords.x-PANEL_X-20,y:this.mouseCoords.y-20}) : null
     }
+    mouseCoordsTransformedToTheMap(){
+        return this.mouseCoords ? new Object({x:this.mouseCoords.x-20,y:this.mouseCoords.y-20}) : null
+    }
     mouseDown(coords){
         var mouseCoordsTransformed = this.mouseCoordsTransformed()
         for(var i in this.panelControls){
@@ -3448,15 +3498,19 @@ class State {
             control.tryClick(mouseCoordsTransformed)
         }
     }
+    mouseMove(coords){
+    }
+    mouseUp(coords){
+    }
     borderColor(){
         return darkColor(this.backgroundColor) ? '#ffffffcc' : '#000000cc'
     }
 }
 class GamePrepareState extends State {
     constructor(controller){
-        super(controller)
+        super(controller,null)
         this.gameplay = false
-        
+                
         this.townOptionControl
         
         let t = this
@@ -3481,7 +3535,7 @@ class GamePrepareState extends State {
 }
 class GamePlayUnselected extends State {
     constructor(controller){
-        super(controller)
+        super(controller,null)
         this.gameplay = true
         
         this.backgroundColor = this.controller.model.playerChoosen.color
@@ -3489,10 +3543,81 @@ class GamePlayUnselected extends State {
         let t = this
         this.panelControls = [
             new TextControl(20,35,240,30,'PLAY',this.borderColor()),
-            new Button(30,540,220,40,'GO BACK',this.backgroundColor,this.borderColor(),()=>{t.controller.goToMenu()}),
+            new Button(30,590,220,40,'GO BACK',this.backgroundColor,this.borderColor(),()=>{t.controller.goToMenu()}),
+            new Button(30,145,220,40,'HISTORY',this.backgroundColor,this.borderColor(),()=>{t.controller.goToHistory()}),
             new Button(30,95,220,40,'PAUSE',this.backgroundColor,this.borderColor(),()=>{t.controller.pausePlay()}),
-            new StatisticsPanel(30,145,220,380,this.backgroundColor,this.borderColor(),t.controller.model)
+            new StatisticsPanel(30,195,220,380,this.backgroundColor,this.borderColor(),t.controller.model)
         ]
+    }
+}
+class HistoryState extends State {
+    constructor(controller,previousState){
+        super(controller,previousState)
+        
+        this.gameplay = true
+        this.interaction = false
+        this.history = true
+        
+        this.gameHistory = controller.gameHistory
+
+        
+        this.backgroundColor = this.controller.model.playerChoosen.color
+        
+        let t = this
+        this.panelControls = [
+            new Button(30,590,220,40,'GO BACK',this.backgroundColor,this.borderColor(),()=>{t.controller.goToPreviousState()}),
+        ]
+        this.sliderHorizontalMargin = 60
+        this.sliderBottomMargin = 60
+        
+        this.sliding = false
+        
+        this.sliderHeight = 40
+    }
+    getSliderDimensions(){
+        return {
+            left: this.sliderHorizontalMargin,
+            top: this.controller.model.WIDTH + 20 - this.sliderBottomMargin - this.sliderHeight,
+            width: this.controller.model.WIDTH - this.sliderHorizontalMargin * 2,
+            height: this.sliderHeight
+        }
+    }
+    mouseCoordsTransformedToSlider(){
+        var {left,top,width,height} = this.getSliderDimensions()
+    
+        var newCoords = this.mouseCoords ? new Object({x:this.mouseCoords.x-20,y:this.mouseCoords.y-20}) : null
+
+        return newCoords && newCoords.x > left && newCoords.x < left + width && newCoords.y > top && newCoords.y < top + height ? newCoords : null
+    }
+    mouseDown(coords){
+        super.mouseDown(coords)
+        var mouseCoordsTransformedToSlider = this.mouseCoordsTransformedToSlider()
+        
+        if(mouseCoordsTransformedToSlider){
+            this.sliding = true
+            this.updateSlider(coords)
+
+        }
+        
+    }
+    mouseMove(coords){
+        super.mouseMove(coords)
+        if(this.sliding){
+            this.updateSlider(coords)
+        }
+    }
+    mouseUp(coords){
+        super.mouseUp(coords)
+        if(this.sliding){
+            this.updateSlider(coords)
+        }
+        this.sliding = false
+    }
+    updateSlider(coords){
+        var {left,top,width,height} = this.getSliderDimensions()
+
+        var newTime = Math.max(0,Math.min(Math.round((coords.x - left) / width * (this.gameHistory.states.length-1)),this.gameHistory.states.length-1))
+        this.gameHistory.setCurrentTime(newTime)
     }
 }
 class Control {
@@ -4516,6 +4641,44 @@ class Ai {
         return mergedGraph
     }
 }
+class GameHistory {
+    constructor(model){
+        this.model = model
+        
+        this.states = []
+        
+        this.currentTime = 0
+    }
+    setCurrentTime(time){
+        this.currentTime = time
+    }
+    registerSnapshot(){
+        this.states.push({
+            mergedVoronois:this.model.mergedVoronois.map(a => new Object({
+                voronoi:a.voronoi.map(b => b.slice()),
+                team:a.team
+            })),
+            towns:this.model.towns.map(a => new Object({
+                x:a.x,
+                y:a.y,
+                team:a.team
+            })),
+            units:this.model.units.map(a => new Object({
+                x:a.x,
+                y:a.y,
+                size:a.size,
+                towntaken:a.towntaken ? true : null,
+                embarking:a.embarking,
+                embarkingProgress:a.embarkingProgress,
+                path:[],
+                team:a.team
+            }))
+        })
+    }
+    getCurrentModelData(){
+        return this.states[this.currentTime]
+    }
+}
 class Controller {
     constructor(){
         this.canv = document.getElementById('canv')
@@ -4528,6 +4691,7 @@ class Controller {
         var aiConfiguration = this.state.state.aiOptionControl.getCurrentOption()
         
         this.model = new Model(landTownDensity,teamConfiguration,landConfiguration)
+        this.gameHistory = new GameHistory(this.model)
         this.view = new View(this.canv,this.model,this.state)
         
         this.ai = new Ai(this,this.state)
@@ -4548,6 +4712,8 @@ class Controller {
     }
     changeState(state){
         this.state.state = state
+        
+        this.pause = !state.gameplay || !state.interaction
     }
     regenerateModel(){
         var landTownDensity = this.state.state.townOptionControl.getCurrentOption()
@@ -4556,15 +4722,31 @@ class Controller {
         var aiConfiguration = this.state.state.aiOptionControl.getCurrentOption()
         
         this.model = new Model(landTownDensity,teamConfiguration,landConfiguration)
+        this.gameHistory = new GameHistory(this.model)
+
         this.ai.setLevel(aiConfiguration)
 
         this.pause = false
         this.view.updateModel(this.model)
     }
     goToMenu(){
-        this.model = new Model()
+        var landTownDensity = this.state.state.townOptionControl.getCurrentOption()
+        var teamConfiguration = this.state.state.teamOptionControl.getCurrentOption()
+        var landConfiguration = this.state.state.landOptionControl.getCurrentOption()
+        var aiConfiguration = this.state.state.aiOptionControl.getCurrentOption()
+        
+        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration)
+        this.gameHistory = new GameHistory(this.model)
+
         this.changeState(new GamePrepareState(this))
         this.view.updateModel(this.model)
+    }
+    goToHistory(){
+        var oldState = this.state.state
+        this.changeState(new HistoryState(this,oldState))
+    }
+    goToPreviousState(){
+        this.changeState(this.state.state.previousState)
     }
     prepareListeners(){
         this.canv.addEventListener('click',(e) => this.click(e))
@@ -4590,9 +4772,11 @@ class Controller {
         
         this.state.state.setMouseCoords(coords)
         
-        this.pressedUnit = this.view.getUnitByMouse(this.view.modelMouseCoords())
-        if(this.pressedUnit == null)
-            this.dragStart = coords
+        if(this.state.state.interaction){
+            this.pressedUnit = this.view.getUnitByMouse(this.view.modelMouseCoords())
+            if(this.pressedUnit == null)
+                this.dragStart = coords
+        }
         
         this.state.state.mouseDown(coords)
     }
@@ -4601,6 +4785,7 @@ class Controller {
         var coords = this.getCoordsFromEvent(e)
         
         this.state.state.setMouseCoords(coords)
+        this.state.state.mouseMove(coords)
         this.view.draw()
     }
     mouseUp(e){
@@ -4608,30 +4793,67 @@ class Controller {
         var coords = this.getCoordsFromEvent(e)
         var modelCoords = this.view.modelMouseCoords()
         
-        if(modelCoords != null)
-            if(this.model.selectedUnit == null){
-                if(this.pressedUnit != null){
-                    var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
+        if(this.state.state.interaction){
+            if(modelCoords != null)
+                if(this.model.selectedUnit == null){
+                    if(this.pressedUnit != null){
+                        var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
 
-                    if((currentlyPressedUnit.team == this.model.playerChoosen || !this.state.state.gameplay) && currentlyPressedUnit == this.pressedUnit && !currentlyPressedUnit.inProcessOfEmbarking()){
-                        this.model.selectUnit(this.pressedUnit)
-                        if(!this.state.state.gameplay){
-                            this.model.playerChoosen = this.model.selectedUnit.team
-                            this.changeState(new GamePlayUnselected(this))
+                        if((currentlyPressedUnit.team == this.model.playerChoosen || !this.state.state.gameplay) && currentlyPressedUnit == this.pressedUnit && !currentlyPressedUnit.inProcessOfEmbarking()){
+                            this.model.selectUnit(this.pressedUnit)
+                            if(!this.state.state.gameplay){
+                                this.model.playerChoosen = this.model.selectedUnit.team
+                                this.changeState(new GamePlayUnselected(this))
+                            }
                         }
                     }
-                }
-            } else {
-                var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
+                } else {
+                    var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
 
-                if(this.pressedUnit != null && this.pressedUnit == currentlyPressedUnit){
-                    if(this.pressedUnit == this.model.selectedUnit){
-                        if(this.model.selectedUnit.sizeAfterDivision(this.model.selectedUnitDivision) == 1)
-                            this.model.selectedUnitDivision = 1
-                        else if(this.model.selectedUnitDivision > 0.5 && this.model.selectedUnit.size >= 4)
-                            this.model.selectedUnitDivision -= 0.25
-                        else
-                            this.model.selectedUnitDivision /= 2
+                    if(this.pressedUnit != null && this.pressedUnit == currentlyPressedUnit){
+                        if(this.pressedUnit == this.model.selectedUnit){
+                            if(this.model.selectedUnit.sizeAfterDivision(this.model.selectedUnitDivision) == 1)
+                                this.model.selectedUnitDivision = 1
+                            else if(this.model.selectedUnitDivision > 0.5 && this.model.selectedUnit.size >= 4)
+                                this.model.selectedUnitDivision -= 0.25
+                            else
+                                this.model.selectedUnitDivision /= 2
+                        } else {
+                            /*
+                            var oldPath = this.model.selectedUnit.path
+                            var oldTarget = this.model.selectedUnit.target
+                            var oldLand = this.model.selectedUnit.land
+                            var oldEmbarking = this.model.selectedUnit.embarking
+                            var oldBarkingPoint = this.model.selectedUnit.barkingPoint
+                            var oldBarkingLand = this.model.selectedUnit.barkingLand
+                            */
+                            var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit).possible
+                            this.model.deselectUnit()
+
+                            /*
+                            if(pathCreated){
+                                var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
+                                if(newUnit != null){
+                                    //if(!(this.model.selectedUnit.embarking && this.model.selectedUnit.inProcessOfEmbarking())){
+                                    newUnit.path = oldPath
+                                    newUnit.target = oldTarget
+                                    
+                                    newUnit.land = oldLand
+                                    newUnit.embarking = oldEmbarking
+                                    newUnit.embarkingProgress = newUnit.size
+                                    newUnit.barkingPoint = oldBarkingPoint
+                                    newUnit.barkingLand = oldBarkingLand
+                                    //}
+                                    if(newUnit.towntaken != null) {
+                                        this.model.selectedUnit.x = newUnit.towntaken.x
+                                        this.model.selectedUnit.y = newUnit.towntaken.y
+                                    }
+                                    this.model.units.push(newUnit)
+                                }
+                            } else
+                                this.model.selectedUnit.removePath()
+                            this.model.deselectUnit()*/
+                        }
                     } else {
                         /*
                         var oldPath = this.model.selectedUnit.path
@@ -4641,7 +4863,16 @@ class Controller {
                         var oldBarkingPoint = this.model.selectedUnit.barkingPoint
                         var oldBarkingLand = this.model.selectedUnit.barkingLand
                         */
-                        var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit).possible
+                        
+                        var pressedTown = this.view.getTownByMouse(modelCoords)
+                        var pathCreated
+                        if(pressedTown != null){
+                            pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,pressedTown).possible
+                        } else if(currentlyPressedUnit != null) {
+                            pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit).possible
+                        } else {
+                            pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y).possible
+                        }
                         this.model.deselectUnit()
 
                         /*
@@ -4664,61 +4895,18 @@ class Controller {
                                 }
                                 this.model.units.push(newUnit)
                             }
+                            this.model.generateVoronois()
                         } else
                             this.model.selectedUnit.removePath()
                         this.model.deselectUnit()*/
                     }
-                } else {
-                    /*
-                    var oldPath = this.model.selectedUnit.path
-                    var oldTarget = this.model.selectedUnit.target
-                    var oldLand = this.model.selectedUnit.land
-                    var oldEmbarking = this.model.selectedUnit.embarking
-                    var oldBarkingPoint = this.model.selectedUnit.barkingPoint
-                    var oldBarkingLand = this.model.selectedUnit.barkingLand
-                    */
-                    
-                    var pressedTown = this.view.getTownByMouse(modelCoords)
-                    var pathCreated
-                    if(pressedTown != null){
-                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,pressedTown).possible
-                    } else if(currentlyPressedUnit != null) {
-                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit).possible
-                    } else {
-                        pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y).possible
-                    }
-                    this.model.deselectUnit()
 
-                    /*
-                    if(pathCreated){
-                        var newUnit = this.model.selectedUnit.leavePartOfUnit(this.model.selectedUnitDivision)
-                        if(newUnit != null){
-                            //if(!(this.model.selectedUnit.embarking && this.model.selectedUnit.inProcessOfEmbarking())){
-                            newUnit.path = oldPath
-                            newUnit.target = oldTarget
-                            
-                            newUnit.land = oldLand
-                            newUnit.embarking = oldEmbarking
-                            newUnit.embarkingProgress = newUnit.size
-                            newUnit.barkingPoint = oldBarkingPoint
-                            newUnit.barkingLand = oldBarkingLand
-                            //}
-                            if(newUnit.towntaken != null) {
-                                this.model.selectedUnit.x = newUnit.towntaken.x
-                                this.model.selectedUnit.y = newUnit.towntaken.y
-                            }
-                            this.model.units.push(newUnit)
-                        }
-                        this.model.generateVoronois()
-                    } else
-                        this.model.selectedUnit.removePath()
-                    this.model.deselectUnit()*/
                 }
-
-            }
-        
-        this.pressedUnit = null
-        this.dragStart = false
+            
+            this.pressedUnit = null
+            this.dragStart = false
+        }
+        this.state.state.mouseUp(coords)
         this.view.draw()
     }
     getCoordsFromEvent(e){
@@ -4739,12 +4927,16 @@ class Controller {
         this.pause = !this.pause
     }
     loop(){
+        let t = this
+        t.frameCounter++
+        
         if(!this.pause){
             this.model.update(this.state.state.gameplay)
             this.view.draw()
+            if(t.frameCounter % 5 == 1){
+                t.gameHistory.registerSnapshot()
+            }
         }
-        let t = this
-        t.frameCounter++
         if(t.frameCounter % 30 == 0){
             if(this.state.state.gameplay)
                 t.ai.think()
