@@ -347,6 +347,10 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
     }
     try {
     if(!thereWasBorder){
+        if(poly1.length == 0)
+            return poly2
+        if(poly2.lenfth == 0)
+            return poly1
         if(poly1[0].length > poly2[0].length){
             return poly1
         } else {
@@ -960,19 +964,26 @@ function edgeHalfPointMoved(p1,p2,radiusMoved){
 
 function triacontadigonalLimit(x,y,polygon,limit){
     var thereIsSense = false
+    
     for(var i in polygon){
         var band = polygon[i]
         
         for(var j in band){
             var point = band[j]
             
-            if(eucl_dist(x,y,point[0],point[1]) > limit)
+            if(eucl_dist(x,y,point[0],point[1]) > limit*0.5){
                 thereIsSense = true
+                break
+            }
         }
+        if(thereIsSense)
+            break
     }
+    
     if(!thereIsSense)
-        return polygon//.map(band => band.slice())
-        
+        return polygon.map(band => band.map(a=>a.slice()))
+    
+    
     var SIDES = 32
     var polygons = [polygon]
     for(var i = 0;i<SIDES;i++){
@@ -1243,6 +1254,20 @@ const vectorLetters = {
     'U':[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],],
     'W':[[0.0,0.0],[0.0,1.0],[0.5,0.5],[1.0,1.0],[1.0,0.0],],
     'Y':[[0.0,0.0],[0.5,0.5],[1.0,0.0],[0.5,0.5],[0.5,1.0],],
+    ':':[
+            [[0.2,0.2],[0.8,0.2],[0.8,0.45],[0.2,0.45],[0.2,0.2]],
+            [[0.2,0.8],[0.8,0.8],[0.8,0.55],[0.2,0.55],[0.2,0.8]],
+        ],
+    0:[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],],
+    1:[[0.0,0.0],[0.5,0.0],[0.5,1.0],[0.0,1.0],[1.0,1.0],],
+    2:[[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],[0.0,1.0],[1.0,1.0],],
+    3:[[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],[1.0,0.5],[1.0,1.0],[0.0,1.0],],
+    4:[[0.0,0.0],[0.0,0.5],[1.0,0.5],[1.0,0.0],[1.0,1.0],],
+    5:[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[1.0,1.0],[0.0,1.0],],
+    6:[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.0,0.5],],
+    7:[[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.5,0.5],[0.5,1.0],],
+    8:[[1.0,0.5],[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.0,0.5],],
+    9:[[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],],
 }
 //ax+b = 0  a = 1, b = -x_o
 class Chunk {
@@ -1543,10 +1568,28 @@ class Unit {
     }
 }
 class Model {
-    constructor(landTownDensity,teamConfiguration,landConfiguration){
+    constructor(landTownDensity,teamConfiguration,landConfiguration,screenResolutionConfiguration){
         this.WIDTH = 650
+        this.ZOOM = 1
         this.CHUNKS_PER_SIDE = 6
         this.NUMBER_OF_POINTS = 250
+
+        switch(screenResolutionConfiguration){
+            case 'LARGE':
+                this.WIDTH = 650
+                this.ZOOM = 1
+                this.CHUNKS_PER_SIDE = 6
+                this.NUMBER_OF_POINTS = 250
+
+            break
+            case 'SMALL':
+                this.WIDTH = 325
+                this.ZOOM = 2
+                this.CHUNKS_PER_SIDE = 3
+                this.NUMBER_OF_POINTS = 175
+
+            break
+        }
         this.TOWN_DISTANCE_LIMIT = 40
         
         this.TOWN_GROWING_RATE = 0.05
@@ -1555,6 +1598,7 @@ class Model {
         this.UNIT_SHRINKING_RATE = 0.2
         
         this.EMBARKING_PROGRESS_SPEED = 1
+        
                 
         this.graph = {}
         this.oldlands
@@ -2394,6 +2438,9 @@ class Model {
     }
     
     pathPossible(unit,x,y,objectToBePressed){
+        if(y < 0)
+            return null
+            
         var land = unit.land
         
         if(objectToBePressed != null){
@@ -2461,6 +2508,8 @@ class Model {
         return null
     }
     seaPathPossible(unit,x,y,objectToBePressed){
+        if(y < 0)
+            return null
         var land = unit.land
         
         var ux = unit.x
@@ -3071,15 +3120,16 @@ class View {
             var raw_x = this.state.state.mouseCoords.x
             var raw_y = this.state.state.mouseCoords.y
             
-            var x = raw_x - this.PADDING
-            var y = raw_y - this.PADDING
+            var x = (raw_x - this.PADDING)/this.model.ZOOM
+            var y = (raw_y - this.PADDING)/this.model.ZOOM
             
-            if(x > 0 && y > 0 && x < this.model.WIDTH && y < this.model.WIDTH)
+            if(x > 0 && y > -this.PADDING && x < this.model.WIDTH && y < this.model.WIDTH)
                 return {x: x, y: y}
         }
         return null
     }
     drawModel(){
+        this.ctx.scale(this.model.ZOOM,this.model.ZOOM)
         this.ctx.fillStyle = '#fff'
         this.ctx.fillRect(0,0,this.model.WIDTH,this.model.WIDTH)
         this.ctx.strokeStyle = '#000'
@@ -3096,9 +3146,11 @@ class View {
         this.drawTowns()
         this.drawUnits()
         
+        
         if(this.state.state.history) {
             this.drawSlider()
         }
+        this.ctx.scale(1/this.model.ZOOM,1/this.model.ZOOM)
     }
     drawSlider(){
         var {left,top,width,height} = this.state.state.getSliderDimensions()
@@ -3520,16 +3572,19 @@ class GamePrepareState extends State {
             new Button(30,110,220,40,'GENERATE',this.backgroundColor,this.borderColor(),()=>{t.controller.regenerateModel()}),
             
             new TextControl(80,180,100,13,'TOWNS',this.borderColor()),
-            this.townOptionControl = new OptionControl(40,200,200,18,this.backgroundColor,this.borderColor(),['DENSE','FULL','SPARSE']),
+            this.townOptionControl = new OptionControl(40,200,200,18,this.backgroundColor,this.borderColor(),['DENSE','FULL','SPARSE'],'townOptionControl'),
             
             new TextControl(80,240,100,13,'TEAMS',this.borderColor()),
-            this.teamOptionControl = new OptionControl(40,260,200,18,this.backgroundColor,this.borderColor(),['MORE','ALL','FEW','MULTITOWN']),
+            this.teamOptionControl = new OptionControl(40,260,200,18,this.backgroundColor,this.borderColor(),['MORE','ALL','FEW','MULTITOWN'],'teamOptionControl'),
             
             new TextControl(80,300,100,13,'LAND',this.borderColor()),
-            this.landOptionControl = new OptionControl(40,320,200,18,this.backgroundColor,this.borderColor(),['MEDIUM ISLANDS','ADDITIONAL ISLANDS','BIG ISLAND','MEDIUM CONTINENT']),
+            this.landOptionControl = new OptionControl(40,320,200,18,this.backgroundColor,this.borderColor(),['MEDIUM ISLANDS','ADDITIONAL ISLANDS','BIG ISLAND','MEDIUM CONTINENT'],'landOptionControl'),
             
-            new TextControl(80,360,100,13,'AI',this.borderColor()),
-            this.aiOptionControl = new OptionControl(40,380,200,18,this.backgroundColor,this.borderColor(),['MEDIUM','HARD','EASY']),
+            new TextControl(80+30,360,100-60,13,'AI',this.borderColor()),
+            this.aiOptionControl = new OptionControl(40,380,200,18,this.backgroundColor,this.borderColor(),['MEDIUM','HARD','EASY'],'aiOptionControl'),
+            
+            new TextControl(80,420,100,13,'MAP SIZE',this.borderColor()),
+            this.screenResolutionControl = new OptionControl(40,440,200,18,this.backgroundColor,this.borderColor(),['LARGE','SMALL'],'screenResolutionControl'),
         ]
     }
 }
@@ -3565,7 +3620,11 @@ class HistoryState extends State {
         
         let t = this
         this.panelControls = [
+            new TextControl(20,35,240,30,'HISTORY',this.borderColor()),
+            this.timer = new TextControl(60,85,160,40,'0:00',this.borderColor()),
+
             new Button(30,590,220,40,'GO BACK',this.backgroundColor,this.borderColor(),()=>{t.controller.goToPreviousState()}),
+            new StatisticsPanel(30,195,220,380,this.backgroundColor,this.borderColor(),()=>t.gameHistory.getCurrentModelData())
         ]
         this.sliderHorizontalMargin = 60
         this.sliderBottomMargin = 60
@@ -3573,6 +3632,7 @@ class HistoryState extends State {
         this.sliding = false
         
         this.sliderHeight = 40
+        this.setTimer()
     }
     getSliderDimensions(){
         return {
@@ -3585,7 +3645,7 @@ class HistoryState extends State {
     mouseCoordsTransformedToSlider(){
         var {left,top,width,height} = this.getSliderDimensions()
     
-        var newCoords = this.mouseCoords ? new Object({x:this.mouseCoords.x-20,y:this.mouseCoords.y-20}) : null
+        var newCoords = this.mouseCoords ? new Object({x:(this.mouseCoords.x-20)/this.controller.model.ZOOM,y:(this.mouseCoords.y-20)/this.controller.model.ZOOM}) : null
 
         return newCoords && newCoords.x > left && newCoords.x < left + width && newCoords.y > top && newCoords.y < top + height ? newCoords : null
     }
@@ -3616,8 +3676,19 @@ class HistoryState extends State {
     updateSlider(coords){
         var {left,top,width,height} = this.getSliderDimensions()
 
-        var newTime = Math.max(0,Math.min(Math.round((coords.x - left) / width * (this.gameHistory.states.length-1)),this.gameHistory.states.length-1))
+        var newTime = Math.max(0,Math.min(Math.round((coords.x/this.controller.model.ZOOM - left) / width * (this.gameHistory.states.length-1)),this.gameHistory.states.length-1))
         this.gameHistory.setCurrentTime(newTime)
+        this.setTimer()
+    }
+    setTimer(){
+        var time = Math.floor(this.gameHistory.currentTime/2)
+        
+        var minutes = Math.floor(time / 60)
+        var seconds = String(time % 60).padStart(2,'0')
+        
+        var text = minutes + ':' + seconds
+        
+        this.timer.setText(text)
     }
 }
 class Control {
@@ -3666,18 +3737,23 @@ class TextControl extends Control {
                 var letter = row[j]
 
                 var coords = vectorLetters[letter]
-                
+                                
                 if(coords != undefined){
-                    ctx.beginPath()
-                    for(var k in coords){
-                        var point = coords[k]
-                        if(k == 0){
-                            ctx.moveTo(this.x + point[0]*twidth + j*(twidth+wpause), this.y + point[1]*theight + i*(theight+hpause))
-                        } else {
-                            ctx.lineTo(this.x + point[0]*twidth + j*(twidth+wpause), this.y + point[1]*theight + i*(theight+hpause))
+                    coords = typeof coords[0][0] == 'object' ? coords : [coords]
+
+                    for(var l in coords){
+                        var coords_elem = coords[l]
+                        ctx.beginPath()
+                        for(var k in coords_elem){
+                            var point = coords_elem[k]
+                            if(k == 0){
+                                ctx.moveTo(this.x + point[0]*twidth + j*(twidth+wpause), this.y + point[1]*theight + i*(theight+hpause))
+                            } else {
+                                ctx.lineTo(this.x + point[0]*twidth + j*(twidth+wpause), this.y + point[1]*theight + i*(theight+hpause))
+                            }
                         }
+                        ctx.stroke()
                     }
-                    ctx.stroke()
                 }
             }
         }
@@ -3685,7 +3761,7 @@ class TextControl extends Control {
     }
 }
 class OptionControl extends Control {
-    constructor(x,y,w,h,color,borderColor,options){
+    constructor(x,y,w,h,color,borderColor,options,storageKey){
         super(x,y,w,h)
         
         this.color = color
@@ -3699,6 +3775,21 @@ class OptionControl extends Control {
         
         this.options = options
         this.currentOptionIndex = 0
+        
+        this.storageKey = storageKey
+        
+        this.loadStorageItem()
+    }
+    loadStorageItem(){
+        var existing = window.localStorage.getItem(this.storageKey)
+        if(existing == null){
+            this.setStorageItem()
+        } else {
+            this.currentOptionIndex = existing
+        }
+    }
+    setStorageItem(){
+        window.localStorage.setItem(this.storageKey,this.currentOptionIndex)
     }
     getCurrentOption(){
         return this.options[this.currentOptionIndex]
@@ -3713,6 +3804,7 @@ class OptionControl extends Control {
             if(this.currentOptionIndex < 0)
                 this.currentOptionIndex = this.options.length-1
         }
+        this.setStorageItem()
     }
     draw(ctx,mouseCoordsTransformed){
         ctx.strokeStyle = this.color
@@ -3816,6 +3908,8 @@ class StatisticsPanel extends Control {
         ctx.strokeStyle = this.borderColor
         ctx.fillStyle = this.color
         
+        var model = this.model instanceof Function ? this.model() : this.model
+        
 //        ctx.fillRect(this.x,this.y,this.w,this.h)
         ctx.strokeRect(this.x,this.y,this.w,this.h)
         
@@ -3829,8 +3923,8 @@ class StatisticsPanel extends Control {
         const PADDING_SMALL = 6
         var row = 0
         var column = 0
-        for(var i in this.model.groupedMergedVoronois){
-            var teamStat = this.model.groupedMergedVoronois[i]
+        for(var i in model.groupedMergedVoronois){
+            var teamStat = model.groupedMergedVoronois[i]
             
             var height = teamStat.voronois.length
             if(teamStat.voronois.length > 1)
@@ -3854,7 +3948,7 @@ class StatisticsPanel extends Control {
             ctx.strokeStyle = border
             
             var borderColor = this.borderColor
-            if(teamStat.team == this.model.playerChoosen){
+            if(teamStat.team == model.playerChoosen){
                 padding = BORDER_PADDING*2
                 borderColor = dark ? '#ff0' : '#a60'
                 ctx.strokeStyle = borderColor
@@ -3866,7 +3960,7 @@ class StatisticsPanel extends Control {
             ctx.fillStyle = fill
             ctx.fillRect(this.x + w * column+padding,this.y + h * row+padding,w-padding*2,h*height-padding*2)
             
-            var totalRealArea = this.model.wholeRealLandArea(teamStat)
+            var totalRealArea = model.wholeRealLandArea(teamStat)
             this.drawNumber(ctx,teamStat.unitCount,this.x + w * column + PADDING, this.y + h * row  + PADDING, w*2/5 - PADDING * 2, h - PADDING * 2, 4)
             this.drawSlash(ctx,this.x + w*2/5 + w * column + PADDING, this.y + h * row  + PADDING, w/5 - PADDING * 2, h - PADDING * 2)
             this.drawNumber(ctx,totalRealArea,this.x + w*3/5 + w * column + PADDING, this.y + h * row  + PADDING, w*2/5 - PADDING * 2, h - PADDING * 2, 4)
@@ -3876,7 +3970,7 @@ class StatisticsPanel extends Control {
                     
                     var voronoi = tsv[i]
                     
-                    var realArea = this.model.realLandArea(voronoi,teamStat)
+                    var realArea = model.realLandArea(voronoi,teamStat)
                     
 
                     this.drawNumber(ctx,voronoi.unitCount,this.x + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
@@ -4107,7 +4201,7 @@ class Ai {
     */
     loadStandardGraph(){
         var model = this.model()
-        var max_dist = model.WIDTH / model.CHUNKS_PER_SIDE//*0.8
+        var max_dist = model.WIDTH / model.CHUNKS_PER_SIDE / model.ZOOM//*0.8
         var targets = model.towns.slice()
         this.standardGraph = {}
         
@@ -4261,7 +4355,7 @@ class Ai {
     }
     updateGraph(){
         var model = this.model()
-        var max_dist = model.WIDTH / model.CHUNKS_PER_SIDE//*0.8
+        var max_dist = model.WIDTH / model.CHUNKS_PER_SIDE / model.ZOOM//*0.8
         var targets = model.units.filter(a => a.towntaken == null && !a.dead)
         this.graph = {}
         
@@ -4652,8 +4746,31 @@ class GameHistory {
     setCurrentTime(time){
         this.currentTime = time
     }
+    /*
+    
+	groupedMergedVoronois:[{
+		voronois:[{
+			landArea
+			unitCount
+		}],
+		area,
+		embarkedCount,
+		team,
+		unitCount
+	}],
+    */
     registerSnapshot(){
         this.states.push({
+            groupedMergedVoronois:this.model.groupedMergedVoronois.map(a => new Object({
+                voronois:a.voronois.map(b => new Object({
+                    landArea:b.landArea,
+                    unitCount:b.unitCount
+                })),
+                area:a.area,
+                embarkedCount:a.embarkedCount,
+                team:a.team,
+                unitCount:a.unitCount,
+            })),
             mergedVoronois:this.model.mergedVoronois.map(a => new Object({
                 voronoi:a.voronoi.map(b => b.slice()),
                 team:a.team
@@ -4672,7 +4789,9 @@ class GameHistory {
                 embarkingProgress:a.embarkingProgress,
                 path:[],
                 team:a.team
-            }))
+            })),
+            wholeRealLandArea:this.model.wholeRealLandArea,
+            realLandArea:this.model.realLandArea,
         })
     }
     getCurrentModelData(){
@@ -4689,8 +4808,9 @@ class Controller {
         var teamConfiguration = this.state.state.teamOptionControl.getCurrentOption()
         var landConfiguration = this.state.state.landOptionControl.getCurrentOption()
         var aiConfiguration = this.state.state.aiOptionControl.getCurrentOption()
+        var screenResolutionConfiguration = this.state.state.screenResolutionControl.getCurrentOption()
         
-        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration)
+        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration,screenResolutionConfiguration)
         this.gameHistory = new GameHistory(this.model)
         this.view = new View(this.canv,this.model,this.state)
         
@@ -4720,8 +4840,9 @@ class Controller {
         var teamConfiguration = this.state.state.teamOptionControl.getCurrentOption()
         var landConfiguration = this.state.state.landOptionControl.getCurrentOption()
         var aiConfiguration = this.state.state.aiOptionControl.getCurrentOption()
+        var screenResolutionConfiguration = this.state.state.screenResolutionControl.getCurrentOption()
         
-        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration)
+        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration,screenResolutionConfiguration)
         this.gameHistory = new GameHistory(this.model)
 
         this.ai.setLevel(aiConfiguration)
@@ -4730,16 +4851,9 @@ class Controller {
         this.view.updateModel(this.model)
     }
     goToMenu(){
-        var landTownDensity = this.state.state.townOptionControl.getCurrentOption()
-        var teamConfiguration = this.state.state.teamOptionControl.getCurrentOption()
-        var landConfiguration = this.state.state.landOptionControl.getCurrentOption()
-        var aiConfiguration = this.state.state.aiOptionControl.getCurrentOption()
-        
-        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration)
-        this.gameHistory = new GameHistory(this.model)
-
         this.changeState(new GamePrepareState(this))
-        this.view.updateModel(this.model)
+        
+        this.regenerateModel()
     }
     goToHistory(){
         var oldState = this.state.state
