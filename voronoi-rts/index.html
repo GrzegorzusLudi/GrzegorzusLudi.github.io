@@ -1591,14 +1591,18 @@ class Model {
                 this.ZOOM = 1
                 this.CHUNKS_PER_SIDE = 6
                 this.NUMBER_OF_POINTS = 250
-
+            break
+            case 'MEDIUM':
+                this.WIDTH = 437
+                this.ZOOM = 1.5
+                this.CHUNKS_PER_SIDE = 5
+                this.NUMBER_OF_POINTS = 200
             break
             case 'SMALL':
                 this.WIDTH = 325
                 this.ZOOM = 2
                 this.CHUNKS_PER_SIDE = 3
                 this.NUMBER_OF_POINTS = 175
-
             break
         }
         this.TOWN_DISTANCE_LIMIT = 40
@@ -4068,7 +4072,7 @@ class GamePrepareState extends State {
             this.aiOptionControl = new OptionControl(40,380,200,18,this.backgroundColor,this.borderColor(),['MEDIUM','HARD','EASY'],'aiOptionControl'),
             
             new TextControl(80,420,100,13,'MAP SIZE',this.borderColor()),
-            this.screenResolutionControl = new OptionControl(40,440,200,18,this.backgroundColor,this.borderColor(),['LARGE','SMALL'],'screenResolutionControl'),
+            this.screenResolutionControl = new OptionControl(40,440,200,18,this.backgroundColor,this.borderColor(),['LARGE','MEDIUM','SMALL'],'screenResolutionControl'),
         ]
     }
 }
