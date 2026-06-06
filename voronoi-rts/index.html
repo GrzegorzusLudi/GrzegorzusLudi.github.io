@@ -235,17 +235,17 @@ function bisectorFromTwoPoints(x1,y1,x2,y2){
 }
 
 function pointOutsideGabrielArea(p1,p2,x,y){
-    if(p1[1] == p2[1]){
-        if(p1[0] == p2[0])
-            throw new Error('Two points are in the same places: '+p1[0]+', '+p1[1])
+    if(p1.y == p2.y){
+        if(p1.x == p2.x)
+            throw new Error('Two points are in the same places: '+p1.x+', '+p1.y)
 //        return {vertical:true,x:(x1+x2)/2,firstLeftBottom:x1 < x2}
-        return p1[0] >= p2[0] && x < p2[0] || p1[0] <= p2[0] && x > p2[0]
+        return p1.x >= p2.x && x < p2.x || p1.x <= p2.x && x > p2.x
     }
     
-    var a = (p2[0]-p1[0]) / (p1[1]-p2[1])
-    var b = p2[1] - a*p2[0]
+    var a = (p2.x-p1.x) / (p1.y-p2.y)
+    var b = p2.y - a*p2.x
     
-    return p1[1] < p2[1] ? y > a*x+b : y < a*x+b
+    return p1.y < p2.y ? y > a*x+b : y < a*x+b
 }
 
 function intersectionOfNonVerticalLineAndVerticalLine(a,b,x){    
@@ -666,18 +666,30 @@ function ccw(a,b,c){
 function segmentsIntersecting(a1,a2,b1,b2){
     return ccw(a1,b1,b2) != ccw(a2,b1,b2) && ccw(a1,a2,b1) != ccw(a1,a2,b2)
 }
-function segmentsIntersectingWithPolygons(a,b,polygons,cache){
-    var key = a[0]+'#'+a[1]+'#'+b[0]+'#'+b[1]
-    if(key in cache)
-        return cache[key]
+function segmentsIntersectingWithPolygons(a,b,polygons){
     for(var i in polygons){
         var polygon = polygons[i]
         if(segmentsIntersectingWithPolygon(a,b,polygon)){
-            cache[key] = true
             return true
         }
     }
-    cache[key] = false
+    return false
+}
+
+function segmentsIntersectingWithPolygonsByChunks(a,b,chunks){
+    if(a[0] > b[0]){
+        var aux = a
+        a = b
+        b = aux
+    }
+    
+        
+    for(var i in polygons){
+        var polygon = polygons[i]
+        if(segmentsIntersectingWithPolygon(a,b,polygon)){
+            return true
+        }
+    }
     return false
 }
 function segmentsOnTheGoodSideOfPolygon(a,b,polygons,inside){
@@ -824,17 +836,13 @@ function segmentsIntersectingWithPolygonCount(a,b,polygon){
     return false
 
 */
-function segmentsIntersectingWithPolygonsCount(a,b,polygons,cache){
-    var key = a[0]+'#'+a[1]+'#'+b[0]+'#'+b[1]
-    if(key in cache)
-        return cache[key]
+function segmentsIntersectingWithPolygonsCount(a,b,polygons){
 
     var count = 0
     for(var i in polygons){
         var polygon = polygons[i]
         count += segmentsIntersectingWithPolygonCount(a,b,polygon)
     }
-    cache[key] = count
     return count
 }
 function hitTestBand(poly,x,y,inclusive){
@@ -971,7 +979,7 @@ function triacontadigonalLimit(x,y,polygon,limit){
         for(var j in band){
             var point = band[j]
             
-            if(eucl_dist(x,y,point[0],point[1]) > limit*0.5){
+            if(dist(x,y,point[0],point[1]) > limit*0.5){
                 thereIsSense = true
                 break
             }
@@ -1033,139 +1041,139 @@ function polygonHittingPoints(polygons,x,y){
         }
     }
 }
-function getVectorGraph(unitOrTown,firstDestinations,lands,port,max_dist,tries){
-    var inside = !port
-    
-    if(unitOrTown.land != null && !port){
-        lands = [unitOrTown.land]
-    }
-    var unitx = unitOrTown.x
-    var unity = unitOrTown.y
-    if(port){
-        if(unitOrTown instanceof Unit){
-            if(unitOrTown.towntaken != null){
-                unitx = unitOrTown.towntaken.port[0]
-                unity = unitOrTown.towntaken.port[1]
-            }
-        } else {
-            unitx = unitOrTown.port[0]
-            unity = unitOrTown.port[1]
-        }
-    }
-    
-    var pointDestinations = [{point:[unitx,unity],dist:0,from:null}]
-    
-    var firstCode = unitx+'#'+unity
-    var pointDestinationStack = {}
-    pointDestinationStack[firstCode] = pointDestinations[0]
-//    var lastCode = x+'#'+y
-    var codes = {}
-    for(var i in firstDestinations){
-        var code = firstDestinations[i][0]+'#'+firstDestinations[i][1]
-        codes[code] = true
-        pointDestinationStack[code] = {point:firstDestinations[i],dist:null,from:null}
-    }
-
-    var usedPoints = {}
-    usedPoints[firstCode] = true
-    for(var i in lands){
-        var land = lands[i]
-        for(var j in land){
-            var band = land[j]
-            for(var k in band){
-                var point = band[k]
-                if(max_dist == undefined || eucl_dist(point[0],point[1],unitx,unity) <= max_dist){
-                    var code = point[0]+'#'+point[1]
-                    pointDestinationStack[code] = {point:[point[0],point[1]],dist:null,from:null}
-                }
-            }
-        }
-    }
-    if(tries == undefined)
-        tries = 3
-    var cache = {},cache2 = {}
-    while(pointDestinations.length > 0 && tries > 0){
-        var pointDestinations2 = []
-        
-        for(var i in pointDestinations){
-            var destination = pointDestinations[i]
-            
-            var key = destination.point[0]+'#'+destination.point[1]
-            for(var code in pointDestinationStack){
-                var potentialPointDestination = pointDestinationStack[code]
-                var last = port && codes[code]//code === lastCode
-                
-                if(!(code in usedPoints) && key != code && (!segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands,cache) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands,cache) || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands,cache2) <= 1)
-                && (segmentsOnTheGoodSideOfPolygon(destination.point, potentialPointDestination.point, lands, inside)/* || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1*/)){
-                    var distance = Math.sqrt(Math.pow(destination.point[0] - potentialPointDestination.point[0],2) + Math.pow(destination.point[1] - potentialPointDestination.point[1],2))
-                    var newDistance = destination.dist + distance
-
-                    if(potentialPointDestination.dist == null || potentialPointDestination.dist > newDistance){
-                        if(potentialPointDestination.from == null){
-                            pointDestinations2.push(potentialPointDestination)
-                        }
-                        
-                        potentialPointDestination.dist = newDistance
-                        potentialPointDestination.from = destination
-                    }
-                }
-            }
-            //usedPoints[key] = true
-        }
-        
-        pointDestinations = pointDestinations2
-        tries--
-        
-        if(firstDestinations.length > 1){ //hack
-            var unfulfiled = false
-            for(var code in codes){
-                if(pointDestinationStack[code].dist == null){
-                    unfulfiled = true
-                    break
-                }
-            }
-            if(!unfulfiled)
-                break
-        }
-    }
-    /*
-    if(!port){
-        for(var key in pointDestinationStack){
-            var pds = pointDestinationStack[key]
-            
-            if(pds.from != null && pds.dist != null){
-                drawPathTemp([[pds.point[0],pds.point[1]],[pds.from.point[0],pds.from.point[1]]])
-            }
-        }
-        throw new Error('aa')
-    }*/
-
-    return pointDestinationStack
-}
-function getVectorPath(unit,x,y,lands,port){
-    var unitx = unit.x
-    var unity = unit.y
-    if(port && unit.towntaken != null){
-        unitx = unit.towntaken.port[0]
-        unity = unit.towntaken.port[1]
-    }
-    var firstCode = unitx+'#'+unity
-
-    var pointDestinationStack = getVectorGraph(unit,[[x,y]],lands,port)
-    var lastCode = x+'#'+y
-
-    var path = []
-    var stackPoint = pointDestinationStack[lastCode]
-    while(stackPoint != null){
-        path.push(stackPoint.point)
-        stackPoint = stackPoint.from
-    }
-    path = path.slice().reverse()
-    
-    if(path[0] == pointDestinationStack[firstCode].point)
-        return path
-    return null
-}
+// function getVectorGraph(unitOrTown,firstDestinations,lands,port,max_dist,tries){
+//     var inside = !port
+//     
+//     if(unitOrTown.land != null && !port){
+//         lands = [unitOrTown.land]
+//     }
+//     var unitx = unitOrTown.x
+//     var unity = unitOrTown.y
+//     if(port){
+//         if(unitOrTown instanceof Unit){
+//             if(unitOrTown.towntaken != null){
+//                 unitx = unitOrTown.towntaken.port[0]
+//                 unity = unitOrTown.towntaken.port[1]
+//             }
+//         } else {
+//             unitx = unitOrTown.port[0]
+//             unity = unitOrTown.port[1]
+//         }
+//     }
+//     
+//     var pointDestinations = [{point:[unitx,unity],dist:0,from:null}]
+//     
+//     var firstCode = unitx+'#'+unity
+//     var pointDestinationStack = {}
+//     pointDestinationStack[firstCode] = pointDestinations[0]
+// //    var lastCode = x+'#'+y
+//     var codes = {}
+//     for(var i in firstDestinations){
+//         var code = firstDestinations[i][0]+'#'+firstDestinations[i][1]
+//         codes[code] = true
+//         pointDestinationStack[code] = {point:firstDestinations[i],dist:null,from:null}
+//     }
+// 
+//     var usedPoints = {}
+//     usedPoints[firstCode] = true
+//     for(var i in lands){
+//         var land = lands[i]
+//         for(var j in land){
+//             var band = land[j]
+//             for(var k in band){
+//                 var point = band[k]
+//                 if(max_dist == undefined || eucl_dist(point[0],point[1],unitx,unity) <= max_dist){
+//                     var code = point[0]+'#'+point[1]
+//                     pointDestinationStack[code] = {point:[point[0],point[1]],dist:null,from:null}
+//                 }
+//             }
+//         }
+//     }
+//     if(tries == undefined)
+//         tries = 3
+//     var cache = {},cache2 = {}
+//     while(pointDestinations.length > 0 && tries > 0){
+//         var pointDestinations2 = []
+//         
+//         for(var i in pointDestinations){
+//             var destination = pointDestinations[i]
+//             
+//             var key = destination.point[0]+'#'+destination.point[1]
+//             for(var code in pointDestinationStack){
+//                 var potentialPointDestination = pointDestinationStack[code]
+//                 var last = port && codes[code]//code === lastCode
+//                 
+//                 if(!(code in usedPoints) && key != code && (!segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands,cache) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands,cache) || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands,cache2) <= 1)
+//                 && (segmentsOnTheGoodSideOfPolygon(destination.point, potentialPointDestination.point, lands, inside)/* || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1*/)){
+//                     var distance = Math.sqrt(Math.pow(destination.point[0] - potentialPointDestination.point[0],2) + Math.pow(destination.point[1] - potentialPointDestination.point[1],2))
+//                     var newDistance = destination.dist + distance
+// 
+//                     if(potentialPointDestination.dist == null || potentialPointDestination.dist > newDistance){
+//                         if(potentialPointDestination.from == null){
+//                             pointDestinations2.push(potentialPointDestination)
+//                         }
+//                         
+//                         potentialPointDestination.dist = newDistance
+//                         potentialPointDestination.from = destination
+//                     }
+//                 }
+//             }
+//             //usedPoints[key] = true
+//         }
+//         
+//         pointDestinations = pointDestinations2
+//         tries--
+//         
+//         if(firstDestinations.length > 1){ //hack
+//             var unfulfiled = false
+//             for(var code in codes){
+//                 if(pointDestinationStack[code].dist == null){
+//                     unfulfiled = true
+//                     break
+//                 }
+//             }
+//             if(!unfulfiled)
+//                 break
+//         }
+//     }
+//     /*
+//     if(!port){
+//         for(var key in pointDestinationStack){
+//             var pds = pointDestinationStack[key]
+//             
+//             if(pds.from != null && pds.dist != null){
+//                 drawPathTemp([[pds.point[0],pds.point[1]],[pds.from.point[0],pds.from.point[1]]])
+//             }
+//         }
+//         throw new Error('aa')
+//     }*/
+// 
+//     return pointDestinationStack
+// }
+// function getVectorPath(unit,x,y,lands,port){
+//     var unitx = unit.x
+//     var unity = unit.y
+//     if(port && unit.towntaken != null){
+//         unitx = unit.towntaken.port[0]
+//         unity = unit.towntaken.port[1]
+//     }
+//     var firstCode = unitx+'#'+unity
+// 
+//     var pointDestinationStack = getVectorGraph(unit,[[x,y]],lands,port)
+//     var lastCode = x+'#'+y
+// 
+//     var path = []
+//     var stackPoint = pointDestinationStack[lastCode]
+//     while(stackPoint != null){
+//         path.push(stackPoint.point)
+//         stackPoint = stackPoint.from
+//     }
+//     path = path.slice().reverse()
+//     
+//     if(path[0] == pointDestinationStack[firstCode].point)
+//         return path
+//     return null
+// }
 function drawPathTemp(path,stroke){
     this.canv = document.getElementById('canv')
     this.ctx = this.canv.getContext('2d')
@@ -1500,16 +1508,18 @@ class Unit {
             return false
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
 
-        var pathTarget
+        var pathTargetX,pathTargetY
         if(this.path.length > 0){
-            pathTarget = this.path[this.path.length - 1]
+            pathTargetX = this.path[this.path.length - 1].x
+            pathTargetY = this.path[this.path.length - 1].y
         } else {
-            pathTarget = [unit2.x,unit2.y]
+            pathTargetX = unit2.x
+            pathTargetY = unit2.y
         }
         
-        return (this.x < unit2.x && this.x < pathTarget[0] || this.x > unit2.x && this.x > pathTarget[0]) &&
-               (this.y < unit2.y && this.y < pathTarget[1] || this.y > unit2.y && this.y > pathTarget[1]) &&
-                Math.abs(this.x - pathTarget[0]) < WIDTH*2 && Math.abs(this.y - pathTarget[1]) < HEIGHT*2
+        return (this.x < unit2.x && this.x < pathTargetX || this.x > unit2.x && this.x > pathTargetX) &&
+               (this.y < unit2.y && this.y < pathTargetY || this.y > unit2.y && this.y > pathTargetY) &&
+                Math.abs(this.x - pathTargetX) < WIDTH*2 && Math.abs(this.y - pathTargetY) < HEIGHT*2
     }
     checkSegmentThrough(x1,y1,x2,y2){
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
@@ -1626,6 +1636,13 @@ class Model {
         this.groupedMergedVoronois = []
         
         this.selectedUnitDivision = 1
+        
+        this.landCache = {}
+        this.seaCache = {}
+        
+        this.townsByChunk = null
+        
+        this.prepareVectorCaches()
         
         //this.initIntersectionCache()
 //        window.lands = this.lands
@@ -2195,12 +2212,13 @@ class Model {
                     var bisector = bisectorFromTwoPoints(point1.x,point1.y,point2.x,point2.y)
 
                     var land = voronoiable.voronoi
+                    var lands = [land]
                     var newLands
                     try {
                         if(bisector.vertical){
-                            newLands = verticalLinearLimitPolygons([land],bisector.x,bisector.firstLeftBottom)
+                            newLands = verticalLinearLimitPolygons(lands,bisector.x,bisector.firstLeftBottom)
                         } else {
-                            newLands = nonVerticalLinearLimitPolygons([land],bisector.a,bisector.b,bisector.firstLeftBottom)
+                            newLands = nonVerticalLinearLimitPolygons(lands,bisector.a,bisector.b,bisector.firstLeftBottom)
                         }
                         
                         voronoiable.voronoi = polygonHittingPoints(newLands,voronoiable.x,voronoiable.y)
@@ -2448,7 +2466,7 @@ class Model {
             y = objectToBePressed.y
         }
         
-        var vectorPath = getVectorPath(unit,x,y,this.lands)
+        var vectorPath = this.getVectorPath(unit,x,y,this.lands)
         
         if(vectorPath == null)
             return null
@@ -2473,6 +2491,442 @@ class Model {
         }*/
         return vectorPath
     }
+    
+    //this.landCache = {}
+    //this.seaCache = {}
+    
+    prepareVectorCaches(){
+        for(var i in this.lands){
+            this.prepareLandsCache([this.lands[i]],false)
+        }
+        this.prepareLandsCache(this.lands,true)
+    }
+    prepareLandsCache(lands,sea){
+        var cache = sea ? this.seaCache : this.landCache
+        
+        for(var i in lands){
+            var land1 = lands[i]
+            for(var j in land1){
+                var band1 = land1[j]
+
+                var pointsToCheck1 = band1//.slice().concat(this.towns.map(town=>[town.x,town.y]))
+
+                for(var k in pointsToCheck1){
+                    var point1 = pointsToCheck1[k]
+                    
+                    var code1 = point1[0]+'#'+point1[1]
+                    if(!(code1 in cache))
+                        cache[code1] = []
+                    
+                    for(var l in lands){
+                        var land2 = lands[l]
+                        for(var m in land2){
+                            var band2 = land2[m]
+                            
+                            var bandCache = []
+                            
+                            var pointsToCheck2 = band2//.slice().concat(this.towns.map(town=>[town.x,town.y]))
+                            for(var n in pointsToCheck2){
+                                var point2 = pointsToCheck2[n]
+                                var code2 = point2[0]+'#'+point2[1]
+                                if(code1 != code2){
+                                    if((!segmentsIntersectingWithPolygons(point1, point2, lands) || !segmentsIntersectingWithPolygons(point2, point1, lands)) && (segmentsOnTheGoodSideOfPolygon(point1, point2, lands, !sea)))
+                                        bandCache.push(true)
+                                    else
+                                        bandCache.push(false)
+                                } else {
+                                    bandCache.push(true)
+                                }
+                            }
+                            
+                            var pointsToAdd = []
+                            var prev = bandCache[bandCache.length-1]
+                            for(var n in bandCache){
+                            
+                                if(bandCache[n] && (!prev || !bandCache[(n+1) % bandCache.length])){
+                                    var point = pointsToCheck2[n]
+                                    pointsToAdd.push(point)
+                                    drawPathTemp([[point[0],point[1]],[point1[0],point1[1]]])
+                                }
+                                /*
+                                if(bandCache[n] != prev){
+                                    if(!prev){
+                                        var point = pointsToCheck2[n]
+                                        pointsToAdd.push()
+                                        drawPathTemp([[point[0],point[1]],[point1[0],point1[1]]])
+                                    } else {
+                                        var point = pointsToCheck2[(n+bandCache.length-1) % bandCache.length]
+                                        pointsToAdd.push()
+                                        drawPathTemp([[point[0],point[1]],[point1[0],point1[1]]])
+                                    }
+                                }*/
+                                prev = bandCache[n]
+                            }
+                            if(pointsToAdd.length > 0)
+                                cache[code1] = cache[code1].concat(pointsToAdd)
+                        }
+                    }
+                }
+            }
+        }
+        
+        for(var i in lands){
+            var land1 = lands[i]
+            for(var j in land1){
+                var band1 = land1[j]
+                for(var k=0;k<band1.length;k++){
+                    var point = band1[k]
+                    var point1 = band1[(k+1)%band1.length]
+                    drawPathTemp([[point[0],point[1]],[point1[0],point1[1]]],'#f00')
+                }
+            }
+        }
+        //throw new Error('@')
+        /*
+        while(pointDestinations.length > 0 && tries > 0){
+            var pointDestinations2 = []
+            
+            for(var i in pointDestinations){
+                var destination = pointDestinations[i]
+                
+                var key = destination.point[0]+'#'+destination.point[1]
+                for(var code in pointDestinationStack){
+                    var potentialPointDestination = pointDestinationStack[code]
+                    var last = port && codes[code]//code === lastCode
+                    
+                    if(!(code in usedPoints) && key != code && (!segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands) || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1)
+                    && (segmentsOnTheGoodSideOfPolygon(destination.point, potentialPointDestination.point, lands, inside))){
+                        var distance = Math.sqrt(Math.pow(destination.point[0] - potentialPointDestination.point[0],2) + Math.pow(destination.point[1] - potentialPointDestination.point[1],2))
+                        var newDistance = destination.dist + distance
+
+                        if(potentialPointDestination.dist == null || potentialPointDestination.dist > newDistance){
+                            if(potentialPointDestination.from == null){
+                                pointDestinations2.push(potentialPointDestination)
+                            }
+                            
+                            potentialPointDestination.dist = newDistance
+                            potentialPointDestination.from = destination
+                        }
+                    }
+                }
+            }
+            
+            pointDestinations = pointDestinations2
+            tries--
+            
+            if(firstDestinations.length > 1){ //hack
+                var unfulfiled = false
+                for(var code in codes){
+                    if(pointDestinationStack[code].dist == null){
+                        unfulfiled = true
+                        break
+                    }
+                }
+                if(!unfulfiled)
+                    break
+            }
+        }*/
+    }
+    
+    getVectorGraphOld(unitOrTown,firstDestinations,lands,port,max_dist,tries){
+        var inside = !port
+        
+        var cache = this.seaCache
+        
+        if(unitOrTown.land != null && !port){
+            lands = [unitOrTown.land]
+            cache = this.landCache
+        }
+        var unitx = unitOrTown.x
+        var unity = unitOrTown.y
+        if(port){
+            if(unitOrTown instanceof Unit){
+                if(unitOrTown.towntaken != null){
+                    unitx = unitOrTown.towntaken.port[0]
+                    unity = unitOrTown.towntaken.port[1]
+                }
+            } else {
+                unitx = unitOrTown.port[0]
+                unity = unitOrTown.port[1]
+            }
+        }
+        
+        var pointDestinations = [{point:[unitx,unity],dist:0,from:null}]
+        
+        var firstCode = unitx+'#'+unity
+        var pointDestinationStack = {}
+        pointDestinationStack[firstCode] = pointDestinations[0]
+    //    var lastCode = x+'#'+y
+        var codes = {}
+        for(var i in firstDestinations){
+            var code = firstDestinations[i][0]+'#'+firstDestinations[i][1]
+            codes[code] = true
+            pointDestinationStack[code] = {point:firstDestinations[i],dist:null,from:null}
+        }
+
+        var usedPoints = {}
+        usedPoints[firstCode] = true
+        for(var i in lands){
+            var land = lands[i]
+            for(var j in land){
+                var band = land[j]
+                for(var k in band){
+                    var point = band[k]
+                    if(max_dist == undefined || eucl_dist(point[0],point[1],unitx,unity) <= max_dist){
+                        var code = point[0]+'#'+point[1]
+                        pointDestinationStack[code] = {point:[point[0],point[1]],dist:null,from:null}
+                    }
+                }
+            }
+        }
+        if(tries == undefined)
+            tries = 7
+            
+        while(pointDestinations.length > 0 && tries > 0){
+            var pointDestinations2 = []
+            
+            for(var i in pointDestinations){
+                var destination = pointDestinations[i]
+                
+                var key = destination.point[0]+'#'+destination.point[1]
+                for(var code in pointDestinationStack){
+                    var potentialPointDestination = pointDestinationStack[code]
+                    var last = port && codes[code]//code === lastCode
+                    
+                    if(!(code in usedPoints) && key != code && (!segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands) || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1)
+                    && (segmentsOnTheGoodSideOfPolygon(destination.point, potentialPointDestination.point, lands, inside)/* || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1*/)){
+                        var distance = Math.sqrt(Math.pow(destination.point[0] - potentialPointDestination.point[0],2) + Math.pow(destination.point[1] - potentialPointDestination.point[1],2))
+                        var newDistance = destination.dist + distance
+
+                        if(potentialPointDestination.dist == null || potentialPointDestination.dist > newDistance){
+                            if(potentialPointDestination.from == null){
+                                pointDestinations2.push(potentialPointDestination)
+                            }
+                            
+                            potentialPointDestination.dist = newDistance
+                            potentialPointDestination.from = destination
+                        }
+                    }
+                }
+                //usedPoints[key] = true
+            }
+            
+            pointDestinations = pointDestinations2
+            tries--
+            
+            if(firstDestinations.length > 1){ //hack
+                var unfulfiled = false
+                for(var code in codes){
+                    if(pointDestinationStack[code].dist == null){
+                        unfulfiled = true
+                        break
+                    }
+                }
+                if(!unfulfiled)
+                    break
+            }
+        }
+        /*
+        if(!port){
+            for(var key in pointDestinationStack){
+                var pds = pointDestinationStack[key]
+                
+                if(pds.from != null && pds.dist != null){
+                    drawPathTemp([[pds.point[0],pds.point[1]],[pds.from.point[0],pds.from.point[1]]])
+                }
+            }
+            throw new Error('aa')
+        }*/
+
+        return pointDestinationStack
+    }
+    getVectorGraph(unitOrTown,firstDestinations,lands,port,max_dist,tries,chunk){
+        var inside = !port
+        
+        var cache = this.seaCache
+        
+        if(unitOrTown.land != null && !port){
+            if(this.lands.includes(unitOrTown.land))
+                lands = [unitOrTown.land]
+            cache = this.landCache
+        }
+        var unitx = unitOrTown.x
+        var unity = unitOrTown.y
+        if(port){
+            if(unitOrTown instanceof Unit){
+                if(unitOrTown.towntaken != null){
+                    unitx = unitOrTown.towntaken.port[0]
+                    unity = unitOrTown.towntaken.port[1]
+                }
+            } else {
+                unitx = unitOrTown.port[0]
+                unity = unitOrTown.port[1]
+            }
+        }
+        
+        var pointDestinations = [{point:[unitx,unity],dist:0,from:null,nonstandard:true}]
+        
+        var firstCode = unitx+'#'+unity
+        var pointDestinationStack = {}
+        pointDestinationStack[firstCode] = pointDestinations[0]
+    //    var lastCode = x+'#'+y
+    
+        var pointDestinationStackStraight = {}
+        
+        var codes = {}
+        for(var i in firstDestinations){
+            var code = firstDestinations[i][0]+'#'+firstDestinations[i][1]
+            codes[code] = true
+            pointDestinationStack[code] = {point:firstDestinations[i],dist:null,from:null,nonstandard:true}
+            
+            var pds1 = pointDestinationStack[code]
+            
+            if((!segmentsIntersectingWithPolygons(pds1.point, pointDestinations[0].point, lands) || !segmentsIntersectingWithPolygons(pointDestinations[0].point, pds1.point, lands))){
+                pointDestinationStack[code].from = pointDestinations[0]
+                pointDestinationStack[code].dist = Math.sqrt(Math.pow(pds1.point[0] - pointDestinations[0].point[0],2) + Math.pow(pds1.point[1] - pointDestinations[0].point[1],2))
+            
+                pointDestinationStackStraight[code] = pointDestinationStack[code]
+                delete pointDestinationStack[code]
+                delete codes[code]
+            }
+        }
+
+        var usedPoints = {}
+        usedPoints[firstCode] = true
+        for(var i in lands){
+            var land = lands[i]
+            for(var j in land){
+                var band = land[j]
+                for(var k in band){
+                    var point = band[k]
+                    if(max_dist == undefined || eucl_dist(point[0],point[1],unitx,unity) <= max_dist){
+                        if(chunk == undefined || (point[0] > chunk.l && point[1] > chunk.t && point[0] < chunk.r && point[1] < chunk.b)){
+                            var code = point[0]+'#'+point[1]
+                            if(!(code in pointDestinationStack))
+                                pointDestinationStack[code] = {point:[point[0],point[1]],dist:null,from:null,nonstandard:false}
+                            else
+                                pointDestinationStack[code].nonstandard = false
+                        }
+                    }
+                }
+            }
+        }
+        if(tries == undefined){
+            tries = 25
+        }
+            
+        if(Object.keys(pointDestinationStack).length > 0)
+            while(pointDestinations.length > 0 && tries > 0){
+                var pointDestinations2 = []
+                
+                for(var i in pointDestinations){
+                    var destination = pointDestinations[i]
+                    
+                    var key = destination.point[0]+'#'+destination.point[1]
+                    
+                    var destinationsPossible = null
+                    if(key in cache){
+                        destinationsPossible = cache[key]
+                    }
+                    for(var code in pointDestinationStack){
+                        var potentialPointDestination = pointDestinationStack[code]
+                        var standard = false
+                        if(!destination.nonstandard && !potentialPointDestination.nonstandard){
+                            if(destinationsPossible != null){
+                                var ok = false
+
+                                for(var j in destinationsPossible){
+                                    var dp = destinationsPossible[j]
+
+                                    if(potentialPointDestination.point[0] == dp[0] && potentialPointDestination.point[1] == dp[1]){
+                                        ok = true
+                                    }
+                                }
+                                if(!ok)
+                                    continue
+                            } else {
+                                continue
+                            }
+                            standard = true
+                        }
+                        var last = port && codes[code]//code === lastCode
+                        
+                        if(!(code in usedPoints) && key != code && (standard && !last || !segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands) || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1)
+                        && (standard && !last || segmentsOnTheGoodSideOfPolygon(destination.point, potentialPointDestination.point, lands, inside)/* || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1*/)){
+                            var distance = Math.sqrt(Math.pow(destination.point[0] - potentialPointDestination.point[0],2) + Math.pow(destination.point[1] - potentialPointDestination.point[1],2))
+                            var newDistance = destination.dist + distance
+
+                            if(potentialPointDestination.dist == null || potentialPointDestination.dist > newDistance){
+                                if(potentialPointDestination.from == null){
+                                    pointDestinations2.push(potentialPointDestination)
+                                }
+                                
+                                potentialPointDestination.dist = newDistance
+                                potentialPointDestination.from = destination
+                            }
+                        }
+                    }
+                    //usedPoints[key] = true
+                }
+                
+                pointDestinations = pointDestinations2
+                tries--
+                
+                if(firstDestinations.length > 1){ //hack
+                    var unfulfiled = false
+                    for(var code in codes){
+                        if(pointDestinationStack[code].dist == null){
+                            unfulfiled = true
+                            break
+                        }
+                    }
+                    if(!unfulfiled)
+                        break
+                }
+            }
+        /*
+        if(!port){
+            for(var key in pointDestinationStack){
+                var pds = pointDestinationStack[key]
+                
+                if(pds.from != null && pds.dist != null){
+                    drawPathTemp([[pds.point[0],pds.point[1]],[pds.from.point[0],pds.from.point[1]]])
+                }
+            }
+            throw new Error('aa')
+        }*/
+
+        return Object.assign(pointDestinationStack,pointDestinationStackStraight)
+    }
+    getVectorPath(unit,x,y,lands,port){
+        var unitx = unit.x
+        var unity = unit.y
+        
+        if(port && unit.towntaken != null){
+            unitx = unit.towntaken.port[0]
+            unity = unit.towntaken.port[1]
+        }
+        if(!segmentsIntersectingWithPolygons([unitx,unity], [x,y], lands)){
+            return [[unitx,unity], [x,y]]
+        }
+        var firstCode = unitx+'#'+unity
+
+        var pointDestinationStack = this.getVectorGraph(unit,[[x,y]],lands,port)
+        var lastCode = x+'#'+y
+
+        var path = []
+        var stackPoint = pointDestinationStack[lastCode]
+        while(stackPoint != null){
+            path.push(stackPoint.point)
+            stackPoint = stackPoint.from
+        }
+        path = path.slice().reverse()
+        
+        if(path[0] == pointDestinationStack[firstCode].point)
+            return path
+        return null
+    }
+    
     seaPathPossibleOld(unit,x,y,objectToBePressed){
         var land = unit.land
         
@@ -2551,7 +3005,7 @@ class Model {
         
         //console.log(Object.values(getVectorGraph(unit,this.towns.map(a => [a.x,a.y]),this.lands)).filter(a=>a.dist != null))
         
-        var vectorPath = getVectorPath(unit,x,y,this.lands,true)
+        var vectorPath = this.getVectorPath(unit,x,y,this.lands,true)
         
         if(vectorPath == null){
             return null
@@ -2580,8 +3034,7 @@ class Model {
 //        drawPathTemp(vectorPath)
         return vectorPath
     }
-    getSeaPathCrossing(unit,path,objectToBePressed){
-        var land = unit.land
+    getSeaPathCrossing(unit,land,path,objectToBePressed){
         
         var ux = unit.x
         var uy = unit.y
@@ -2619,7 +3072,7 @@ class Model {
         }
         return null
     }
-    trySetPathForUnit(unit,selectedUnitDivision,x,y,objectToBePressed,readyPath,sea){
+    trySetPathForUnit(unit,unitLand,selectedUnitDivision,x,y,objectToBePressed,readyPath,sea){
         var oldPath = unit.path
         var oldTarget = unit.target
         var oldLand = unit.land
@@ -2636,7 +3089,7 @@ class Model {
                 seaPossible = this.seaPathPossible(unit,x,y,objectToBePressed)
                 possible = seaPossible != null
                 if(possible){
-                    possibleBarking = this.getSeaPathCrossing(unit,seaPossible,objectToBePressed)
+                    possibleBarking = this.getSeaPathCrossing(unit,unitLand,seaPossible,objectToBePressed)
                     possiblePath = seaPossible
                 }
             }
@@ -2645,8 +3098,8 @@ class Model {
             possible = true
             
             //segmentsIntersectingWithPolygonCount(point1,point2,land)
-            if(unit.towntaken != null && unit.towntaken.port != null && !almostHitTest(unit.land,x,y) || unit.embarking){
-                possibleBarking = this.getSeaPathCrossing(unit,readyPath,objectToBePressed)
+            if(unit.towntaken != null && unit.towntaken.port != null && !almostHitTest(unitLand,x,y) || unit.embarking){
+                possibleBarking = this.getSeaPathCrossing(unit,unitLand,readyPath,objectToBePressed)
 //                if(possibleBarking != null/* && !almostHitTest(unit.land,possibleBarking[0],possibleBarking[1])*/){
             }
             seaPossible = sea ? true : false
@@ -2803,6 +3256,25 @@ class Model {
                 }
             }
         }
+        if(this.townsByChunk == null){
+            this.townsByChunk = {}
+            
+            for(var key in this.chunks){
+                this.townsByChunk[key] = []
+            }
+            for(var i in this.towns){
+                var town = this.towns[i]
+                
+                var chunk = town.chunk
+                var nearbyCodes = chunk.nearChunkCodes
+                for(var j in nearbyCodes){
+                    var nearbyCode = nearbyCodes[j]
+                    if(nearbyCode in this.chunks){
+                        this.townsByChunk[nearbyCode].push(town)
+                    }
+                }
+            }
+        }
         
         const SPEED = 2
         const SEA_SPEED = 4
@@ -2831,6 +3303,9 @@ class Model {
                                 unit.target = null
                         }
                     }
+                    
+                    var chunkcode = unit.chunk.x+'#'+unit.chunk.y
+                    
                     var speed = unit.embarking ? SEA_SPEED : SPEED
                     if(dist(unit.x,unit.y,point[0],point[1]) < speed){
                         unit.x = point[0]
@@ -2848,7 +3323,7 @@ class Model {
                                     change = true
                                 }
                             } else {
-                                var townsHere = this.towns.filter(a => Math.abs(a.x - unit.x) < 0.1 && Math.abs(a.y - unit.y) < 0.1)
+                                var townsHere = this.townsByChunk[chunkcode].filter(a => Math.abs(a.x - unit.x) < 0.1 && Math.abs(a.y - unit.y) < 0.1)
                                 if(townsHere.length > 0){
                                     unit.target = townsHere[0]
                                     unit.tryTakeOverTown()
@@ -2863,7 +3338,8 @@ class Model {
                     this.updateChunkForUnit(unit)
 
                     var nopath = unit.path.length == 0
-                    var chunkcode = unit.chunk.x+'#'+unit.chunk.y
+                    
+                    chunkcode = unit.chunk.x+'#'+unit.chunk.y
                     var unitsToCheck = unitsByChunk[chunkcode]
                     for(var j in unitsToCheck){
                         var unit2 = unitsToCheck[j]
@@ -2950,7 +3426,13 @@ class Model {
             if(oneTeam && team != null)
                 town.team = team
         }
-        this.units = this.units.filter(a => !a.dead)
+        var theresDead = false
+        for(var i in this.units){
+            if(this.units[i].dead)
+                theresDead = true
+        }
+        if(theresDead)
+            this.units = this.units.filter(a => !a.dead)
         //if(change)
             this.generateVoronois()
             
@@ -3061,8 +3543,8 @@ class Model {
             
             unit.size = Math.max(1,unit.size + Math.floor(unit.growingFloat) - Math.floor(growingFloatBefore))
         }
-        if(change)
-            this.generateVoronois()
+        //if(change)
+        //    this.generateVoronois()
 
     }
 }
@@ -4087,7 +4569,8 @@ class Ai {
                 }
             }
         }*/
-        this.updateGraph()/*
+        this.updateGraph()
+        /*
         for(var code in this.graph){
             var paths = this.graph[code].paths
             for(var i in paths){
@@ -4120,9 +4603,17 @@ class Ai {
     }
     sendUnitsByAi(mergedGraph){
         var model = this.model()
-        for(var code in mergedGraph){
+        var moved = 0
+        
+        var shuffledCodes = Object.keys(mergedGraph).map(value => ({ value, sort: Math.random() }))
+                    .sort((a, b) => a.sort - b.sort)
+                    .map(({ value }) => value)
+                    
+        for(var codeIndex in shuffledCodes){
+            var code = shuffledCodes[codeIndex]
             var vertex = mergedGraph[code]
             
+            var oneMoved = false
             var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
             if(unit != null){
                 if(unit.team == model.playerChoosen){
@@ -4138,7 +4629,10 @@ class Ai {
                 }
 
                 if(unit.path.length > 0){
-                    continue
+                    var last_point = unit.path[unit.path.length-1]
+                    var destination_code = last_point[0]+'#'+last_point[1]
+                    if(destination_code in mergedGraph)
+                        continue
                 }
                 
                 if(this.ailevel <= 1 && Math.random() < 0.6)
@@ -4169,22 +4663,30 @@ class Ai {
                         if(target.town != unit.towntaken || unit.towntaken == null || target.town == null){
                             var realTarget = target.town ? target.town : target.unit
                             if(target.town != null || target.town != null && target.unit.path.length == 0 || target.unit.team != unit.team){
-                                var pathMiddlePoints = middlePathPoints(path.path,this.model.WIDTH / this.model.CHUNKS_PER_SIDE)
-                                unitRemained = model.trySetPathForUnit(unit, part, realTarget.x, realTarget.y, realTarget, path.path, path.sea).newUnit
+                                //var pathMiddlePoints = middlePathPoints(path.path,this.model.WIDTH / this.model.CHUNKS_PER_SIDE)
+                                unitRemained = model.trySetPathForUnit(unit,unit.chunk.polygons, part, realTarget.x, realTarget.y, realTarget, path.path, path.sea).newUnit
+                                if(!oneMoved){
+                                    oneMoved = true
+                                    moved++
+                                }
                             }
 
                         }
+                        
                     if(!path.sea){
                         unit.barkingPoint = null
                     }
-                    if(vertex.town == null)
+                    if(vertex.town == null){
                         continue
+                    }
 
                 }
                 if(vertex.neighborsEnemy <= 1 && vertex.paths.length > 1 && unitRemained != null){
                     unitRemained.tryToMergeWithUnit(unit)
                 }
             }
+            if(moved > 26)
+                break
         }
     }
     /*
@@ -4230,13 +4732,13 @@ class Ai {
             var paths = []
             
             //land
-            var landTargets = target.land != null ? targets.filter(a => a.land == target.land/* && eucl_dist(a.x,a.y,target.x,target.y) <= max_dist*2*/) : []
+            var landTargets = target.land != null ? targets.filter(a => a.land == target.land && eucl_dist(a.x,a.y,target.x,target.y) <= max_dist*2) : []
 
             var ix = 0
             while(ix < landTargets.length){
                 var t = landTargets[ix]
                 if(t != target && (t.x != target.x || t.y != target.y)){
-                    landTargets = landTargets.slice(0,ix+1).concat(landTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea([target.x,target.y],[t.x,t.y],p.x,p.y)))
+                    landTargets = landTargets.slice(0,ix+1).concat(landTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea(target,t,p.x,p.y)))
                 }
                 ix++
             }
@@ -4244,7 +4746,7 @@ class Ai {
             var closestTargetsPoints = landTargets.map(a => [a.x,a.y])
             var lands = [target.land]
 
-            var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*3,3)
+            var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*2,3)
             //var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,false,max_dist*2,3)
 
             var paths = this.pathsFromGraph(landTargets,vectorGraph,false)
@@ -4261,7 +4763,7 @@ class Ai {
                 while(ix < seaTargets.length){
                     var t = seaTargets[ix]
                     if(t != target && (t.x != target.x || t.y != target.y)){
-                        seaTargets = seaTargets.slice(0,ix+1).concat(seaTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea([target.x,target.y],[t.x,t.y],p.x,p.y)))
+                        seaTargets = seaTargets.slice(0,ix+1).concat(seaTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea(target,t,p.x,p.y)))
                     }
                     ix++
                 }
@@ -4269,7 +4771,7 @@ class Ai {
                 var closestTargetsPoints = seaTargets.map(a => [a.x,a.y])
                 var lands = model.lands
 
-                var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*3,3)
+                var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*2,3)
 //                var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,true,max_dist*2,3)
 
                 var paths2 = this.pathsFromGraph(seaTargets,vectorGraph,true)
@@ -4336,13 +4838,14 @@ class Ai {
                 town:target instanceof Town ? target : null,
                 paths:paths
             }
+            /*
             for(var ii in paths){
                 var pds = paths[ii].path
                 
                 for(var j = 1;j<pds.length;j++){
                     //drawPathTemp([[pds[j-1][0],pds[j-1][1]],[pds[j][0],pds[j][1]]])
                 }
-            }
+            }*/
             /*
             if(paths.length > 10){
                 console.log(paths.sort((a,b)=>(a.x-b.x)))
@@ -4381,19 +4884,44 @@ class Ai {
         
         var otherTargets = model.towns.concat(targets)
         
+        var targetsByChunk = {}
+        
+        for(var key in model.bigChunks){
+            targetsByChunk[key] = []
+        }
+        for(var i in otherTargets){
+            var unit = otherTargets[i]
+            
+            var chunk = unit.bigChunk
+            var nearbyCodes = chunk.nearChunkCodes
+            for(var j in nearbyCodes){
+                var nearbyCode = nearbyCodes[j]
+                
+                if(nearbyCode in model.bigChunks){
+                    targetsByChunk[nearbyCode].push(unit)
+                }
+            }
+        }
+        
         for(var i in targets){
             var target = targets[i]
+            
+            var chunk = target.chunk
+
+            var chunkcode = chunk.x+'#'+chunk.y
+
+            var tbc = targetsByChunk[chunkcode] ?? []
             
             var paths = []
             
             //land
-            var landTargets = target.land != null ? otherTargets.filter(a => a.land == target.land && a != target/* && eucl_dist(a.x,a.y,target.x,target.y) <= max_dist*2*/) : []
+            var landTargets = target.land != null ? tbc.filter(a => a.land == target.land && a != target && eucl_dist(a.x,a.y,target.x,target.y) <= max_dist*2) : []
 
             var ix = 0
             while(ix < landTargets.length){
                 var t = landTargets[ix]
                 if(t != target && (t.x != target.x || t.y != target.y)){
-                    landTargets = landTargets.slice(0,ix+1).concat(landTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea([target.x,target.y],[t.x,t.y],p.x,p.y)))
+                    landTargets = landTargets.slice(0,ix+1).concat(landTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea(target,t,p.x,p.y)))
                 }
                 ix++
             }
@@ -4401,7 +4929,7 @@ class Ai {
             var closestTargetsPoints = landTargets.map(a => [a.x,a.y])
             var lands = [target.land]
 
-            var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist,2)
+            var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist,2)
 //            var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,false,max_dist*2,2)
 
             var paths = this.pathsFromGraph(landTargets,vectorGraph,false)
@@ -4412,14 +4940,14 @@ class Ai {
             
             if(target instanceof Unit && (target.land == null || target.towntaken != null && target.towntaken.port != null) || target.port != null){
                 var seaTargets = target.land == null
-                    ? otherTargets.filter(a => a.land == null || a instanceof Town && a.port != null || a.towntaken != null && a.towntaken.port != null) 
-                    : otherTargets.filter(a => a.land != target.land || a instanceof Town && a.port != null || a.towntaken != null && a.towntaken.port != null)
+                    ? tbc.filter(a => a.land == null || a instanceof Town && a.port != null || a.towntaken != null && a.towntaken.port != null) 
+                    : tbc.filter(a => a.land != target.land || a instanceof Town && a.port != null || a.towntaken != null && a.towntaken.port != null)
                     
                 var ix = 0
                 while(ix < seaTargets.length){
                     var t = seaTargets[ix]
                     if(t != target && (t.x != target.x || t.y != target.y)){
-                        seaTargets = seaTargets.slice(0,ix+1).concat(seaTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea([target.x,target.y],[t.x,t.y],p.x,p.y)))
+                        seaTargets = seaTargets.slice(0,ix+1).concat(seaTargets.slice(ix+1).filter(p => p != target && p != t && !pointOutsideGabrielArea(target,t,p.x,p.y)))
                     }
                     ix++
                 }
@@ -4427,7 +4955,7 @@ class Ai {
                 var closestTargetsPoints = seaTargets.map(a => [a.x,a.y])
                 var lands = model.lands
 
-                var vectorGraph = getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist,1)
+                var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist,1)
 //                var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,true,max_dist*2,1)
 
                 var paths2 = this.pathsFromGraph(seaTargets,vectorGraph,true)
@@ -4495,14 +5023,14 @@ class Ai {
                     town:target instanceof Town ? target : null,
                     paths:paths
                 }
-            }
+            }/*
             for(var ii in paths){
                 var pds = paths[ii].path
                 
                 for(var j = 1;j<pds.length;j++){
                     //drawPathTemp([[pds[j-1][0],pds[j-1][1]],[pds[j][0],pds[j][1]]])
                 }
-            }
+            }*/
             /*
             if(paths.length > 10){
                 console.log(paths.sort((a,b)=>(a.x-b.x)))
@@ -4941,7 +5469,7 @@ class Controller {
                             var oldBarkingPoint = this.model.selectedUnit.barkingPoint
                             var oldBarkingLand = this.model.selectedUnit.barkingLand
                             */
-                            var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit).possible
+                            var pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit,this.model.selectedUnit.land, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit).possible
                             this.model.deselectUnit()
 
                             /*
@@ -4981,11 +5509,11 @@ class Controller {
                         var pressedTown = this.view.getTownByMouse(modelCoords)
                         var pathCreated
                         if(pressedTown != null){
-                            pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,pressedTown).possible
+                            pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit,this.model.selectedUnit.land, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,pressedTown).possible
                         } else if(currentlyPressedUnit != null) {
-                            pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit).possible
+                            pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit,this.model.selectedUnit.land, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y,currentlyPressedUnit).possible
                         } else {
-                            pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y).possible
+                            pathCreated = this.model.trySetPathForUnit(this.model.selectedUnit,this.model.selectedUnit.land, this.model.selectedUnitDivision, modelCoords.x, modelCoords.y).possible
                         }
                         this.model.deselectUnit()
 
@@ -5047,7 +5575,7 @@ class Controller {
         if(!this.pause){
             this.model.update(this.state.state.gameplay)
             this.view.draw()
-            if(t.frameCounter % 5 == 1){
+            if(this.state.state.gameplay && t.frameCounter % 5 == 1){
                 t.gameHistory.registerSnapshot()
             }
         }
