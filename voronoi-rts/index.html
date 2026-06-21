@@ -1602,7 +1602,7 @@ class Model {
             case 'LARGE':
                 this.WIDTH = 650
                 this.ZOOM = 1
-                this.CHUNKS_PER_SIDE = 5
+                this.CHUNKS_PER_SIDE = 6
                 this.NUMBER_OF_POINTS = 250
             break
             case 'MEDIUM':
@@ -2968,7 +2968,7 @@ class Model {
                         }
                         var last = port && codes[code]//code === lastCode
                         
-                        if(!(code in usedPoints) && key != code && (standard && !last || !segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands) || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1)
+                        if(!(code in usedPoints) && key != code && (standard && !last || !segmentsIntersectingWithPolygons(destination.point, potentialPointDestination.point, lands) || !segmentsIntersectingWithPolygons(potentialPointDestination.point, destination.point, lands) || (last && !standard) && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1)
                         && (standard && !last || segmentsOnTheGoodSideOfPolygon(destination.point, potentialPointDestination.point, lands, inside)/* || last && segmentsIntersectingWithPolygonsCount(destination.point, potentialPointDestination.point, lands) <= 1*/)){
                             var distance = Math.sqrt(Math.pow(destination.point[0] - potentialPointDestination.point[0],2) + Math.pow(destination.point[1] - potentialPointDestination.point[1],2))
                             var newDistance = destination.dist + distance
@@ -4925,7 +4925,7 @@ class Ai {
             var closestTargetsPoints = landTargets.map(a => [a.x,a.y])
             var lands = [target.land]
 
-            var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*3,3)
+            var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*3,5)
             //var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,false,max_dist*2,3)
 
             var paths = this.pathsFromGraph(landTargets,vectorGraph,false)
@@ -4950,7 +4950,7 @@ class Ai {
                 var closestTargetsPoints = seaTargets.map(a => [a.x,a.y])
                 var lands = model.lands
 
-                var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*3,3)
+                var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*3,5)
 //                var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,true,max_dist*2,3)
 
                 var paths2 = this.pathsFromGraph(seaTargets,vectorGraph,true)
