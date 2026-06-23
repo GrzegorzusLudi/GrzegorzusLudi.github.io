@@ -3743,7 +3743,10 @@ class View {
         }
     }
     draw(){
+        this.state.state.highlightedTeam = null
+
         this.drawBackground()
+        this.getHighlightedPanelTeam()
         this.drawModel()
         this.drawPanel()
     }
@@ -3776,10 +3779,11 @@ class View {
         this.ctx.lineWidth = 2
         this.ctx.strokeRect(0,0,this.model.WIDTH,this.model.WIDTH)
         this.ctx.lineWidth = 1
-        
+                
         this.drawLands(true)
         this.drawVoronois()
         this.drawLands(false)
+        this.drawVoronoiHighlights()
 
         //this.drawChunks()
         //this.drawGenerationPoints()
@@ -3817,6 +3821,14 @@ class View {
         this.ctx.fillRect(x-sliderButtonWidth/2,top,sliderButtonWidth,height)
         this.ctx.strokeRect(x-sliderButtonWidth/2,top,sliderButtonWidth,height)
         
+    }
+    getHighlightedPanelTeam(){
+        if(this.state.state.statisticsPanel != null && this.state.state.highlightedTeam == null){
+            var mouseCoordsTransformed = this.state.state.mouseCoordsTransformed()
+
+            var hteam = this.state.state.statisticsPanel.getHighlightedPanelTeam(mouseCoordsTransformed)
+            this.state.state.highlightedTeam = hteam
+        }
     }
     drawPanel(){
         const PANEL_X = this.state.state.PANEL_X
@@ -3884,15 +3896,18 @@ class View {
             x = mouseCoords.x
             y = mouseCoords.y
         }
+        var focusedUnit = this.getUnitByMouse(mouseCoords)
+        
 
         var voronoiables = modelData.mergedVoronois//this.model.getVoronoiables()
+        
         for(var i in voronoiables){
             var voronoiable = voronoiables[i]
             if(voronoiable.voronoi != null){
                 if(voronoiable.team != null){
+                    var fillColor = voronoiable.team.color+'bb'
                     for(var j in voronoiable.voronoi){
-                        //this.drawLand(voronoiable.voronoi[j],'#000000',voronoiable.team.color)
-                        this.drawLand(voronoiable.voronoi[j],'#000000',voronoiable.team.color+'bb')
+                        this.drawLand(voronoiable.voronoi[j],'#000000',fillColor)
                     }
                 }
             }
@@ -3900,6 +3915,56 @@ class View {
         //for(var i in modelData.lostVoronoiParts){
         //    this.drawLand(modelData.lostVoronoiParts[i].polygon,'#ff0','#0004')
         //}
+    }
+    drawVoronoiHighlights(){
+        
+        var modelData = this.currentModelData()
+        
+        var mouseCoords = this.modelMouseCoords()
+        var x = null,y = null
+        if(mouseCoords != null){
+            x = mouseCoords.x
+            y = mouseCoords.y
+        }
+        var focusedUnit = this.getUnitByMouse(mouseCoords)
+        
+
+        var voronoiables = modelData.mergedVoronois//this.model.getVoronoiables()
+        
+        if(this.model.selectedUnit == null && !this.state.state.history){
+            var focusedTown = focusedUnit == null ? this.getTownByMouse(mouseCoords) : null
+            if(focusedUnit)
+                this.state.state.highlightedTeam = focusedUnit.team
+            if(focusedTown)
+                this.state.state.highlightedTeam = focusedTown.team
+            
+            
+            if(this.state.state.highlightedTeam == null)
+                for(var i in voronoiables){
+                    var voronoiable = voronoiables[i]
+                    if(voronoiable.voronoi != null){
+                        if(voronoiable.team != null){
+                            for(var j in voronoiable.voronoi){
+                                if(x != null && hitTest(voronoiable.voronoi[j],x,y)){
+                                    this.state.state.highlightedTeam = voronoiable.team
+                                }
+                            }
+                        }
+                    }
+                }
+        }
+        for(var i in voronoiables){
+            var voronoiable = voronoiables[i]
+            if(voronoiable.voronoi != null){
+                if(voronoiable.team != null){
+                    for(var j in voronoiable.voronoi){
+                        if(this.state.state.highlightedTeam == voronoiable.team && voronoiable.team != this.model.playerChoosen){
+                            this.drawLand(voronoiable.voronoi[j],'#ffff00','#ffffff00')
+                        }
+                    }
+                }
+            }
+        }
     }
     drawLand(land,strokeStyle,fillStyle){
         this.ctx.strokeStyle = strokeStyle
@@ -4183,6 +4248,8 @@ class State {
         this.interaction = true
         this.history = false
         
+        this.highlightedTeam = null
+        
         this.backgroundColor = '#AAAAAA'
         
         this.PANEL_X = 670
@@ -4256,7 +4323,7 @@ class GamePlayUnselected extends State {
             new TextControl(90,80,100,10,'[SPACE]',this.borderColor()),
             new Button(30,95,220,40,'PAUSE',this.backgroundColor,this.borderColor(),()=>{t.controller.pausePlay()}),
             new Button(30,145,220,40,'HISTORY',this.backgroundColor,this.borderColor(),()=>{t.controller.goToHistory()}),
-            new StatisticsPanel(30,195,220,380,this.backgroundColor,this.borderColor(),t.controller.model),
+            this.statisticsPanel = new StatisticsPanel(30,195,220,380,this.backgroundColor,this.borderColor(),t.controller.model,t),
             new Button(30,590,220,40,'GO BACK',this.backgroundColor,this.borderColor(),()=>{t.controller.goToMenu()}),
         ]
     }
@@ -4280,7 +4347,7 @@ class HistoryState extends State {
             this.timer = new TextControl(60,85,160,40,'0:00',this.borderColor()),
 
             new Button(30,590,220,40,'GO BACK',this.backgroundColor,this.borderColor(),()=>{t.controller.goToPreviousState()}),
-            new StatisticsPanel(30,195,220,380,this.backgroundColor,this.borderColor(),()=>t.gameHistory.getCurrentModelData())
+            this.statisticsPanel = new StatisticsPanel(30,195,220,380,this.backgroundColor,this.borderColor(),()=>t.gameHistory.getCurrentModelData(),t)
         ]
         this.sliderHorizontalMargin = 60
         this.sliderBottomMargin = 60
@@ -4312,9 +4379,7 @@ class HistoryState extends State {
         if(mouseCoordsTransformedToSlider){
             this.sliding = true
             this.updateSlider(coords)
-
         }
-        
     }
     mouseMove(coords){
         super.mouseMove(coords)
@@ -4332,7 +4397,7 @@ class HistoryState extends State {
     updateSlider(coords){
         var {left,top,width,height} = this.getSliderDimensions()
 
-        var newTime = Math.max(0,Math.min(Math.round((coords.x/this.controller.model.ZOOM - left) / width * (this.gameHistory.states.length-1)),this.gameHistory.states.length-1))
+        var newTime = Math.max(0,Math.min(Math.round(((coords.x-this.controller.view.PADDING)/this.controller.model.ZOOM - left) / width * (this.gameHistory.states.length-1)),this.gameHistory.states.length-1))
         this.gameHistory.setCurrentTime(newTime)
         this.setTimer()
     }
@@ -4552,33 +4617,23 @@ class ArrowButton extends Control {
     }
 }
 class StatisticsPanel extends Control {
-    constructor(x,y,w,h,color,borderColor,model){
+    constructor(x,y,w,h,color,borderColor,model,state){
         super(x,y,w,h)
         this.color = color
         this.borderColor = borderColor
         this.model = model
+        this.state = state
         //this.func = func
         //this.textControl = new TextControl(x+h*0.2,y+h*0.2,w-h*0.4,h-h*0.4,text,borderColor)
     }
-    draw(ctx,mouseCoordsTransformed){
-        ctx.strokeStyle = this.borderColor
-        ctx.fillStyle = this.color
-        
-        var model = this.model instanceof Function ? this.model() : this.model
-        
-//        ctx.fillRect(this.x,this.y,this.w,this.h)
-        ctx.strokeRect(this.x,this.y,this.w,this.h)
-        
-//        ctx.lineWidth = 2
-//        this.textControl.draw(ctx,mouseCoordsTransformed)
-//        ctx.lineWidth = 1
-        const COLUMNS = 2
-        const ROWS = 20
-        const BORDER_PADDING = 1
-        const PADDING = 4
-        const PADDING_SMALL = 6
+    statDimensionsByGroupedVoronois(model){
+        var result = []
         var row = 0
         var column = 0
+        
+        const COLUMNS = 2
+        const ROWS = 20
+        
         for(var i in model.groupedMergedVoronois){
             var teamStat = model.groupedMergedVoronois[i]
             
@@ -4596,6 +4651,73 @@ class StatisticsPanel extends Control {
             
             var w = this.w / COLUMNS
             var h = this.h / ROWS
+            
+            result.push({
+                teamStat:teamStat,
+                column:column,
+                row:row,
+                height:height,
+                w:w,
+                h:h
+            })
+            
+            row += height
+        }
+        return result
+    }
+    getHighlightedPanelTeam(mouseCoordsTransformed){
+        var model = this.model
+        var sdbgvs = this.statDimensionsByGroupedVoronois(model)
+        for(var i in sdbgvs){
+            var sdbgv = sdbgvs[i]
+            var teamStat = sdbgv.teamStat
+            
+            var height = sdbgv.height
+            var row = sdbgv.row
+            var column = sdbgv.column
+            
+            var w = sdbgv.w
+            var h = sdbgv.h
+            
+            if(
+                mouseCoordsTransformed != null && 
+                mouseCoordsTransformed.x > this.x + w * column && 
+                mouseCoordsTransformed.x < this.x + w * column + w && 
+                mouseCoordsTransformed.y > this.y + h * row &&
+                mouseCoordsTransformed.y < this.y + h * row + h*height
+                )
+                return teamStat.team
+            
+        }
+        return null
+    }
+    draw(ctx,mouseCoordsTransformed){
+        ctx.strokeStyle = this.borderColor
+        ctx.fillStyle = this.color
+        
+        var model = this.model instanceof Function ? this.model() : this.model
+        
+//        ctx.fillRect(this.x,this.y,this.w,this.h)
+        ctx.strokeRect(this.x,this.y,this.w,this.h)
+        
+//        ctx.lineWidth = 2
+//        this.textControl.draw(ctx,mouseCoordsTransformed)
+//        ctx.lineWidth = 1
+        const BORDER_PADDING = 1
+        const PADDING = 4
+        const PADDING_SMALL = 6
+        
+        var sdbgvs = this.statDimensionsByGroupedVoronois(model)
+        for(var i in sdbgvs){
+            var sdbgv = sdbgvs[i]
+            var teamStat = sdbgv.teamStat
+            
+            var height = sdbgv.height
+            var row = sdbgv.row
+            var column = sdbgv.column
+            
+            var w = sdbgv.w
+            var h = sdbgv.h
 
             var dark = darkColor(teamStat.team.color)
             var border = dark ? '#ffffffcc' : '#000000cc'
@@ -4613,8 +4735,14 @@ class StatisticsPanel extends Control {
             
             ctx.fillStyle = borderColor
             ctx.fillRect(this.x + w * column,this.y + h * row,w,h*height)
+            if(this.state.highlightedTeam == teamStat.team){
+                ctx.fillStyle = '#ffff00'
+                ctx.fillRect(this.x + w * column,this.y + h * row,w,h*height)
+                ctx.fillStyle = fill
+            }
             ctx.fillStyle = fill
             ctx.fillRect(this.x + w * column+padding,this.y + h * row+padding,w-padding*2,h*height-padding*2)
+            
             
             var totalRealArea = model.wholeRealLandArea(teamStat)
             this.drawNumber(ctx,teamStat.unitCount,this.x + w * column + PADDING, this.y + h * row  + PADDING, w*2/5 - PADDING * 2, h - PADDING * 2, 4)
