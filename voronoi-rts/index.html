@@ -644,6 +644,166 @@ function splitPolygonsByIntersectionsAndAddToNewPolygons(newPolygon,polygonInter
     }
 }
 
+function validBand(band){
+    var newBand = band
+    if(band.length > 0){
+        if(band[0][0] == band[band.length-1][0] && band[0][1] == band[band.length-1][1]){
+            newBand = newBand.slice(1)
+        }
+    }
+    if(newBand.length <= 2)
+        return []
+    return newBand
+}
+function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
+    var newPolygons = []
+    for(var i in polygons){
+        var polygon1 = polygons[i]
+        
+        var intersected1 = addIntersectionToPolygons(polygon1,polygon2)
+        var intersected2 = addIntersectionToPolygons(polygon2,polygon1)
+        // console.log(intersected1)
+        // console.log(intersected2)
+         var graph1 = polygonToGraph(intersected1)
+         var graph2 = polygonToGraph(intersected2,true)
+        // console.log(Object.assign({},graph1))
+        // console.log(Object.assign({},graph2))
+        
+        var newPolygon = []
+        
+        var on1 = true
+        
+        var guard = 0
+        
+        var key = null
+        var yet = false
+        var first = false
+        while((Object.keys(graph1).length > 0 || key != null) && guard < 1000){
+            if(key == null){
+                key = Object.keys(graph1)[0]
+                console.log('!!!')
+            }
+            if(on1){
+                var node = graph1[key]
+
+                if(node == undefined){
+                    console.log('contue1')
+                    newPolygon = validBand(newPolygon)
+                    if(newPolygon.length > 0){
+                        newPolygons.push(newPolygon)
+                    }
+                    newPolygon = []
+                    key = null
+                    on1 = true
+                    guard++
+                    yet = false
+                    continue
+                }
+                var point = node.pointFrom
+                var notYet = !yet
+                if(!hitTestInteriorAndNotPoint(intersected2,point[0],point[1])){
+                    console.log(key, 'yes1')
+                    newPolygon.push(point)
+                    yet = true
+                } else {
+                    console.log(key, 'no1')
+                }
+                console.log('deleted1 '+key)
+                delete graph1[key]
+                
+                key = node.codeTo
+                if(graph2[key]){
+                    if(yet){
+                        console.log('na 2')
+                        on1 = false
+                        console.log('deleted1+ '+key)
+                        delete graph1[key]
+                    }
+                }
+            } else {
+                var node = graph2[key]
+
+                if(node == undefined){
+                    console.log('contue2')
+                    newPolygon = validBand(newPolygon)
+                    if(newPolygon.length > 0){
+                        newPolygons.push(newPolygon)
+                    }
+                    newPolygon = []
+                    key = null
+                    on1 = true
+                    guard++
+                    yet = false
+                    continue
+                }
+                var point = node.pointFrom
+                if(hitTestInteriorOrPoint(intersected1,point[0],point[1])){
+                    console.log(key, 'yes2')
+                    newPolygon.push(point)
+                } else {
+                    console.log(key, 'no2')
+                }
+                console.log('deleted2 '+key)
+                delete graph2[key]
+                
+                key = node.codeTo
+                if(graph1[key]){
+                    if(yet){
+                        console.log('na 1')
+                        on1 = true
+                        console.log('deleted2+ '+key)
+                        delete graph2[key]
+                    }
+                }
+            }
+            
+            guard++
+        }
+        
+    }
+    return newPolygons
+}
+function polygonToGraph(intersected,reversed){
+    var graph = {}
+    for(var j in intersected){
+        var band = intersected[j]
+        for(var k=0;k<band.length;k++){
+            var point1,point2,index
+            if(reversed ^ (j == 0)){
+                point1 = band[(k-(-1))%band.length]
+                point2 = band[k]
+            } else {
+                point1 = band[k]
+                point2 = band[(k-(-1))%band.length]
+            }
+            if(point1[0] == point2[0] && point1[1] == point2[1])
+				continue
+            graph[point1[0]+'#'+point1[1]] = {codeTo:point2[0]+'#'+point2[1],pointFrom:point1,pointTo:point2}
+        }
+    }
+    return graph
+}
+function addIntersectionToPolygons(polygon1,polygon2){
+    var newPolygon = []
+    for(var i in polygon1){
+        var band1 = polygon1[i]
+        var newBand = []
+        
+        for(var j = 0;j<band1.length;j++){
+            var point1 = band1[j]
+            var point2 = band1[(j-(-1))%band1.length]
+            
+            newBand.push(point1)
+            var intersections = segmentsIntersectionsWithPolygon(point1,point2,polygon2)
+            for(var k in intersections){
+                newBand.push(intersections[k])
+            }
+        }
+        newPolygon.push(newBand)
+    }
+    return newPolygon
+}
+
 function segmentsIntersection(a1,a2,b1,b2){
     var x1 = a1[0]
     var y1 = a1[1]
@@ -683,7 +843,6 @@ function segmentsIntersectingWithPolygonsByChunks(a,b,chunks){
         a = b
         b = aux
     }
-    
         
     for(var i in polygons){
         var polygon = polygons[i]
@@ -762,10 +921,6 @@ function boundIntersectionWithSegment(segment,bounds){
 }
 
 function segmentsIntersectingWithPolygon(a,b,polygon){
-//    var cached = getFromCache(polygon,polygonCache).segmentTree
-    
-//    return this.searchPolygonCacheForIntersection([a,b],cached,0)
-    
     for(var i = 0;i<polygon.length;i++){
         var band = polygon[i]
         for(var j = 0;j<band.length;j++){
@@ -777,17 +932,33 @@ function segmentsIntersectingWithPolygon(a,b,polygon){
             }
         }
     }
-    /*
-    var segments = getPolygonSegments(polygon)
-    var bounds = getBoundsFromSegments(segments)
-    var seg = [a,b]
-    for(var i in segments){
-        var segment = segments[i]
-        if(boundIntersectionWithSegment(seg,bounds) && segmentsIntersecting(a,b,segment[0],segment[1]))
-            return true
+}
+function segmentsIntersectionsWithPolygon(a,b,polygon){
+    var intersections = []
+    for(var i = 0;i<polygon.length;i++){
+        var band = polygon[i]
+        for(var j = 0;j<band.length;j++){
+            var p1 = band[j]
+            var p2 = band[(j-(-1))%band.length]
+            
+            if(segmentsIntersecting(a,b,p1,p2)){
+                var intersection = segmentsIntersection(a,b,p1,p2)
+                intersections.push(intersection)
+            }
+        }
     }
-    return false
-    */
+    if(a[0] == b[0]){
+        if(a[1] < b[1]){
+            return intersections.sort((aa,bb)=>aa[1] - bb[1])
+        } else {
+            return intersections.sort((aa,bb)=>bb[1] - aa[1])
+        }
+    } else if(a[0] < b[0]) {
+        return intersections.sort((aa,bb)=>aa[0] - bb[0])
+    } else {
+        return intersections.sort((aa,bb)=>bb[0] - aa[0])
+    }
+    return intersections
 }
 function getCrossingSegmentsIntersectingWithPolygon(a,b,polygon){
     var count = 0
@@ -907,14 +1078,49 @@ function polygonArea(poly){
     return result
 }
 function almostHitTest(poly,x,y,inclusive){
-    for(var i = -2;i<=2;i++){
-        for(var j = -2;j<=2;j++){
+    var precise = 1/64
+    for(var i = -precise;i<=precise;i+=precise){
+        for(var j = -precise;j<=precise;j+=precise){
             if(hitTest(poly,x-(-i),y-(-j),inclusive)){
                 return true
             }
         }
     }
     return false
+}
+function certainlyHitTest(poly,x,y,inclusive){
+    var precise = 1/64
+    for(var i = -precise;i<=precise;i+=precise){
+        for(var j = -precise;j<=precise;j+=precise){
+            if(!hitTest(poly,x-(-i),y-(-j),inclusive)){
+                return false
+            }
+        }
+    }
+    return true
+}
+function hitTestInteriorOrPoint(poly,x,y){
+    for(var i in poly){
+        var band = poly[i]
+        for(var j in band){
+            var point = band[j]
+            if(point[0] == x && point[1] == y)
+                return true
+        }
+    }
+    return almostHitTest(poly,x,y)
+}
+function hitTestInteriorAndNotPoint(poly,x,y){
+    for(var i in poly){
+        var band = poly[i]
+        for(var j in band){
+            var point = band[j]
+            if(point[0] == x && point[1] == y){
+                return false
+            }
+        }
+    }
+    return certainlyHitTest(poly,x,y)
 }
 function getPolygonInside(lands,x,y){
     for(var i in lands){
@@ -1270,8 +1476,10 @@ const vectorLetters = {
     'S':[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[1.0,1.0],[0.0,1.0],],
     'T':[[0.0,0.0],[1.0,0.0],[0.5,0.0],[0.5,1.0],],
     'U':[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],],
+    'V':[[0.0,0.0],[0.5,1.0],[1.0,0.0],],
     'W':[[0.0,0.0],[0.0,1.0],[0.5,0.5],[1.0,1.0],[1.0,0.0],],
     'Y':[[0.0,0.0],[0.5,0.5],[1.0,0.0],[0.5,0.5],[0.5,1.0],],
+    'Z':[[0.0,0.0],[1.0,0.0],[0.0,1.0],[1.0,1.0],],
     ':':[
             [[0.2,0.2],[0.8,0.2],[0.8,0.45],[0.2,0.45],[0.2,0.2]],
             [[0.2,0.8],[0.8,0.8],[0.8,0.55],[0.2,0.55],[0.2,0.8]],
@@ -1641,6 +1849,9 @@ class Model {
         
         this.teams = []
         this.units = []
+        
+        this.diplomacyQueue = []
+        this.diplomacyRelations = []
         
         this.populateTowns(teamConfiguration)
         this.generateVoronois()
@@ -3592,6 +3803,8 @@ class Model {
             
         if(gameplay)
             this.growUnits()
+            
+        this.updateDiplomacy()
     }
     updateChunkForUnit(unit){
         var newChunk = this.getChunkFromCoords(unit.x,unit.y)
@@ -3702,6 +3915,83 @@ class Model {
         //}
 
     }
+    
+    inQueue(queue,askingTeam,targetTeam,type){
+        return queue.filter(a => a.type == type && a.from == askingTeam && a.to == targetTeam).length > 0
+    }
+    askTruce(askingTeam,targetTeam){
+        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'truce') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'truce'))
+            this.diplomacyQueue.push({
+                type:'truce',
+                from:askingTeam,
+                to:targetTeam,
+                time:0
+            })
+    }
+    askToVassalize(askingTeam,targetTeam){
+        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'ask-to-vassalize') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'ask-to-vassalize'))
+            this.diplomacyQueue.push({
+                type:'ask-to-vassalize',
+                from:askingTeam,
+                to:targetTeam,
+                time:0
+            })
+    }
+    askForVassalization(askingTeam,targetTeam){
+        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'ask-for-vassalization') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'ask-for-vassalization'))
+            this.diplomacyQueue.push({
+                type:'ask-for-vassalization',
+                from:askingTeam,
+                to:targetTeam,
+                time:0
+            })
+    }
+    acceptDiplomacyQueueRequest(request,accept){
+        this.diplomacyQueue = this.diplomacyQueue.filter(a => a != request)
+        if(accept){
+            switch(request.type){
+                case 'truce':
+                    this.diplomacyRelations.push({
+                        type: 'truce',
+                        from: request.askingTeam,
+                        to: request.targetTeam,
+                        time:600
+                    })
+                    this.diplomacyRelations.push({
+                        type: 'truce',
+                        from: request.targetTeam,
+                        to: request.askingTeam,
+                        time:600
+                    })
+                break
+                case 'ask-to-vassalize':
+                    this.diplomacyRelations.push({
+                        type: 'vassal',
+                        master: request.askingTeam,
+                        vassal: request.targetTeam,
+                        time:600
+                    })
+                break
+                case 'ask-for-vassalization':
+                    this.diplomacyRelations.push({
+                        type: 'vassal',
+                        master: request.targetTeam,
+                        vassal: request.askingTeam,
+                        time:600
+                    })
+                break
+            }
+        }
+    }
+    updateDiplomacy(){
+        //console.log(this.diplomacyQueue)
+        for(var i in this.diplomacyRelations){
+            var dr = this.diplomacyRelations[i]
+            
+            if(dr.time > 0)
+                dr.time--
+        }
+    }
 }
 const COLOR_LETTERS = '123456789ABCDE'
 function getRandomColor() {
@@ -3712,7 +4002,7 @@ function getRandomColor() {
   return color;
 }
 function darkColor(color){
-    return !'BCDEF'.includes(color[1]) && !'ABCDEF'.includes(color[3]) && !'CDEF'.includes(color[5])
+    return !'BCDEF'.includes(color[1].toUpperCase()) && !'ABCDEF'.includes(color[3].toUpperCase()) && !'CDEF'.includes(color[5].toUpperCase())
 }
 class View {
     constructor(canv,model,state){
@@ -3784,6 +4074,7 @@ class View {
         this.drawVoronois()
         this.drawLands(false)
         this.drawVoronoiHighlights()
+        this.drawVoronoiChosen()
 
         //this.drawChunks()
         //this.drawGenerationPoints()
@@ -3823,7 +4114,7 @@ class View {
         
     }
     getHighlightedPanelTeam(){
-        if(this.state.state.statisticsPanel != null && this.state.state.highlightedTeam == null){
+        if(this.state.state.statisticsPanel != null && this.state.state.highlightedTeam == null && this.state.state.chosenTeam == null){
             var mouseCoordsTransformed = this.state.state.mouseCoordsTransformed()
 
             var hteam = this.state.state.statisticsPanel.getHighlightedPanelTeam(mouseCoordsTransformed)
@@ -3965,6 +4256,39 @@ class View {
                 }
             }
         }
+    }
+    drawVoronoiChosen(){
+        var modelData = this.currentModelData()
+        
+        var mouseCoords = this.modelMouseCoords()
+        var x = null,y = null
+        if(mouseCoords != null){
+            x = mouseCoords.x
+            y = mouseCoords.y
+        }
+        var focusedUnit = this.getUnitByMouse(mouseCoords)
+        
+
+        var voronoiables = modelData.mergedVoronois//this.model.getVoronoiables()
+        
+        if(this.state.state.chosenTeam != null){
+            for(var i in voronoiables){
+                var voronoiable = voronoiables[i]
+                if(voronoiable.voronoi != null){
+                    if(voronoiable.team != null){
+                        for(var j in voronoiable.voronoi){
+                            if(this.state.state.chosenTeam == voronoiable.team && voronoiable.team != this.model.playerChoosen){
+                                this.ctx.lineWidth = 2
+                                this.drawLand(voronoiable.voronoi[j],'#ffff00','#ffffff00')
+                                this.ctx.lineWidth = 1
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
     }
     drawLand(land,strokeStyle,fillStyle){
         this.ctx.strokeStyle = strokeStyle
@@ -4249,6 +4573,7 @@ class State {
         this.history = false
         
         this.highlightedTeam = null
+        this.chosenTeam = null
         
         this.backgroundColor = '#AAAAAA'
         
@@ -4555,6 +4880,12 @@ class Button extends Control {
         this.func = func
         this.textControl = new TextControl(x+h*0.2,y+h*0.2,w-h*0.4,h-h*0.4,text,borderColor)
     }
+    setColors(borderColor, color){
+        this.borderColor = borderColor
+        this.color = color
+        
+        this.textControl.color = borderColor
+    }
     draw(ctx,mouseCoordsTransformed){
         ctx.strokeStyle = this.borderColor
         ctx.fillStyle = this.color
@@ -4616,6 +4947,60 @@ class ArrowButton extends Control {
         }
     }
 }
+class DiplomacyRequestControl extends Control {
+    constructor(x,y,w,h,color,borderColor,model,state){
+        super(x,y,w,h)
+        this.color = color
+        this.borderColor = borderColor
+        this.model = model
+        this.state = state
+    
+        this.textControl = new TextControl(x+15,y+15,w-30,30,'DIPLOMACY',borderColor)
+        
+        let t = this
+        this.truceButton = new Button(x+15,y+65,w-30,40,'TRUCE','#00000033','#000000bb',()=>{t.model.askTruce(t.model.playerChoosen,t.state.chosenTeam);t.state.chosenTeam = null;t.state.highlightedTeam = null})
+        this.vassalizeButton = new Button(x+15,y+115,w-30,40,'VASSALIZE','#00000033','#000000bb',()=>{t.model.askToVassalize(t.model.playerChoosen,t.state.chosenTeam);t.state.chosenTeam = null;t.state.highlightedTeam = null})
+        this.becomeVassalButton = new Button(x+15,y+165,w-30,40,'BECOME VASSAL','#00000033','#000000bb',()=>{t.model.askForVassalization(t.model.playerChoosen,t.state.chosenTeam);t.state.chosenTeam = null;t.state.highlightedTeam = null})
+        
+        this.cancelButton = new Button(x+25,y+h-50,w-50,40,'CANCEL','#00000033','#000000bb',()=>{t.state.chosenTeam = null;t.state.highlightedTeam = null})
+    }
+    draw(ctx,mouseCoordsTransformed){
+        var model = this.model instanceof Function ? this.model() : this.model
+        
+        var color = this.state.chosenTeam?.color ?? this.color        
+        var dark = darkColor(color)
+        var borderColor = dark ? '#fffa' : '#000'
+        var shadeColor = dark ? '#fff2' : '#0002'
+        
+        ctx.strokeStyle = borderColor
+        ctx.fillStyle = color
+        
+        ctx.lineWidth = 2
+        ctx.strokeRect(this.x,this.y,this.w,this.h)
+        ctx.fillRect(this.x,this.y,this.w,this.h)
+        ctx.lineWidth = 1
+        
+        this.textControl.color = borderColor
+        this.textControl.draw(ctx,mouseCoordsTransformed)
+        
+        this.truceButton.setColors(borderColor, shadeColor)
+        this.truceButton.draw(ctx,mouseCoordsTransformed)
+        this.vassalizeButton.setColors(borderColor, shadeColor)
+        this.vassalizeButton.draw(ctx,mouseCoordsTransformed)
+        this.becomeVassalButton.setColors(borderColor, shadeColor)
+        this.becomeVassalButton.draw(ctx,mouseCoordsTransformed)
+        
+        this.cancelButton.setColors(borderColor, shadeColor)
+        this.cancelButton.draw(ctx,mouseCoordsTransformed)
+    }
+    tryClick(mouseCoordsTransformed){
+        this.truceButton.tryClick(mouseCoordsTransformed)
+        this.vassalizeButton.tryClick(mouseCoordsTransformed)
+        this.becomeVassalButton.tryClick(mouseCoordsTransformed)
+        
+        this.cancelButton.tryClick(mouseCoordsTransformed)
+    }
+}
 class StatisticsPanel extends Control {
     constructor(x,y,w,h,color,borderColor,model,state){
         super(x,y,w,h)
@@ -4623,6 +5008,9 @@ class StatisticsPanel extends Control {
         this.borderColor = borderColor
         this.model = model
         this.state = state
+        
+        var diplomacyRequestControlPadding = 20
+        this.diplomacyRequestControl = new DiplomacyRequestControl(x+diplomacyRequestControlPadding,y+diplomacyRequestControlPadding,w-diplomacyRequestControlPadding*2,h-diplomacyRequestControlPadding*2,this.color,this.borderColor,this.model,this.state)
         //this.func = func
         //this.textControl = new TextControl(x+h*0.2,y+h*0.2,w-h*0.4,h-h*0.4,text,borderColor)
     }
@@ -4707,6 +5095,7 @@ class StatisticsPanel extends Control {
         const PADDING = 4
         const PADDING_SMALL = 6
         
+        
         var sdbgvs = this.statDimensionsByGroupedVoronois(model)
         for(var i in sdbgvs){
             var sdbgv = sdbgvs[i]
@@ -4740,6 +5129,13 @@ class StatisticsPanel extends Control {
                 ctx.fillRect(this.x + w * column,this.y + h * row,w,h*height)
                 ctx.fillStyle = fill
             }
+            if(this.state.chosenTeam == teamStat.team){
+                ctx.lineWidth = 2
+                ctx.fillStyle = '#ffff00'
+                ctx.fillRect(this.x + w * column,this.y + h * row,w,h*height)
+                ctx.fillStyle = fill
+                padding = BORDER_PADDING*2
+            }
             ctx.fillStyle = fill
             ctx.fillRect(this.x + w * column+padding,this.y + h * row+padding,w-padding*2,h*height-padding*2)
             
@@ -4770,6 +5166,10 @@ class StatisticsPanel extends Control {
             row += height
             ctx.lineWidth = 1
 
+        }
+        
+        if(this.state.chosenTeam){
+            this.diplomacyRequestControl.draw(ctx,mouseCoordsTransformed)
         }
     }
     /*
@@ -4818,6 +5218,23 @@ class StatisticsPanel extends Control {
 //        if(this.focus(mouseCoordsTransformed)){
 //            return this.func()
 //        }
+        var model = this.model instanceof Function ? this.model() : this.model
+
+        if(this.state.gameplay){
+            if(this.state.chosenTeam == null){
+                if(this.getHighlightedPanelTeam(mouseCoordsTransformed) != null){
+                    if(this.state.highlightedTeam != null && this.state.gameplay) {
+                        this.state.chosenTeam = this.state.chosenTeam == this.state.highlightedTeam || this.state.highlightedTeam == model.playerChoosen
+                            ? null
+                            : this.state.highlightedTeam
+                    } else {
+                        this.state.chosenTeam = null
+                    }
+                }
+            } else {
+                this.diplomacyRequestControl.tryClick(mouseCoordsTransformed)
+            }
+        }
     }
 }
 class Ai {
@@ -4901,7 +5318,78 @@ class Ai {
                 drawTextTemp(paths[0].path[0][0],paths[0].path[0][1],(mergedGraph[code].town && mergedGraph[code].unit) ? 'town&unit' : (mergedGraph[code].town ? 'town' : 'unit'),'#0f0')
             }
         }*/
+        this.checkDiplomacy(mergedGraph)
         this.sendUnitsByAi(mergedGraph)
+    }
+    checkDiplomacy(mergedGraph){
+        var model = this.model()
+        
+        //model.diplomacyQueue
+        
+        var teamsInPlay = Array.from(new Set(model.units.map(unit => unit.team)))
+        
+        var strategicPositions = this.strategicPositions(model,mergedGraph)
+    }
+    strategicPositions(model,mergedGraph){
+        
+        var codes = Object.keys(mergedGraph)
+        
+        var maxDistanceToEnemy = Object.values(mergedGraph).map(a=>a.distanceToEnemyLevel).filter(a => a != Infinity).reduce((a,b) => Math.max(a,b),0)
+        
+        console.log(maxDistanceToEnemy)
+                      
+        
+        for(var repeat = 0;repeat < maxDistanceToEnemy;repeat++){
+            for(var codeIndex in codes){
+                var code = codes[codeIndex]
+                var vertex = mergedGraph[code]
+                
+                var oneMoved = false
+                
+                var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
+                if(unit != null){
+                    
+                }
+                        
+                var unitRemained = null
+                var paths = vertex.paths
+
+                for(var i in paths){
+                    var path = paths[i]
+                    var target = mergedGraph[path.targetCode]
+                    
+                    var targetTeam = target.unit ? target.unit.team : target.town.team
+                        
+                    if(!path.sea){
+                        unit.barkingPoint = null
+                    }
+                }
+            }
+        }
+        
+        
+        for(var codeIndex in codes){
+            var code = codes[codeIndex]
+            var vertex = mergedGraph[code]
+            
+            var oneMoved = false
+            var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
+            if(unit != null){
+                
+            }
+                    
+            var unitRemained = null
+            var paths = vertex.paths
+
+            for(var i in paths){
+                var path = paths[i]
+                var target = mergedGraph[path.targetCode]
+                
+                var targetTeam = target.unit ? target.unit.team : target.town.team                    
+            }
+            //if(moved > 52)
+            //    break
+        }
     }
     sendUnitsByAi(mergedGraph){
         var model = this.model()
@@ -4910,7 +5398,7 @@ class Ai {
         var shuffledCodes = Object.keys(mergedGraph).map(value => ({ value, sort: Math.random() }))
                     .sort((a, b) => a.sort - b.sort)
                     .map(({ value }) => value)
-                    
+        
         for(var codeIndex in shuffledCodes){
             var code = shuffledCodes[codeIndex]
             var vertex = mergedGraph[code]
@@ -5510,10 +5998,11 @@ class Ai {
             var vertex = mergedGraph[target_code]
             vertex.paths = this.toGabrielGraph(vertex.paths)
             vertex.distanceToEnemy = Infinity
+            vertex.distanceToEnemyLevel = Infinity
             vertex.neighborsEnemy = 0
         }
 
-        for(var j = 0;j<9;j++){
+        for(var j = 0;j<8;j++){
             for(var target_code in mergedGraph){
                 var vertex = mergedGraph[target_code]
 
@@ -5530,11 +6019,17 @@ class Ai {
                         var neighboringVertex = mergedGraph[pathObject.targetCode]
                         var neighborTeam = neighboringVertex.unit ? neighboringVertex.unit.team : neighboringVertex.town.team
 
-                        if(neighborTeam != team && vertex.distanceToEnemy > pathObject.dist){
-                            vertex.distanceToEnemy = pathObject.dist
+                        if(neighborTeam != team){
+                            if(vertex.distanceToEnemy > pathObject.dist)
+                                vertex.distanceToEnemy = pathObject.dist
                             vertex.neighborsEnemy++
                         } else if(neighborTeam == team && vertex.distanceToEnemy > pathObject.dist + neighboringVertex.distanceToEnemy){
                             vertex.distanceToEnemy = pathObject.dist + neighboringVertex.distanceToEnemy
+                        }
+                        if(neighborTeam != team){
+                            vertex.distanceToEnemyLevel = 0
+                        } else if(neighborTeam == team && vertex.distanceToEnemyLevel > neighboringVertex.distanceToEnemyLevel + 1){
+                            vertex.distanceToEnemyLevel = neighboringVertex.distanceToEnemyLevel + 1
                         }
                     }
                     
@@ -5668,6 +6163,7 @@ class Controller {
         
         this.pressedUnit = null
         this.dragStart = null
+        this.mapPressStart = null
         
         this.frameCounter = 0
         
@@ -5744,8 +6240,10 @@ class Controller {
         
         if(this.state.state.interaction){
             this.pressedUnit = this.view.getUnitByMouse(this.view.modelMouseCoords())
-            if(this.pressedUnit == null)
+            if(this.pressedUnit == null){
                 this.dragStart = coords
+                this.mapPressStart = this.view.modelMouseCoords()
+            }
         }
         
         this.state.state.mouseDown(coords)
@@ -5776,8 +6274,18 @@ class Controller {
                                 this.changeState(new GamePlayUnselected(this))
                             }
                         }
+                        this.state.state.chosenTeam = null
+                    } else if(this.state.state.highlightedTeam != null && this.state.state.gameplay) {
+                        if(dist(modelCoords.x,modelCoords.y,this.mapPressStart.x,this.mapPressStart.y) < 2){
+                            this.state.state.chosenTeam = this.state.state.chosenTeam == this.state.state.highlightedTeam || this.state.state.highlightedTeam == this.model.playerChoosen
+                                ? null
+                                : this.state.state.highlightedTeam
+                        }
+                    } else {
+                        this.state.state.chosenTeam = null
                     }
                 } else {
+                    this.state.state.chosenTeam = null
                     var currentlyPressedUnit = this.view.getUnitByMouse(modelCoords)
 
                     if(this.pressedUnit != null && this.pressedUnit == currentlyPressedUnit){
