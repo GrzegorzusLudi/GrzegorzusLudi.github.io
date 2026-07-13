@@ -615,8 +615,8 @@ function splitPolygonsByIntersectionsAndAddToNewPolygons(newPolygon,polygonInter
             l++
         }
         if(subcycle.length > 0 && subcycle[subcycle.length-1] == undefined){
-            console.log(ogpolygonIntersectionIndexes)
-            console.log(ogcycles,subcycle)
+            //console.log(ogpolygonIntersectionIndexes)
+            //console.log(ogcycles,subcycle)
             for(var i in ogpolygonIntersectionIndexes){
                 console.log(newPolygon[ogpolygonIntersectionIndexes[i]])
             }
@@ -5336,14 +5336,30 @@ class Ai {
         
         var maxDistanceToEnemy = Object.values(mergedGraph).map(a=>a.distanceToEnemyLevel).filter(a => a != Infinity).reduce((a,b) => Math.max(a,b),0)
         
-        console.log(maxDistanceToEnemy)
-                      
+        var valuePerCode = {}
+        var diffValuePerCode = {}
         
-        for(var repeat = 0;repeat < maxDistanceToEnemy;repeat++){
+        for(var codeIndex in codes){
+            var code = codes[codeIndex]
+            var vertex = mergedGraph[code]
+            
+            var oneMoved = false
+            var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
+            if(unit != null){
+                valuePerCode[code] = unit.size
+            } else {
+                valuePerCode[code] = 0
+            }
+            diffValuePerCode[code] = 0
+        }
+        
+        for(var repeat = maxDistanceToEnemy;repeat >= 1;repeat--){
             for(var codeIndex in codes){
                 var code = codes[codeIndex]
                 var vertex = mergedGraph[code]
                 
+                var vertexTeam = vertex.unit ? vertex.unit.team : vertex.town.team
+
                 var oneMoved = false
                 
                 var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
@@ -5353,17 +5369,30 @@ class Ai {
                         
                 var unitRemained = null
                 var paths = vertex.paths
+                
 
+                var targetCodesToSend = []
                 for(var i in paths){
                     var path = paths[i]
-                    var target = mergedGraph[path.targetCode]
                     
-                    var targetTeam = target.unit ? target.unit.team : target.town.team
+                    if(vertex.distanceToEnemyLevel == repeat){
+                        var target = mergedGraph[path.targetCode]
+
+                        var targetTeam = target.unit ? target.unit.team : target.town.team
                         
-                    if(!path.sea){
-                        
+                        if(targetTeam == vertexTeam && target.distanceToEnemyLevel == repeat-1){
+                            targetCodesToSend.push(path.targetCode)
+                        }
                     }
+                    
                 }
+                for(var i in targetCodesToSend){
+                    var targetCode = targetCodesToSend[i]
+                    
+                    valuePerCode[targetCode] += valuePerCode[code] / targetCodesToSend.length
+                }
+                if(targetCodesToSend.length > 0)
+                    valuePerCode[code] = 0
             }
         }
         
@@ -5372,24 +5401,49 @@ class Ai {
             var code = codes[codeIndex]
             var vertex = mergedGraph[code]
             
+            var vertexTeam = vertex.unit ? vertex.unit.team : vertex.town.team
+                
             var oneMoved = false
             var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
-            if(unit != null){
-                
-            }
                     
             var unitRemained = null
             var paths = vertex.paths
 
-            for(var i in paths){
-                var path = paths[i]
-                var target = mergedGraph[path.targetCode]
+            if(vertex.distanceToEnemyLevel == 0){
+                var targetCodesToSend = []
+                for(var i in paths){
+                    var path = paths[i]
+                    var target = mergedGraph[path.targetCode]
+                    
+                    var targetTeam = target.unit ? target.unit.team : target.town.team
+                    
+                    var targetCode = path.targetCode
+                    if(targetTeam != vertexTeam){
+                        targetCodesToSend.push(path.targetCode)
+                    }
+                }
                 
-                var targetTeam = target.unit ? target.unit.team : target.town.team                    
+                for(var i in targetCodesToSend){
+                    var targetCode = targetCodesToSend[i]
+                    
+                    diffValuePerCode[targetCode] += valuePerCode[code] / targetCodesToSend.length
+                }
             }
             //if(moved > 52)
             //    break
         }
+        
+        for(var codeIndex in codes){
+            var code = codes[codeIndex]
+            var vertex = mergedGraph[code]
+            
+            valuePerCode[code] -= diffValuePerCode[code]
+            
+            //if(vertex.town)
+            //    drawTextTemp(vertex.town.x,vertex.town.y,String(valuePerCode[code]).substr(0,5),'#ff0')
+        }
+        
+        console.log(valuePerCode)
     }
     sendUnitsByAi(mergedGraph){
         var model = this.model()
