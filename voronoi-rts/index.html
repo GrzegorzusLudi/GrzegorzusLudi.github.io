@@ -161,6 +161,14 @@ function polygonBordersBand(poly,band){
     var filteredBandSegments = filterSegmentsByBounds(bandSegments,intersectedBounds)
     return polygonBordersBandRecursive(filteredSegments,filteredBandSegments,intersectedBounds,12)
 }
+function polygonBounds(polygon){
+    var allSegments = getPolygonSegments(polygon)
+    return getBoundsFromSegments(allSegments)
+}
+function multiPolygonBounds(polygons){
+    var allSegments = polygons.map(poly => getPolygonSegments(poly)).flat()
+    return getBoundsFromSegments(allSegments)
+}
 function polygonBordersBandRecursive(segments,bandSegments,bounds,steps){
     if(segments.length == 0 || bandSegments.length == 0){
         return false
@@ -1444,6 +1452,27 @@ function middlePathPoints(path,distance){
 function unitInProcessOfEmbarking(unit){
     return unit.embarking && unit.embarkingProgress < unit.size
 }
+
+function relationColorGraph(type,model,testedRelation){
+    var object = {}
+    
+    var relations = model.diplomacyRelations
+    if(testedRelation)
+        relations = relations.concat(testedRelation)
+    for(var i in relations){
+        var relation = relations[i]
+        if(relation.type == type){
+//            console.log(relation)
+            if(!(relation.from.color in object))
+                object[relation.from.color] = {}
+            object[relation.from.color][relation.to.color] = true
+        }
+    }
+    return object
+}
+function inTruceGraph(truceGraph,team1,team2){
+    return team1.color in truceGraph && team2.color in truceGraph[team1.color] && truceGraph[team1.color][team2.color]
+}
 const vectorNumbers = {
     0:[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],],
     1:[[0.0,0.0],[0.5,0.0],[0.5,1.0],[0.0,1.0],[1.0,1.0],],
@@ -2176,7 +2205,7 @@ class Model {
             }
         }
         
-        return shores
+        return shores.map(shore => new Object({shore:shore, bounds: polygonBounds(shore)}))
     }
     initTowns(landTownDensity){
         var probability
@@ -2293,11 +2322,13 @@ class Model {
     populateTowns(teamConfiguration){
         var amount = 0
         var multitown = false
+        var fewTeams = false
         switch(teamConfiguration){
             case 'MORE': amount = Math.ceil(0.5 * this.towns.length);break;
             case 'ALL': amount = this.towns.length;break;
             case 'FEW': amount = Math.ceil(0.2 * this.towns.length);break;
             case 'MULTITOWN': amount = Math.ceil(0.2 * this.towns.length);multitown = true;break
+            case 'TWO TEAMS': amount = 2;fewTeams = true;break
         }
         
         var shuffledTowns = this.towns.map(value => ({ value, sort: Math.random() }))
@@ -2352,6 +2383,17 @@ class Model {
                     }
                 }
             }
+        if(fewTeams){
+            for(var i in this.towns){
+                var town = this.towns[i]
+                if(town.occupyingUnit == null){
+                    var team = this.teams[i % amount]
+                    
+                    var newUnit = new Unit(town.x,town.y,10+Math.ceil(Math.random()*89),team,town.land)
+                    this.addUnitToTown(newUnit,town)
+                }
+            }
+        }
     }
     addUnitToTown(newUnit,town){
         var chunk = this.getChunkFromCoords(newUnit.x,newUnit.y)
@@ -2677,30 +2719,33 @@ class Model {
             if(!(teamColor in groupedVoronois))
                 groupedVoronois[teamColor] = []
                 
-            groupedVoronois[teamColor].push(voronoi)
+            groupedVoronois[teamColor].push({voronoi:voronoi,bounds:multiPolygonBounds(voronoi.voronoi)})
         }
         for(var key in groupedVoronois){
             var group = groupedVoronois[key]
             
             var newGroups = []
-            var unadded = new Set(group)
+            var unadded = new Set(group.map(a => a.voronoi))
             for(var i in this.shores){
                 var newGroup = []
                 
-                var shore = this.shores[i]
+                var shore = this.shores[i].shore
+                var shoreBounds = this.shores[i].bounds
                 
                 for(var ii in group){
-                    var mergedVoronoi = group[ii]
+                    var mergedVoronoi = group[ii].voronoi
+                    var mergedVoronoiBounds = group[ii].bounds
                     
-                    for(var j in shore){
-                        var band = shore[j]
-                        
-                        if(polygonBordersBand(mergedVoronoi.voronoi[0],band)){
-                            newGroup.push(mergedVoronoi)
-                            unadded.delete(mergedVoronoi)
-                            break
+                    if(boundIntersection(shoreBounds, mergedVoronoiBounds) != null)
+                        for(var j in shore){
+                            var band = shore[j]
+                            
+                            if(polygonBordersBand(mergedVoronoi.voronoi[0],band)){
+                                newGroup.push(mergedVoronoi)
+                                unadded.delete(mergedVoronoi)
+                                break
+                            }
                         }
-                    }
                 }
                 if(newGroup.length > 0)
                     newGroups.push(newGroup)
@@ -3604,6 +3649,8 @@ class Model {
                 }
             }
         }
+        var truceGraph = relationColorGraph('truce',this)
+
         
         const SPEED = 2
         const SEA_SPEED = 4
@@ -3674,7 +3721,7 @@ class Model {
                         var unit2 = unitsToCheck[j]
                         
                         if(unit.team != unit2.team && unit.tooClose(unit2)){
-                            if(unit.size > 1 || unit.embarking){
+                            if((unit.size > 1 || unit.embarking) && !inTruceGraph(truceGraph,unit.team,unit2.team)){
                                 this.fightBetweenUnits(unit,unit2)
                             } else {
                                 unit.removePath()
@@ -3750,7 +3797,7 @@ class Model {
                 if(unit.tooClose(town)){
                     if(town.occupyingUnit != null){
                         if(town.occupyingUnit != unit && town.occupyingUnit.team == unit.team && !town.occupyingUnit.dead && unit.path.length == 0){
-                            console.log('YYY')
+//                            console.log('YYY')
                             unit.tryToMergeWithUnit(town.occupyingUnit)
                         }
 
@@ -3920,31 +3967,37 @@ class Model {
         return queue.filter(a => a.type == type && a.from == askingTeam && a.to == targetTeam).length > 0
     }
     askTruce(askingTeam,targetTeam){
-        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'truce') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'truce'))
+        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'truce') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'truce')){
+            this.diplomacyQueue = this.diplomacyQueue.filter(a => a.from != askingTeam)
             this.diplomacyQueue.push({
                 type:'truce',
                 from:askingTeam,
                 to:targetTeam,
                 time:0
             })
+        }
     }
     askToVassalize(askingTeam,targetTeam){
-        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'ask-to-vassalize') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'ask-to-vassalize'))
+        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'ask-to-vassalize') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'ask-to-vassalize')){
+            this.diplomacyQueue = this.diplomacyQueue.filter(a => a.from != askingTeam)
             this.diplomacyQueue.push({
                 type:'ask-to-vassalize',
                 from:askingTeam,
                 to:targetTeam,
                 time:0
             })
+        }
     }
     askForVassalization(askingTeam,targetTeam){
-        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'ask-for-vassalization') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'ask-for-vassalization'))
+        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'ask-for-vassalization') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'ask-for-vassalization')){
+            this.diplomacyQueue = this.diplomacyQueue.filter(a => a.from != askingTeam)
             this.diplomacyQueue.push({
                 type:'ask-for-vassalization',
                 from:askingTeam,
                 to:targetTeam,
                 time:0
             })
+        }
     }
     acceptDiplomacyQueueRequest(request,accept){
         this.diplomacyQueue = this.diplomacyQueue.filter(a => a != request)
@@ -3953,30 +4006,30 @@ class Model {
                 case 'truce':
                     this.diplomacyRelations.push({
                         type: 'truce',
-                        from: request.askingTeam,
-                        to: request.targetTeam,
+                        from: request.from,
+                        to: request.to,
                         time:600
                     })
                     this.diplomacyRelations.push({
                         type: 'truce',
-                        from: request.targetTeam,
-                        to: request.askingTeam,
+                        from: request.to,
+                        to: request.from,
                         time:600
                     })
                 break
                 case 'ask-to-vassalize':
                     this.diplomacyRelations.push({
                         type: 'vassal',
-                        master: request.askingTeam,
-                        vassal: request.targetTeam,
+                        master: request.from,
+                        vassal: request.to,
                         time:600
                     })
                 break
                 case 'ask-for-vassalization':
                     this.diplomacyRelations.push({
                         type: 'vassal',
-                        master: request.targetTeam,
-                        vassal: request.askingTeam,
+                        master: request.to,
+                        vassal: request.from,
                         time:600
                     })
                 break
@@ -4408,6 +4461,9 @@ class View {
     drawUnits(){
         var modelData = this.currentModelData()
         
+        var diplomacyQueue = modelData.diplomacyQueue.filter(a => a.from == modelData.playerChoosen)
+        var diplomacyRelations = modelData.diplomacyRelations.filter(a => a.from == modelData.playerChoosen)
+        
         var {WIDTH,HEIGHT,OFFSET,PADDING} = unitData()
         
         var mouseCoords = this.modelMouseCoords()
@@ -4452,6 +4508,9 @@ class View {
                 this.ctx.lineWidth = 1
             }
             
+            var asktruce = diplomacyQueue.filter(a => a.to == unit.team && a.type == 'truce').length > 0
+            var truce = diplomacyRelations.filter(a => a.to == unit.team && a.type == 'truce').length > 0
+            
             this.ctx.strokeStyle = focused ? this.GLOW_COLOR :'#000'
             this.ctx.fillStyle = teamColor
             
@@ -4465,12 +4524,32 @@ class View {
                 this.ctx.strokeStyle = this.SELECTED_COLOR
                 
             var realOffset = unit.towntaken ? OFFSET : 0
+            
+            
+            var oldStrokeStyle = this.ctx.strokeStyle
+            var oldFillStyle = this.ctx.fillStyle
+            
+            this.ctx.strokeStyle = oldStrokeStyle
+            this.ctx.fillStyle = oldFillStyle
+            
             this.ctx.fillRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-realOffset,WIDTH,HEIGHT)
             this.ctx.strokeRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-realOffset,WIDTH,HEIGHT)
+            this.ctx.fillStyle = '#fff'
+            if(asktruce){
+                this.ctx.strokeStyle = '#aaa'
+                drawPacifistSymbol(this.ctx,unit.x-WIDTH/2,unit.y-HEIGHT/2-realOffset,'?',0.6)
+            }
+            
+            if(truce){
+                this.ctx.strokeStyle = '#111'
+                drawPacifistSymbol(this.ctx,unit.x-WIDTH/2,unit.y-HEIGHT/2-realOffset,'?',0.6)
+            }
+            this.ctx.strokeStyle = oldStrokeStyle
+            this.ctx.fillStyle = oldFillStyle
+
 
             if(!selected && !focused)
                 this.ctx.strokeStyle = darkColor(teamColor) ? '#fffa' : '#000'
-            
             
             if(unit.size >= 10){
                 var firstNumber = (''+unit.size)[0]
@@ -4501,6 +4580,19 @@ class View {
                 } else {                
                     this.drawNumber(dividedSize   , unit.x-WIDTH/8            ,unit.y-HEIGHT/2-newerOffset + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
                 }
+                this.ctx.fillStyle = '#fff'
+                if(asktruce){
+                    this.ctx.strokeStyle = '#aaa'
+                    drawPacifistSymbol(this.ctx,unit.x-WIDTH/2,unit.y-HEIGHT/2-newerOffset,'?',0.6)
+                }
+                
+                if(truce){
+                    this.ctx.strokeStyle = '#111'
+                    drawPacifistSymbol(this.ctx,unit.x-WIDTH/2,unit.y-HEIGHT/2-newerOffset,'?',0.6)
+                }
+                this.ctx.strokeStyle = oldStrokeStyle
+                this.ctx.fillStyle = oldFillStyle
+
             }
             if(unit.embarking && unit.embarkingProgress < unit.size){
                 
@@ -4527,10 +4619,23 @@ class View {
                     this.drawNumber(unembarkedSize   , unit.x-WIDTH/8            ,unit.y-HEIGHT/2-newerOffset + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
                 }
                 
+                this.ctx.fillStyle = '#fff'
+                if(asktruce){
+                    this.ctx.strokeStyle = '#aaa'
+                    drawPacifistSymbol(this.ctx,unit.x-WIDTH/2,unit.y-HEIGHT/2-noOffset,'?',0.6)
+                }
+                
+                if(truce){
+                    this.ctx.strokeStyle = '#111'
+                    drawPacifistSymbol(this.ctx,unit.x-WIDTH/2,unit.y-HEIGHT/2-noOffset,'?',0.6)
+                }
+                this.ctx.strokeStyle = oldStrokeStyle
+                this.ctx.fillStyle = oldFillStyle
+                
                 //EMBARKED
                 this.ctx.fillRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-noOffset,WIDTH,HEIGHT)
                 this.ctx.strokeRect(unit.x-WIDTH/2,unit.y-HEIGHT/2-noOffset,WIDTH,HEIGHT)
-
+                
                 if(!selected && !focused)
                     this.ctx.strokeStyle = darkColor(teamColor) ? '#fffa' : '#000'
             
@@ -4543,7 +4648,24 @@ class View {
                 } else {                
                     this.drawNumber(embarkedSize   , unit.x-WIDTH/8            ,unit.y-HEIGHT/2-noOffset + PADDING, WIDTH/2-PADDING*1.5,HEIGHT-PADDING*2)
                 }
+                
+                this.ctx.fillStyle = '#fff'
+                if(asktruce){
+                    this.ctx.strokeStyle = '#aaa'
+                    drawPacifistSymbol(this.ctx,unit.x-WIDTH/2,unit.y-HEIGHT/2-noOffset,'?',0.6)
+                }
+                
+                if(truce){
+                    this.ctx.strokeStyle = '#111'
+                    drawPacifistSymbol(this.ctx,unit.x-WIDTH/2,unit.y-HEIGHT/2-noOffset,'?',0.6)
+                }
+                this.ctx.strokeStyle = oldStrokeStyle
+                this.ctx.fillStyle = oldFillStyle
+
             }
+            
+//            this.ctx.strokeStyle = '#111'
+//            drawPacifistSymbol(this.ctx,unit.x,unit.y,'?')
             this.ctx.lineWidth = 1
             
         }
@@ -4622,7 +4744,7 @@ class GamePrepareState extends State {
             this.townOptionControl = new OptionControl(40,200,200,18,this.backgroundColor,this.borderColor(),['DENSE','FULL','SPARSE'],'townOptionControl'),
             
             new TextControl(80,240,100,13,'TEAMS',this.borderColor()),
-            this.teamOptionControl = new OptionControl(40,260,200,18,this.backgroundColor,this.borderColor(),['MORE','ALL','FEW','MULTITOWN'],'teamOptionControl'),
+            this.teamOptionControl = new OptionControl(40,260,200,18,this.backgroundColor,this.borderColor(),['MORE','ALL','FEW','MULTITOWN','TWO TEAMS'],'teamOptionControl'),
             
             new TextControl(80,300,100,13,'LAND',this.borderColor()),
             this.landOptionControl = new OptionControl(40,320,200,18,this.backgroundColor,this.borderColor(),['MEDIUM ISLANDS','ADDITIONAL ISLANDS','BIG ISLAND','MEDIUM CONTINENT'],'landOptionControl'),
@@ -5093,10 +5215,13 @@ class StatisticsPanel extends Control {
 //        ctx.lineWidth = 1
         const BORDER_PADDING = 1
         const PADDING = 4
+        const LEFT_MARGIN = 15
         const PADDING_SMALL = 6
         
-        
         var sdbgvs = this.statDimensionsByGroupedVoronois(model)
+        var diplomacyQueue = model.diplomacyQueue.filter(a => a.from == model.playerChoosen)
+        var diplomacyRelations = model.diplomacyRelations.filter(a => a.from == model.playerChoosen)
+        
         for(var i in sdbgvs){
             var sdbgv = sdbgvs[i]
             var teamStat = sdbgv.teamStat
@@ -5105,7 +5230,9 @@ class StatisticsPanel extends Control {
             var row = sdbgv.row
             var column = sdbgv.column
             
-            var w = sdbgv.w
+            var left_margin = LEFT_MARGIN * (column+1)
+            
+            var w = sdbgv.w - LEFT_MARGIN
             var h = sdbgv.h
 
             var dark = darkColor(teamStat.team.color)
@@ -5123,27 +5250,28 @@ class StatisticsPanel extends Control {
             var fill = teamStat.team.color
             
             ctx.fillStyle = borderColor
-            ctx.fillRect(this.x + w * column,this.y + h * row,w,h*height)
+            ctx.fillRect(this.x + left_margin + w * column,this.y + h * row,w,h*height)
             if(this.state.highlightedTeam == teamStat.team){
                 ctx.fillStyle = '#ffff00'
-                ctx.fillRect(this.x + w * column,this.y + h * row,w,h*height)
+                ctx.fillRect(this.x + left_margin + w * column,this.y + h * row,w,h*height)
                 ctx.fillStyle = fill
             }
             if(this.state.chosenTeam == teamStat.team){
                 ctx.lineWidth = 2
                 ctx.fillStyle = '#ffff00'
-                ctx.fillRect(this.x + w * column,this.y + h * row,w,h*height)
+                ctx.fillRect(this.x + left_margin + w * column,this.y + h * row,w,h*height)
                 ctx.fillStyle = fill
                 padding = BORDER_PADDING*2
             }
+            
             ctx.fillStyle = fill
-            ctx.fillRect(this.x + w * column+padding,this.y + h * row+padding,w-padding*2,h*height-padding*2)
+            ctx.fillRect(this.x + left_margin + w * column+padding,this.y + h * row+padding,w-padding*2,h*height-padding*2)
             
             
             var totalRealArea = model.wholeRealLandArea(teamStat)
-            this.drawNumber(ctx,teamStat.unitCount,this.x + w * column + PADDING, this.y + h * row  + PADDING, w*2/5 - PADDING * 2, h - PADDING * 2, 4)
-            this.drawSlash(ctx,this.x + w*2/5 + w * column + PADDING, this.y + h * row  + PADDING, w/5 - PADDING * 2, h - PADDING * 2)
-            this.drawNumber(ctx,totalRealArea,this.x + w*3/5 + w * column + PADDING, this.y + h * row  + PADDING, w*2/5 - PADDING * 2, h - PADDING * 2, 4)
+            this.drawNumber(ctx,teamStat.unitCount,this.x + left_margin + w * column + PADDING, this.y + h * row  + PADDING, w*2/5 - PADDING * 2, h - PADDING * 2, 4)
+            this.drawSlash(ctx,this.x + left_margin + w*2/5 + w * column + PADDING, this.y + h * row  + PADDING, w/5 - PADDING * 2, h - PADDING * 2)
+            this.drawNumber(ctx,totalRealArea,this.x + left_margin + w*3/5 + w * column + PADDING, this.y + h * row  + PADDING, w*2/5 - PADDING * 2, h - PADDING * 2, 4)
             if(teamStat.voronois.length > 1){
                 var tsv = teamStat.voronois.sort((a,b)=>(b.landArea-a.landArea))
                 for(var i in tsv){
@@ -5153,16 +5281,31 @@ class StatisticsPanel extends Control {
                     var realArea = model.realLandArea(voronoi,teamStat)
                     
 
-                    this.drawNumber(ctx,voronoi.unitCount,this.x + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
-                    this.drawSlash(ctx,this.x + w*2/5 + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2)
-                    this.drawNumber(ctx,realArea,this.x + w*3/5 + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
+                    this.drawNumber(ctx,voronoi.unitCount,this.x + left_margin + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
+                    this.drawSlash(ctx,this.x + left_margin + w*2/5 + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2)
+                    this.drawNumber(ctx,realArea,this.x + left_margin + w*3/5 + w * column + PADDING_SMALL, this.y + h * (row + 1 + Number(i))  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
                 }
             }
             if(teamStat.embarkedCount > 0){
-                this.drawNumber(ctx,teamStat.embarkedCount,this.x + w * column + PADDING_SMALL, this.y + h * (row + height - 1)  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
+                this.drawNumber(ctx,teamStat.embarkedCount,this.x + left_margin + w * column + PADDING_SMALL, this.y + h * (row + height - 1)  + PADDING_SMALL, w*2/5 - PADDING_SMALL * 2, h - PADDING_SMALL * 2, 4)
             }
 
+            
+            
+            
+            ctx.fillStyle = '#fff'
+            if(diplomacyQueue.filter(a => a.to == teamStat.team && a.type == 'truce').length > 0){
+                ctx.strokeStyle = '#aaa'
+                drawPacifistSymbol(ctx,this.x + LEFT_MARGIN/2 + left_margin-LEFT_MARGIN + w * column,this.y + h/2 + h * row,'?')
+            }
+            
+            if(diplomacyRelations.filter(a => a.to == teamStat.team && a.type == 'truce').length > 0){
+                ctx.strokeStyle = '#111'
+                drawPacifistSymbol(ctx,this.x + LEFT_MARGIN/2 + left_margin-LEFT_MARGIN + w * column,this.y + h/2 + h * row,'?')
+            }
+            
             ctx.strokeStyle = border
+            
             row += height
             ctx.lineWidth = 1
 
@@ -5237,6 +5380,31 @@ class StatisticsPanel extends Control {
         }
     }
 }
+function drawPacifistSymbol(ctx,x,y,text,scale){
+    if(scale == undefined)
+        scale = 1
+    const r = 7*scale
+    ctx.beginPath()
+    ctx.moveTo(x+r*(0),y+r*(1))
+    ctx.lineTo(x+r*(-0.7),y+r*(0.7))
+    ctx.lineTo(x+r*(-1),y+r*(0))
+    ctx.lineTo(x+r*(-0.7),y+r*(-0.7))
+    ctx.lineTo(x+r*(0),y+r*(-1))
+    ctx.lineTo(x+r*(0.7),y+r*(-0.7))
+    ctx.lineTo(x+r*(1),y+r*(0))
+    ctx.lineTo(x+r*(0.7),y+r*(0.7))
+    ctx.lineTo(x+r*(0),y+r*(1))
+    ctx.lineTo(x+r*(0),y+r*(-1))
+    ctx.lineTo(x+r*(0),y+r*(0))
+    ctx.lineTo(x+r*(-0.7),y+r*(0.7))
+    ctx.lineTo(x+r*(0),y+r*(0))
+    ctx.lineTo(x+r*(0.7),y+r*(0.7))
+    ctx.lineTo(x+r*(0),y+r*(0))
+    
+    ctx.closePath()
+    ctx.fill()
+    ctx.stroke()
+}
 class Ai {
     constructor(controller,state){
         this.controller = controller
@@ -5246,6 +5414,7 @@ class Ai {
         
         this.standardGraph = null
         this.graph = {}
+        this.strategicPositionsDebug = null
     }
     model(){
         return this.controller.model
@@ -5265,6 +5434,28 @@ class Ai {
     }
     tryReset(){
         this.standardGraph = null
+    }
+    debug(){
+        if(this.strategicPositionsDebug != null){
+            console.log(1)
+            var codes = Object.keys(this.strategicPositionsDebug.mergedGraph)
+
+            for(var codeIndex in codes){
+                var code = codes[codeIndex]
+                var vertex = this.strategicPositionsDebug.mergedGraph[code]
+                                
+                //if(vertex.town){
+                var obj = vertex.town ? vertex.town : vertex.unit
+                    var value = this.strategicPositionsDebug.strategicPositions[code]
+                    var color = '#ff0'
+                    if(value < 0)
+                        color = '#f00'
+                    if(value > 0)
+                        color = '#0f0'
+                    //drawTextTemp(obj.x,obj.y,String(value).substr(0,5),color)
+                //}
+            }
+        }
     }
     think(){
         if(this.controller.state.pause)
@@ -5324,20 +5515,112 @@ class Ai {
     checkDiplomacy(mergedGraph){
         var model = this.model()
         
-        //model.diplomacyQueue
+//        console.log(model.diplomacyQueue,model.diplomacyRelations)
         
         var teamsInPlay = Array.from(new Set(model.units.map(unit => unit.team)))
         
+        var borderingTeams = this.borderingTeams(model,mergedGraph)
+
+        var teamsByColor = {}
+        for(var i in teamsInPlay){
+            var team = teamsInPlay[i]
+            teamsByColor[team.color] = team
+        }
+//        console.log(borderingTeams)
+        var goodBorderings = {}
+        for(var teamColor in borderingTeams){
+            goodBorderings[teamColor] = []
+        }
         var strategicPositions = this.strategicPositions(model,mergedGraph)
+        for(var teamColor in borderingTeams){
+            var team = teamsByColor[teamColor]
+            
+            if(team == undefined)
+                continue
+                
+            var teamScore = this.strategicPositionEvaluationForTeam(strategicPositions,mergedGraph,team)
+            for(var i in borderingTeams[teamColor]){
+                var borderingTeam = borderingTeams[teamColor][i]
+                
+                var withTestedRelation = this.strategicPositions(model,mergedGraph,[{type:'truce',from:team,to:borderingTeam},{type:'truce',from:borderingTeam,to:team}])
+                
+                var teamScore2 = this.strategicPositionEvaluationForTeam(withTestedRelation,mergedGraph,team)
+                if(teamScore != teamScore2)
+                    console.log(teamScore,teamScore2,teamColor,borderingTeam.color)
+            }
+        }
+        
+        this.strategicPositionsDebug = {strategicPositions:strategicPositions,mergedGraph:mergedGraph}
+        
+        //dummy for testing
+        for(var i in model.diplomacyQueue){
+            var request = model.diplomacyQueue[i]
+
+            if(request.to != model.playerChoosen)
+                model.acceptDiplomacyQueueRequest(request,true)
+        }
+        console.log(model.diplomacyRelations)
     }
-    strategicPositions(model,mergedGraph){
+    strategicPositionEvaluationForTeam(strategicPositions,mergedGraph,team){
+        var score = 0
+        for(var code in strategicPositions){
+            var vertex = mergedGraph[code]
+            
+            var vertexTeam = vertex.unit ? vertex.unit.team : vertex.town.team
+
+            if(vertexTeam == team){
+                score += strategicPositions[code]
+            }
+        }
+        return score
+    }
+    borderingTeams(model,mergedGraph){
+        var codes = Object.keys(mergedGraph)
+                
+        var borderingTeams = {}
+        
+        for(var codeIndex in codes){
+            var code = codes[codeIndex]
+            var vertex = mergedGraph[code]
+            
+            var vertexTeam = vertex.unit ? vertex.unit.team : vertex.town.team
+                
+            var oneMoved = false
+            var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
+                    
+            var unitRemained = null
+            var paths = vertex.paths
+            
+            if(vertexTeam != null){
+                borderingTeams[vertexTeam.color] = []
+
+                if(vertex.distanceToEnemyLevel == 0){
+                    for(var i in paths){
+                        var path = paths[i]
+                        var target = mergedGraph[path.targetCode]
+                        
+                        var targetTeam = target.unit ? target.unit.team : target.town.team
+                        
+                        if(targetTeam != vertexTeam){
+                            borderingTeams[vertexTeam.color].push(targetTeam)
+                        }
+                    }
+                    
+                }
+            }
+        }
+        
+        return borderingTeams
+    }
+    strategicPositions(model,mergedGraph,testedRelations){
         
         var codes = Object.keys(mergedGraph)
         
-        var maxDistanceToEnemy = Object.values(mergedGraph).map(a=>a.distanceToEnemyLevel).filter(a => a != Infinity).reduce((a,b) => Math.max(a,b),0)
+        var truceGraph = relationColorGraph('truce',model,testedRelations)
         
         var valuePerCode = {}
         var diffValuePerCode = {}
+        var realDistanceToEnemy = {}
         
         for(var codeIndex in codes){
             var code = codes[codeIndex]
@@ -5351,7 +5634,72 @@ class Ai {
                 valuePerCode[code] = 0
             }
             diffValuePerCode[code] = 0
+            realDistanceToEnemy[code] = vertex.distanceToEnemyLevel
         }
+        
+        var maxDistanceToEnemy = Object.values(mergedGraph).map(a=>a.distanceToEnemyLevel).filter(a => a != Infinity).reduce((a,b) => Math.max(a,b),0)
+        
+        if(testedRelations != null){
+            var removedTeams = {}
+            var removedVertices = []
+            for(var i in testedRelations){
+                var relation = testedRelations[i]
+                
+                removedTeams[relation.from.color] = true
+            }
+            for(var codeIndex in codes){
+                var code = codes[codeIndex]
+                var vertex = mergedGraph[code]
+                
+                var vertexTeam = vertex.unit ? vertex.unit.team : vertex.town.team
+                
+                if(vertexTeam != null && removedTeams[vertexTeam.color]){
+                    realDistanceToEnemy[code] = Infinity
+                    removedVertices.push(code)
+                }
+            }
+            
+            var removedVerticesCopy = removedVertices.slice()
+
+            for(var repeat = 0;repeat < 8;repeat++){
+                var newRemovedVerticesCopy = []
+                for(var i in removedVerticesCopy){
+                    var code = removedVerticesCopy[i]
+                    
+                    var vertex = mergedGraph[code]
+                    
+                    var vertexTeam = vertex.unit ? vertex.unit.team : vertex.town.team
+
+                    var oneMoved = false
+                    
+                    var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
+                            
+                    var unitRemained = null
+                    var paths = vertex.paths
+                    
+                    var updated = false
+                    for(var i in paths){
+                        var pathObject = paths[i]
+                        
+                        var neighboringVertex = mergedGraph[pathObject.targetCode]
+                        var neighborTeam = neighboringVertex.unit ? neighboringVertex.unit.team : neighboringVertex.town.team
+
+                        if(neighborTeam != vertexTeam && (neighborTeam == null || !inTruceGraph(truceGraph,vertexTeam,neighborTeam))){
+                            realDistanceToEnemy[code] = 0
+                            updated = true
+                        } else if(neighborTeam == vertexTeam && realDistanceToEnemy[code] > realDistanceToEnemy[pathObject.targetCode] + 1){
+                            realDistanceToEnemy[code] = realDistanceToEnemy[pathObject.targetCode] + 1
+                            updated = true
+                        }
+                    }
+                    
+                    if(!updated)
+                        newRemovedVerticesCopy.push(code)
+                }
+                removedVerticesCopy = newRemovedVerticesCopy
+            }
+        }
+        
         
         for(var repeat = maxDistanceToEnemy;repeat >= 1;repeat--){
             for(var codeIndex in codes){
@@ -5363,9 +5711,6 @@ class Ai {
                 var oneMoved = false
                 
                 var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
-                if(unit != null){
-                    
-                }
                         
                 var unitRemained = null
                 var paths = vertex.paths
@@ -5375,12 +5720,12 @@ class Ai {
                 for(var i in paths){
                     var path = paths[i]
                     
-                    if(vertex.distanceToEnemyLevel == repeat){
+                    if(realDistanceToEnemy[code] == repeat){
                         var target = mergedGraph[path.targetCode]
 
                         var targetTeam = target.unit ? target.unit.team : target.town.team
                         
-                        if(targetTeam == vertexTeam && target.distanceToEnemyLevel == repeat-1){
+                        if(targetTeam == vertexTeam && realDistanceToEnemy[path.targetCode] == repeat-1){
                             targetCodesToSend.push(path.targetCode)
                         }
                     }
@@ -5391,7 +5736,7 @@ class Ai {
                     
                     valuePerCode[targetCode] += valuePerCode[code] / targetCodesToSend.length
                 }
-                if(targetCodesToSend.length > 0)
+                if(realDistanceToEnemy[code] == repeat && repeat > 0)
                     valuePerCode[code] = 0
             }
         }
@@ -5403,13 +5748,12 @@ class Ai {
             
             var vertexTeam = vertex.unit ? vertex.unit.team : vertex.town.team
                 
-            var oneMoved = false
             var unit = vertex.town ? vertex.town.occupyingUnit : vertex.unit
                     
             var unitRemained = null
             var paths = vertex.paths
 
-            if(vertex.distanceToEnemyLevel == 0){
+            if(realDistanceToEnemy[code] == 0){
                 var targetCodesToSend = []
                 for(var i in paths){
                     var path = paths[i]
@@ -5417,9 +5761,11 @@ class Ai {
                     
                     var targetTeam = target.unit ? target.unit.team : target.town.team
                     
-                    var targetCode = path.targetCode
-                    if(targetTeam != vertexTeam){
-                        targetCodesToSend.push(path.targetCode)
+                    if(neighborTeam == null || !inTruceGraph(truceGraph,vertexTeam,neighborTeam)){
+                        var targetCode = path.targetCode
+                        if(targetTeam != vertexTeam){
+                            targetCodesToSend.push(path.targetCode)
+                        }
                     }
                 }
                 
@@ -5438,17 +5784,16 @@ class Ai {
             var vertex = mergedGraph[code]
             
             valuePerCode[code] -= diffValuePerCode[code]
-            
-            //if(vertex.town)
-            //    drawTextTemp(vertex.town.x,vertex.town.y,String(valuePerCode[code]).substr(0,5),'#ff0')
         }
-        
-        console.log(valuePerCode)
+        return valuePerCode
+        //console.log(valuePerCode)
     }
     sendUnitsByAi(mergedGraph){
         var model = this.model()
         var moved = 0
         
+        var truceGraph = relationColorGraph('truce',model)
+
         var shuffledCodes = Object.keys(mergedGraph).map(value => ({ value, sort: Math.random() }))
                     .sort((a, b) => a.sort - b.sort)
                     .map(({ value }) => value)
@@ -5507,7 +5852,9 @@ class Ai {
                         part = 1
                         
                     var targetTeam = target.unit ? target.unit.team : target.town.team
-                    if(targetTeam != unit.team || target.town == null/* && unit.towntaken != null*/ || target.distanceToEnemy < vertex.distanceToEnemy)
+                    if(inTruceGraph(truceGraph,unit.team,targetTeam))
+                        continue
+                    if(targetTeam != unit.team /*|| target.town == null/* && unit.towntaken != null*/ || target.distanceToEnemy < vertex.distanceToEnemy)
                         if(target.town != unit.towntaken || unit.towntaken == null || target.town == null){
                             var realTarget = target.town ? target.town : target.unit
                             if(target.town != null || target.town == null && target.unit.path.length == 0 || target.unit.team != unit.team){
@@ -5777,7 +6124,7 @@ class Ai {
             var closestTargetsPoints = landTargets.map(a => [a.x,a.y])
             var lands = [target.land]
 
-            var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*2,2)
+            var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*2,3)
 //            var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,false,max_dist*2,2)
 
             var paths = this.pathsFromGraph(landTargets,vectorGraph,false)
@@ -5803,7 +6150,7 @@ class Ai {
                 var closestTargetsPoints = seaTargets.map(a => [a.x,a.y])
                 var lands = model.lands
 
-                var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*2,1)
+                var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*2,2)
 //                var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,true,max_dist*2,1)
 
                 var paths2 = this.pathsFromGraph(seaTargets,vectorGraph,true)
@@ -5966,6 +6313,7 @@ class Ai {
         return result
     }
     mergedGraph(standardGraph,graph){
+        var model = this.model()
         var mergedGraph = {}
         
         for(var target_code in standardGraph){
@@ -6055,8 +6403,10 @@ class Ai {
             vertex.distanceToEnemyLevel = Infinity
             vertex.neighborsEnemy = 0
         }
+        
+        var truceGraph = relationColorGraph('truce',model)
 
-        for(var j = 0;j<8;j++){
+        for(var j = 0;j<12;j++){
             for(var target_code in mergedGraph){
                 var vertex = mergedGraph[target_code]
 
@@ -6073,16 +6423,16 @@ class Ai {
                         var neighboringVertex = mergedGraph[pathObject.targetCode]
                         var neighborTeam = neighboringVertex.unit ? neighboringVertex.unit.team : neighboringVertex.town.team
 
-                        if(neighborTeam != team){
+                        if(neighborTeam != team && !inTruceGraph(truceGraph,team,neighborTeam)){
                             if(vertex.distanceToEnemy > pathObject.dist)
                                 vertex.distanceToEnemy = pathObject.dist
                             vertex.neighborsEnemy++
-                        } else if(neighborTeam == team && vertex.distanceToEnemy > pathObject.dist + neighboringVertex.distanceToEnemy){
+                        } else if(vertex.distanceToEnemy > pathObject.dist + neighboringVertex.distanceToEnemy){
                             vertex.distanceToEnemy = pathObject.dist + neighboringVertex.distanceToEnemy
                         }
-                        if(neighborTeam != team){
+                        if(neighborTeam != team && !inTruceGraph(truceGraph,team,neighborTeam)){
                             vertex.distanceToEnemyLevel = 0
-                        } else if(neighborTeam == team && vertex.distanceToEnemyLevel > neighboringVertex.distanceToEnemyLevel + 1){
+                        } else if(vertex.distanceToEnemyLevel > neighboringVertex.distanceToEnemyLevel + 1){
                             vertex.distanceToEnemyLevel = neighboringVertex.distanceToEnemyLevel + 1
                         }
                     }
@@ -6157,6 +6507,7 @@ class GameHistory {
     */
     registerSnapshot(){
         this.states.push({
+            playerChoosen:this.model.playerChoosen,
             groupedMergedVoronois:this.model.groupedMergedVoronois.map(a => new Object({
                 voronois:a.voronois.map(b => new Object({
                     landArea:b.landArea,
@@ -6188,6 +6539,18 @@ class GameHistory {
             })),
             wholeRealLandArea:this.model.wholeRealLandArea,
             realLandArea:this.model.realLandArea,
+            diplomacyQueue:this.model.diplomacyQueue.map(a => new Object({
+                type:a.type,
+                from:a.fromm,
+                to:a.to,
+                time:a.time
+            })),
+            diplomacyRelations:this.model.diplomacyRelations.map(a => new Object({
+                type:a.type,
+                from:a.fromm,
+                to:a.to,
+                time:a.time
+            })),
         })
     }
     getCurrentModelData(){
@@ -6475,6 +6838,7 @@ class Controller {
             else
                 t.ai.tryReset()
         }
+        t.ai.debug()
         setTimeout(()=>{t.loop()},100)
     }
 }
