@@ -5627,11 +5627,12 @@ class Ai {
         for(var i in model.diplomacyRelations){
             var relation = model.diplomacyRelations[i]
 
-            if(relation.type == 'truce' && relation.time <= 0){
-                if(relation.from != model.playerChoosen){
-                    model.breakTruce(relation.from,relation.to)
+            if(relation != undefined) //bez sensu
+                if(relation.type == 'truce' && relation.time <= 0){
+                    if(relation.from != model.playerChoosen){
+                        model.breakTruce(relation.from,relation.to)
+                    }
                 }
-            }
         }
     }
     strategicPositionEvaluationForTeam(strategicPositions,mergedGraph,team){
