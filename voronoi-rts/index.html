@@ -1864,6 +1864,9 @@ class Model {
         
         this.EMBARKING_PROGRESS_SPEED = 1
         
+        
+        this.DIPLOMACY_COOLDOWN = 300
+        
                 
         this.graph = {}
         this.oldlands
@@ -3966,6 +3969,13 @@ class Model {
     inQueue(queue,askingTeam,targetTeam,type){
         return queue.filter(a => a.type == type && a.from == askingTeam && a.to == targetTeam).length > 0
     }
+    getRelation(askingTeam,targetTeam){
+        var relations = this.diplomacyRelations.filter(a=>a.from == askingTeam && a.to == targetTeam && a.type == 'truce')
+        if(relations.length > 0){
+            return relations[0]
+        }
+        return null
+    }
     askTruce(askingTeam,targetTeam){
         if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'truce') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'truce')){
             this.diplomacyQueue = this.diplomacyQueue.filter(a => a.from != askingTeam)
@@ -3975,6 +3985,15 @@ class Model {
                 to:targetTeam,
                 time:0
             })
+        }
+    }
+    breakTruce(askingTeam,targetTeam){
+        if(this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'truce')){
+            var relation = this.getRelation(askingTeam, targetTeam)
+            
+            if(relation != null && relation.type == 'truce' && relation.time <= 0){
+                this.diplomacyRelations = this.diplomacyRelations.filter(a => a.type != 'truce' || !(a.from == askingTeam && a.to == targetTeam) && !(a.to == askingTeam && a.from == targetTeam))
+            }
         }
     }
     askToVassalize(askingTeam,targetTeam){
@@ -4008,13 +4027,13 @@ class Model {
                         type: 'truce',
                         from: request.from,
                         to: request.to,
-                        time:600
+                        time:this.DIPLOMACY_COOLDOWN
                     })
                     this.diplomacyRelations.push({
                         type: 'truce',
                         from: request.to,
                         to: request.from,
-                        time:600
+                        time:this.DIPLOMACY_COOLDOWN
                     })
                 break
                 case 'ask-to-vassalize':
@@ -4022,7 +4041,7 @@ class Model {
                         type: 'vassal',
                         master: request.from,
                         vassal: request.to,
-                        time:600
+                        time:this.DIPLOMACY_COOLDOWN
                     })
                 break
                 case 'ask-for-vassalization':
@@ -4030,7 +4049,7 @@ class Model {
                         type: 'vassal',
                         master: request.to,
                         vassal: request.from,
-                        time:600
+                        time:this.DIPLOMACY_COOLDOWN
                     })
                 break
             }
@@ -5001,6 +5020,10 @@ class Button extends Control {
         this.borderColor = borderColor
         this.func = func
         this.textControl = new TextControl(x+h*0.2,y+h*0.2,w-h*0.4,h-h*0.4,text,borderColor)
+        this.disabled = false
+    }
+    setDisabled(disabled){
+        this.disabled = disabled
     }
     setColors(borderColor, color){
         this.borderColor = borderColor
@@ -5013,18 +5036,22 @@ class Button extends Control {
         ctx.fillStyle = this.color
         
         ctx.fillRect(this.x,this.y,this.w,this.h)
-        if(this.focus(mouseCoordsTransformed)){
+        if(!this.disabled && this.focus(mouseCoordsTransformed)){
             ctx.fillStyle = '#ffffff88'
             ctx.fillRect(this.x,this.y,this.w,this.h)
         }
-        ctx.strokeRect(this.x,this.y,this.w,this.h)
         
         ctx.lineWidth = 2
         this.textControl.draw(ctx,mouseCoordsTransformed)
         ctx.lineWidth = 1
+        if(this.disabled){
+            ctx.fillStyle = '#88888888'
+            ctx.fillRect(this.x,this.y,this.w,this.h)
+        }
+        ctx.strokeRect(this.x,this.y,this.w,this.h)
     }
     tryClick(mouseCoordsTransformed){
-        if(this.focus(mouseCoordsTransformed)){
+        if(!this.disabled && this.focus(mouseCoordsTransformed)){
             return this.func()
         }
     }
@@ -5080,14 +5107,44 @@ class DiplomacyRequestControl extends Control {
         this.textControl = new TextControl(x+15,y+15,w-30,30,'DIPLOMACY',borderColor)
         
         let t = this
-        this.truceButton = new Button(x+15,y+65,w-30,40,'TRUCE','#00000033','#000000bb',()=>{t.model.askTruce(t.model.playerChoosen,t.state.chosenTeam);t.state.chosenTeam = null;t.state.highlightedTeam = null})
+        this.truceButton = new Button(x+15,y+65,w-30,40,'TRUCE','#00000033','#000000bb',()=>{t.tryAskTruce()})
         this.vassalizeButton = new Button(x+15,y+115,w-30,40,'VASSALIZE','#00000033','#000000bb',()=>{t.model.askToVassalize(t.model.playerChoosen,t.state.chosenTeam);t.state.chosenTeam = null;t.state.highlightedTeam = null})
         this.becomeVassalButton = new Button(x+15,y+165,w-30,40,'BECOME VASSAL','#00000033','#000000bb',()=>{t.model.askForVassalization(t.model.playerChoosen,t.state.chosenTeam);t.state.chosenTeam = null;t.state.highlightedTeam = null})
         
         this.cancelButton = new Button(x+25,y+h-50,w-50,40,'CANCEL','#00000033','#000000bb',()=>{t.state.chosenTeam = null;t.state.highlightedTeam = null})
     }
+    tryAskTruce(){
+        if(this.model.inQueue(this.model.diplomacyRelations,this.model.playerChoosen,this.state.chosenTeam,'truce')){
+            this.model.breakTruce(this.model.playerChoosen,this.state.chosenTeam)
+        } else {
+            this.model.askTruce(this.model.playerChoosen,this.state.chosenTeam)
+        }
+        this.state.chosenTeam = null
+        this.state.highlightedTeam = null
+    }
     draw(ctx,mouseCoordsTransformed){
         var model = this.model instanceof Function ? this.model() : this.model
+        
+        var diplomacyQueue = model.diplomacyQueue.filter(a => a.from == model.playerChoosen)
+        var diplomacyRelations = model.diplomacyRelations.filter(a => a.from == model.playerChoosen)
+        
+        var truceData = diplomacyRelations.filter(a => a.to == this.state.chosenTeam)
+        if(truceData.length > 0){
+            if(truceData[0].time > 0){
+                this.truceButton.textControl.setText('TRUCE ['+Math.floor(truceData[0].time/10)+']')
+                this.truceButton.setDisabled(true)
+            } else {
+                this.truceButton.textControl.setText('BREAK TRUCE')
+                this.truceButton.setDisabled(false)
+            }
+        } else if(diplomacyQueue.filter(a => a.to == this.state.chosenTeam).length > 0){
+            this.truceButton.textControl.setText('WAITING...')
+            this.truceButton.setDisabled(true)
+        } else {
+            this.truceButton.textControl.setText('TRUCE')
+            this.truceButton.setDisabled(false)
+        }
+        
         
         var color = this.state.chosenTeam?.color ?? this.color        
         var dark = darkColor(color)
@@ -5531,13 +5588,15 @@ class Ai {
         for(var teamColor in borderingTeams){
             goodBorderings[teamColor] = []
         }
+        var goodScores = {}
         var strategicPositions = this.strategicPositions(model,mergedGraph)
         for(var teamColor in borderingTeams){
             var team = teamsByColor[teamColor]
             
             if(team == undefined)
                 continue
-                
+            
+
             var teamScore = this.strategicPositionEvaluationForTeam(strategicPositions,mergedGraph,team)
             for(var i in borderingTeams[teamColor]){
                 var borderingTeam = borderingTeams[teamColor][i]
@@ -5545,8 +5604,11 @@ class Ai {
                 var withTestedRelation = this.strategicPositions(model,mergedGraph,[{type:'truce',from:team,to:borderingTeam},{type:'truce',from:borderingTeam,to:team}])
                 
                 var teamScore2 = this.strategicPositionEvaluationForTeam(withTestedRelation,mergedGraph,team)
-                if(teamScore != teamScore2)
-                    console.log(teamScore,teamScore2,teamColor,borderingTeam.color)
+                if(teamScore < teamScore2){
+                    if(!(teamColor in goodScores))
+                        goodScores[teamColor] = {}
+                    goodScores[teamColor][borderingTeam.color] = true
+                }
             }
         }
         
@@ -5556,10 +5618,21 @@ class Ai {
         for(var i in model.diplomacyQueue){
             var request = model.diplomacyQueue[i]
 
-            if(request.to != model.playerChoosen)
-                model.acceptDiplomacyQueueRequest(request,true)
+            if(request.to != model.playerChoosen){
+                var accept = request.to.color in goodScores && request.from.color in goodScores[request.to.color] && goodScores[request.to.color][request.from.color]
+                model.acceptDiplomacyQueueRequest(request,accept)
+            }
         }
         console.log(model.diplomacyRelations)
+        for(var i in model.diplomacyRelations){
+            var relation = model.diplomacyRelations[i]
+
+            if(relation.type == 'truce' && relation.time <= 0){
+                if(relation.from != model.playerChoosen){
+                    model.breakTruce(relation.from,relation.to)
+                }
+            }
+        }
     }
     strategicPositionEvaluationForTeam(strategicPositions,mergedGraph,team){
         var score = 0
@@ -5601,7 +5674,7 @@ class Ai {
                         
                         var targetTeam = target.unit ? target.unit.team : target.town.team
                         
-                        if(targetTeam != vertexTeam){
+                        if(targetTeam != null && targetTeam != vertexTeam){
                             borderingTeams[vertexTeam.color].push(targetTeam)
                         }
                     }
@@ -5852,7 +5925,7 @@ class Ai {
                         part = 1
                         
                     var targetTeam = target.unit ? target.unit.team : target.town.team
-                    if(inTruceGraph(truceGraph,unit.team,targetTeam))
+                    if(targetTeam != null && inTruceGraph(truceGraph,unit.team,targetTeam))
                         continue
                     if(targetTeam != unit.team /*|| target.town == null/* && unit.towntaken != null*/ || target.distanceToEnemy < vertex.distanceToEnemy)
                         if(target.town != unit.towntaken || unit.towntaken == null || target.town == null){
@@ -6423,14 +6496,14 @@ class Ai {
                         var neighboringVertex = mergedGraph[pathObject.targetCode]
                         var neighborTeam = neighboringVertex.unit ? neighboringVertex.unit.team : neighboringVertex.town.team
 
-                        if(neighborTeam != team && !inTruceGraph(truceGraph,team,neighborTeam)){
+                        if(neighborTeam != team && neighborTeam != null && !inTruceGraph(truceGraph,team,neighborTeam)){
                             if(vertex.distanceToEnemy > pathObject.dist)
                                 vertex.distanceToEnemy = pathObject.dist
                             vertex.neighborsEnemy++
                         } else if(vertex.distanceToEnemy > pathObject.dist + neighboringVertex.distanceToEnemy){
                             vertex.distanceToEnemy = pathObject.dist + neighboringVertex.distanceToEnemy
                         }
-                        if(neighborTeam != team && !inTruceGraph(truceGraph,team,neighborTeam)){
+                        if(neighborTeam != team && neighborTeam != null && !inTruceGraph(truceGraph,team,neighborTeam)){
                             vertex.distanceToEnemyLevel = 0
                         } else if(vertex.distanceToEnemyLevel > neighboringVertex.distanceToEnemyLevel + 1){
                             vertex.distanceToEnemyLevel = neighboringVertex.distanceToEnemyLevel + 1
