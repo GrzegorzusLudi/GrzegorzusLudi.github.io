@@ -663,7 +663,192 @@ function validBand(band){
         return []
     return newBand
 }
+
 function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
+    var newPolygons = []
+    var holes = []
+    for(var i in polygons){
+        var polygon1 = polygons[i]
+        
+        var intersected1 = addIntersectionToPolygons(polygon1,polygon2)
+        var intersected2 = addIntersectionToPolygons(polygon2,polygon1)
+         console.log(intersected1)
+         console.log(intersected2)
+         var graph1 = polygonToGraph(intersected1)
+         var graph2 = polygonToGraph(intersected2,true)
+         console.log(Object.assign({},graph1))
+         console.log(Object.assign({},graph2))
+        
+        var newPolygon = []
+        
+        var on1 = true
+        
+        var guard = 0
+        
+        var key = null
+        var yet = false
+        var first = false
+        
+        var startKey = null
+        var firstKey = true
+        while((Object.keys(graph1).length > 0 || key != null) && guard < 1000){
+            if(key == null){
+                key = Object.keys(graph1)[0]/*
+                var j = 1
+                while(graph2[key] && j<Object.keys(graph1).length-1){
+                    key = Object.keys(graph1)[j]
+                    j++
+                }*/
+                console.log('!!!')
+            }
+            if(on1){
+                var node = graph1[key]
+
+                if(node == undefined || key == startKey){
+                    console.log('contue1')
+                    newPolygon = validBand(newPolygon)
+                    if(newPolygon.length > 0){
+                        newPolygons.push([newPolygon])
+                    }
+                    newPolygon = []
+                    key = null
+                    on1 = true
+                    guard++
+                    yet = false
+                    startKey = null
+                    continue
+                }
+                var point = node.pointFrom
+                var middlePoint = [(node.pointFrom[0] + node.pointTo[0])/2, (node.pointFrom[1] + node.pointTo[1])/2]
+                if(!hitTestInteriorAndNotPoint(intersected2,middlePoint[0],middlePoint[1])){
+                    if(startKey == null){
+                        startKey = key
+                    }
+                    console.log(key, 'yes1')
+                    newPolygon.push(point)
+                    yet = true
+                } else {
+                    console.log(key, 'no1')
+                }
+                console.log('deleted1 '+key)
+                delete graph1[key]
+                
+                //if(!graph2[key] || !firstKey)
+                    key = node.codeTo
+                firstKey = false
+                if(graph2[key] && yet){
+//                    if(yet){
+                        console.log('na 2')
+                        on1 = false
+                        console.log('deleted1+ '+key)
+                        //delete graph1[key]
+                        //delete graph1[key]
+//                    }
+                }
+            } else {
+                var node = graph2[key]
+
+                if(node == undefined || key == startKey){
+                    console.log('contue2')
+                    newPolygon = validBand(newPolygon)
+                    if(newPolygon.length > 0){
+                        newPolygons.push([newPolygon])
+                    }
+                    newPolygon = []
+                    key = null
+                    on1 = true
+                    guard++
+                    yet = false
+                    startKey = null
+                    continue
+                }
+                var point = node.pointFrom
+                var middlePoint = [(node.pointFrom[0] + node.pointTo[0])/2, (node.pointFrom[1] + node.pointTo[1])/2]
+                if(hitTestInteriorOrPoint(intersected1,middlePoint[0],middlePoint[1])){
+                    console.log(key, 'yes2')
+                    newPolygon.push(point)
+                } else {
+                    console.log(key, 'no2')
+                }
+                console.log('deleted2 '+key)
+                delete graph2[key]
+
+                key = node.codeTo
+                if(graph1[key] && yet){
+//                    if(yet){
+                        console.log('na 1')
+                        on1 = true
+                        console.log('deleted2+ '+key)
+                        delete graph2[key]
+//                    }
+                }
+            }
+            
+            guard++
+        }
+        var newHole = []
+        while((Object.keys(graph2).length > 0 || key != null) && guard < 1000){
+            if(key == null){
+                key = Object.keys(graph2)[0]
+                console.log('h !!!')
+            }
+            var node = graph2[key]//key in graph2 ? graph2[key][0] : null
+
+            if(node == undefined){
+                console.log('h contue2')
+                newHole = validBand(newHole)
+                if(newHole.length > 0){
+                    holes.push(newHole)
+                }
+                newHole = []
+                key = null
+                guard++
+                continue
+            }
+            var point = node.pointFrom
+            if(hitTestInteriorOrPoint(intersected1,point[0],point[1])){
+                console.log(key, 'h yes2')
+                newHole.push(point)
+            } else {
+                console.log(key, 'h no2')
+            }
+            console.log('h deleted2 '+key)
+            //graph2[key] = graph2[key].filter(a => a != node)
+            //if(graph2[key].length == 0)
+            delete graph2[key]
+            
+            key = node.codeTo
+        }
+
+    }
+    var holes2 = []
+    for(var j in holes){
+        var hole = holes[j]
+        var unused = true
+        for(var i in newPolygons){
+            var newPolygon = newPolygons[i]
+        
+            if(hitTestBand(newPolygon[0],hole[0][0],hole[0][1])){
+                newPolygon.push(hole)
+                unused = false
+            }
+        }
+        if(unused){
+            holes2.push(hole)
+        }
+    }
+    for(var j in holes2){
+        var hole = holes2[j]
+        var unused = true
+        
+        if(hitTestBand(intersected1[0],hole[0][0],hole[0][1])){
+            newPolygons.push([hole])
+            unused = false
+        }
+    }
+    return newPolygons//.concat(holes)
+}
+function diffPolygonsBad(polygons, polygon2){  //polygons,a,b,bottom
     var newPolygons = []
     for(var i in polygons){
         var polygon1 = polygons[i]
@@ -770,7 +955,7 @@ function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
         
     }
     return newPolygons
-}
+}/*
 function polygonToGraph(intersected,reversed){
     var graph = {}
     for(var j in intersected){
@@ -790,8 +975,69 @@ function polygonToGraph(intersected,reversed){
         }
     }
     return graph
+}*/
+
+function polygonToGraph(intersected,reversed){
+    var graph = {}
+    for(var j in intersected){
+        var band = intersected[j]
+        var kdif = 0
+        for(var k=0;k<band.length;k++){
+            var point1,point2
+            if(reversed ^ (j == 0)){
+                point1 = band[(k-(-1))%band.length]
+                point2 = band[(k+band.length-kdif)%band.length]
+            } else {
+                point1 = band[(k+band.length-kdif)%band.length]
+                point2 = band[(k-(-1))%band.length]
+            }
+            if(point1[0] == point2[0] && point1[1] == point2[1]){
+                kdif++
+				continue
+            }
+            kdif = 0
+            var kod = point1[0]+'#'+point1[1]
+//            if(!(kod in graph))
+//                graph[kod] = []
+//            graph[kod].push({codeTo:point2[0]+'#'+point2[1],pointFrom:point1,pointTo:point2,angle:Math.atan2(point2[1]-point1[1], point2[0]-point1[0])})
+            graph[kod] = {codeTo:point2[0]+'#'+point2[1],pointFrom:point1,pointTo:point2}
+        }
+    }
+    return graph
 }
 function addIntersectionToPolygons(polygon1,polygon2){
+    var newPolygon = []
+    for(var i in polygon1){
+        var band1 = polygon1[i]
+        var newBand = []
+        
+        for(var j = 0;j<band1.length;j++){
+            var point1 = band1[j]
+            var point2 = band1[(j-(-1))%band1.length]
+            
+            newBand.push(point1)
+            var intersections = segmentsIntersectionsWithPolygon(point1,point2,polygon2)
+            var lastPoint = point1
+            for(var k in intersections){
+                newBand.push(intersections[k])
+            }
+        }
+        var newerBand = []
+        var last = null
+        for(var i=0;i<newBand.length;i++){
+            var elem = newBand[i]
+            if(last == null || elem[0] != last[0] || elem[1] != last[1]){
+                newerBand.push(elem)
+                last = elem
+            }
+        }
+        if(newerBand[0][0] == newerBand[newerBand.length-1][0] && newerBand[0][1] == newerBand[newerBand.length-1][1])
+            newerBand = newerBand.slice(1)
+        newPolygon.push(newerBand)
+    }
+    return newPolygon
+}
+function addIntersectionToPolygonsOld(polygon1,polygon2){
     var newPolygon = []
     for(var i in polygon1){
         var band1 = polygon1[i]
@@ -1495,11 +1741,13 @@ const vectorLetters = {
     'G':[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.5],[0.5,0.5],],
     'H':[[0.0,0.0],[0.0,1.0],[0.0,0.5],[1.0,0.5],[1.0,0.0],[1.0,1.0],],
     'I':[[0.5,0.0],[0.5,1.0],],
+    'J':[[1.0,0.0],[1.0,1.0],[0.0,1.0],[0.0,0.5],],
     'K':[[0.0,0.0],[0.0,1.0],[0.0,0.5],[1.0,0.0],[0.0,0.5],[1.0,1.0],],
     'L':[[0.0,0.0],[0.0,1.0],[1.0,1.0],],
     'M':[[0.0,1.0],[0.0,0.0],[0.5,0.5],[1.0,0.0],[1.0,1.0],],
     'N':[[0.0,1.0],[0.0,0.0],[1.0,1.0],[1.0,0.0],],
     'O':[[1.0,0.0],[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],],
+    'Q':[[[1.0,0.0],[0.0,0.0],[0.0,0.6],[1.0,0.6],[1.0,0.0],],[[0.5,0.4],[1.0,1.0]]],
     'P':[[0.0,1.0],[0.0,0.0],[1.0,0.0],[1.0,0.5],[0.0,0.5],],
     'R':[[0.0,1.0],[0.0,0.0],[0.75,0.0],[0.75,0.5],[0.0,0.5],[1.0,0.5],[1.0,1.0],],
     'S':[[1.0,0.0],[0.0,0.0],[0.0,0.5],[1.0,0.5],[1.0,1.0],[0.0,1.0],],
@@ -1831,6 +2079,7 @@ class Unit {
 class Model {
     constructor(landTownDensity,teamConfiguration,landConfiguration,screenResolutionConfiguration){
         this.WIDTH = 650
+        this.LARGE_WIDTH = 650
         this.ZOOM = 1
         this.CHUNKS_PER_SIDE = 6
         this.NUMBER_OF_POINTS = 250
@@ -4144,6 +4393,7 @@ class View {
                 
         this.drawLands(true)
         this.drawVoronois()
+        this.drawTruces()
         this.drawLands(false)
         this.drawVoronoiHighlights()
         this.drawVoronoiChosen()
@@ -4197,13 +4447,13 @@ class View {
         const PANEL_X = this.state.state.PANEL_X
         
         this.ctx.fillStyle = this.state.state.backgroundColor
-        this.ctx.fillRect(PANEL_X,0,this.canv.width-this.model.WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
+        this.ctx.fillRect(PANEL_X,0,this.canv.width-this.model.LARGE_WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
         this.ctx.fillStyle = '#ffffff44'
-        this.ctx.fillRect(PANEL_X,0,this.canv.width-this.model.WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
+        this.ctx.fillRect(PANEL_X,0,this.canv.width-this.model.LARGE_WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
 
         this.ctx.strokeStyle = '#000'
         this.ctx.lineWidth = 2
-        this.ctx.strokeRect(PANEL_X,0,this.canv.width-this.model.WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
+        this.ctx.strokeRect(PANEL_X,0,this.canv.width-this.model.LARGE_WIDTH-this.PADDING*3,this.canv.height-this.PADDING*2)
         this.ctx.lineWidth = 1
         
         this.ctx.translate(PANEL_X,0)
@@ -4278,6 +4528,76 @@ class View {
         //for(var i in modelData.lostVoronoiParts){
         //    this.drawLand(modelData.lostVoronoiParts[i].polygon,'#ff0','#0004')
         //}
+    }
+    drawTruces(){
+        var modelData = this.currentModelData()
+        
+        var voronoiables = modelData.mergedVoronois//this.model.getVoronoiables()
+        var voronoisByTeamColor = {}
+        
+        for(var i in voronoiables){
+            var voronoiable = voronoiables[i]
+            if(voronoiable.voronoi != null){
+                if(voronoiable.team != null){
+                    var color = voronoiable.team.color
+                    if(!(color in voronoisByTeamColor))
+                        voronoisByTeamColor[color] = []
+                    for(var j in voronoiable.voronoi){
+                        voronoisByTeamColor[color].push(voronoiable.voronoi[j])
+                    }
+                }
+            }
+        }
+        for(var i in modelData.diplomacyRelations){
+            var relation = modelData.diplomacyRelations[i]
+            
+            var voronois1 = voronoisByTeamColor[relation.from.color]
+            var voronois2 = voronoisByTeamColor[relation.to.color]
+
+            for(var v1 in voronois1){
+                for(var v2 in voronois2){
+                    var poly1 = voronois1[v1]
+                    var poly2 = voronois2[v2]
+                    for(var i in poly1){
+                        for(var ii in poly1[i]){
+                            for(var j in poly2){
+                                for(var jj in poly2[j]){
+                                    var s1 = [poly1[i][ii], poly1[i][(ii-(-1))%poly1[i].length]]
+                                    var s2 = [poly2[j][jj], poly2[j][(jj-(-1))%poly2[j].length]]
+                                    
+                                    //if(dist(s1[0][0],s1[0][1],s2[0][0],s2[0][1]) < 1 && dist(s1[1][0],s1[1][1],s2[1][0],s2[1][1]) < 1){
+                                    //    graph[i][j] = true
+                                    //    graph[j][i] = true
+                                    //}
+                                    var looseRules = true
+                                    var distLimit = looseRules != undefined ? 1 : 0.00000001
+                                    
+                                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit){
+                                        this.ctx.lineWidth = 1.8
+                                        this.ctx.strokeStyle = '#000'
+                                        this.ctx.beginPath()
+                                        this.ctx.moveTo(s1[0][0],s1[0][1])
+                                        this.ctx.lineTo(s1[1][0],s1[1][1])
+                                        this.ctx.closePath()
+                                        this.ctx.stroke()
+                                        this.ctx.lineWidth = 1
+                                    
+                                        /*
+                                        graph['a'+i+'#'+ii] = graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
+                                        graph['b'+j+'#'+jj] = graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
+                                        
+                                        delete graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
+                                        delete graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
+                                        
+                                        thereWasBorder = true*/
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     drawVoronoiHighlights(){
         
@@ -5096,6 +5416,71 @@ class ArrowButton extends Control {
         }
     }
 }
+class DiplomacyIncomingRequestControl extends Control {
+    constructor(x,y,w,h,color,borderColor,model,state){
+        super(x,y,w,h)
+        this.color = color
+        this.borderColor = borderColor
+        this.model = model
+        this.state = state
+        
+        this.textControl = new TextControl(x+15,y+15,w-30,30,'REQUEST',borderColor)
+        
+        let t = this
+        this.acceptButton = new Button(x+15,y+65,w-30,40,'ACCEPT','#00000033','#000000bb',()=>{t.accept()})
+        this.rejectButton = new Button(x+25,y+115,w-50,40,'REJECT','#00000033','#000000bb',()=>{t.reject()})
+    }
+    accept(){
+        var model = this.model instanceof Function ? this.model() : this.model
+        
+        var diplomacyQueue = model.diplomacyQueue.filter(a => a.to == model.playerChoosen)
+        
+        var currentRequest = diplomacyQueue[0]
+        
+        model.acceptDiplomacyQueueRequest(currentRequest,true)
+    }
+    reject(){
+        var model = this.model instanceof Function ? this.model() : this.model
+        
+        var diplomacyQueue = model.diplomacyQueue.filter(a => a.to == model.playerChoosen)
+        
+        var currentRequest = diplomacyQueue[0]
+        
+        model.acceptDiplomacyQueueRequest(currentRequest,false)
+    }
+    draw(ctx,mouseCoordsTransformed){
+        var model = this.model instanceof Function ? this.model() : this.model
+        
+        var diplomacyQueue = model.diplomacyQueue.filter(a => a.to == model.playerChoosen)
+        
+        var currentRequest = diplomacyQueue[0]
+        
+        var color = currentRequest.from.color        
+        var dark = darkColor(color)
+        var borderColor = dark ? '#fffa' : '#000'
+        var shadeColor = dark ? '#fff2' : '#0002'
+        
+        ctx.strokeStyle = borderColor
+        ctx.fillStyle = color
+        
+        ctx.lineWidth = 2
+        ctx.strokeRect(this.x,this.y,this.w,this.h)
+        ctx.fillRect(this.x,this.y,this.w,this.h)
+        ctx.lineWidth = 1
+        
+        this.textControl.color = borderColor
+        this.textControl.draw(ctx,mouseCoordsTransformed)
+        
+        this.acceptButton.setColors(borderColor, shadeColor)
+        this.acceptButton.draw(ctx,mouseCoordsTransformed)
+        this.rejectButton.setColors(borderColor, shadeColor)
+        this.rejectButton.draw(ctx,mouseCoordsTransformed)
+    }
+    tryClick(mouseCoordsTransformed){
+        this.acceptButton.tryClick(mouseCoordsTransformed)
+        this.rejectButton.tryClick(mouseCoordsTransformed)
+    }
+}
 class DiplomacyRequestControl extends Control {
     constructor(x,y,w,h,color,borderColor,model,state){
         super(x,y,w,h)
@@ -5190,6 +5575,7 @@ class StatisticsPanel extends Control {
         
         var diplomacyRequestControlPadding = 20
         this.diplomacyRequestControl = new DiplomacyRequestControl(x+diplomacyRequestControlPadding,y+diplomacyRequestControlPadding,w-diplomacyRequestControlPadding*2,h-diplomacyRequestControlPadding*2,this.color,this.borderColor,this.model,this.state)
+        this.diplomacyIncomingRequestControl= new DiplomacyIncomingRequestControl(x+diplomacyRequestControlPadding,y+diplomacyRequestControlPadding,w-diplomacyRequestControlPadding*2,250-diplomacyRequestControlPadding*2,this.color,this.borderColor,this.model,this.state)
         //this.func = func
         //this.textControl = new TextControl(x+h*0.2,y+h*0.2,w-h*0.4,h-h*0.4,text,borderColor)
     }
@@ -5368,7 +5754,11 @@ class StatisticsPanel extends Control {
 
         }
         
-        if(this.state.chosenTeam){
+        if(model.diplomacyQueue.filter(a => a.to == model.playerChoosen).length > 0){
+            var currentRequest = model.diplomacyQueue.filter(a => a.to == model.playerChoosen)[0]
+            
+            this.diplomacyIncomingRequestControl.draw(ctx,mouseCoordsTransformed)
+        } else if(this.state.chosenTeam){
             this.diplomacyRequestControl.draw(ctx,mouseCoordsTransformed)
         }
     }
@@ -5421,7 +5811,11 @@ class StatisticsPanel extends Control {
         var model = this.model instanceof Function ? this.model() : this.model
 
         if(this.state.gameplay){
-            if(this.state.chosenTeam == null){
+            if(model.diplomacyQueue.filter(a => a.to == model.playerChoosen).length > 0){
+                this.diplomacyIncomingRequestControl.tryClick(mouseCoordsTransformed)
+            } else if(this.state.chosenTeam != null){
+                this.diplomacyRequestControl.tryClick(mouseCoordsTransformed)
+            } else {
                 if(this.getHighlightedPanelTeam(mouseCoordsTransformed) != null){
                     if(this.state.highlightedTeam != null && this.state.gameplay) {
                         this.state.chosenTeam = this.state.chosenTeam == this.state.highlightedTeam || this.state.highlightedTeam == model.playerChoosen
@@ -5431,8 +5825,6 @@ class StatisticsPanel extends Control {
                         this.state.chosenTeam = null
                     }
                 }
-            } else {
-                this.diplomacyRequestControl.tryClick(mouseCoordsTransformed)
             }
         }
     }
@@ -5472,6 +5864,8 @@ class Ai {
         this.standardGraph = null
         this.graph = {}
         this.strategicPositionsDebug = null
+        
+        this.goodTruceRequestProspects = {}
     }
     model(){
         return this.controller.model
@@ -5588,6 +5982,8 @@ class Ai {
         for(var teamColor in borderingTeams){
             goodBorderings[teamColor] = []
         }
+        
+            
         var goodScores = {}
         var strategicPositions = this.strategicPositions(model,mergedGraph)
         for(var teamColor in borderingTeams){
@@ -5595,6 +5991,9 @@ class Ai {
             
             if(team == undefined)
                 continue
+                
+            if(!(teamColor in this.goodTruceRequestProspects))
+                this.goodTruceRequestProspects[teamColor] = {}
             
 
             var teamScore = this.strategicPositionEvaluationForTeam(strategicPositions,mergedGraph,team)
@@ -5608,6 +6007,16 @@ class Ai {
                     if(!(teamColor in goodScores))
                         goodScores[teamColor] = {}
                     goodScores[teamColor][borderingTeam.color] = true
+                    if(!(borderingTeam.color in this.goodTruceRequestProspects[teamColor]))
+                        this.goodTruceRequestProspects[teamColor][borderingTeam.color] = 1
+                    else
+                        this.goodTruceRequestProspects[teamColor][borderingTeam.color]++
+                }
+            }
+            
+            for(var color2 in this.goodTruceRequestProspects[teamColor]){
+                if(!(teamColor in goodScores) || !(color2 in goodScores[teamColor]) || !goodScores[teamColor][color2]){
+                    delete this.goodTruceRequestProspects[teamColor][color2]
                 }
             }
         }
@@ -5618,9 +6027,21 @@ class Ai {
         for(var i in model.diplomacyQueue){
             var request = model.diplomacyQueue[i]
 
-            if(request.to != model.playerChoosen){
-                var accept = request.to.color in goodScores && request.from.color in goodScores[request.to.color] && goodScores[request.to.color][request.from.color]
-                model.acceptDiplomacyQueueRequest(request,accept)
+            if(request != undefined)
+                if(request.to != model.playerChoosen){
+                    var accept = request.to.color in goodScores && request.from.color in goodScores[request.to.color] && goodScores[request.to.color][request.from.color]
+                    model.acceptDiplomacyQueueRequest(request,accept)
+                }
+        }
+        for(var colorFrom in this.goodTruceRequestProspects){
+            if(colorFrom == model.playerChoosen.color)
+                continue
+                
+            var prospects = this.goodTruceRequestProspects[colorFrom]
+            for(var colorTo in prospects){
+                if(prospects[colorTo] >= 3 && colorFrom in teamsByColor && colorTo in teamsByColor){
+                    model.askTruce(teamsByColor[colorFrom], teamsByColor[colorTo])
+                }
             }
         }
         console.log(model.diplomacyRelations)
@@ -5630,7 +6051,8 @@ class Ai {
             if(relation != undefined) //bez sensu
                 if(relation.type == 'truce' && relation.time <= 0){
                     if(relation.from != model.playerChoosen){
-                        model.breakTruce(relation.from,relation.to)
+                        if(!(relation.from.color in goodScores) || !(relation.to.color in goodScores[relation.from.color]))
+                            model.breakTruce(relation.from,relation.to)
                     }
                 }
         }
@@ -5909,7 +6331,7 @@ class Ai {
                 var paths 
                 
                 if(this.ailevel >= 3)
-                    paths = vertex.paths.slice().sort((a,b) => (a.distanceToEnemy + (a.unit ? a.unit.size : 0)) - (b.distanceToEnemy + (b.unit ? b.unit.size : 0)))
+                    paths = vertex.paths.slice().sort((a,b) => (a.distanceToEnemy + (a.unit && !a.town ? a.unit.size : 0)) - (b.distanceToEnemy + (b.unit && !b.town ? b.unit.size : 0)/10))
                 else
                     paths = vertex.paths.slice().map(a=>new Object({obj:a,val:Math.random()})).sort((a,b) => a.val - b.val).map(a=>a.obj)
                 for(var i in paths){
@@ -6615,13 +7037,13 @@ class GameHistory {
             realLandArea:this.model.realLandArea,
             diplomacyQueue:this.model.diplomacyQueue.map(a => new Object({
                 type:a.type,
-                from:a.fromm,
+                from:a.from,
                 to:a.to,
                 time:a.time
             })),
             diplomacyRelations:this.model.diplomacyRelations.map(a => new Object({
                 type:a.type,
-                from:a.fromm,
+                from:a.from,
                 to:a.to,
                 time:a.time
             })),
