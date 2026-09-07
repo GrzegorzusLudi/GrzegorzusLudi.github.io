@@ -339,12 +339,9 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
                     //    graph[i][j] = true
                     //    graph[j][i] = true
                     //}
-                    var distLimit = looseRules != undefined ? 1 : 0.00001
+                    var distLimit = looseRules != undefined ? 1 : 0.00000001
                     
-                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit/* || 
-                        !(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit) &&
-                        distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.00000001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.00000001 &&
-                        dist(s1[0][0],s1[0][1],s1[1][0],s1[1][1]) > 0.00000001 && dist(s2[0][0],s2[0][1],s2[1][0],s2[1][1]) > 0.00000001*/){
+                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit){
                         graph['a'+i+'#'+ii] = graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
                         graph['b'+j+'#'+jj] = graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
                         
@@ -462,8 +459,6 @@ function verticalLinearLimitPolygons(polygons,x,left){
             for(var j = 0;j<band.length;j++){
                 var point1 = band[j]
                 var point2 = band[(j-(-1)) % band.length]
-                point1 = [Math.round(point1[0]*(2**40))/(2**40),Math.round(point1[1]*(2**40))/(2**40)]
-                point2 = [Math.round(point2[0]*(2**40))/(2**40),Math.round(point2[1]*(2**40))/(2**40)]
                 
                 var p1inside = pointInsideVerticalLinearLimit(point1[0],x,left)
                 var p2inside = pointInsideVerticalLinearLimit(point2[0],x,left)
@@ -537,8 +532,6 @@ function nonVerticalLinearLimitPolygons(polygons,a,b,bottom){
             for(var j = 0;j<band.length;j++){
                 var point1 = band[j]
                 var point2 = band[(j-(-1)) % band.length]
-                point1 = [Math.round(point1[0]*(2**40))/(2**40),Math.round(point1[1]*(2**40))/(2**40)]
-                point2 = [Math.round(point2[0]*(2**40))/(2**40),Math.round(point2[1]*(2**40))/(2**40)]
                 
                 var p1inside = pointInsideNonVerticalLinearLimit(point1[0],point1[1],a,b,bottom)
                 var p2inside = pointInsideNonVerticalLinearLimit(point2[0],point2[1],a,b,bottom)
@@ -621,7 +614,7 @@ function splitPolygonsByIntersectionsAndAddToNewPolygons(newPolygon,polygonInter
         delete cycles[firstKey]
         
         var l = 0
-        while(key != firstKey && key != undefined && l < 1000){
+        while(key != firstKey && l < 1000){
             subcycle.push(key)
             var oldkey = key
             key = cycles[key]
@@ -640,8 +633,6 @@ function splitPolygonsByIntersectionsAndAddToNewPolygons(newPolygon,polygonInter
         //console.log(subcycle)
         var subpolygon = []
         for(var j in subcycle){
-            if(subcycle[j] == undefined)
-                console.log(subcycle)
             var keys = subcycle[j].split('#')
             var point = newPolygon[keys[0]][keys[1]]
             
@@ -681,12 +672,12 @@ function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
         
         var intersected1 = addIntersectionToPolygons(polygon1,polygon2)
         var intersected2 = addIntersectionToPolygons(polygon2,polygon1)
-        //console.log(intersected1)
-        //console.log(intersected2)
-        var graph1 = polygonToGraph(intersected1,true)
-        var graph2 = polygonToGraph(intersected2)
-        //console.log(Object.assign({},graph1))
-        //console.log(Object.assign({},graph2))
+         console.log(intersected1)
+         console.log(intersected2)
+         var graph1 = polygonToGraph(intersected1)
+         var graph2 = polygonToGraph(intersected2,true)
+         console.log(Object.assign({},graph1))
+         console.log(Object.assign({},graph2))
         
         var newPolygon = []
         
@@ -700,21 +691,21 @@ function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
         
         var startKey = null
         var firstKey = true
-        while((Object.keys(graph1).length > 0 || key != null) && guard < 10000){
+        while((Object.keys(graph1).length > 0 || key != null) && guard < 1000){
             if(key == null){
-                key = Object.keys(graph1)[0]
+                key = Object.keys(graph1)[0]/*
                 var j = 1
                 while(graph2[key] && j<Object.keys(graph1).length-1){
                     key = Object.keys(graph1)[j]
                     j++
-                }
-                //console.log('!!!')
+                }*/
+                console.log('!!!')
             }
             if(on1){
                 var node = graph1[key]
 
                 if(node == undefined || key == startKey){
-                    //console.log('contue1')
+                    console.log('contue1')
                     newPolygon = validBand(newPolygon)
                     if(newPolygon.length > 0){
                         newPolygons.push([newPolygon])
@@ -733,23 +724,23 @@ function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
                     if(startKey == null){
                         startKey = key
                     }
-                    //console.log(key, 'yes1')
+                    console.log(key, 'yes1')
                     newPolygon.push(point)
                     yet = true
                 } else {
-                    //console.log(key, 'no1')
+                    console.log(key, 'no1')
                 }
-//                console.log('deleted1 '+key)
+                console.log('deleted1 '+key)
                 delete graph1[key]
                 
                 //if(!graph2[key] || !firstKey)
                     key = node.codeTo
                 firstKey = false
-                if(graph2[key]/* && !graph1[graph2[key]]/* && yet*/){
+                if(graph2[key] && yet){
 //                    if(yet){
-                        //console.log('na 2')
+                        console.log('na 2')
                         on1 = false
-//                        console.log('deleted1+ '+key)
+                        console.log('deleted1+ '+key)
                         //delete graph1[key]
                         //delete graph1[key]
 //                    }
@@ -758,7 +749,7 @@ function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
                 var node = graph2[key]
 
                 if(node == undefined || key == startKey){
-                    //console.log('contue2')
+                    console.log('contue2')
                     newPolygon = validBand(newPolygon)
                     if(newPolygon.length > 0){
                         newPolygons.push([newPolygon])
@@ -774,21 +765,21 @@ function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
                 var point = node.pointFrom
                 var middlePoint = [(node.pointFrom[0] + node.pointTo[0])/2, (node.pointFrom[1] + node.pointTo[1])/2]
                 if(hitTestInteriorOrPoint(intersected1,middlePoint[0],middlePoint[1])){
-                    //console.log(key, 'yes2')
+                    console.log(key, 'yes2')
                     newPolygon.push(point)
                 } else {
-                    //console.log(key, 'no2')
+                    console.log(key, 'no2')
                 }
-                //console.log('deleted2 '+key)
+                console.log('deleted2 '+key)
                 delete graph2[key]
 
                 key = node.codeTo
-                if(graph1[key]/* && !graph2[graph1[key]]/* && yet*/){
+                if(graph1[key] && yet){
 //                    if(yet){
-                        //console.log('na 1')
+                        console.log('na 1')
                         on1 = true
-                        //console.log('deleted2+ '+key)
-                        //delete graph2[key]
+                        console.log('deleted2+ '+key)
+                        delete graph2[key]
 //                    }
                 }
             }
@@ -796,15 +787,15 @@ function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
             guard++
         }
         var newHole = []
-        while((Object.keys(graph2).length > 0 || key != null) && guard < 10000){
+        while((Object.keys(graph2).length > 0 || key != null) && guard < 1000){
             if(key == null){
                 key = Object.keys(graph2)[0]
-                //console.log('h !!!')
+                console.log('h !!!')
             }
             var node = graph2[key]//key in graph2 ? graph2[key][0] : null
 
             if(node == undefined){
-                //console.log('h contue2')
+                console.log('h contue2')
                 newHole = validBand(newHole)
                 if(newHole.length > 0){
                     holes.push(newHole)
@@ -816,12 +807,12 @@ function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
             }
             var point = node.pointFrom
             if(hitTestInteriorOrPoint(intersected1,point[0],point[1])){
-                //console.log(key, 'h yes2')
+                console.log(key, 'h yes2')
                 newHole.push(point)
             } else {
-                //console.log(key, 'h no2')
+                console.log(key, 'h no2')
             }
-            //console.log('h deleted2 '+key)
+            console.log('h deleted2 '+key)
             //graph2[key] = graph2[key].filter(a => a != node)
             //if(graph2[key].length == 0)
             delete graph2[key]
@@ -851,7 +842,7 @@ function diffPolygons(polygons, polygon2){  //polygons,a,b,bottom
         var unused = true
         
         if(hitTestBand(intersected1[0],hole[0][0],hole[0][1])){
-            newPolygons.push([hole.slice().reverse()])
+            newPolygons.push([hole])
             unused = false
         }
     }
@@ -1000,11 +991,7 @@ function polygonToGraph(intersected,reversed){
                 point1 = band[(k+band.length-kdif)%band.length]
                 point2 = band[(k-(-1))%band.length]
             }
-            point1 = [Math.round(point1[0]*(2**40))/(2**40),Math.round(point1[1]*(2**40))/(2**40)]
-            point2 = [Math.round(point2[0]*(2**40))/(2**40),Math.round(point2[1]*(2**40))/(2**40)]
-//            if(point1[0] == point2[0] && point1[1] == point2[1]){
-//            if(point1[0] == point2[0] && point1[1] == point2[1]){
-            if(pointsEqual(point1,point2)){
+            if(point1[0] == point2[0] && point1[1] == point2[1]){
                 kdif++
 				continue
             }
@@ -1027,8 +1014,6 @@ function addIntersectionToPolygons(polygon1,polygon2){
         for(var j = 0;j<band1.length;j++){
             var point1 = band1[j]
             var point2 = band1[(j-(-1))%band1.length]
-            point1 = [Math.round(point1[0]*Math.pow(2,40))/Math.pow(2,40), Math.round(point1[1]*Math.pow(2,40))/Math.pow(2,40)]
-            point2 = [Math.round(point2[0]*Math.pow(2,40))/Math.pow(2,40), Math.round(point2[1]*Math.pow(2,40))/Math.pow(2,40)]
             
             newBand.push(point1)
             var intersections = segmentsIntersectionsWithPolygon(point1,point2,polygon2)
@@ -1041,8 +1026,7 @@ function addIntersectionToPolygons(polygon1,polygon2){
         var last = null
         for(var i=0;i<newBand.length;i++){
             var elem = newBand[i]
-//            if(last == null || elem[0] != last[0] || elem[1] != last[1]){
-            if(last == null || !pointsEqual(elem,last)){
+            if(last == null || elem[0] != last[0] || elem[1] != last[1]){
                 newerBand.push(elem)
                 last = elem
             }
@@ -1062,8 +1046,6 @@ function addIntersectionToPolygonsOld(polygon1,polygon2){
         for(var j = 0;j<band1.length;j++){
             var point1 = band1[j]
             var point2 = band1[(j-(-1))%band1.length]
-            //point1 = [Math.round(point1[0]*Math.pow(2,20))/Math.pow(2,20), Math.round(point1[1]*Math.pow(2,20))/Math.pow(2,20)]
-            //point2 = [Math.round(point2[0]*Math.pow(2,20))/Math.pow(2,20), Math.round(point2[1]*Math.pow(2,20))/Math.pow(2,20)]
             
             newBand.push(point1)
             var intersections = segmentsIntersectionsWithPolygon(point1,point2,polygon2)
@@ -1213,13 +1195,8 @@ function segmentsIntersectionsWithPolygon(a,b,polygon){
             var p1 = band[j]
             var p2 = band[(j-(-1))%band.length]
             
-            var pointsOnTheSameLine
-            if(pointsOnTheSameLine = segmentsOnTheSameLine(a,b,p1,p2)){
-                intersections = intersections.concat(pointsOnTheSameLine)
-                intersections = intersections.map(intersection => [Math.round(intersection[0]*(2**40))/(2**40),Math.round(intersection[1]*(2**40))/(2**40)])
-            } else if(segmentsIntersecting(a,b,p1,p2)){
+            if(segmentsIntersecting(a,b,p1,p2)){
                 var intersection = segmentsIntersection(a,b,p1,p2)
-                intersection = [Math.round(intersection[0]*(2**40))/(2**40),Math.round(intersection[1]*(2**40))/(2**40)]
                 intersections.push(intersection)
             }
         }
@@ -1236,30 +1213,6 @@ function segmentsIntersectionsWithPolygon(a,b,polygon){
         return intersections.sort((aa,bb)=>bb[0] - aa[0])
     }
     return intersections
-}
-function pointOnLine(x,y,p1,p2){
-    return (p1[0] <= p2[0] && p1[0] <= x && x <= p2[0] || p2[0] <= p1[0] && p2[0] <= x && x <= p1[0])
-            &&
-           (p1[1] <= p2[1] && p1[1] <= y && y <= p2[1] || p2[1] <= p1[1] && p2[1] <= y && y <= p1[1]) 
-            &&
-            distanceFromLine(x,y,p1,p2) < 0.00000001
-}
-function segmentsOnTheSameLine(a,b,p1,p2){
-    var points = []
-    if((p1[0] <= a[0] && a <= p2[0] || p2[0] <= a[0] && a[0] <= p1[0]) && (p1[1] <= a[1] && a[1] <= p2[1] || p2[1] <= a[1] && a[1] <= p1[1])){
-        if(!pointsEqual(a,p1) && !pointsEqual(a,p2) && distanceFromLine(a[0],a[1],p1,p2) < 0.00000001){
-            points.push(a)
-        }
-    }
-    if((p1[0] <= b[0] && b <= p2[0] || p2[0] <= b[0] && b[0] <= p1[0]) && (p1[1] <= b[1] && b[1] <= p2[1] || p2[1] <= b[1] && b[1] <= p1[1])){
-        if(!pointsEqual(b,p1) && !pointsEqual(b,p2) && distanceFromLine(b[0],b[1],p1,p2) < 0.00000001){
-            points.push(b)
-        }
-    }
-    if(points.length > 0)
-        return points
-    return null
-    //distanceFromLine(polyPoint[0],polyPoint[1],segment2_0,segment2_1)
 }
 function getCrossingSegmentsIntersectingWithPolygon(a,b,polygon){
     var count = 0
@@ -1378,26 +1331,22 @@ function polygonArea(poly){
     }
     return result
 }
-function almostHitTest(poly,x,y,precision){
-    if(precision == null)
-        precision = 20
-    var precise = 1/Math.pow(2,precision)
+function almostHitTest(poly,x,y,inclusive){
+    var precise = 1/64
     for(var i = -precise;i<=precise;i+=precise){
         for(var j = -precise;j<=precise;j+=precise){
-            if(hitTest(poly,x-(-i),y-(-j),true)){
+            if(hitTest(poly,x-(-i),y-(-j),inclusive)){
                 return true
             }
         }
     }
     return false
 }
-function certainlyHitTest(poly,x,y,precision){
-    if(precision == null)
-        precision = 20
-    var precise = 1/Math.pow(2,precision)
+function certainlyHitTest(poly,x,y,inclusive){
+    var precise = 1/64
     for(var i = -precise;i<=precise;i+=precise){
         for(var j = -precise;j<=precise;j+=precise){
-            if(!hitTest(poly,x-(-i),y-(-j),false)){
+            if(!hitTest(poly,x-(-i),y-(-j),inclusive)){
                 return false
             }
         }
@@ -1413,7 +1362,7 @@ function hitTestInteriorOrPoint(poly,x,y){
                 return true
         }
     }
-    return certainlyHitTest(poly,x,y)
+    return almostHitTest(poly,x,y)
 }
 function hitTestInteriorAndNotPoint(poly,x,y){
     for(var i in poly){
@@ -1425,7 +1374,7 @@ function hitTestInteriorAndNotPoint(poly,x,y){
             }
         }
     }
-    return almostHitTest(poly,x,y)
+    return certainlyHitTest(poly,x,y)
 }
 function getPolygonInside(lands,x,y){
     for(var i in lands){
@@ -1493,7 +1442,7 @@ function triacontadigonalLimit(x,y,polygons,limit){
             for(var j in band){
                 var point = band[j]
                 
-                if(eucl_dist(x,y,point[0],point[1]) < limit*2){
+                if(eucl_dist(x,y,point[0],point[1]) > limit*0.5){
                     thereIsSense = true
                     break
                 }
@@ -1553,7 +1502,7 @@ function triacontadigonalLimit(x,y,polygons,limit){
 function polygonHittingPoints(polygons,x,y){
     for(var k in polygons){
         var polygon = polygons[k]
-        if(almostHitTest(polygon,x,y,10)){
+        if(almostHitTest(polygon,x,y)){
             return {right:polygon,others:polygons.filter(a=>a != polygon)}
         }
     }
@@ -1695,33 +1644,7 @@ function polygonHittingPointsEmpty(){
 //         return path
 //     return null
 // }
-function clearCanvasTemp(){
-    this.canv = document.getElementById('canv')
-    this.ctx = this.canv.getContext('2d')
-
-    this.ctx.clearRect(0,0,2000,2000)
-}
 function drawPathTemp(path,stroke){
-    this.canv = document.getElementById('canv')
-    this.ctx = this.canv.getContext('2d')
-
-    if(stroke == null)
-        stroke = '#ff0'
-    this.ctx.strokeStyle = stroke
-    this.ctx.beginPath()
-
-    for(var j in path){
-        var point = path[j]
-        if(j == 0){
-            this.ctx.moveTo(point[0],point[1])
-        } else {
-            this.ctx.lineTo(point[0],point[1])
-        }
-    }
-    this.ctx.closePath()
-    this.ctx.stroke()
-}
-function drawPolygonTemp(path,stroke){
     this.canv = document.getElementById('canv')
     this.ctx = this.canv.getContext('2d')
 
@@ -1794,7 +1717,7 @@ function relationColorGraph(type,model,testedRelation){
     return object
 }
 function inTruceGraph(truceGraph,team1,team2){
-    return team1 != null && team2 != null && team1.color in truceGraph && team2.color in truceGraph[team1.color] && truceGraph[team1.color][team2.color]
+    return team1.color in truceGraph && team2.color in truceGraph[team1.color] && truceGraph[team1.color][team2.color]
 }
 const vectorNumbers = {
     0:[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0],],
@@ -2181,7 +2104,7 @@ class Model {
                 this.NUMBER_OF_POINTS = 175
             break
         }
-        this.TOWN_DISTANCE_LIMIT = 35
+        this.TOWN_DISTANCE_LIMIT = 40
         
         this.TOWN_GROWING_RATE = 0.05
         this.COUNTRYSIDE_GROWING_RATE = 0.01
@@ -2218,7 +2141,6 @@ class Model {
         this.selectedUnit = null
         
         this.voronoiGraph = {}
-        this.oldMergedVoronoisByChunk = []
         this.mergedVoronois = []
         
         this.groupedMergedVoronois = []
@@ -2743,7 +2665,6 @@ class Model {
         return this.towns.filter(a => a.occupyingUnit != null)
     }
     generateVoronois(){
-        
         var rawVoronoiables = this.getVoronoiables().sort((a,b) => (a.x+'#'+a.y).localeCompare(b.x+'#'+b.y))
         var voronoiables = []
         if(rawVoronoiables.length > 0)
@@ -2780,8 +2701,6 @@ class Model {
             }
         }
         this.lostVoronoiParts = []
-        var truceGraph = relationColorGraph('truce',this)
-
         for(var i in voronoiables){
             var voronoiable = voronoiables[i]
             
@@ -2805,11 +2724,10 @@ class Model {
                 continue
             }*/
 
-            var newLands = chunk.polygons.map(a => a.map(b => b.slice()))
+            var newLands = chunk.polygons//.map(a => a.map(b => b.slice()))
             var vbc = voronoiableByChunk[chunkcode]
             //var newLands = voronoiable.voronoi
 
-            var teamsInTruce = new Set()
             for(var j in vbc){
 
                 if(newLands.length == 0)
@@ -2820,42 +2738,6 @@ class Model {
                 
                 if(point1 == point2)
                     continue
-                    
-                if(inTruceGraph(truceGraph,point1.team,point2.team) && point1.team != point2.team){
-                    teamsInTruce.add(point2.team)
-                    continue
-                }
-            }
-            /*
-            var teamsInTruceArray = Array.from(teamsInTruce)
-            for(var j in teamsInTruceArray){
-                var tita = teamsInTruceArray[j]
-                var relation = this.getRelation(voronoiable.team,tita)
-
-                if(chunkcode in relation.areaUnderTruce){
-                    for(var k in relation.areaUnderTruce[chunkcode]){
-                        var removedVoronoi = relation.areaUnderTruce[chunkcode][k]
-
-                        if(removedVoronoi != null && removedVoronoi.length > 0 && removedVoronoi[0].length > 0){
-                            newLands = diffPolygons(newLands,removedVoronoi)
-                        }
-                    }
-                }
-            }*/
-            for(var j in vbc){
-
-                if(newLands.length == 0)
-                    break
-                
-                var point1 = voronoiable
-                var point2 = vbc[j]
-                
-                if(point1 == point2)
-                    continue
-                    
-                if(inTruceGraph(truceGraph,point1.team,point2.team) && point1.team != point2.team){
-                    continue
-                }
                 
                 if(point1.x != point2.x || point1.y != point2.y){
                     var bisector = bisectorFromTwoPoints(point1.x,point1.y,point2.x,point2.y)
@@ -2875,412 +2757,24 @@ class Model {
                 }
 
             }
-            //var newLandsLimited = triacontadigonalLimit(voronoiable.x,voronoiable.y,newLands,limit)
-            //newLands = [newLandsLimited.right].concat(newLandsLimited.others)
             var limit = this.WIDTH / this.CHUNKS_PER_SIDE
             if(newLands.length > 0){
-                var newLandsLimited = triacontadigonalLimit(voronoiable.x,voronoiable.y,newLands,limit)
+                var newLands = triacontadigonalLimit(voronoiable.x,voronoiable.y,newLands,limit)
                 //console.log(newLands)
-                voronoiable.voronoi = newLandsLimited.right
+                voronoiable.voronoi = newLands.right
                 
 //                if(voronoiable.team != null)
-                this.lostVoronoiParts = this.lostVoronoiParts.concat(newLandsLimited.others.map(a => new Object({polygon:a,chunk:chunk})))
+                this.lostVoronoiParts = this.lostVoronoiParts.concat(newLands.others.map(a => new Object({polygon:a,chunk:chunk})))
             } else {
                 voronoiable.voronoi = null
             }
 
         }
-        
         this.expandVoronoisToLostOnes()
         this.generateVoronoiGraph()
         this.mergeVoronoisByGraphs()
-        this.limitPolygonsAccordingToTruces()
         this.mergeVoronoisByShores()
         this.calculateMergedVoronoiValue()
-        
-        //this.saveMergedVoronois()
-    }
-    /*
-    
-        this.mergedVoronois = []
-        this.voronoiGraph = {}
-        for(var i = 0;i<voronoiables.length;i++){
-            var voronoiable = voronoiables[i]
-            var units = []
-            if(voronoiable instanceof Unit)
-                units.push(voronoiable)
-            if(voronoiable.occupyingUnit != undefined)
-                units.push(voronoiable.occupyingUnit)
-            this.mergedVoronois[i] = {team:voronoiable.team,voronoi:[voronoiable.voronoi],units:units,landArea:0,unitCount:0}
-            this.voronoiGraph[i] = {}
-        }
-    */
-    saveMergedVoronoisNu(){
-        this.oldMergedVoronoisByChunk = {}
-        
-        if(this.mergedVoronois == undefined)
-            return
-        clearCanvasTemp()
-        //var oldVoronois = this.mergedVoronois.slice().filter(voronoiable => voronoiable.voronoi != null && voronoiable.team != null)
-        
-        
-        
-        /*
-        var voronoiables = this.getVoronoiables().filter(a => a.voronoi != null && a.team != null && a.occupyingUnit == null)
-
-        var oldVoronois = []
-        for(var i = 0;i<voronoiables.length;i++){
-            var voronoiable = voronoiables[i]
-            oldVoronois[i] = {team:voronoiable.team,voronoi:[voronoiable.voronoi]}
-        }
-//        var mergedVoronoisByChunk = {}
-        for(var key in this.chunks){
-            this.oldMergedVoronoisByChunk[key] = []
-        }
-        for(var k in oldVoronois){
-            var oldVoronoiData = oldVoronois[k]
-            var oldVoronoi = oldVoronois[k].voronoi
-            
-            var bounds = multiPolygonBounds(oldVoronoi)
-            
-//            var chunk_x = Math.max(0,Math.min(Math.floor(x / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-//            var chunk_y = Math.max(0,Math.min(Math.floor(y / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            
-            var chunk_left = Math.max(0,Math.min(Math.floor(bounds.left / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            var chunk_right = Math.max(0,Math.min(Math.floor(bounds.right / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            var chunk_top = Math.max(0,Math.min(Math.floor(bounds.top / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            var chunk_bottom = Math.max(0,Math.min(Math.floor(bounds.bottom / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-
-        
-//            console.log(chunk_left,chunk_right,chunk_top,chunk_bottom)
-        
-            for(var i = chunk_left;i<=chunk_right;i++){
-                for(var j = chunk_top;j<=chunk_bottom;j++){
-                    var code = i+'#'+j
-                    
-                    var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
-                    var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
-                    var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+2)
-                    var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+2)
-                    
-                    var polygons = oldVoronoi
-                    
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
-                    polygons = verticalLinearLimitPolygons(polygons,l,false)
-                    polygons = verticalLinearLimitPolygons(polygons,r,true)
-                    
-                    if(polygons != null){
-                            
-                        var newObj = {team:oldVoronoiData.team,voronoi:polygons,time:2}
-
-                        
-                        if(polygons.length > 0){
-                            for(var l in polygons){
-                                drawPathTemp(polygons[l][0])
-                            }
-                            this.oldMergedVoronoisByChunk[code].push(newObj)
-                        }
-                    }
-                }
-            }
-            /*
-            var chunk = oldVoronoi.chunk
-            var nearbyCodes = chunk.nearChunkCodes
-            for(var j in nearbyCodes){
-                var nearbyCode = nearbyCodes[j]
-                if(nearbyCode in this.chunks){
-                    mergedVoronoisByChunk[nearbyCode].push(oldVoronoi)
-                }
-            }*/
-        /*}*/
-                    //alert('2')
-        /*
-        for(var i = 0;i<this.CHUNKS_PER_SIDE-1;i++){
-            for(var j = 0;j<this.CHUNKS_PER_SIDE-1;j++){
-                var code = i+'#'+j
-                
-                for(var k in voronoiableByChunk){
-                
-                    var polygons = voronoiableByChunk[k]
-                    
-                    var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
-                    var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
-                    var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+2)
-                    var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+2)
-
-                    var key = i+'#'+j
-                    
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
-                    polygons = verticalLinearLimitPolygons(polygons,l,false)
-                    polygons = verticalLinearLimitPolygons(polygons,r,true)            
-                }
-            }
-        }*/
-        
-        /*
-        var chunkLookup = {}
-        for(var i = 0;i<this.CHUNKS_PER_SIDE-1;i++){
-            for(var j = 0;j<this.CHUNKS_PER_SIDE-1;j++){
-                var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
-                var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
-                var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+2)
-                var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+2)
-
-                var key = i+'#'+j
-                
-                
-                polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
-                polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
-                polygons = verticalLinearLimitPolygons(polygons,l,false)
-                polygons = verticalLinearLimitPolygons(polygons,r,true)
-            
-//                this.polygons = polygons
-
-//                var chunk = new Chunk(i,j,this.lands,l,t,r,b)
-//                if(chunk.polygons.length > 0)
-//                chunkLookup[key] = chunk
-            }
-        }*/
-    }
-    saveMergedVoronois(){
-        this.oldMergedVoronoisByChunk = {}
-        
-        if(this.mergedVoronois == undefined)
-            return
-        clearCanvasTemp()
-        var oldMergedVoronois = this.mergedVoronois.slice().filter(voronoiable => voronoiable.voronoi != null && voronoiable.voronoi.length > 0 && voronoiable.team != null)
-        
-//        var mergedVoronoisByChunk = {}
-        for(var key in this.chunks){
-            this.oldMergedVoronoisByChunk[key] = []
-        }
-        for(var k in oldMergedVoronois){
-            var oldVoronoiData = oldMergedVoronois[k]
-            var oldVoronoi = oldMergedVoronois[k].voronoi
-            
-            var bounds = multiPolygonBounds(oldVoronoi)
-            
-//            var chunk_x = Math.max(0,Math.min(Math.floor(x / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-//            var chunk_y = Math.max(0,Math.min(Math.floor(y / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            
-            var chunk_left = Math.max(0,Math.min(Math.floor(bounds.left / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            var chunk_right = Math.max(0,Math.min(Math.floor(bounds.right / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            var chunk_top = Math.max(0,Math.min(Math.floor(bounds.top / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            var chunk_bottom = Math.max(0,Math.min(Math.floor(bounds.bottom / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-
-        
-//            console.log(chunk_left,chunk_right,chunk_top,chunk_bottom)
-        
-            for(var i = chunk_left;i<=chunk_right;i++){
-                for(var j = chunk_top;j<=chunk_bottom;j++){
-                    var code = i+'#'+j
-                    
-                    var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
-                    var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
-                    var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+2)
-                    var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+2)
-                    
-                    var polygons = oldVoronoi
-                    
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
-                    polygons = verticalLinearLimitPolygons(polygons,l,false)
-                    polygons = verticalLinearLimitPolygons(polygons,r,true)
-                    
-                    if(polygons != null && polygons.length > 0 && polygons[0].length > 0){
-                            
-                        var newObj = {team:oldVoronoiData.team,voronoi:polygons}
-
-                        
-                        if(polygons.length > 0){
-                            for(var l in polygons){
-                                drawPathTemp(polygons[l][0])
-                            }
-                            this.oldMergedVoronoisByChunk[code].push(newObj)
-                        }
-                    }
-                }
-            }
-            /*
-            var chunk = oldVoronoi.chunk
-            var nearbyCodes = chunk.nearChunkCodes
-            for(var j in nearbyCodes){
-                var nearbyCode = nearbyCodes[j]
-                if(nearbyCode in this.chunks){
-                    mergedVoronoisByChunk[nearbyCode].push(oldVoronoi)
-                }
-            }*/
-        }
-                    //alert('2')
-        /*
-        for(var i = 0;i<this.CHUNKS_PER_SIDE-1;i++){
-            for(var j = 0;j<this.CHUNKS_PER_SIDE-1;j++){
-                var code = i+'#'+j
-                
-                for(var k in voronoiableByChunk){
-                
-                    var polygons = voronoiableByChunk[k]
-                    
-                    var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
-                    var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
-                    var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+2)
-                    var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+2)
-
-                    var key = i+'#'+j
-                    
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
-                    polygons = verticalLinearLimitPolygons(polygons,l,false)
-                    polygons = verticalLinearLimitPolygons(polygons,r,true)            
-                }
-            }
-        }*/
-        
-        /*
-        var chunkLookup = {}
-        for(var i = 0;i<this.CHUNKS_PER_SIDE-1;i++){
-            for(var j = 0;j<this.CHUNKS_PER_SIDE-1;j++){
-                var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
-                var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
-                var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+2)
-                var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+2)
-
-                var key = i+'#'+j
-                
-                
-                polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
-                polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
-                polygons = verticalLinearLimitPolygons(polygons,l,false)
-                polygons = verticalLinearLimitPolygons(polygons,r,true)
-            
-//                this.polygons = polygons
-
-//                var chunk = new Chunk(i,j,this.lands,l,t,r,b)
-//                if(chunk.polygons.length > 0)
-//                chunkLookup[key] = chunk
-            }
-        }*/
-    }
-    
-    mergedVoronoisByChunk(team){
-        
-        var voronoisByChunk = {}
-        if(this.mergedVoronois == undefined)
-            return {}
-//        clearCanvasTemp()
-        var oldMergedVoronois = this.mergedVoronois.filter(a => a.team == team).filter(voronoiable => voronoiable.voronoi != null && voronoiable.voronoi.length > 0 && voronoiable.team != null)
-        
-//        var mergedVoronoisByChunk = {}
-        for(var key in this.chunks){
-            voronoisByChunk[key] = []
-        }
-        for(var k in oldMergedVoronois){
-            var oldVoronoiData = oldMergedVoronois[k]
-            var oldVoronoi = oldMergedVoronois[k].voronoi
-            
-            var bounds = multiPolygonBounds(oldVoronoi)
-            
-//            var chunk_x = Math.max(0,Math.min(Math.floor(x / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-//            var chunk_y = Math.max(0,Math.min(Math.floor(y / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            
-            var chunk_left = Math.max(0,Math.min(Math.floor(bounds.left / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            var chunk_right = Math.max(0,Math.min(Math.floor(bounds.right / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            var chunk_top = Math.max(0,Math.min(Math.floor(bounds.top / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-            var chunk_bottom = Math.max(0,Math.min(Math.floor(bounds.bottom / this.WIDTH * this.CHUNKS_PER_SIDE - 0.5), this.CHUNKS_PER_SIDE-2))
-
-        
-//            console.log(chunk_left,chunk_right,chunk_top,chunk_bottom)
-        
-            for(var i = chunk_left;i<=chunk_right;i++){
-                for(var j = chunk_top;j<=chunk_bottom;j++){
-                    var code = i+'#'+j
-                    
-                    var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
-                    var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
-                    var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+2)
-                    var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+2)
-                    
-                    var polygons = oldVoronoi
-                    
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
-                    polygons = verticalLinearLimitPolygons(polygons,l,false)
-                    polygons = verticalLinearLimitPolygons(polygons,r,true)
-                    
-                    if(polygons != null && polygons.length > 0 && polygons[0].length > 0){
-                            
-                        if(polygons.length > 0){
-                            /*
-                            for(var l in polygons){
-                                drawPathTemp(polygons[l][0])
-                            }*/
-                            voronoisByChunk[code] = voronoisByChunk[code].concat(polygons)
-                        }
-                    }
-                }
-            }
-            /*
-            var chunk = oldVoronoi.chunk
-            var nearbyCodes = chunk.nearChunkCodes
-            for(var j in nearbyCodes){
-                var nearbyCode = nearbyCodes[j]
-                if(nearbyCode in this.chunks){
-                    mergedVoronoisByChunk[nearbyCode].push(oldVoronoi)
-                }
-            }*/
-        }
-        return voronoisByChunk
-                    //alert('2')
-        /*
-        for(var i = 0;i<this.CHUNKS_PER_SIDE-1;i++){
-            for(var j = 0;j<this.CHUNKS_PER_SIDE-1;j++){
-                var code = i+'#'+j
-                
-                for(var k in voronoiableByChunk){
-                
-                    var polygons = voronoiableByChunk[k]
-                    
-                    var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
-                    var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
-                    var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+2)
-                    var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+2)
-
-                    var key = i+'#'+j
-                    
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
-                    polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
-                    polygons = verticalLinearLimitPolygons(polygons,l,false)
-                    polygons = verticalLinearLimitPolygons(polygons,r,true)            
-                }
-            }
-        }*/
-        
-        /*
-        var chunkLookup = {}
-        for(var i = 0;i<this.CHUNKS_PER_SIDE-1;i++){
-            for(var j = 0;j<this.CHUNKS_PER_SIDE-1;j++){
-                var l = this.WIDTH / this.CHUNKS_PER_SIDE * i
-                var t = this.WIDTH / this.CHUNKS_PER_SIDE * j
-                var r = this.WIDTH / this.CHUNKS_PER_SIDE * (i+2)
-                var b = this.WIDTH / this.CHUNKS_PER_SIDE * (j+2)
-
-                var key = i+'#'+j
-                
-                
-                polygons = nonVerticalLinearLimitPolygons(polygons,0,t,true)
-                polygons = nonVerticalLinearLimitPolygons(polygons,0,b,false)
-                polygons = verticalLinearLimitPolygons(polygons,l,false)
-                polygons = verticalLinearLimitPolygons(polygons,r,true)
-            
-//                this.polygons = polygons
-
-//                var chunk = new Chunk(i,j,this.lands,l,t,r,b)
-//                if(chunk.polygons.length > 0)
-//                chunkLookup[key] = chunk
-            }
-        }*/
     }
     expandVoronoisToLostOnes(){
         var voronoiables = this.getVoronoiables().filter(a => a.voronoi != null && a.team != null && a.occupyingUnit == null)
@@ -3424,7 +2918,7 @@ class Model {
                             graph[j][i] = true
                         }*/
                         
-                        if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 0.00001 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 0.00001 && i != key2){
+                        if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 1 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 1 && i != key2){
                         //if(distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.001){
                             this.voronoiGraph[i][key2] = true
                             this.voronoiGraph[key2][i] = true
@@ -3466,57 +2960,6 @@ class Model {
             k++
         }
         this.mergedVoronois = this.mergedVoronois.filter(a=>a != undefined)
-    }
-    limitPolygonsAccordingToTruces(){
-        var voronoisByTeamColor = {}
-        for(var i in this.mergedVoronois){
-            var voronoi = this.mergedVoronois[i]
-            
-            var colorCode = voronoi.team.color
-            
-            if(!(colorCode in voronoisByTeamColor))
-                voronoisByTeamColor[colorCode] = []
-            voronoisByTeamColor[colorCode].push(voronoi)
-        }
-        var relations = this.diplomacyRelations.filter(a => a.type == 'truce')
-        for(var i in relations){
-            var relation = relations[i]
-            
-            var fromColorCode = relation.from.color
-            
-            var subtracted = relation.areaUnderTruce
-            
-            if(fromColorCode in voronoisByTeamColor){
-                var voronois = voronoisByTeamColor[fromColorCode]
-                for(var j in voronois){
-                    for(var k in subtracted){
-                        for(var l in subtracted[k].voronoi){
-                            if(subtracted[k].voronoi[l] != null && subtracted[k].voronoi[l].length > 0 && subtracted[k].voronoi[l][0].length > 0){
-                                //console.log(JSON.stringify([voronois[j].voronoi,subtracted[k].voronoi[l]]))
-                                voronois[j].voronoi = diffPolygons(voronois[j].voronoi,subtracted[k].voronoi[l])
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        /*
-        var teamsInTruceArray = Array.from(teamsInTruce)
-        for(var j in teamsInTruceArray){
-            var tita = teamsInTruceArray[j]
-            var relation = this.getRelation(voronoiable.team,tita)
-
-            if(chunkcode in relation.areaUnderTruce){
-                for(var k in relation.areaUnderTruce[chunkcode]){
-                    var removedVoronoi = relation.areaUnderTruce[chunkcode][k]
-
-                    if(removedVoronoi != null && removedVoronoi.length > 0 && removedVoronoi[0].length > 0){
-                        newLands = diffPolygons(newLands,removedVoronoi)
-                    }
-                }
-            }
-        }*/
     }
     mergeVoronoisByShores(){
         var newMergedVoronois = []
@@ -3728,7 +3171,7 @@ class Model {
                                 if(bandCache[n] && (!prev || !bandCache[(n+1) % bandCache.length])){
                                     var point = pointsToCheck2[n]
                                     pointsToAdd.push(point)
-                                    //drawPathTemp([[point[0],point[1]],[point1[0],point1[1]]])
+                                    drawPathTemp([[point[0],point[1]],[point1[0],point1[1]]])
                                 }
                                 /*
                                 if(bandCache[n] != prev){
@@ -3759,7 +3202,7 @@ class Model {
                 for(var k=0;k<band1.length;k++){
                     var point = band1[k]
                     var point1 = band1[(k+1)%band1.length]
-                    //drawPathTemp([[point[0],point[1]],[point1[0],point1[1]]],'#f00')
+                    drawPathTemp([[point[0],point[1]],[point1[0],point1[1]]],'#f00')
                 }
             }
         }
@@ -4833,15 +4276,13 @@ class Model {
                         type: 'truce',
                         from: request.from,
                         to: request.to,
-                        time:this.DIPLOMACY_COOLDOWN,
-                        areaUnderTruce:/*this.mergedVoronoisByChunk(request.to)//*/this.mergedVoronois.filter(a => a.team == request.to)
+                        time:this.DIPLOMACY_COOLDOWN
                     })
                     this.diplomacyRelations.push({
                         type: 'truce',
                         from: request.to,
                         to: request.from,
-                        time:this.DIPLOMACY_COOLDOWN,
-                        areaUnderTruce:/*this.mergedVoronoisByChunk(request.from)//*/this.mergedVoronois.filter(a => a.team == request.from)
+                        time:this.DIPLOMACY_COOLDOWN
                     })
                 break
                 case 'ask-to-vassalize':
@@ -4871,9 +4312,6 @@ class Model {
             if(dr.time > 0)
                 dr.time--
         }
-        var existingTeams = new Set(this.units.map(a => a.team).concat(this.towns.map(a => a.team)))
-        this.diplomacyRelations = this.diplomacyRelations.filter(a => existingTeams.has(a.from) && existingTeams.has(a.to))
-        this.diplomacyQueue = this.diplomacyQueue.filter(a => existingTeams.has(a.from) && existingTeams.has(a.to))
     }
 }
 const COLOR_LETTERS = '123456789ABCDE'
@@ -4916,7 +4354,6 @@ class View {
         }
     }
     draw(){
-//        return
         this.state.state.highlightedTeam = null
 
         this.drawBackground()
@@ -5133,14 +4570,9 @@ class View {
                                     //    graph[j][i] = true
                                     //}
                                     var looseRules = true
-                                    var distLimit = looseRules != undefined ? 1 : 0.0001
+                                    var distLimit = looseRules != undefined ? 1 : 0.00000001
                                     
-//                                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit){
-                    if(
-                        (!pointsEqual(s2[0],s2[1]) && distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.00000001)
-                            && 
-                        (!pointsEqual(s2[0],s2[1]) && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.00000001)){
-
+                                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit){
                                         this.ctx.lineWidth = 1.8
                                         this.ctx.strokeStyle = '#000'
                                         this.ctx.beginPath()
@@ -6036,10 +5468,8 @@ class DiplomacyIncomingRequestControl extends Control {
         ctx.fillRect(this.x,this.y,this.w,this.h)
         ctx.lineWidth = 1
         
-        this.textControl.setText([currentRequest.type.toUpperCase(), 'REQUEST'])
         this.textControl.color = borderColor
         this.textControl.draw(ctx,mouseCoordsTransformed)
-        
         
         this.acceptButton.setColors(borderColor, shadeColor)
         this.acceptButton.draw(ctx,mouseCoordsTransformed)
@@ -6324,12 +5754,12 @@ class StatisticsPanel extends Control {
 
         }
         
-        if(this.state.chosenTeam){
-            this.diplomacyRequestControl.draw(ctx,mouseCoordsTransformed)
-        } else if(model.diplomacyQueue.filter(a => a.to == model.playerChoosen).length > 0){
+        if(model.diplomacyQueue.filter(a => a.to == model.playerChoosen).length > 0){
             var currentRequest = model.diplomacyQueue.filter(a => a.to == model.playerChoosen)[0]
             
             this.diplomacyIncomingRequestControl.draw(ctx,mouseCoordsTransformed)
+        } else if(this.state.chosenTeam){
+            this.diplomacyRequestControl.draw(ctx,mouseCoordsTransformed)
         }
     }
     /*
@@ -6381,10 +5811,10 @@ class StatisticsPanel extends Control {
         var model = this.model instanceof Function ? this.model() : this.model
 
         if(this.state.gameplay){
-            if(this.state.chosenTeam != null){
-                this.diplomacyRequestControl.tryClick(mouseCoordsTransformed)
-            } else if(model.diplomacyQueue.filter(a => a.to == model.playerChoosen).length > 0){
+            if(model.diplomacyQueue.filter(a => a.to == model.playerChoosen).length > 0){
                 this.diplomacyIncomingRequestControl.tryClick(mouseCoordsTransformed)
+            } else if(this.state.chosenTeam != null){
+                this.diplomacyRequestControl.tryClick(mouseCoordsTransformed)
             } else {
                 if(this.getHighlightedPanelTeam(mouseCoordsTransformed) != null){
                     if(this.state.highlightedTeam != null && this.state.gameplay) {
@@ -7190,7 +6620,7 @@ class Ai {
             var closestTargetsPoints = landTargets.map(a => [a.x,a.y])
             var lands = [target.land]
 
-            var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*2,4)
+            var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,false,max_dist*2,3)
 //            var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,false,max_dist*2,2)
 
             var paths = this.pathsFromGraph(landTargets,vectorGraph,false)
@@ -7216,7 +6646,7 @@ class Ai {
                 var closestTargetsPoints = seaTargets.map(a => [a.x,a.y])
                 var lands = model.lands
 
-                var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*2,3)
+                var vectorGraph = model.getVectorGraph(target,closestTargetsPoints,target.bigChunk.polygons,true,max_dist*2,2)
 //                var vectorGraph = getVectorGraph(target,closestTargetsPoints,model.lands,true,max_dist*2,1)
 
                 var paths2 = this.pathsFromGraph(seaTargets,vectorGraph,true)
@@ -7669,7 +7099,6 @@ class Controller {
         this.model = new Model(landTownDensity,teamConfiguration,landConfiguration,screenResolutionConfiguration)
         this.gameHistory = new GameHistory(this.model)
 
-        this.ai = new Ai(this,this.state)
         this.ai.setLevel(aiConfiguration)
 
         this.state.pause = false
