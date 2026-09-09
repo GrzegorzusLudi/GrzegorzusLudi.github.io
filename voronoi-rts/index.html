@@ -339,7 +339,7 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
                     //    graph[i][j] = true
                     //    graph[j][i] = true
                     //}
-                    var distLimit = looseRules != undefined ? 1 : 0.00001
+                    var distLimit = looseRules != undefined || true ? 1 : 0.00001
                     
                     if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit/* || 
                         !(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit) &&
@@ -352,6 +352,35 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
                         delete graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
                         
                         thereWasBorder = true
+                    
+                    } else if((s1[0][0] != s1[1][0] || s1[0][1] != s1[1][1])
+                                &&
+                                (s2[0][0] != s2[1][0] || s2[0][1] != s2[1][1])
+                                &&
+                                distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.0000001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.0000001
+                                &&
+                                distanceFromLine(s2[0][0],s2[0][1],s1[0],s1[1]) < 0.0000001 && distanceFromLine(s2[1][0],s2[1][1],s1[0],s1[1]) < 0.0000001
+                                &&
+                        (Math.max(s2[0][0],s2[1][0]) >= Math.min(s1[0][0],s1[1][0]) && Math.max(s1[0][0],s1[1][0]) >= Math.min(s2[0][0],s2[1][0])
+                            &&
+                         Math.max(s2[0][1],s2[1][1]) >= Math.min(s1[0][1],s1[1][1]) && Math.max(s1[0][1],s1[1][1]) >= Math.min(s2[0][1],s2[1][1])
+                    )){
+                        if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit){
+                            graph['a'+i+'#'+ii] = graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
+                            delete graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
+                        } else {
+                            graph['a'+i+'#'+ii] = 'b'+j+'#'+((jj-(-1))%poly2[j].length)
+                        }
+                        
+                        if(dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit){
+                            graph['b'+j+'#'+jj] = graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
+                            delete graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
+                        } else {
+                            graph['b'+j+'#'+jj] = 'a'+i+'#'+((ii-(-1))%poly1[i].length)                            
+                        }
+                        
+                        thereWasBorder = true
+
                     }
                 }
             }
@@ -376,7 +405,7 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
     var newPolygonBands = []
     var k = 0
     //console.log(Object.assign({},graph))
-    while(Object.keys(graph).length > 0 && k < 100){
+    while(Object.keys(graph).length > 0 && k < 1000){
         var firstKey = Object.keys(graph)[0]
         
         var subcycle = [firstKey]
@@ -613,7 +642,7 @@ function splitPolygonsByIntersectionsAndAddToNewPolygons(newPolygon,polygonInter
     //nonVerticalLinearLimitPolygons([[[0,0],[2,0],[2,2],[0,2]]],0,2,false) 
     
     var k = 0
-    while(Object.keys(cycles).length > 0 && k < 100){
+    while(Object.keys(cycles).length > 0 && k < 1000){
         var firstKey = Object.keys(cycles)[0]
         
         var subcycle = [firstKey]
@@ -1530,14 +1559,14 @@ function triacontadigonalLimit(x,y,polygons,limit){
         var firstPolygons = JSON.stringify(polygons)
         if(polygons == null)
             return this.polygonHittingPointsEmpty()
-        try {
+        //try {
             polygons = nonVerticalLinearLimitPolygons(polygons,a,b,firstLeftBottom)
-        } catch (e){
+        /*} catch (e){
             console.log(JSON.parse(firstPolygons))
             
             throw e
             return this.polygonHittingPointsEmpty()
-        }
+        }*/
 //        } catch(e){
 //            return polygon
 //        }
@@ -2842,14 +2871,18 @@ class Model {
                     }
                 }
             }*/
+            //var newLandsLimited = triacontadigonalLimit(voronoiable.x,voronoiable.y,newLands,limit)
+            //newLands = [newLandsLimited.right].concat(newLandsLimited.others)
             for(var j in vbc){
 
-                if(newLands.length == 0)
+                if(newLands.length == 0){
                     break
+                }
                 
                 var point1 = voronoiable
                 var point2 = vbc[j]
                 
+                //if(point1 == point2)
                 if(point1 == point2)
                     continue
                     
@@ -2862,7 +2895,8 @@ class Model {
 
 //                    var land = voronoiable.voronoi
 //                    var lands = [land]
-                    try {
+                    //try {
+                        var oldLands = newLands
                         if(bisector.vertical){
                             newLands = verticalLinearLimitPolygons(newLands,bisector.x,bisector.firstLeftBottom)
                         } else {
@@ -2871,12 +2905,10 @@ class Model {
                         
 //                        voronoiable.voronoi = polygonHittingPoints(newLands,voronoiable.x,voronoiable.y).right
                         
-                    } catch (e){ }
+                    //} catch (e){ }
                 }
 
             }
-            //var newLandsLimited = triacontadigonalLimit(voronoiable.x,voronoiable.y,newLands,limit)
-            //newLands = [newLandsLimited.right].concat(newLandsLimited.others)
             var limit = this.WIDTH / this.CHUNKS_PER_SIDE
             if(newLands.length > 0){
                 var newLandsLimited = triacontadigonalLimit(voronoiable.x,voronoiable.y,newLands,limit)
@@ -2891,7 +2923,7 @@ class Model {
 
         }
         
-        this.expandVoronoisToLostOnes()
+        //this.expandVoronoisToLostOnes()
         this.generateVoronoiGraph()
         this.mergeVoronoisByGraphs()
         this.limitPolygonsAccordingToTruces()
@@ -3424,10 +3456,26 @@ class Model {
                             graph[j][i] = true
                         }*/
                         
-                        if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 0.00001 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 0.00001 && i != key2){
-                        //if(distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.001){
-                            this.voronoiGraph[i][key2] = true
-                            this.voronoiGraph[key2][i] = true
+                        if(i != key2){
+                            if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < 0.0000001 && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < 0.0000001){
+                            //if(distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.001){
+                                this.voronoiGraph[i][key2] = true
+                                this.voronoiGraph[key2][i] = true
+                            } else if((s1[0][0] != s1[1][0] || s1[0][1] != s1[1][1])
+                                        &&
+                                      (s2[0][0] != s2[1][0] || s2[0][1] != s2[1][1])
+                                        &&
+                                      distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.0000001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.0000001
+                                        &&
+                                      distanceFromLine(s2[0][0],s2[0][1],s1[0],s1[1]) < 0.0000001 && distanceFromLine(s2[1][0],s2[1][1],s1[0],s1[1]) < 0.0000001
+                                        &&
+                                (Math.max(s2[0][0],s2[1][0]) >= Math.min(s1[0][0],s1[1][0]) && Math.max(s1[0][0],s1[1][0]) >= Math.min(s2[0][0],s2[1][0])
+                                    &&
+                                 Math.max(s2[0][1],s2[1][1]) >= Math.min(s1[0][1],s1[1][1]) && Math.max(s1[0][1],s1[1][1]) >= Math.min(s2[0][1],s2[1][1])
+                                    )){
+                                this.voronoiGraph[i][key2] = true
+                                this.voronoiGraph[key2][i] = true
+                            }
                         }
                     }
                 }
@@ -3449,6 +3497,8 @@ class Model {
                         if(merged != null){
                             this.mergedVoronois[key1].voronoi = [merged]
                             this.mergedVoronois[key1].units = this.mergedVoronois[key1].units.concat(this.mergedVoronois[key2].units.slice())
+                        } else {
+                            console.log('111')
                         }
                     }
                     for(var key3 in this.voronoiGraph[key2]){
