@@ -84,7 +84,7 @@ function polygonBordersBandOld(poly,band){
                             &&
                         (polyPoint[1] >= segment2_0[1] && polyPoint[1] <= segment2_1[1] || polyPoint[1] >= segment2_1[1] && polyPoint[1] <= segment2_0[1])
                             &&
-                            distanceFromLine(polyPoint[0],polyPoint[1],segment2_0,segment2_1) <= 0.1
+                            distanceFromLine(polyPoint[0],polyPoint[1],segment2_0,segment2_1) <= Math.pow(2,30)
                         )
                             return true
                         
@@ -346,9 +346,13 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
                     //    graph[i][j] = true
                     //    graph[j][i] = true
                     //}
-                    var distLimit = looseRules != undefined ? 1 : 1/Math.pow(2,20)
+                    var distLimit = looseRules != undefined ? 1 : 1/Math.pow(2,30)
                     
-                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit/* || 
+                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit
+                        && dist(s1[0][0],s1[0][1],s2[0][0],s2[0][1]) >= distLimit
+                        && dist(s1[1][0],s1[1][1],s2[1][0],s2[1][1]) >= distLimit
+                    
+                    /* || 
                         !(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit) &&
                         distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.00000001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.00000001 &&
                         dist(s1[0][0],s1[0][1],s1[1][0],s1[1][1]) > 0.00000001 && dist(s2[0][0],s2[0][1],s2[1][0],s2[1][1]) > 0.00000001*/){
@@ -851,12 +855,12 @@ function polygonsFromStructure(structure){
         for(var j in segments){
             var segment = segments[j]
             
-            if(lastCenter == null || segment.center[1] != lastCenter[1]){
+            //if(lastCenter == null || segment.center[1] != lastCenter[1]){
                 currentSegmentsByCenter.sort((a,b) => b.added-a.added)
                 if(currentSegmentsByCenter.length > 0)
                     segmentsByCenter.push(currentSegmentsByCenter.slice())
                 currentSegmentsByCenter = []
-            }
+            //}
             currentSegmentsByCenter.push(segment)
             lastCenter = segment.center
         }
@@ -3631,7 +3635,6 @@ class Model {
         return this.towns.filter(a => a.occupyingUnit != null)
     }
     generateVoronois(){
-        
         var rawVoronoiables = this.getVoronoiables().sort((a,b) => (a.x+'#'+a.y).localeCompare(b.x+'#'+b.y))
         var voronoiables = []
         if(rawVoronoiables.length > 0)
@@ -3741,8 +3744,11 @@ class Model {
                 var point1 = voronoiable
                 var point2 = vbc[j]
                 
-                if(point1 == point2)
+                if(point1.x == point2.x && point1.y == point2.y)
                     continue
+                
+//                if(point2.team == null && ('towntaken' in point2))
+//                    continue
                     
                 if(inTruceGraph(truceGraph,point1.team,point2.team) && point1.team != point2.team){
                     continue
@@ -4191,6 +4197,8 @@ class Model {
                 }
             }
         }
+        
+        var truceGraph = relationColorGraph('truce',this)
 
         for(var i in this.lostVoronoiParts){
             var polygon = this.lostVoronoiParts[i].polygon
@@ -4205,10 +4213,12 @@ class Model {
                 
                 if(voronoiable.voronoi != null){
                     if(polygonBordersBandOld(voronoiable.voronoi,polygon[0])){
-                        var merged = mergePolygonsOnSides(voronoiable.voronoi,polygon,true)
+                        var merged = mergePolygonsOnSides(voronoiable.voronoi,polygon)
                         if(merged != null){
                             voronoiable.voronoi = merged
                             mergedOnes.push(voronoiable)
+                        } else {
+                            console.log(222)
                         }
                     }
                 }
@@ -4225,7 +4235,10 @@ class Model {
                         break
                         
                     var merged2 = mergedOnes[k]
-                                            
+                                          
+                    if(inTruceGraph(truceGraph,merged1.team,merged2.team) && merged1.team != merged2.team){
+                        continue
+                    }
                     if(merged1 == merged2)
                         continue
                     
@@ -4303,7 +4316,7 @@ class Model {
                     continue
                 
                 var precision = 0.00000001
-                precision = 1/2**20
+                precision = 1/2**30
 
                 var land1Segments = getPolygonSegments(voronoiable1.voronoi)
                 var land2Segments = getPolygonSegments(voronoiable2.voronoi)
@@ -4318,21 +4331,24 @@ class Model {
                         }*/
                         
                         if(i != key2){
-                            if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < precision && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < precision){
+                            if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < precision && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < precision
+                            
+                        && dist(s1[0][0],s1[0][1],s2[0][0],s2[0][1]) >= precision
+                        && dist(s1[1][0],s1[1][1],s2[1][0],s2[1][1]) >= precision){
                             //if(distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.001){
                                 this.voronoiGraph[i][key2] = true
                                 this.voronoiGraph[key2][i] = true
                             } else if(false && !pointsEqual(s1[0],s1[1])
                                         &&
-                                      !pointsEqual(s2[0], s2[1])
+                                      !pointsEqual(s2[0],s2[1])
                                         &&
                                       distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < precision*2 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < precision*2
                                         &&
-                                      distanceFromLine(s2[0][0],s2[0][1],s1[0],s1[1]) < precision*2 && distanceFromLine(s2[1][0],s2[1][1],s1[0],s1[1]) < precision*2/*
+                                      distanceFromLine(s2[0][0],s2[0][1],s1[0],s1[1]) < precision*2 && distanceFromLine(s2[1][0],s2[1][1],s1[0],s1[1]) < precision*2
                                         &&
                                 Math.max(s2[0][0],s2[1][0]) >= Math.min(s1[0][0],s1[1][0]) && Math.max(s1[0][0],s1[1][0]) >= Math.min(s2[0][0],s2[1][0])
                                     &&
-                                 Math.max(s2[0][1],s2[1][1]) >= Math.min(s1[0][1],s1[1][1]) && Math.max(s1[0][1],s1[1][1]) >= Math.min(s2[0][1],s2[1][1])*/
+                                 Math.max(s2[0][1],s2[1][1]) >= Math.min(s1[0][1],s1[1][1]) && Math.max(s1[0][1],s1[1][1]) >= Math.min(s2[0][1],s2[1][1])
                                     ){
                                 this.voronoiGraph[i][key2] = true
                                 this.voronoiGraph[key2][i] = true
@@ -4353,8 +4369,9 @@ class Model {
             }
             for(var key2 in this.voronoiGraph[key1]){
                 //if(key2 in this.mergedVoronois/* && this.mergedVoronois[key1].team == this.mergedVoronois[key2].team*/){
+                    var merged = null
                     if(key2 in this.mergedVoronois){
-                        var merged = mergePolygonsOnSides(this.mergedVoronois[key1].voronoi[0],this.mergedVoronois[key2].voronoi[0],true)
+                        merged = mergePolygonsOnSides(this.mergedVoronois[key1].voronoi[0],this.mergedVoronois[key2].voronoi[0])
                         if(merged != null){
                             this.mergedVoronois[key1].voronoi = [merged]
                             this.mergedVoronois[key1].units = this.mergedVoronois[key1].units.concat(this.mergedVoronois[key2].units.slice())
@@ -7386,7 +7403,6 @@ class Ai {
     }
     debug(){
         if(this.strategicPositionsDebug != null){
-            console.log(1)
             var codes = Object.keys(this.strategicPositionsDebug.mergedGraph)
 
             for(var codeIndex in codes){
