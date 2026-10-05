@@ -364,7 +364,7 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
                         
                         thereWasBorder = true
                     
-                    } else if(false && !pointsEqual(s1[0], s1[1])
+                    } else if(!pointsEqual(s1[0], s1[1])
                                 &&
                                 !pointsEqual(s2[0], s2[1])
                                 &&
@@ -472,10 +472,11 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
         k++
     }
 
+    return polygonsWithHolesFromPolygonSet(newPolygonBands.map(a=>[a]))[0]/*
     if(newPolygonBands.length > 1){
         return newPolygonBands.filter(a => polygonOrder(a) == -1).concat(newPolygonBands.filter(a => polygonOrder(a) == 1))
     }
-    return newPolygonBands
+    return newPolygonBands.slice()*/
 }
 
 function polygonOrder(polygon){
@@ -1169,6 +1170,9 @@ function polygonsFromStructure(structure){
         guard++
     }
     
+    return polygonsWithHolesFromPolygonSet(polygons)
+}
+function polygonsWithHolesFromPolygonSet(polygons){
     var polygonGraph = {}
     for(var i in polygons){
         var polygon1 = polygons[i]
@@ -4244,27 +4248,27 @@ class Model {
                     
                     var bisector = bisectorFromTwoPoints(merged1.x,merged1.y,merged2.x,merged2.y)
 
-                    try {
+                    //try {
                         if(bisector.vertical){
                             newLands = verticalLinearLimitPolygons(newLands,bisector.x,bisector.firstLeftBottom)
                         } else {
                             newLands = nonVerticalLinearLimitPolygons(newLands,bisector.a,bisector.b,bisector.firstLeftBottom)
                         }
                                                 
-                    } catch (e){ }
+                    //} catch (e){ }
                 }
                 
 //                console.log(newLands,merged1)
                 var limit = this.WIDTH / this.CHUNKS_PER_SIDE
                 
-                try {
+                //try {
                     if(newLands.length > 0){
                         var newLands = triacontadigonalLimit(merged1.x,merged1.y,newLands,limit)
                         merged1.voronoi = newLands.right
                     } else {
                         merged1.voronoi = null
                     }
-                } catch (e){ }
+                //} catch (e){ }
             }
         }
     }
@@ -4338,7 +4342,7 @@ class Model {
                             //if(distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.001){
                                 this.voronoiGraph[i][key2] = true
                                 this.voronoiGraph[key2][i] = true
-                            } else if(false && !pointsEqual(s1[0],s1[1])
+                            } else if(!pointsEqual(s1[0],s1[1])
                                         &&
                                       !pointsEqual(s2[0],s2[1])
                                         &&
@@ -4368,9 +4372,11 @@ class Model {
                 continue
             }
             for(var key2 in this.voronoiGraph[key1]){
-                //if(key2 in this.mergedVoronois/* && this.mergedVoronois[key1].team == this.mergedVoronois[key2].team*/){
+                if(key2 != key1/* && this.mergedVoronois[key1].team == this.mergedVoronois[key2].team*/){
                     var merged = null
                     if(key2 in this.mergedVoronois){
+                        if(this.mergedVoronois[key1].voronoi[0] == undefined)
+                            alert('aaa')
                         merged = mergePolygonsOnSides(this.mergedVoronois[key1].voronoi[0],this.mergedVoronois[key2].voronoi[0])
                         if(merged != null){
                             this.mergedVoronois[key1].voronoi = [merged]
@@ -4389,7 +4395,7 @@ class Model {
                     delete this.voronoiGraph[key1][key2]
                     delete this.voronoiGraph[key2]
                     delete this.mergedVoronois[key2]
-                //}
+                }
             }
             k++
         }
