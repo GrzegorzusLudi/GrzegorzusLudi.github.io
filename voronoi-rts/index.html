@@ -52,6 +52,10 @@ function lineFromTwoPoints(x1,y1,x2,y2){
     var a = (y1-y2) / (x1-x2)
     return {vertical:false, a:a, b: y1 - x1 * a}
 }
+function lineFromTwoPointsNoObject(x1,y1,x2,y2,isa){
+    var a = (y1-y2) / (x1-x2)
+    return isa ? a : y1 - x1 * a
+}
 function distanceFromLine(px,py,l1,l2){
     var x1 = l1[0]
     var y1 = l1[1]
@@ -1224,7 +1228,67 @@ function addToDictWithId(dict,object,id){
     dict[id] = object
     object.id = id
 }
+
 function intersectedToStructure(polygon,xpoints,structure,added){  
+    var segmentsByStartingPointX = {}
+    for(var k=0;k<xpoints.length-1;k++){
+        var xfrom = xpoints[k]
+        var xto = xpoints[(Number(k)+1)%xpoints.length]
+        segmentsByStartingPointX[xfrom] = {index:k,segments:[]}
+    }
+    for(var i in polygon){
+        var band = polygon[i]
+        for(var j = 0;j<band.length;j++){
+            point1 = band[(j)%band.length]
+            point2 = band[(Number(j)+1)%band.length]
+            
+            var startingPointX = Math.min(point1[0],point2[0])
+            
+            if(startingPointX in segmentsByStartingPointX)
+                segmentsByStartingPointX[startingPointX].segments.push({from:point1,to:point2})
+        }
+    }
+    for(var i in segmentsByStartingPointX){
+        var sbspx = segmentsByStartingPointX[i]
+        var segments = sbspx.segments
+        for(var j in segments){
+            var segment = segments[j]
+            var s_from = Math.min(segment.from[0],segment.to[0])
+            var s_to = Math.max(segment.from[0],segment.to[0])
+            for(var k = sbspx.index;k<xpoints.length-1 && xpoints[k]<=s_to;k++){
+                var xfrom = xpoints[k]
+                var xto = xpoints[(Number(k)+1)%xpoints.length]
+                point1 = segment.from
+                point2 = segment.to
+                if(point1[0] < point2[0]){
+                    if(point1[0] <= xfrom && xto <= point2[0]){
+//                        var lf2p = lineFromTwoPoints(point1[0],point1[1],point2[0],point2[1])
+                        var lf2pa = lineFromTwoPointsNoObject(point1[0],point1[1],point2[0],point2[1],true)
+                        var lf2pb = lineFromTwoPointsNoObject(point1[0],point1[1],point2[0],point2[1],false)
+                        
+                        var yfrom = point1[0] == xfrom ? point1[1] : lf2pa * xfrom + lf2pb
+                        var yto = point2[0] == xto ? point2[1] : lf2pa * xto + lf2pb
+                        
+                        structure[k].segments.push({from:[xfrom,yfrom],to:[xto,yto],center:[(xfrom+xto)/2,(yfrom+yto)/2],madeFrom:point1,madeTo:point2,added:added})
+                    }
+                }
+                if(point2[0] < point1[0]){
+                    if(point2[0] <= xfrom && xto <= point1[0]){
+//                        var lf2p = lineFromTwoPoints(point2[0],point2[1],point1[0],point1[1])
+                        var lf2pa = lineFromTwoPointsNoObject(point1[0],point1[1],point2[0],point2[1],true)
+                        var lf2pb = lineFromTwoPointsNoObject(point1[0],point1[1],point2[0],point2[1],false)
+                        
+                        var yfrom = point2[0] == xfrom ? point2[1] : lf2pa * xfrom + lf2pb
+                        var yto = point1[0] == xto ? point1[1] : lf2pa * xto + lf2pb
+                        
+                        structure[k].segments.push({from:[xfrom,yfrom],to:[xto,yto],center:[(xfrom+xto)/2,(yfrom+yto)/2],madeFrom:point1,madeTo:point2,added:added})
+                    }
+                }
+            }
+        }
+    }
+}
+function intersectedToStructureOld(polygon,xpoints,structure,added){  
     for(var i in polygon){
         var band = polygon[i]
         for(var j = 0;j<band.length;j++){
@@ -4423,25 +4487,21 @@ class Model {
             if(fromColorCode in voronoisByTeamColor){
                 var voronois = voronoisByTeamColor[fromColorCode]
                 for(var j in voronois){
-                    var voronoises = voronois[j].voronoi
                     for(var k in subtracted){
                         for(var l in subtracted[k].voronoi){
                             if(subtracted[k].voronoi[l] != null && subtracted[k].voronoi[l].length > 0 && subtracted[k].voronoi[l][0].length > 0){
                                 //console.log(JSON.stringify([[voronois[j].voronoi[l]],subtracted[k].voronoi[l]]))
                                 //alert('geeeg')
-                                var newVoronoises = []
-                                for(var m in voronoises){
-                                    newVoronoises = newVoronoises.concat(diffPolygons(
-                                        [voronoises[m]]/*.map(poly => poly.length > 0 ? [poly[0]].concat(poly.slice(1).map(a=>a.slice().reverse())) : [])*/,
+                                var voronoises = voronois[j].voronoi
+                                var newVoronoises = diffPolygons(
+                                        voronoises/*.map(poly => poly.length > 0 ? [poly[0]].concat(poly.slice(1).map(a=>a.slice().reverse())) : [])*/,
                                         subtracted[k].voronoi[l]/*].map(poly => poly.length > 0 ? [poly[0]].concat(poly.slice(1).map(a=>a.slice().reverse())) : [])[0]*/
-                                    ))
-                                }
-                                voronoises = newVoronoises
+                                    )
+                                voronois[j].voronoi = newVoronoises
                                 //console.log(JSON.stringify(voronois[j].voronoi))
                             }
                         }
                     }
-                    voronois[j].voronoi = voronoises
                 }
             }
         }
@@ -5529,7 +5589,7 @@ class Model {
                     alreadyStaticUnits[code] = unit
                 }
             }
-            if(unit.towntaken != null && unit.towntaken.occupyingUnit == null)
+            if(unit.towntaken != null && unit.towntaken.occupyingUnit != unit)
                 unit.towntaken = null
         }
         for(var i in this.towns){
@@ -5573,7 +5633,7 @@ class Model {
                 town.team = team
             }
             
-            if(town.occupyingUnit != null && town.occupyingUnit.towntaken == null)
+            if(town.occupyingUnit != null && town.occupyingUnit.towntaken != town)
                 town.occupyingUnit = null
         }
         
