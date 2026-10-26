@@ -3127,6 +3127,7 @@ class Unit {
 
         this.embarking = false
         this.barkingPoint = null
+        
         this.barkingLand = null
     }
     tooClose(unit2){
@@ -3278,6 +3279,7 @@ class Model {
         this.oldMergedVoronois = {}
         this.oldMergedVoronois2 = {}
         this.mergedVoronois = []
+        this.updatedVoronois = []
         
         this.groupedMergedVoronois = []
         
@@ -4721,71 +4723,75 @@ class Model {
                 voronoisByTeamColor[colorCode] = []
             voronoisByTeamColor[colorCode].push(voronoi)
         }
+        var updatedVoronoisByColor = {}
+        for(var i in this.updatedVoronois){
+            var voronoiable = this.updatedVoronois[i]
+            
+            if(voronoiable.team != null && voronoiable.voronoi != null){
+                var colorCode = voronoiable.team.color
+                
+                if(!(colorCode in updatedVoronoisByColor))
+                    updatedVoronoisByColor[colorCode] = []
+                    
+                updatedVoronoisByColor[colorCode].push(voronoiable.voronoi)
+            }
+            
+        }
         var relations = this.diplomacyRelations.filter(a => a.type == 'truce')
         for(var i in relations){
             var relation = relations[i]
             
             var fromColorCode = relation.from.color
             
-            var subtracted = relation.areaUnderTruce
+            //var subtracted = relation.areaUnderTruce
+            var subtracted = []
             //this.oldMergedVoronois[oldVoronoiData.team.color].push({team:oldVoronoiData.team,voronoi:oldVoronoi})
-            subtracted = this.oldMergedVoronois[relation.to.color]
-            if(subtracted == undefined)
-                continue
-                
-            if(fromColorCode in voronoisByTeamColor){
-                var voronois = voronoisByTeamColor[fromColorCode]
-                for(var j in voronois){
-                    var subvoronois = subtracted.map(a => a.voronoi).flat()
-                    voronois[j].voronoi = diffPolygons(voronois[j].voronoi, subvoronois)
-                    var subtracted2 = this.oldMergedVoronois2[relation.to.color]
-                    if(subtracted2 != null){
-                        var subvoronois2 = subtracted2.map(a => a.voronoi).flat()
+            if(relation.to.color in this.oldMergedVoronois){
+                subtracted = this.oldMergedVoronois[relation.to.color]
+            }
+            if(relation.to.color in updatedVoronoisByColor){
+                //console.log('sbtr',updatedVoronoisByColor[relation.to.color])
+                subtracted = subtracted.concat({voronoi:updatedVoronoisByColor[relation.to.color]})
+            }
+            if(subtracted.length > 0){
+                if(fromColorCode in voronoisByTeamColor){
+                    var voronois = voronoisByTeamColor[fromColorCode]
+                    for(var j in voronois){
+                        var subvoronois = subtracted.map(a => a.voronoi).flat()
+                        voronois[j].voronoi = diffPolygons(voronois[j].voronoi, subvoronois)
+                        var subtracted2 = this.oldMergedVoronois2[relation.to.color]
+                        if(subtracted2 != null){
+                            var subvoronois2 = subtracted2.map(a => a.voronoi).flat()
 
-                        voronois[j].voronoi = diffPolygons(voronois[j].voronoi, subvoronois2)
-                    }
-                    var finalVoronoi = []
-                    if(voronois[j].voronoi.length > 1){
-                        for(var k in voronois[j].voronoi){
-                            var poly = voronois[j].voronoi[k]
-                            
-                            var ok = false
-                            var unitsAndTowns = voronois[j].units.concat(voronois[j].towns)
-                            for(var l in unitsAndTowns){
-                                var unitTown = unitsAndTowns[l]
-                                
-                                if(almostHitTest(poly,unitTown.x,unitTown.y,1)){
-                                    ok = true
-                                    break
-                                }
-                            }
-                            if(ok)
-                                finalVoronoi.push(poly)
+                            voronois[j].voronoi = diffPolygons(voronois[j].voronoi, subvoronois2)
                         }
-                    } else {
-                        finalVoronoi = voronois[j].voronoi
-                    }
-                    voronois[j].voronoi = finalVoronoi
-//                    for(var k in subtracted){
-//                        console.log(voronois[j], subtracted[k])
-                        //if(boundIntersection(voronois[j].bounds, subtracted[k].bounds)){
-//                            var newVoronoi = diffPolygons(voronois[j].voronoi, subtracted[k].voronoi)
-//                            voronois[j].voronoi = newVoronoi
-                            /*
-                            for(var l in subtracted[k].voronoi){
-                                if(subtracted[k].voronoi[l] != null && subtracted[k].voronoi[l].length > 0 && subtracted[k].voronoi[l][0].length > 0){
-                                    //console.log(JSON.stringify([[voronois[j].voronoi[l]],subtracted[k].voronoi[l]]))
-                                    //alert('geeeg')
-                                    var newVoronoi = diffPolygons(voronois[j].voronoi, subtracted[k].voronoi[l])
-                                    voronois[j].voronoi = diffPolygons(voronois[j].voronoi, subtracted[k].voronoi[l])
-                                    //console.log(JSON.stringify(voronois[j].voronoi))
+                        var finalVoronoi = []
+                        if(voronois[j].voronoi.length > 1){
+                            for(var k in voronois[j].voronoi){
+                                var poly = voronois[j].voronoi[k]
+                                
+                                var ok = false
+                                var unitsAndTowns = voronois[j].units.concat(voronois[j].towns)
+                                for(var l in unitsAndTowns){
+                                    var unitTown = unitsAndTowns[l]
+                                    
+                                    if(almostHitTest(poly,unitTown.x,unitTown.y,1)){
+                                        ok = true
+                                        break
+                                    }
                                 }
-                            }*/
-                        //}
-                    //}
+                                if(ok)
+                                    finalVoronoi.push(poly)
+                            }
+                        } else {
+                            finalVoronoi = voronois[j].voronoi
+                        }
+                        voronois[j].voronoi = finalVoronoi
+                    }
                 }
             }
         }
+            
         //console.log('XXXXXXXX')
         /*
         var teamsInTruceArray = Array.from(teamsInTruce)
@@ -5832,6 +5838,7 @@ class Model {
         }
         var truceGraph = relationColorGraph('truce',this)
 
+        this.updatedVoronois = []
         
         const SPEED = 2
         const SEA_SPEED = 4
@@ -5872,7 +5879,14 @@ class Model {
                         if(unit.path.length == 0){
                             if(unit.target != null){
                                 if(unit.target instanceof Town){
+                                    var target = unit.target
                                     unit.tryTakeOverTown()
+                                    if(target.team == unit.team){
+                                        if(target.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.voronoi))
+                                            this.updatedVoronois.push({voronoi:target.voronoi,team:unit.team})
+                                        if(target.occupyingUnit.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.occupyingUnit.voronoi))
+                                            this.updatedVoronois.push({voronoi:target.occupyingUnit.voronoi,team:unit.team})
+                                    }
                                     change = true
                                 }
                                 if(unit.target instanceof Unit && unit.team == unit.target.team){
@@ -5882,8 +5896,15 @@ class Model {
                             } else {
                                 var townsHere = this.townsByChunk[chunkcode].filter(a => Math.abs(a.x - unit.x) < 0.1 && Math.abs(a.y - unit.y) < 0.1)
                                 if(townsHere.length > 0){
-                                    unit.target = townsHere[0]
+                                    var target = townsHere[0]
+                                    unit.target = target
                                     unit.tryTakeOverTown()
+                                    if(target.team == unit.team){
+                                        if(target.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.voronoi))
+                                            this.updatedVoronois.push({voronoi:target.voronoi,team:unit.team})
+                                        if(target.occupyingUnit.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.occupyingUnit.voronoi))
+                                            this.updatedVoronois.push({voronoi:target.occupyingUnit.voronoi,team:unit.team})
+                                    }
                                     change = true
                                 }
                             }
@@ -5904,6 +5925,10 @@ class Model {
                         if(unit.team != unit2.team && unit.tooClose(unit2)){
                             if((unit.size > 1 || unit.embarking) && !inTruceGraph(truceGraph,unit.team,unit2.team)){
                                 this.fightBetweenUnits(unit,unit2)
+                                if(unit2.dead){
+                                    if(unit2.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != unit2.voronoi))
+                                        this.updatedVoronois.push({voronoi:unit2.voronoi,team:unit.team})
+                                }
                             } else {
                                 unit.removePath()
                             }
