@@ -307,7 +307,7 @@ function intersectionOfNonVerticalLineAndLineEquation(a,b,eq){
     }
 }
 function pointsEqual(p1,p2,precision){
-    var diff = 1/2**30
+    var diff = 1/2**40
     if(precision)
         diff = precision
     return Math.abs(p1[0]-p2[0]) <= diff && Math.abs(p1[1]-p2[1]) <= diff
@@ -337,6 +337,26 @@ function getBandSegments(band){
     }
     return segments
 }
+
+function repairPolygon(poly){
+    var newPoly = []
+    for(var i in poly){
+        var band = poly[i]
+        var newBand = []
+        for(var j in band){
+            var prevPoint = band[j]
+            var point = band[(Number(j)+1) % band.length]
+            var nextPoint = band[(Number(j)+2) % band.length]
+            
+            if(!pointsEqual(prevPoint, point) && !pointOnLine(prevPoint[0],prevPoint[1],point,nextPoint) && !pointOnLine(nextPoint[0],nextPoint[1],point,prevPoint) && !pointOnLine(point[0],point[1],prevPoint,nextPoint)){
+                newBand.push(point)
+            }
+        }
+        if(newBand.length > 2)
+            newPoly.push(newBand)
+    }
+    return newPoly
+}
 function mergePolygonsOnSides(poly1,poly2,looseRules){
     var pointFound1
     var pointFound2
@@ -344,6 +364,10 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
     var oldPoly1 = poly1
     //poly1 = addIntersectionToPolygons(poly1,poly2)
     //poly2 = addIntersectionToPolygons(poly2,poly1)
+    /*
+    poly1 = repairPolygon(poly1)
+    poly2 = repairPolygon(poly2)
+    */
     var graph = {}
     for(var i in poly1){
         var band = poly1[i]
@@ -373,23 +397,35 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
                     //}
                     var distLimit = looseRules != undefined ? 1 : 1/Math.pow(2,30)
                     
-                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit
-                        && dist(s1[0][0],s1[0][1],s2[0][0],s2[0][1]) >= distLimit
-                        && dist(s1[1][0],s1[1][1],s2[1][0],s2[1][1]) >= distLimit
+                    if(segmentsInVoronoisCanBeMerged(s1,s2)
                     
                     /* || 
                         !(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit) &&
                         distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.00000001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.00000001 &&
                         dist(s1[0][0],s1[0][1],s1[1][0],s1[1][1]) > 0.00000001 && dist(s2[0][0],s2[0][1],s2[1][0],s2[1][1]) > 0.00000001*/){
+                        /*
                         graph['a'+i+'#'+ii] = graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
                         graph['b'+j+'#'+jj] = graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
                         
                         delete graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
                         delete graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
+                        */
+                        if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit){
+                            graph['a'+i+'#'+ii] = graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
+                            delete graph['b'+j+'#'+((jj-(-1))%poly2[j].length)]
+                        } else {
+                            graph['a'+i+'#'+ii] = 'b'+j+'#'+((jj-(-1))%poly2[j].length)
+                        }
                         
+                        if(dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit){
+                            graph['b'+j+'#'+jj] = graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
+                            delete graph['a'+i+'#'+((ii-(-1))%poly1[i].length)]
+                        } else {
+                            graph['b'+j+'#'+jj] = 'a'+i+'#'+((ii-(-1))%poly1[i].length)                            
+                        }
                         thereWasBorder = true
                     
-                    } else if(!pointsEqual(s1[0], s1[1])
+                    } else if(false && !pointsEqual(s1[0], s1[1])
                                 &&
                                 !pointsEqual(s2[0], s2[1])
                                 &&
@@ -497,12 +533,40 @@ function mergePolygonsOnSides(poly1,poly2,looseRules){
         k++
     }
 
-    return polygonsWithHolesFromPolygonSet(newPolygonBands.map(a=>[a]))
+    return polygonsWithHolesFromPolygonSet(newPolygonBands.map(a=>repairPolygon([a])).filter(a => a.length > 0))
     /*
     if(newPolygonBands.length > 1){
         return newPolygonBands.filter(a => polygonOrder(a) == -1).concat(newPolygonBands.filter(a => polygonOrder(a) == 1))
     }
     return newPolygonBands.slice()*/
+}
+function segmentsInVoronoisCanBeMerged(s1,s2,distLimit){
+
+    distLimit = 1//Math.pow(2,40)
+    return (dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) <= distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) <= distLimit
+                        && dist(s1[0][0],s1[0][1],s2[0][0],s2[0][1]) >= distLimit
+                        && dist(s1[1][0],s1[1][1],s2[1][0],s2[1][1]) >= distLimit)
+                        ||
+                                (
+                                    !(s1[1][0]+distLimit < s2[0][0] || s2[1][0]+distLimit < s1[0][0] || s1[1][1]+distLimit < s2[0][1] || s2[1][1]+distLimit < s1[0][1])
+                                        &&
+                                      !pointsEqual(s1[0],s1[1])
+                                        &&
+                                      !pointsEqual(s2[0],s2[1])
+                                        &&
+                                        (s1[0][0]-distLimit <= s1[1][0] && s2[0][0]+distLimit >= s2[1][0] || s1[0][0]+distLimit >= s1[1][0] && s2[0][0]-distLimit <= s2[1][0])
+                                        &&
+                                        (s1[0][0]+distLimit >= s1[1][0] && s2[0][0]-distLimit <= s2[1][0] || s1[0][0]-distLimit <= s1[1][0] && s2[0][0]+distLimit >= s2[1][0])
+                                        &&
+                                      distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < distLimit*2 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < distLimit*2
+                                        &&
+                                      distanceFromLine(s2[0][0],s2[0][1],s1[0],s1[1]) < distLimit*2 && distanceFromLine(s2[1][0],s2[1][1],s1[0],s1[1]) < distLimit*2
+                                        /*&&
+                                Math.max(s2[0][0],s2[1][0]+distLimit >= Math.min(s1[0][0],s1[1][0]) && Math.max(s1[0][0],s1[1][0])+distLimit >= Math.min(s2[0][0],s2[1][0])
+                                    &&
+                                 Math.max(s2[0][1],s2[1][1])+distLimit >= Math.min(s1[0][1],s1[1][1]) && Math.max(s1[0][1],s1[1][1])+distLimit >= Math.min(s2[0][1],s2[1][1])
+                                   )*/
+                                )
 }
 
 function polygonOrder(polygon){
@@ -1267,7 +1331,7 @@ function polygonsWithHolesFromPolygonSet(polygons){
                 if(i != j){
                     var polygon2 = polygons[j]
                     
-                    if(polygon2[0].length > 0 && hitTestBand(polygon1[0], polygon2[0][0][0], polygon2[0][0][1])){
+                    if(polygon2[0].length > 0 && almostHitTest([polygon1[0]], polygon2[0][0][0], polygon2[0][0][1],40)){
                         polygonGraph[i][j] = true
                     }
                 }
@@ -2556,7 +2620,7 @@ function triacontadigonalLimit(x,y,polygons,limit){
     }
     
     if(!thereIsSense)
-        return this.polygonHittingPoints(polygons.map(a=>a.map(band => band.map(b=>b.slice()))),x,y)
+        return this.polygonHittingPoints(polygons/*.map(a=>a.map(band => band.map(b=>b.slice())))*/,x,y)
     
     
     var SIDES = 32
@@ -2605,7 +2669,7 @@ function triacontadigonalLimit(x,y,polygons,limit){
 function polygonHittingPoints(polygons,x,y){
     for(var k in polygons){
         var polygon = polygons[k]
-        if(almostHitTest(polygon,x,y,1)){
+        if(almostHitTest(polygon,x,y,39)){
             return {right:polygon,others:polygons.filter(a=>a != polygon)}
         }
     }
@@ -3524,7 +3588,7 @@ class Model {
                 var hasmerged = false
                 if(key2 in lands){
                     var merged = mergePolygonsOnSides(lands[key1],lands[key2])
-                    if(merged.length == 1){
+                    if(merged.length >= 1){
                         lands[key1] = merged[0]
                         hasmerged = true
                     }
@@ -3810,7 +3874,7 @@ class Model {
         return this.towns.filter(a => a.occupyingUnit == null).concat(this.units.filter(a => !a.dead && !a.embarking))
     }
     getNonVoronoiables(){
-        return this.towns.filter(a => a.occupyingUnit != null)
+        return this.towns.filter(a => a.occupyingUnit != null).concat(this.units)
     }
     generateVoronois(){
         var rawVoronoiables = this.getVoronoiables().sort((a,b) => (a.x+'#'+a.y).localeCompare(b.x+'#'+b.y))
@@ -3823,6 +3887,7 @@ class Model {
             var present = rawVoronoiables[i]
             if(previous.x != present.x || previous.y != present.y){
                 voronoiables.push(present)
+                present.voronoi = null
             } else {
                 present.voronoi = null
             }
@@ -3838,7 +3903,7 @@ class Model {
         }
         
         var truceGraph = relationColorGraph('truce',this)
-        
+        /*
         var goodVoronoiables = []
         for(var i in voronoiables){
             var voronoiable = voronoiables[i]
@@ -3848,12 +3913,16 @@ class Model {
             for(var j in teamRelations){
                 var teamRelation = teamRelations[j]
                 
-                
-                var subtracted = teamRelation.areaUnderTruce
+                //var subtracted = teamRelation.areaUnderTruce
+                var subtracted = []
+//                if(teamRelation.to in this.oldMergedVoronois)
+//                    subtracted = subtracted.concat(this.oldMergedVoronois[teamRelation.to].filter(voronoiable => voronoiable.voronoi != null && voronoiable.voronoi.length > 0))
+                if(teamRelation.to in this.oldMergedVoronois2)
+                    subtracted = subtracted.concat(this.oldMergedVoronois2[teamRelation.to].filter(voronoiable => voronoiable.voronoi != null && voronoiable.voronoi.length > 0))
                 
                 for(var k in subtracted){
                     for(var l in subtracted[k].voronoi){
-                        if(certainlyHitTest(subtracted[k].voronoi[l],voronoiable.x,voronoiable.y)){
+                        if(certainlyHitTest(subtracted[k].voronoi[l],voronoiable.x,voronoiable.y,40)){
                             dontDraw = true
                         }
                     }
@@ -3865,7 +3934,7 @@ class Model {
                 goodVoronoiables.push(voronoiable)
             }
         }
-        voronoiables = goodVoronoiables
+        voronoiables = goodVoronoiables*/
         for(var i in voronoiables){
             var voronoiable = voronoiables[i]
             
@@ -3968,7 +4037,7 @@ class Model {
                     continue
                 }
                 
-                if(!pointsEqual(point1, point2)){
+                if(point1.x != point2.x || point1.y != point2.y){
                     var bisector = bisectorFromTwoPoints(point1.x,point1.y,point2.x,point2.y)
 
 //                    var land = voronoiable.voronoi
@@ -4026,7 +4095,7 @@ class Model {
 //                if(voronoiable.team != null)
                 this.lostVoronoiParts = this.lostVoronoiParts.concat(newLandsLimited.others.map(a => new Object({polygon:a,chunk:chunk})))
             } else {
-                //voronoiable.voronoi = null
+                voronoiable.voronoi = null
             }
         }
         
@@ -4115,6 +4184,7 @@ class Model {
         }*/
         
         this.expandVoronoisToLostOnes()
+//        this.limitUpdatedVoronois()
         this.generateVoronoiGraph()
         this.mergeVoronoisByGraphs()
         this.limitPolygonsAccordingToTruces()
@@ -4288,13 +4358,13 @@ class Model {
             var bounds = multiPolygonBounds(oldVoronoi)
             
             if(oldVoronoi != null && oldVoronoi.length > 0 && oldVoronoi[0].length > 0){                    
-                const precision = 2
+                const precision = 4
                 oldVoronoi = oldVoronoi.map(poly => poly.map(band => band.map( point => 
                     [Math.round(point[0]*precision)/precision, Math.round(point[1]*precision)/precision]
                 )))
                 if(!(oldVoronoiData.team.color in this.oldMergedVoronois))
                     this.oldMergedVoronois[oldVoronoiData.team.color] = []
-                this.oldMergedVoronois[oldVoronoiData.team.color].push({team:oldVoronoiData.team,voronoi:oldVoronoi,bounds:multiPolygonBounds(oldVoronoi)})
+                this.oldMergedVoronois[oldVoronoiData.team.color].push({team:oldVoronoiData.team,voronoi:oldVoronoi,oldVoronoiData:oldVoronoiData,bounds:multiPolygonBounds(oldVoronoi)})
             }
             /*
             var chunk = oldVoronoi.chunk
@@ -4512,6 +4582,7 @@ class Model {
                     if(polygonBordersBandOld(voronoiable.voronoi,polygon[0])){
                         var merged = mergePolygonsOnSides(voronoiable.voronoi,polygon)
 //                        var merged = sumPolygons([voronoiable.voronoi],polygon)
+                        merged.sort((a,b)=>b[0].length-a[0].length)
                         if(merged.length == 1){
                             voronoiable.voronoi = merged[0]
                             mergedOnes.push(voronoiable)
@@ -4563,14 +4634,14 @@ class Model {
                         var newLands = triacontadigonalLimit(merged1.x,merged1.y,newLands,limit)
                         merged1.voronoi = newLands.right
                     } else {
-                        merged1.voronoi = null
+                        //merged1.voronoi = null
                     }
                 //} catch (e){ }
             }
         }
     }
     generateVoronoiGraph(){
-        var voronoiables = this.getVoronoiables().filter(a => a.voronoi != null && a.team != null && a.occupyingUnit == null)
+        var voronoiables = this.getVoronoiables().filter(a => a.voronoi != null && a.voronoi.length > 0 && a.team != null && a.occupyingUnit == null)
         
         var voronoiableByChunk = {}
         for(var key in this.chunks){
@@ -4604,7 +4675,7 @@ class Model {
             if(voronoiable.towntaken != undefined)
                 towns.push(voronoiable.towntaken)
 
-            this.mergedVoronois[i] = {team:voronoiable.team,voronoi:[voronoiable.voronoi],units:units,towns:towns,landArea:0,unitCount:0,bounds:polygonBounds(voronoiable.voronoi)}
+            this.mergedVoronois[i] = {team:voronoiable.team,voronoi:[voronoiable.voronoi],units:Array.from(new Set(units)),towns:Array.from(new Set(towns)),landArea:0,unitCount:0,bounds:polygonBounds(voronoiable.voronoi)}
             this.voronoiGraph[i] = {}
         }
         for(var i = 0;i<voronoiables.length;i++){
@@ -4623,7 +4694,7 @@ class Model {
                     continue
                 
                 var precision = 0.00000001
-                precision = 1/2**30
+                precision = 1/2**40
 
                 var land1Segments = getPolygonSegments(voronoiable1.voronoi)
                 var land2Segments = getPolygonSegments(voronoiable2.voronoi)
@@ -4638,14 +4709,11 @@ class Model {
                         }*/
                         
                         if(i != key2){
-                            if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < precision && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < precision
-                            
-                        && dist(s1[0][0],s1[0][1],s2[0][0],s2[0][1]) >= precision
-                        && dist(s1[1][0],s1[1][1],s2[1][0],s2[1][1]) >= precision){
+                            if(segmentsInVoronoisCanBeMerged(s1,s2)){
                             //if(distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < 0.001 && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < 0.001){
                                 this.voronoiGraph[i][key2] = true
                                 this.voronoiGraph[key2][i] = true
-                            } else if(!pointsEqual(s1[0],s1[1])
+                            } else if(false && !pointsEqual(s1[0],s1[1])
                                         &&
                                       !pointsEqual(s2[0],s2[1])
                                         &&
@@ -4684,18 +4752,22 @@ class Model {
                         if(this.mergedVoronois[key1].voronoi[0] == undefined)
                             alert('aaa')
                         merged = mergePolygonsOnSides(this.mergedVoronois[key1].voronoi[0],this.mergedVoronois[key2].voronoi[0])
-                        if(merged.length == 1){
+                        if(merged != null && merged.length >= 1){
+                            //this.polygonHittingPoints(polygons/*.map(a=>a.map(band => band.map(b=>b.slice())))*/,x,y)
+                            //merged.sort((a,b)=>b[0].length-a[0].length)
                             this.mergedVoronois[key1].voronoi = [merged[0]]
                             this.mergedVoronois[key1].bounds = polygonBounds(merged[0])
                             this.mergedVoronois[key1].units = this.mergedVoronois[key1].units.concat(this.mergedVoronois[key2].units.slice())
                             this.mergedVoronois[key1].towns = this.mergedVoronois[key1].towns.concat(this.mergedVoronois[key2].towns.slice())
                         } else {
+                            console.log(this.tick/10)
+                            console.log(this.mergedVoronois[key1].team.color)
 //                            console.log(JSON.stringify([this.mergedVoronois[key1].voronoi[0],this.mergedVoronois[key2].voronoi[0]]))
                             console.log('111')
                         }
                     }
                     delete this.voronoiGraph[key1][key2]
-                    if(merged != null && merged.length > 0){
+                    if(merged != null && merged.length >= 1){
                         for(var key3 in this.voronoiGraph[key2]){
                             if(key3 != key1){
                                 this.voronoiGraph[key1][key3] = true
@@ -4711,6 +4783,57 @@ class Model {
             k++
         }
         this.mergedVoronois = this.mergedVoronois.filter(a=>a != undefined)
+    }
+    limitUpdatedVoronois(){
+        var voronoisByTeamColor = {}
+        for(var i in this.mergedVoronois){
+            var voronoi = this.mergedVoronois[i]
+            
+            var colorCode = voronoi.team.color
+            
+            if(!(colorCode in voronoisByTeamColor))
+                voronoisByTeamColor[colorCode] = []
+            voronoisByTeamColor[colorCode].push(voronoi)
+        }
+        for(var i in this.updatedVoronois){
+            var newVoronoi = [this.updatedVoronois[i].voronoi.map(band => band.slice())]
+            var team = this.updatedVoronois[i].oldTeam
+            
+            var subtracted = []
+            //this.oldMergedVoronois[oldVoronoiData.team.color].push({team:oldVoronoiData.team,voronoi:oldVoronoi})
+            
+            var relations = this.diplomacyRelations.filter(a => a.type == 'truce' && a.from == team)
+            for(var j in relations){
+                var relation = relations[j]
+                
+                var teamCode = relation.to.color
+                
+                if(teamCode in this.oldMergedVoronois){
+                    subtracted = this.oldMergedVoronois[teamCode]
+                }
+                if(teamCode in this.oldMergedVoronois2){
+                    subtracted = subtracted.concat(this.oldMergedVoronois2[teamCode])
+                }
+                if(subtracted.length > 0){
+                    console.log('aaaa')
+                    var subvoronois = subtracted.map(a => a.voronoi).flat()
+                    newVoronoi = diffPolygons(newVoronoi, subvoronois)
+                }
+            }
+            
+            newVoronoi.sort((a,b) => b[0].length-a[0].length)
+            for(var k in newVoronoi){
+                var poly = newVoronoi[k]
+                
+                var ok = false
+                if(almostHitTest(poly,this.updatedVoronois[i].x,this.updatedVoronois[i].y,39)){
+                    this.updatedVoronois[i].voronoi = poly
+                    console.log('pooly')
+                    break
+                }
+            }
+            
+        }
     }
     limitPolygonsAccordingToTruces(){
         var voronoisByTeamColor = {}
@@ -4730,12 +4853,13 @@ class Model {
             if(voronoiable.team != null && voronoiable.voronoi != null){
                 var colorCode = voronoiable.team.color
                 
-                if(!(colorCode in updatedVoronoisByColor))
-                    updatedVoronoisByColor[colorCode] = []
+                if(voronoiable.target.voronoi != null){
+                    if(!(colorCode in updatedVoronoisByColor))
+                        updatedVoronoisByColor[colorCode] = []
                     
-                updatedVoronoisByColor[colorCode].push(voronoiable.voronoi)
+                    updatedVoronoisByColor[colorCode].push(voronoiable.target.voronoi)
+                }
             }
-            
         }
         var relations = this.diplomacyRelations.filter(a => a.type == 'truce')
         for(var i in relations){
@@ -4753,29 +4877,35 @@ class Model {
                 //console.log('sbtr',updatedVoronoisByColor[relation.to.color])
                 subtracted = subtracted.concat({voronoi:updatedVoronoisByColor[relation.to.color]})
             }
+            var subtracted2 = this.oldMergedVoronois2[relation.to.color]
+            var subvoronois2 = null
+            if(subtracted2 != null)
+                subvoronois2 = subtracted2.map(a => a.voronoi).flat()
+
+            var diffFailed = false
             if(subtracted.length > 0){
                 if(fromColorCode in voronoisByTeamColor){
                     var voronois = voronoisByTeamColor[fromColorCode]
                     for(var j in voronois){
                         var subvoronois = subtracted.map(a => a.voronoi).flat()
-                        voronois[j].voronoi = diffPolygons(voronois[j].voronoi, subvoronois)
-                        var subtracted2 = this.oldMergedVoronois2[relation.to.color]
+                        
+                        var newVoronoi = diffPolygons(voronois[j].voronoi, subvoronois)
                         if(subtracted2 != null){
-                            var subvoronois2 = subtracted2.map(a => a.voronoi).flat()
-
-                            voronois[j].voronoi = diffPolygons(voronois[j].voronoi, subvoronois2)
+                            newVoronoi = diffPolygons(newVoronoi, subvoronois2)
                         }
-                        var finalVoronoi = []
-                        if(voronois[j].voronoi.length > 1){
-                            for(var k in voronois[j].voronoi){
-                                var poly = voronois[j].voronoi[k]
+                        var finalVoronoi = newVoronoi
+                        finalVoronoi = []
+                        if(newVoronoi.length >= 1){
+                            newVoronoi.sort((a,b) => b[0].length - a[0].length)
+                            for(var k in newVoronoi){
+                                var poly = newVoronoi[k]
                                 
                                 var ok = false
                                 var unitsAndTowns = voronois[j].units.concat(voronois[j].towns)
                                 for(var l in unitsAndTowns){
                                     var unitTown = unitsAndTowns[l]
                                     
-                                    if(almostHitTest(poly,unitTown.x,unitTown.y,1)){
+                                    if(almostHitTest(poly,unitTown.x,unitTown.y,10)){
                                         ok = true
                                         break
                                     }
@@ -4783,12 +4913,20 @@ class Model {
                                 if(ok)
                                     finalVoronoi.push(poly)
                             }
-                        } else {
-                            finalVoronoi = voronois[j].voronoi
                         }
-                        voronois[j].voronoi = finalVoronoi
+                        if(voronois[j].units.concat(voronois[j].towns).length == 0 && newVoronoi.length > 0){
+                            finalVoronoi = newVoronoi[0]
+                        }
+                        if(finalVoronoi.length >= 1)
+                            voronois[j].voronoi = finalVoronoi
+                        else
+                            diffFailed = true
                     }
                 }
+            }
+            if(diffFailed){
+                this.mergedVoronois = this.mergedVoronois.filter(a => a.team != relation.from)
+                this.mergedVoronois = this.mergedVoronois.concat(this.oldMergedVoronois[relation.from.color].map(a => a.oldVoronoiData))
             }
         }
             
@@ -5848,6 +5986,9 @@ class Model {
             var unit = this.units[i]
             
             if(unit.path.length > 0){
+                if(!unit.dead && unit.towntaken && unit.path.length > 1){
+                    unit.towntaken.occupyingUnit = null
+                }
                 if(unit.embarking && unit.embarkingProgress < unit.size){
                     var pepf = unit.embarkingProgressFloat
                     unit.embarkingProgressFloat += this.EMBARKING_PROGRESS_SPEED
@@ -5880,12 +6021,13 @@ class Model {
                             if(unit.target != null){
                                 if(unit.target instanceof Town){
                                     var target = unit.target
+                                    var targetTeam = target.team
                                     unit.tryTakeOverTown()
                                     if(target.team == unit.team){
-                                        if(target.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.voronoi))
-                                            this.updatedVoronois.push({voronoi:target.voronoi,team:unit.team})
-                                        if(target.occupyingUnit.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.occupyingUnit.voronoi))
-                                            this.updatedVoronois.push({voronoi:target.occupyingUnit.voronoi,team:unit.team})
+                                        if(target.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.voronoi) && unit.team != targetTeam)
+                                            this.updatedVoronois.push({voronoi:target.voronoi,team:unit.team,target:target,oldTeam:targetTeam,x:target.x,y:target.y})
+                                        else if(target.occupyingUnit.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.occupyingUnit.voronoi) && unit.team != targetTeam)
+                                            this.updatedVoronois.push({voronoi:target.occupyingUnit.voronoi,team:unit.team,target:target.occupyingUnit,oldTeam:targetTeam,x:target.x,y:target.y})
                                     }
                                     change = true
                                 }
@@ -5897,13 +6039,14 @@ class Model {
                                 var townsHere = this.townsByChunk[chunkcode].filter(a => Math.abs(a.x - unit.x) < 0.1 && Math.abs(a.y - unit.y) < 0.1)
                                 if(townsHere.length > 0){
                                     var target = townsHere[0]
+                                    var targetTeam = target.team
                                     unit.target = target
                                     unit.tryTakeOverTown()
                                     if(target.team == unit.team){
-                                        if(target.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.voronoi))
-                                            this.updatedVoronois.push({voronoi:target.voronoi,team:unit.team})
-                                        if(target.occupyingUnit.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.occupyingUnit.voronoi))
-                                            this.updatedVoronois.push({voronoi:target.occupyingUnit.voronoi,team:unit.team})
+                                        if(target.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.voronoi) && unit.team != targetTeam)
+                                            this.updatedVoronois.push({voronoi:target.voronoi,team:unit.team,target:target,oldTeam:targetTeam,x:target.x,y:target.y})
+                                        else if(target.occupyingUnit.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != target.occupyingUnit.voronoi) && unit.team != targetTeam)
+                                            this.updatedVoronois.push({voronoi:target.occupyingUnit.voronoi,team:unit.team,target:target.occupyingUnit,oldTeam:targetTeam,x:target.x,y:target.y})
                                     }
                                     change = true
                                 }
@@ -5926,8 +6069,8 @@ class Model {
                             if((unit.size > 1 || unit.embarking) && !inTruceGraph(truceGraph,unit.team,unit2.team)){
                                 this.fightBetweenUnits(unit,unit2)
                                 if(unit2.dead){
-                                    if(unit2.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != unit2.voronoi))
-                                        this.updatedVoronois.push({voronoi:unit2.voronoi,team:unit.team})
+                                    if(unit2.voronoi != null && this.updatedVoronois.filter(a => a.voronoi != unit2.voronoi) && unit.team != unit2.team)
+                                        this.updatedVoronois.push({voronoi:unit2.voronoi,team:unit.team,target:unit2,oldTeam:unit2.team,x:unit2.x,y:unit2.y})
                                 }
                             } else {
                                 unit.removePath()
@@ -6062,13 +6205,28 @@ class Model {
             this.units = this.units.filter(a => !a.dead)
         if(gameplay)
             this.growUnits()
-            
+         
+        
+        var newUpdatedVoronois = []
+        for(var i in this.updatedVoronois){
+            var upvoronoi = this.updatedVoronois[i]
+            var ok = true
+            for(var j = 0;ok && j<i;j++){
+                if(this.updatedVoronois[j].voronoi == upvoronoi.voronoi)
+                    ok = false
+            }
+            if(ok)
+                newUpdatedVoronois.push(upvoronoi)
+        }
+        this.updatedVoronois = newUpdatedVoronois
+        
         //if(change)
             this.generateVoronois()
             
             
         this.updateDiplomacy()
-        this.tick++
+        if(gameplay)
+            this.tick++
     }
     updateChunkForUnit(unit){
         var newChunk = this.getChunkFromCoords(unit.x,unit.y)
@@ -6484,6 +6642,7 @@ class View {
         
 
         var voronoiables = modelData.mergedVoronois//this.model.getVoronoiables()
+        voronoiables.sort((a,b) => a.team.color.localeCompare(b.team.color))
         
         for(var i in voronoiables){
             var voronoiable = voronoiables[i]
@@ -6541,13 +6700,13 @@ class View {
                                     //    graph[j][i] = true
                                     //}
                                     var looseRules = true
-                                    var distLimit = looseRules != undefined ? 1 : 0.0001
+                                    var distLimit = looseRules != undefined || true ? 1 : 0.0001
                                     
-//                                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit){
-                    if(
-                        (!pointsEqual(s2[0],s2[1]) && distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < distLimit)
-                            && 
-                        (!pointsEqual(s2[0],s2[1]) && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < distLimit)){
+                                    if(dist(s1[0][0],s1[0][1],s2[1][0],s2[1][1]) < distLimit && dist(s1[1][0],s1[1][1],s2[0][0],s2[0][1]) < distLimit){
+                    //if(
+                    //    (!pointsEqual(s2[0],s2[1]) && distanceFromLine(s1[0][0],s1[0][1],s2[0],s2[1]) < distLimit)
+                    //        && 
+                    //    (!pointsEqual(s2[0],s2[1]) && distanceFromLine(s1[1][0],s1[1][1],s2[0],s2[1]) < distLimit)){
 
                                         this.ctx.lineWidth = 1.8
                                         this.ctx.strokeStyle = '#000'
@@ -9302,7 +9461,7 @@ class Controller {
         if(!this.state.pause){
             this.model.update(this.state.state.gameplay)
             this.view.draw()
-            if(this.state.state.gameplay && t.frameCounter % 5 == 1){
+            if(this.state.state.gameplay && t.frameCounter % 5 >= -1){
                 t.gameHistory.registerSnapshot()
             }
         }
