@@ -1028,6 +1028,11 @@ function polygonsFromStructure(structure,diff,merge){
                     var newStripPart = [startingSegment.from,startingSegment.to,onlySegment.to,onlySegment.from]
                     
                     //polygons.push([newStripPart])
+                    
+                    if(pointsEqual(startingSegment.from,onlySegment.from) && pointsEqual(startingSegment.to,onlySegment.to)){
+                        startingSegment = null
+                        continue
+                    }
  
                     var segment1 = {
                         from:startingSegment.to,
