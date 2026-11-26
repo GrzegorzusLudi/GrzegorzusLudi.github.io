@@ -2237,7 +2237,7 @@ function addIntersectionToPolygons(polygon1,polygon2){
     
     var polygon2segments = getPolygonSegments(polygon2).map(segment => new Object({segment:segment,startX:Math.min(segment[0][0],segment[1][0]),endX:Math.max(segment[0][0],segment[1][0])}))
     
-    polygon1segments.sort((a,b) => a.startX - b.startX)
+    polygon1segments.sort((a,b) => a.endX - b.endX)
     polygon2segments.sort((a,b) => a.startX - b.startX)
     
     var six = 0
@@ -2257,7 +2257,7 @@ function addIntersectionToPolygons(polygon1,polygon2){
         }
     }
     
-    const precision = 2**1
+    const precision = 2**30
     var newPolygon = []
     while(polygon1segments.length > 0){
         var firstSegment = polygon1segments[0]
@@ -2277,6 +2277,7 @@ function addIntersectionToPolygons(polygon1,polygon2){
                 
                 intersection = [Math.round(intersection[0]*precision)/precision,Math.round(intersection[1]*precision)/precision]
 
+//                if(pointWithinSegmentBounds(segment.segment,intersection[0],intersection[1]))
                 newBand.push(intersection)
             }
             
@@ -2289,19 +2290,21 @@ function addIntersectionToPolygons(polygon1,polygon2){
         var last = null
         for(var i=0;i<newBand.length;i++){
             var elem = newBand[i]
-//            if(last == null || elem[0] != last[0] || elem[1] != last[1]){
-            if(last == null || !pointsEqual(elem,last)){
+            if(last == null || elem[0] != last[0] || elem[1] != last[1]){
+//            if(last == null || !pointsEqual(elem,last)){
                 newerBand.push(elem)
                 last = elem
             }
         }
 //        if(newerBand[0][0] == newerBand[newerBand.length-1][0] && newerBand[0][1] == newerBand[newerBand.length-1][1])
 
-        //if(newerBand.length == 0)
-        //    continue
+        if(newerBand.length == 0)
+            continue
             
-        if(pointsEqual(newerBand[0], newerBand[newerBand.length-1]))
+//        if(pointsEqual(newerBand[0], newerBand[newerBand.length-1]))
+        if(newerBand[0][0] == newerBand[newerBand.length-1][0] && newerBand[0][1] == newerBand[newerBand.length-1][1])
             newerBand = newerBand.slice(1)
+            
         newPolygon.push(newerBand)
         
         polygon1segments = polygon1segments.filter(a=>!a.used)
@@ -2578,7 +2581,7 @@ function segmentsIntersectionsWithSegment(a,b,p1,p2){
     
     var intersections = []
     var pointsOnTheSameLine = []
-    if((pointsOnTheSameLine = segmentsOnTheSameLine(a,b,p1,p2))){
+    if(false && (pointsOnTheSameLine = segmentsOnTheSameLine(a,b,p1,p2))){
         intersections = intersections.concat(pointsOnTheSameLine)
     } else if(segmentsIntersecting(a,b,p1,p2)){
         var intersection = segmentsIntersection(a,b,p1,p2)
@@ -5193,7 +5196,7 @@ class Model {
                     if(!(colorCode in updatedVoronoisByColor))
                         updatedVoronoisByColor[colorCode] = []
                     
-                    updatedVoronoisByColor[colorCode].push(voronoiable.target.voronoi)
+                    //updatedVoronoisByColor[colorCode].push(voronoiable.target.voronoi)
                 }
             }
         }
@@ -5212,12 +5215,12 @@ class Model {
             if(relation.to.color in updatedVoronoisByColor){
                 //console.log('sbtr',updatedVoronoisByColor[relation.to.color])
                 subtracted = subtracted.concat({voronoi:updatedVoronoisByColor[relation.to.color]})
-            }
+            }/*
             var subtracted2 = this.oldMergedVoronois2[relation.to.color]
             var subvoronois2 = null
             if(subtracted2 != null)
                 subvoronois2 = subtracted2.map(a => a.voronoi).flat()
-
+            */
             var diffFailed = false
             if(subtracted.length > 0){
                 if(fromColorCode in voronoisByTeamColor){
@@ -5226,9 +5229,10 @@ class Model {
                         var subvoronois = subtracted.map(a => a.voronoi).flat()
                         
                         var newVoronoi = diffPolygons(voronois[j].voronoi, subvoronois)
+                        /*
                         if(subtracted2 != null){
                             newVoronoi = diffPolygons(newVoronoi, subvoronois2)
-                        }
+                        }*/
                         var finalVoronoi = newVoronoi
                         finalVoronoi = []
                         if(newVoronoi.length >= 1){
@@ -5261,11 +5265,12 @@ class Model {
                     }
                 }
             }
+            /*
             if(diffFailed){
                 this.mergedVoronois = this.mergedVoronois.filter(a => a.team != relation.from)
                 if(relation.from.color in this.oldMergedVoronois)
                     this.mergedVoronois = this.mergedVoronois.concat(this.oldMergedVoronois[relation.from.color].map(a => a.oldVoronoiData))
-            }
+            }*/
         }
             
         //console.log('XXXXXXXX')
@@ -5321,12 +5326,12 @@ class Model {
                 var voronois1 = voronoisByTeamColor[fromColorCode]
                 var voronois2 = soleVoronoisByTeamColor[toColorCode]
                 for(var j in voronois1){
-                    if(boundIntersection(voronois1[j].bounds,voronois2.bounds)){
+                    if(boundIntersection(voronois1[j].bounds,voronois2.bounds) && ((fromColorCode < toColorCode) ^ (this.tick % 1) == 0)){
                         voronois1[j].voronoi = diffPolygons(voronois1[j].voronoi, voronois2.shape)
                     }
                 }
             }
-        }
+        }/*
         if(this.tick % 9 == 0){
             var intersections = []
             for(var i in relations){
@@ -5352,7 +5357,7 @@ class Model {
                 }
             }
             this.mergedVoronois = this.mergedVoronois.concat(intersections)
-        }
+        }*/
          
     }
     mergeVoronoisByShores(){
