@@ -1411,7 +1411,8 @@ function polygonsWithHolesFromPolygonSet(polygons){
                 if(i != j){
                     var polygon2 = polygons[j]
                     
-                    if(polygon2[0].length > 0 && almostHitTest([polygon1[0]], polygon2[0][0][0], polygon2[0][0][1],30)){
+                    for(var k = 0;k<polygon2[0].length && k < 3;k++)
+                    if(polygon2[0].length > 0 && almostHitTest([polygon1[0]], polygon2[0][k][0], polygon2[0][k][1],30)){
                         polygonGraph[i][j] = true
                     }
                 }
@@ -3524,7 +3525,7 @@ class Unit {
     }
 }
 class Model {
-    constructor(landTownDensity,teamConfiguration,landConfiguration,screenResolutionConfiguration){
+    constructor(landTownDensity,teamConfiguration,landConfiguration,diplomacyConfiguration,screenResolutionConfiguration){
         this.WIDTH = 650
         this.LARGE_WIDTH = 650
         this.ZOOM = 1
@@ -3569,7 +3570,9 @@ class Model {
         this.graph = {}
         this.oldlands
         this.oldgenerationPoints
+        
         this.lands = this.initLands(landConfiguration)
+        this.diplomacy = diplomacyConfiguration == 'ON'
         
         this.shores = this.initShoreGraph()
         
@@ -5326,7 +5329,7 @@ class Model {
                 var voronois1 = voronoisByTeamColor[fromColorCode]
                 var voronois2 = soleVoronoisByTeamColor[toColorCode]
                 for(var j in voronois1){
-                    if(boundIntersection(voronois1[j].bounds,voronois2.bounds) && ((fromColorCode < toColorCode) ^ (this.tick % 1) == 0)){
+                    if(boundIntersection(voronois1[j].bounds,voronois2.bounds) && ((fromColorCode < toColorCode) ^ (this.tick % 2) == 0)){
                         voronois1[j].voronoi = diffPolygons(voronois1[j].voronoi, voronois2.shape)
                     }
                 }
@@ -6697,15 +6700,16 @@ class Model {
         return null
     }
     askTruce(askingTeam,targetTeam){
-        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'truce') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'truce')){
-            this.diplomacyQueue = this.diplomacyQueue.filter(a => a.from != askingTeam)
-            this.diplomacyQueue.push({
-                type:'truce',
-                from:askingTeam,
-                to:targetTeam,
-                time:0
-            })
-        }
+        if(this.diplomacy)
+            if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'truce') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'truce')){
+                this.diplomacyQueue = this.diplomacyQueue.filter(a => a.from != askingTeam)
+                this.diplomacyQueue.push({
+                    type:'truce',
+                    from:askingTeam,
+                    to:targetTeam,
+                    time:0
+                })
+            }
     }
     breakTruce(askingTeam,targetTeam){
         if(this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'truce')){
@@ -6716,64 +6720,68 @@ class Model {
             }
         }
     }
-    askToVassalize(askingTeam,targetTeam){
-        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'ask-to-vassalize') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'ask-to-vassalize')){
-            this.diplomacyQueue = this.diplomacyQueue.filter(a => a.from != askingTeam)
-            this.diplomacyQueue.push({
-                type:'ask-to-vassalize',
-                from:askingTeam,
-                to:targetTeam,
-                time:0
-            })
-        }
+    askToVassalize(askingTeam,targetTeam){        
+        if(this.diplomacy)
+            if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'ask-to-vassalize') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'ask-to-vassalize')){
+                this.diplomacyQueue = this.diplomacyQueue.filter(a => a.from != askingTeam)
+                this.diplomacyQueue.push({
+                    type:'ask-to-vassalize',
+                    from:askingTeam,
+                    to:targetTeam,
+                    time:0
+                })
+            }
     }
-    askForVassalization(askingTeam,targetTeam){
-        if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'ask-for-vassalization') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'ask-for-vassalization')){
-            this.diplomacyQueue = this.diplomacyQueue.filter(a => a.from != askingTeam)
-            this.diplomacyQueue.push({
-                type:'ask-for-vassalization',
-                from:askingTeam,
-                to:targetTeam,
-                time:0
-            })
-        }
+    askForVassalization(askingTeam,targetTeam){        
+        if(this.diplomacy)
+            if(!this.inQueue(this.diplomacyQueue,askingTeam,targetTeam,'ask-for-vassalization') && !this.inQueue(this.diplomacyRelations,askingTeam,targetTeam,'ask-for-vassalization')){
+                this.diplomacyQueue = this.diplomacyQueue.filter(a => a.from != askingTeam)
+                this.diplomacyQueue.push({
+                    type:'ask-for-vassalization',
+                    from:askingTeam,
+                    to:targetTeam,
+                    time:0
+                })
+            }
     }
     acceptDiplomacyQueueRequest(request,accept){
-        this.diplomacyQueue = this.diplomacyQueue.filter(a => a != request)
-        if(accept){
-            switch(request.type){
-                case 'truce':
-                    this.diplomacyRelations.push({
-                        type: 'truce',
-                        from: request.from,
-                        to: request.to,
-                        time:this.DIPLOMACY_COOLDOWN,
-                        areaUnderTruce:/*this.mergedVoronoisByChunk(request.to)//*/this.mergedVoronois.filter(a => a.team == request.to)
-                    })
-                    this.diplomacyRelations.push({
-                        type: 'truce',
-                        from: request.to,
-                        to: request.from,
-                        time:this.DIPLOMACY_COOLDOWN,
-                        areaUnderTruce:/*this.mergedVoronoisByChunk(request.from)//*/this.mergedVoronois.filter(a => a.team == request.from)
-                    })
-                break
-                case 'ask-to-vassalize':
-                    this.diplomacyRelations.push({
-                        type: 'vassal',
-                        master: request.from,
-                        vassal: request.to,
-                        time:this.DIPLOMACY_COOLDOWN
-                    })
-                break
-                case 'ask-for-vassalization':
-                    this.diplomacyRelations.push({
-                        type: 'vassal',
-                        master: request.to,
-                        vassal: request.from,
-                        time:this.DIPLOMACY_COOLDOWN
-                    })
-                break
+        if(this.diplomacy){
+            this.diplomacyQueue = this.diplomacyQueue.filter(a => a != request)
+            if(accept){
+                switch(request.type){
+                    case 'truce':
+                        this.diplomacyRelations.push({
+                            type: 'truce',
+                            from: request.from,
+                            to: request.to,
+                            time:this.DIPLOMACY_COOLDOWN,
+                            areaUnderTruce:/*this.mergedVoronoisByChunk(request.to)//*/this.mergedVoronois.filter(a => a.team == request.to)
+                        })
+                        this.diplomacyRelations.push({
+                            type: 'truce',
+                            from: request.to,
+                            to: request.from,
+                            time:this.DIPLOMACY_COOLDOWN,
+                            areaUnderTruce:/*this.mergedVoronoisByChunk(request.from)//*/this.mergedVoronois.filter(a => a.team == request.from)
+                        })
+                    break
+                    case 'ask-to-vassalize':
+                        this.diplomacyRelations.push({
+                            type: 'vassal',
+                            master: request.from,
+                            vassal: request.to,
+                            time:this.DIPLOMACY_COOLDOWN
+                        })
+                    break
+                    case 'ask-for-vassalization':
+                        this.diplomacyRelations.push({
+                            type: 'vassal',
+                            master: request.to,
+                            vassal: request.from,
+                            time:this.DIPLOMACY_COOLDOWN
+                        })
+                    break
+                }
             }
         }
     }
@@ -7585,23 +7593,29 @@ class GamePrepareState extends State {
         let t = this
         this.panelControls = [
             new TextControl(20,35,240,30,'NEW GAME',this.borderColor()),
-            new TextControl(30,520,220,80,['CLICK ON AN ','UNIT TO PLAY',"WITH IT    "],this.borderColor()),
+            new TextControl(30,550,220,70,['CLICK ON AN ','UNIT TO PLAY',"WITH IT    "],this.borderColor()),
             new Button(30,110,220,40,'GENERATE',this.backgroundColor,this.borderColor(),()=>{t.controller.regenerateModel()}),
             
-            new TextControl(80,180,100,13,'TOWNS',this.borderColor()),
-            this.townOptionControl = new OptionControl(40,200,200,18,this.backgroundColor,this.borderColor(),['DENSE','FULL','SPARSE'],'townOptionControl'),
+            new TextControl(80,175,100,13,'TOWNS',this.borderColor()),
+            this.townOptionControl = new OptionControl(40,195,200,18,this.backgroundColor,this.borderColor(),['DENSE','FULL','SPARSE'],'townOptionControl'),
             
-            new TextControl(80,240,100,13,'TEAMS',this.borderColor()),
-            this.teamOptionControl = new OptionControl(40,260,200,18,this.backgroundColor,this.borderColor(),['FEW','MORE','ALL','MULTITOWN','TWO TEAMS'],'teamOptionControl'),
+            new TextControl(80,235,100,13,'TEAMS',this.borderColor()),
+            this.teamOptionControl = new OptionControl(40,255,200,18,this.backgroundColor,this.borderColor(),['FEW','MORE','ALL','MULTITOWN','TWO TEAMS'],'teamOptionControl'),
             
-            new TextControl(80,300,100,13,'LAND',this.borderColor()),
-            this.landOptionControl = new OptionControl(40,320,200,18,this.backgroundColor,this.borderColor(),['MEDIUM ISLANDS','ADDITIONAL ISLANDS','BIG ISLAND','MEDIUM CONTINENT'],'landOptionControl'),
+            new TextControl(80,295,100,13,'LAND',this.borderColor()),
+            this.landOptionControl = new OptionControl(40,315,200,18,this.backgroundColor,this.borderColor(),['MEDIUM ISLANDS','ADDITIONAL ISLANDS','BIG ISLAND','MEDIUM CONTINENT'],'landOptionControl'),
             
-            new TextControl(80+30,360,100-60,13,'AI',this.borderColor()),
-            this.aiOptionControl = new OptionControl(40,380,200,18,this.backgroundColor,this.borderColor(),['MEDIUM','HARD','EASY'],'aiOptionControl'),
+            new TextControl(80,355,100,13,'MAP SIZE',this.borderColor()),
+            this.screenResolutionControl = new OptionControl(40,375,200,18,this.backgroundColor,this.borderColor(),['MEDIUM','LARGE','SMALL'],'screenResolutionControl'),
             
-            new TextControl(80,420,100,13,'MAP SIZE',this.borderColor()),
-            this.screenResolutionControl = new OptionControl(40,440,200,18,this.backgroundColor,this.borderColor(),['MEDIUM','LARGE','SMALL'],'screenResolutionControl'),
+//            new TextControl(80+30,400,100-60,13,'-',this.borderColor()),
+
+            new TextControl(80+30,420,100-60,13,'AI',this.borderColor()),
+            this.aiOptionControl = new OptionControl(40,440,200,18,this.backgroundColor,this.borderColor(),['MEDIUM','HARD','EASY'],'aiOptionControl'),
+            
+            new TextControl(80-10,480,100+20,13,'DIPLOMACY',this.borderColor()),
+            this.diplomacyOptionControl = new OptionControl(40,500,200,18,this.backgroundColor,this.borderColor(),['ON','OFF'],'diplomacyOptionControl'),
+            
         ]
     }
 }
@@ -8337,7 +8351,7 @@ class StatisticsPanel extends Control {
 //        }
         var model = this.model instanceof Function ? this.model() : this.model
 
-        if(this.state.gameplay){
+        if(this.state.gameplay && model.diplomacy){
             if(this.state.chosenTeam != null){
                 this.diplomacyRequestControl.tryClick(mouseCoordsTransformed)
             } else if(model.diplomacyQueue.filter(a => a.to == model.playerChoosen).length > 0){
@@ -8486,7 +8500,8 @@ class Ai {
                 drawTextTemp(paths[0].path[0][0],paths[0].path[0][1],(mergedGraph[code].town && mergedGraph[code].unit) ? 'town&unit' : (mergedGraph[code].town ? 'town' : 'unit'),'#0f0')
             }
         }*/
-        this.checkDiplomacy(mergedGraph)
+        if(this.model().diplomacy)
+            this.checkDiplomacy(mergedGraph)
         this.sendUnitsByAi(mergedGraph)
     }
     checkDiplomacy(mergedGraph){
@@ -9588,9 +9603,10 @@ class Controller {
         var teamConfiguration = this.state.state.teamOptionControl.getCurrentOption()
         var landConfiguration = this.state.state.landOptionControl.getCurrentOption()
         var aiConfiguration = this.state.state.aiOptionControl.getCurrentOption()
+        var diplomacyConfiguration = this.state.state.diplomacyOptionControl.getCurrentOption()
         var screenResolutionConfiguration = this.state.state.screenResolutionControl.getCurrentOption()
         
-        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration,screenResolutionConfiguration)
+        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration,diplomacyConfiguration,screenResolutionConfiguration)
         this.gameHistory = new GameHistory(this.model)
         this.view = new View(this.canv,this.model,this.state)
         
@@ -9619,9 +9635,10 @@ class Controller {
         var teamConfiguration = this.state.state.teamOptionControl.getCurrentOption()
         var landConfiguration = this.state.state.landOptionControl.getCurrentOption()
         var aiConfiguration = this.state.state.aiOptionControl.getCurrentOption()
+        var diplomacyConfiguration = this.state.state.diplomacyOptionControl.getCurrentOption()
         var screenResolutionConfiguration = this.state.state.screenResolutionControl.getCurrentOption()
         
-        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration,screenResolutionConfiguration)
+        this.model = new Model(landTownDensity,teamConfiguration,landConfiguration,diplomacyConfiguration,screenResolutionConfiguration)
         this.gameHistory = new GameHistory(this.model)
 
         this.ai = new Ai(this,this.state)
@@ -9715,7 +9732,7 @@ class Controller {
                         }
                         this.state.state.chosenTeam = null
                     } else if(this.state.state.highlightedTeam != null && this.state.state.gameplay) {
-                        if(dist(modelCoords.x,modelCoords.y,this.mapPressStart.x,this.mapPressStart.y) < 2){
+                        if(dist(modelCoords.x,modelCoords.y,this.mapPressStart.x,this.mapPressStart.y) < 2 && this.model.diplomacy){
                             this.state.state.chosenTeam = this.state.state.chosenTeam == this.state.state.highlightedTeam || this.state.state.highlightedTeam == this.model.playerChoosen
                                 ? null
                                 : this.state.state.highlightedTeam
